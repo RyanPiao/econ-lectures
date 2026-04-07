@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   Tree-Based Models: Random Forests
+  </title>
+  <!-- Reveal.js core -->
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <!-- MathJax for equations -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+  <!-- Custom styles -->
+  <link href="styles.css" rel="stylesheet">
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">
+  </script>
+ </head>
+ <body>
+  <div class="reveal">
+   <div class="slides">
+    <!-- TITLE -->
+    <section class="section-divider" data-state="is-section-divider" id="title" style="padding: 0;">
+     <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+      <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+       <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">
+        ECON 3916 &bull; Data Science for Economists &bull; Chapter 19
+       </p>
+       <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">
+        Tree-Based Models:
+        <br>
+        Random Forests
+       </h1>
+       <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 0;">
+       </div>
+       <div style="margin-top: auto; padding-bottom: 15px;">
+        <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">
+         Dr. Richeng Piao
+        </p>
+        <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">
+         Department of Economics
+         <br>
+         Northeastern University
+        </p>
+       </div>
+      </div>
+      <div style="overflow: hidden;">
+       <img alt="Random forests concept illustration" src="figures/cover-ch19-new.png" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+     </div>
+    </section>
+    <!-- LEARNING OBJECTIVES -->
+    <section id="learning-objectives" style="padding: 40px 50px;">
+     <h2 style="margin-bottom: 20px;">
+      <i class="fa-solid fa-bullseye" style="color: var(--accent-color);">
+      </i>
+      Learning Objectives
+     </h2>
+     <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">
+        19.1
+       </p>
+       <p style="font-size: 16pt;">
+        <strong>
+         [Understand]
+        </strong>
+        How decision trees partition feature space using
+        <strong>
+         Gini impurity
+        </strong>
+        , and why single trees overfit
+       </p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">
+        19.2
+       </p>
+       <p style="font-size: 16pt;">
+        <strong>
+         [Apply]
+        </strong>
+        Implement a
+        <strong>
+         Random Forest
+        </strong>
+        in scikit-learn, tune hyperparameters, interpret feature importance
+       </p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">
+        19.3
+       </p>
+       <p style="font-size: 16pt;">
+        <strong>
+         [Analyze]
+        </strong>
+        Compare
+        <strong>
+         bagging vs. Random Forests
+        </strong>
+        &mdash; bootstrap aggregation vs. feature decorrelation
+       </p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">
+        19.4
+       </p>
+       <p style="font-size: 16pt;">
+        <strong>
+         [Evaluate]
+        </strong>
+        When RF or a simpler model is more appropriate &mdash;
+        <strong>
+         accuracy vs. interpretability
+        </strong>
+       </p>
+      </div>
+     </div>
+    </section>
+    <!-- RETRIEVAL PRACTICE -->
+    <section id="retrieval-practice">
+     <h2>
+      <i class="fa-solid fa-rotate">
+      </i>
+      Retrieval Practice
+     </h2>
+     <div class="content text-xl">
+      <p>
+       <strong>
+        Q1:
+       </strong>
+       What is the bias-variance tradeoff? A 20th-degree polynomial on 50 data points &mdash; which side?
+      </p>
+      <p style="margin-top: 20px;">
+       <strong>
+        Q2:
+       </strong>
+       What did LASSO and Ridge do to tame overfitting? What was the mechanism?
+      </p>
+      <p style="margin-top: 20px;">
+       <strong>
+        Q3:
+       </strong>
+       <em>
+        Show of hands:
+       </em>
+       If you could build a model that is BOTH flexible AND stable, would you want it?
+      </p>
+     </div>
+     <aside class="notes">
+      Today we take a completely different approach. Instead of building one model and penalizing it, we build hundreds of simple models and average them.
+     </aside>
+    </section>
+    <!-- OPENING HOOK -->
+    <section id="opening-hook">
+     <h2>
+      <i class="fa-solid fa-chart-line">
+      </i>
+      The Airbnb Puzzle
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+       <div>
+        <p style="font-size: 15pt;">
+         Seattle listing data. 3,800+ listings. Same features. Same data.
+        </p>
+        <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
+         <p style="font-size: 20pt; text-align: center;">
+          <strong>
+           OLS:
+          </strong>
+          R&sup2; = 0.45
+         </p>
+         <p style="font-size: 20pt; text-align: center; color: var(--accent-color);">
+          <strong>
+           Random Forest:
+          </strong>
+          R&sup2; = 0.73
+         </p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 15px; color: var(--muted-color);">
+         62% improvement. Same data. What does RF "see" that OLS cannot?
+        </p>
+       </div>
+       <div>
+        <img alt="Airbnb housing data and price prediction illustration" src="figures/ch19-airbnb-hook.png" style="width: 100%; border-radius: 12px;">
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      Both models saw exactly the same data. The only difference was the algorithm. The answer: interactions and non-linearities.
+     </aside>
+    </section>
+    <!-- SECTION DIVIDER: Decision Trees -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-trees">
+     <h1>
+      <i class="fa-solid fa-sitemap">
+      </i>
+      Decision Trees
+     </h1>
+     <p class="text-muted" style="font-size: 18pt;">
+      The Nonparametric Extension of OLS
+     </p>
+    </section>
+    <!-- DECISION TREE INTUITION -->
+    <section id="tree-intuition">
+     <h2>
+      Decision Trees = "20 Questions" for Data
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+       <div>
+        <p style="font-size: 15pt;">
+         At each node, the tree asks a binary question:
+        </p>
+        <ul style="font-size: 14pt;">
+         <li>
+          "Is income &gt; $50,000?"
+         </li>
+         <li>
+          "Is the property downtown?"
+         </li>
+         <li>
+          "Are reviews &gt; 4.5 stars?"
+         </li>
+        </ul>
+        <p style="font-size: 15pt; margin-top: 15px;">
+         <strong>
+          Key insight:
+         </strong>
+         No linearity assumption. The tree discovers non-linearities
+         <em>
+          automatically
+         </em>
+         .
+        </p>
+        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 15px;">
+         <p style="font-size: 13pt;">
+          <strong>
+           OLS:
+          </strong>
+          One global line through all data
+          <br>
+          <strong>
+           Tree:
+          </strong>
+          Rectangles in feature space, each with its own prediction
+         </p>
+        </div>
+       </div>
+       <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13pt;">
+        <div style="background: var(--primary-color); color: white; padding: 10px 18px; border-radius: 20px; font-weight: 600;">
+         Income &gt; $50K?
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; text-align: center;">
+         <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <p style="color: var(--success-color); font-weight: 600;">
+           Yes
+          </p>
+          <div style="background: var(--secondary-color); color: white; padding: 8px 14px; border-radius: 16px;">
+           Reviews &gt; 4.5?
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;">
+           <div style="background: #e8f5e9; padding: 8px; border-radius: 8px; font-weight: 600;">
+            $280
+           </div>
+           <div style="background: #fff3e0; padding: 8px; border-radius: 8px; font-weight: 600;">
+            $180
+           </div>
+          </div>
+         </div>
+         <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <p style="color: var(--danger-color); font-weight: 600;">
+           No
+          </p>
+          <div style="background: var(--accent-color); color: white; padding: 8px 14px; border-radius: 16px;">
+           Downtown?
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;">
+           <div style="background: #fff3e0; padding: 8px; border-radius: 8px; font-weight: 600;">
+            $150
+           </div>
+           <div style="background: #ffebee; padding: 8px; border-radius: 8px; font-weight: 600;">
+            $90
+           </div>
+          </div>
+         </div>
+        </div>
+        <p style="font-size: 11pt; color: var(--muted-color); margin-top: 4px;">
+         Each leaf = constant prediction (mean of training data in that region)
+        </p>
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      Draw a simple tree on the board with two splits. Show how each leaf contains a constant prediction.
+     </aside>
+    </section>
+    <!-- GINI IMPURITY -->
+    <section id="gini-impurity">
+     <h2>
+      Gini Impurity: The Split Criterion
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+       <div>
+        <p style="font-size: 16pt;">
+         How "mixed" is this group?
+        </p>
+        <div style="background: #f0f4f8; padding: 20px; border-radius: 12px; text-align: center; margin: 15px 0;">
+         <p style="font-size: 22pt;">
+          $$G(p) = 1 - \sum_{k=1}^{K} p_k^2$$
+         </p>
+        </div>
+        <ul style="font-size: 14pt;">
+         <li>
+          \(G = 0\) &rarr; perfectly pure (all one class)
+         </li>
+         <li>
+          \(G = 0.5\) &rarr; maximally impure (50/50 mix)
+         </li>
+        </ul>
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px;">
+         <p style="font-size: 14pt;">
+          <strong>
+           Worked example:
+          </strong>
+          Node has 80 pos, 20 neg
+          <br>
+          \(G = 1 - (0.80^2 + 0.20^2) = 1 - 0.68 = 0.32\)
+         </p>
+        </div>
+       </div>
+       <div>
+        <img alt="Gini impurity curve showing 0 at endpoints and 0.5 at the center" src="figures/figure_002_gini_impurity_curve.png" style="width: 100%; border-radius: 8px;">
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      Work through the calculation on the board. Have students shout out each step.
+     </aside>
+    </section>
+    <!-- SPLIT CRITERION -->
+    <section id="split-criterion">
+     <h2>
+      How the Tree Chooses Splits
+     </h2>
+     <div class="content">
+      <div style="background: #f0f4f8; padding: 20px; border-radius: 12px; text-align: center;">
+       <p style="font-size: 18pt;">
+        $$\Delta G = G(\text{parent}) - \left[\frac{n_L}{n}\, G(\text{left}) + \frac{n_R}{n}\, G(\text{right})\right]$$
+       </p>
+      </div>
+      <p style="font-size: 15pt; margin-top: 20px;">
+       The algorithm evaluates
+       <strong>
+        every feature
+       </strong>
+       and
+       <strong>
+        every threshold
+       </strong>
+       , picking the split that maximizes impurity reduction.
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+       <div style="background: #fff8e1; padding: 15px; border-radius: 8px;">
+        <p style="font-size: 14pt;">
+         <i class="fa-solid fa-triangle-exclamation">
+         </i>
+         <strong>
+          Greedy:
+         </strong>
+         Locally optimal at each step. No global lookahead.
+        </p>
+       </div>
+       <div style="background: #e8eaf6; padding: 15px; border-radius: 8px;">
+        <p style="font-size: 14pt;">
+         <i class="fa-solid fa-ruler">
+         </i>
+         <strong>
+          Regression:
+         </strong>
+         Replace Gini with MSE. Predict \(\bar{y}_{\text{leaf}}\).
+        </p>
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      The algorithm is greedy &mdash; it makes the locally optimal choice at each step without looking ahead.
+     </aside>
+    </section>
+    <!-- CODE BRIDGE -->
+    <section id="code-bridge-tree">
+     <h2>
+      <i class="fa-solid fa-code">
+      </i>
+      Decision Tree in 5 Lines
+     </h2>
+     <div class="content">
+      <pre style="font-size: 13pt; background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 12px; overflow: hidden;"><code>tree = DecisionTreeRegressor(random_state=42)  # No depth limit
+tree.fit(X_train, y_train)
+
+print(f"Train R&sup2;: {r2_score(y_train, tree.predict(X_train)):.4f}")  # &asymp; 1.00
+print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asymp; 0.60</code></pre>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+       <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; text-align: center;">
+        <p style="font-size: 28pt; font-weight: bold;">
+         Train R&sup2; &asymp; 1.00
+        </p>
+        <p style="font-size: 13pt;">
+         Near-perfect memorization
+        </p>
+       </div>
+       <div style="background: #ffebee; padding: 15px; border-radius: 8px; text-align: center;">
+        <p style="font-size: 28pt; font-weight: bold; color: var(--danger-color);">
+         Test R&sup2; &asymp; 0.60
+        </p>
+        <p style="font-size: 13pt;">
+         Massive overfitting gap
+        </p>
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      Show the train vs test R-squared gap. This is the overfitting problem from Chapter 15 in its most extreme form.
+     </aside>
+    </section>
+    <!-- POLL 1 -->
+    <section id="poll-1">
+     <h2>
+      <i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);">
+      </i>
+      Class Poll
+     </h2>
+     <div class="content" style="text-align: center;">
+      <p class="text-xl" style="margin-bottom: 20px;">
+       <strong>
+        An unrestricted decision tree on training data has R&sup2; closest to:
+       </strong>
+      </p>
+      <div class="poll-grid poll-grid-4">
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 28pt; font-weight: 700;">
+         A
+        </p>
+        <p class="text-lg">
+         0.50
+        </p>
+       </div>
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 28pt; font-weight: 700;">
+         B
+        </p>
+        <p class="text-lg">
+         0.70
+        </p>
+       </div>
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 28pt; font-weight: 700;">
+         C
+        </p>
+        <p class="text-lg">
+         0.90
+        </p>
+       </div>
+       <div style="background: var(--success-color); color: white;">
+        <p style="font-size: 28pt; font-weight: 700; color: white;">
+         D
+        </p>
+        <p class="text-lg" style="color: white;">
+         1.00
+        </p>
+       </div>
+      </div>
+      <p class="fragment text-lg" style="margin-top: 20px;">
+       Perfect memorization &ne; learning. The tree memorizes noise.
+      </p>
+     </div>
+     <aside class="notes">
+      A model that perfectly memorizes training data is not learning patterns; it is memorizing noise. How do we keep flexibility while taming variance?
+     </aside>
+    </section>
+    <!-- INTERACTIVE DEMO: Tree Splits 3D -->
+    <section id="demo-tree-splits" style="padding: 10px 30px 10px 30px !important;">
+     <iframe allow="accelerometer" loading="lazy" scrolling="no" src="https://ryanpiao.github.io/visual-ml-hub/tree_splits_3d.html" style="flex: 1; width: 111%; height: 111%; border: none; overflow: hidden; transform: scale(0.9); transform-origin: top left;">
+     </iframe>
+     <p style="font-size: 10pt; color: var(--muted-color); text-align: center; margin: 0;">
+      <i class="fa-solid fa-hand-pointer">
+      </i>
+      Drag to rotate &bull; Depth slider adds split planes
+     </p>
+    </section>
+    <!-- SECTION DIVIDER: Variance Problem -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-variance">
+     <h1>
+      <i class="fa-solid fa-wave-square">
+      </i>
+      The Variance Problem
+     </h1>
+     <p class="text-muted" style="font-size: 18pt;">
+      Why Single Trees Fail
+     </p>
+    </section>
+    <!-- VARIANCE PROBLEM -->
+    <section id="variance-problem">
+     <h2>
+      Single Trees: Flexible but Unstable
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+       <div>
+        <p style="font-size: 15pt;">
+         Small data changes &rarr; entirely different trees.
+        </p>
+        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+         <p style="font-size: 14pt;">
+          <strong>
+           Tree A:
+          </strong>
+          MedInc &gt; 5.03 (root split)
+          <br>
+          <strong>
+           Tree B:
+          </strong>
+          MedInc &gt; 4.87 (root split)
+          <br>
+          By level 3:
+          <em>
+           almost no splits in common
+          </em>
+         </p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 15px;">
+         <strong>
+          The solution:
+         </strong>
+         If B independent estimators each have variance &sigma;&sup2;, their average has variance &sigma;&sup2;/B.
+        </p>
+        <p style="font-size: 15pt; margin-top: 10px;">
+         <em>
+          Same principle as the Central Limit Theorem.
+         </em>
+        </p>
+       </div>
+       <div>
+        <img alt="Four dartboards: high bias/low variance, single tree (scattered), high bias+variance, random forest (tight on center)" src="figures/ch19-bias-variance-dartboard.png" style="width: 100%; border-radius: 8px;">
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      What if we just built a hundred trees and averaged them? Pause. Let students think. This is the transition to bagging.
+     </aside>
+    </section>
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1">
+     <h2>
+      <i class="fa-solid fa-comments">
+      </i>
+      Think-Pair-Share
+     </h2>
+     <div class="content">
+      <div style="background: #e3f2fd; padding: 25px; border-radius: 12px; margin-top: 20px;">
+       <p style="font-size: 18pt; font-weight: bold;">
+        If averaging reduces variance (CLT), why can't we just average 100 trees trained on the same data?
+       </p>
+       <p style="font-size: 14pt; margin-top: 10px; color: var(--muted-color);">
+        What is the catch?
+       </p>
+      </div>
+      <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+       <div style="background: #f8f6f3; padding: 15px; border-radius: 8px; text-align: center;">
+        <p style="font-size: 24pt;">
+         <i class="fa-solid fa-brain">
+         </i>
+        </p>
+        <p style="font-size: 13pt;">
+         <strong>
+          Think
+         </strong>
+        </p>
+       </div>
+       <div style="background: #f8f6f3; padding: 15px; border-radius: 8px; text-align: center;">
+        <p style="font-size: 24pt;">
+         <i class="fa-solid fa-people-arrows">
+         </i>
+        </p>
+        <p style="font-size: 13pt;">
+         <strong>
+          Pair
+         </strong>
+        </p>
+       </div>
+       <div style="background: #f8f6f3; padding: 15px; border-radius: 8px; text-align: center;">
+        <p style="font-size: 24pt;">
+         <i class="fa-solid fa-bullhorn">
+         </i>
+        </p>
+        <p style="font-size: 13pt;">
+         <strong>
+          Share
+         </strong>
+        </p>
+       </div>
+      </div>
+      <p style="margin-top: 15px; text-align: center;">
+       <span class="timer-badge">
+        <i class="fa-solid fa-clock">
+        </i>
+        1 min think &rarr; 2 min pair &rarr; 3 pairs share
+       </span>
+      </p>
+     </div>
+     <aside class="notes">
+      Listen for: "Trees will be the same", "They'll make the same mistakes", "We need different data". Bridge: correlated estimators don't average well.
+     </aside>
+    </section>
+    <!-- SECTION DIVIDER: Bagging -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-bagging">
+     <h1>
+      <i class="fa-solid fa-layer-group">
+      </i>
+      Bagging
+     </h1>
+     <p class="text-muted" style="font-size: 18pt;">
+      Bootstrap Aggregating (Breiman, 1996)
+     </p>
+    </section>
+    <!-- BAGGING HOW -->
+    <section id="bagging-how">
+     <h2>
+      How Bagging Works
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+       <div>
+        <ol style="font-size: 15pt; line-height: 2;">
+         <li>
+          Draw B
+          <strong>
+           bootstrap samples
+          </strong>
+          (with replacement)
+         </li>
+         <li>
+          Train one decision tree on each sample
+         </li>
+         <li>
+          Average predictions: \(\hat{f}_{\text{bag}}(x) = \frac{1}{B}\sum_{b=1}^{B}\hat{f}_b(x)\)
+         </li>
+        </ol>
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px;">
+         <p style="font-size: 14pt;">
+          <strong>
+           OOB:
+          </strong>
+          Each tree misses ~37% of observations &rarr; free cross-validation
+         </p>
+        </div>
+       </div>
+       <div>
+        <img alt="Bagging pipeline: data &rarr; bootstrap samples &rarr; multiple trees &rarr; averaging &rarr; final prediction" src="figures/ch19-bagging-concept.png" style="width: 100%; border-radius: 8px;">
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      Bootstrap samples share about 63% of observations. The trees are not independent &mdash; they are correlated.
+     </aside>
+    </section>
+    <!-- INTERACTIVE DEMO: Forest Averaging -->
+    <section id="demo-forest-averaging" style="padding: 10px 30px 10px 30px !important;">
+     <iframe allow="accelerometer" loading="lazy" scrolling="no" src="https://ryanpiao.github.io/visual-ml-hub/forest_averaging.html" style="flex: 1; width: 111%; height: 111%; border: none; overflow: hidden; transform: scale(0.9); transform-origin: top left;">
+     </iframe>
+     <p style="font-size: 10pt; color: var(--muted-color); text-align: center; margin: 0;">
+      <i class="fa-solid fa-sliders">
+      </i>
+      Gold = true function &bull; Blue = ensemble &bull; Slide B: 1 &rarr; 100 trees
+     </p>
+    </section>
+    <!-- CORRELATION FLOOR -->
+    <section id="correlation-floor">
+     <h2>
+      The Correlation Floor
+     </h2>
+     <div class="content">
+      <div style="background: #f0f4f8; padding: 25px; border-radius: 12px; text-align: center;">
+       <p style="font-size: 22pt;">
+        $$\text{Var}(\bar{f}) = \underbrace{\rho\sigma^2}_{\text{FLOOR}} + \underbrace{\frac{1-\rho}{B}\sigma^2}_{\text{shrinks with B}}$$
+       </p>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+       <div style="background: #ffebee; padding: 15px; border-radius: 8px;">
+        <p style="font-size: 14pt;">
+         <strong>
+          First term \(\rho\sigma^2\):
+         </strong>
+         Stays no matter how many trees. This is the floor.
+        </p>
+       </div>
+       <div style="background: #e8f5e9; padding: 15px; border-radius: 8px;">
+        <p style="font-size: 14pt;">
+         <strong>
+          Second term:
+         </strong>
+         Shrinks toward 0 as B &rarr; &infin;. This is the averaging benefit.
+        </p>
+       </div>
+      </div>
+      <p style="font-size: 16pt; margin-top: 15px; text-align: center; font-weight: bold;">
+       The question: can we reduce &rho;?
+      </p>
+     </div>
+     <aside class="notes">
+      This is the most important equation in the lecture. Circle the first term. No matter how many trees, you cannot push variance below this floor.
+     </aside>
+    </section>
+    <!-- WORKED EXAMPLE BAGGING -->
+    <section id="worked-example-bagging">
+     <h2>
+      <i class="fa-solid fa-calculator">
+      </i>
+      Numerical Example: Bagging
+     </h2>
+     <div class="content">
+      <p style="font-size: 15pt;">
+       \(\sigma^2 = 0.50\), \(B = 100\) trees, \(\rho = 0.85\) (bagging)
+      </p>
+      <div style="background: #f0f4f8; padding: 20px; border-radius: 12px; margin-top: 15px; text-align: center;">
+       <p style="font-size: 18pt;">
+        \(\text{Var} = 0.85 \times 0.50 + \frac{0.15}{100} \times 0.50 = 0.425 + 0.001 = \mathbf{0.426}\)
+       </p>
+      </div>
+      <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 15px;">
+       <p style="font-size: 15pt;">
+        <strong>
+         The floor is 0.425.
+        </strong>
+        Adding more trees barely helps &mdash; we are stuck.
+       </p>
+       <p style="font-size: 15pt;">
+        To go lower, we need to attack &rho;.
+       </p>
+      </div>
+     </div>
+     <aside class="notes">
+      Write this on the board. Say: 'With bagging, variance is 0.426 but the floor is 0.425. We need to attack rho.'
+     </aside>
+    </section>
+    <!-- POLL 2 -->
+    <section id="poll-2">
+     <h2>
+      <i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);">
+      </i>
+      Class Poll
+     </h2>
+     <div class="content" style="text-align: center;">
+      <p class="text-xl" style="margin-bottom: 20px;">
+       <strong>
+        With &rho; = 0.85, &sigma;&sup2; = 0.50, B = 100: minimum achievable variance?
+       </strong>
+      </p>
+      <div class="poll-grid poll-grid-4">
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 28pt; font-weight: 700;">
+         A
+        </p>
+        <p class="text-lg">
+         0.003
+        </p>
+       </div>
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 28pt; font-weight: 700;">
+         B
+        </p>
+        <p class="text-lg">
+         0.050
+        </p>
+       </div>
+       <div style="background: var(--success-color); color: white;">
+        <p style="font-size: 28pt; font-weight: 700; color: white;">
+         C
+        </p>
+        <p class="text-lg" style="color: white;">
+         0.425
+        </p>
+       </div>
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 28pt; font-weight: 700;">
+         D
+        </p>
+        <p class="text-lg">
+         0.500
+        </p>
+       </div>
+      </div>
+      <p class="fragment text-lg" style="margin-top: 20px;">
+       The correlation floor: &rho; &times; &sigma;&sup2; = 0.85 &times; 0.50 =
+       <strong>
+        0.425
+       </strong>
+      </p>
+     </div>
+     <aside class="notes">
+      Even with infinite trees, the floor remains. The only way to lower it is to reduce rho.
+     </aside>
+    </section>
+    <!-- SECTION DIVIDER: Random Forests -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-rf">
+     <h1>
+      <i class="fa-solid fa-tree">
+      </i>
+      Random Forests
+     </h1>
+     <p class="text-muted" style="font-size: 18pt;">
+      Breaking the Correlation Floor (Breiman, 2001)
+     </p>
+    </section>
+    <!-- RF MECHANISM -->
+    <section id="rf-mechanism">
+     <h2>
+      The Random Forest Innovation
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+       <div>
+        <p style="font-size: 15pt;">
+         One twist: at each split, randomly select
+         <strong>
+          m features
+         </strong>
+         (not all p).
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+         <div style="background: #ffebee; padding: 14px; border-radius: 8px;">
+          <h3 style="font-size: 15pt;">
+           Bagging
+          </h3>
+          <p style="font-size: 13pt;">
+           All trees use MedInc first &rarr;
+           <strong>
+            correlated
+           </strong>
+          </p>
+          <p style="font-size: 13pt;">
+           &rho; = 0.85
+          </p>
+         </div>
+         <div style="background: #e8f5e9; padding: 14px; border-radius: 8px;">
+          <h3 style="font-size: 15pt;">
+           Random Forest
+          </h3>
+          <p style="font-size: 13pt;">
+           Forced diversity &rarr;
+           <strong>
+            decorrelated
+           </strong>
+          </p>
+          <p style="font-size: 13pt;">
+           &rho; = 0.40
+          </p>
+         </div>
+        </div>
+        <div style="background: #f0f4f8; padding: 10px; border-radius: 8px; margin-top: 10px;">
+         <p style="font-size: 13pt;">
+          <strong>
+           Defaults:
+          </strong>
+          Classification: \(m = \sqrt{p}\) &nbsp;|&nbsp; Regression: \(m = p/3\)
+         </p>
+        </div>
+       </div>
+       <div>
+        <img alt="RF pipeline: data &rarr; bootstrap &rarr; trees with m random features &rarr; averaging &rarr; prediction" src="figures/ch19-rf-pipeline.png" style="width: 100%; border-radius: 8px;">
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      By restricting which features each tree can use, some trees are forced to split on different variables. Different errors cancel when averaged.
+     </aside>
+    </section>
+    <!-- RF NUMERICAL COMPARISON -->
+    <section id="rf-numerical">
+     <h2>
+      <i class="fa-solid fa-calculator">
+      </i>
+      Breaking Through: 52% Lower Variance
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+       <div>
+        <p style="font-size: 15pt;">
+         Same &sigma;&sup2; = 0.50, B = 100. Only &rho; changes.
+        </p>
+        <div style="background: #ffebee; padding: 15px; border-radius: 8px; margin: 10px 0;">
+         <p style="font-size: 16pt;">
+          <strong>
+           Bagging:
+          </strong>
+          Var =
+          <strong>
+           0.426
+          </strong>
+         </p>
+        </div>
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px;">
+         <p style="font-size: 16pt;">
+          <strong>
+           RF:
+          </strong>
+          Var =
+          <strong>
+           0.203
+          </strong>
+         </p>
+        </div>
+        <p style="font-size: 18pt; margin-top: 15px; font-weight: bold; color: var(--accent-color);">
+         52% variance reduction
+        </p>
+        <p style="font-size: 14pt; color: var(--muted-color);">
+         Same number of trees. Feature randomization cut &rho; from 0.85 to 0.40.
+        </p>
+       </div>
+       <div style="position: relative; height: 350px; min-width: 0;">
+        <canvas id="correlationFloorChart">
+        </canvas>
+       </div>
+      </div>
+     </div>
+     <aside class="notes">
+      Put both numbers on the board. The ONLY difference is restricting which features each tree could use at each split.
+     </aside>
+    </section>
+    <!-- RF CODE + RESULTS -->
+    <section id="rf-code-results">
+     <h2>
+      <i class="fa-solid fa-code">
+      </i>
+      Random Forest: 3 Lines
+     </h2>
+     <div class="content">
+      <pre style="font-size: 14pt; background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 12px;"><code>rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+# Test R&sup2; &asymp; 0.81</code></pre>
+      <div style="position: relative; height: 300px; min-width: 0; margin-top: 15px;">
+       <canvas id="rfVsBaselinesChart">
+       </canvas>
+      </div>
+     </div>
+     <aside class="notes">
+      The Random Forest captures non-linearities with the stability of averaging. Flexible AND stable.
+     </aside>
+    </section>
+    <!-- MISCONCEPTION -->
+    <section id="misconception-trees">
+     <h2>
+      <i class="fa-solid fa-triangle-exclamation">
+      </i>
+      Common Misconception
+     </h2>
+     <div class="content">
+      <div style="background: #ffebee; padding: 20px; border-radius: 12px;">
+       <p style="font-size: 18pt; font-weight: bold;">
+        "More trees = overfitting"
+       </p>
+      </div>
+      <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-top: 15px;">
+       <p style="font-size: 16pt;">
+        <strong>
+         Reality:
+        </strong>
+        Adding trees does NOT increase overfitting. The \((1-\rho)/B\) term decreases monotonically.
+       </p>
+       <p style="font-size: 14pt; margin-top: 10px;">
+        RF CAN overfit through:
+       </p>
+       <ul style="font-size: 14pt;">
+        <li>
+         <code>
+          max_depth
+         </code>
+         too high (trees memorize)
+        </li>
+        <li>
+         <code>
+          max_features
+         </code>
+         too close to p (trees correlate)
+        </li>
+       </ul>
+       <p style="font-size: 14pt; margin-top: 10px;">
+        <strong>
+         n_estimators is the one hyperparameter you can safely increase.
+        </strong>
+       </p>
+      </div>
+     </div>
+    </section>
+    <!-- DECISION SCENARIO -->
+    <section id="decision-scenario">
+     <h2>
+      <i class="fa-solid fa-scale-balanced">
+      </i>
+      Decision Scenario: The Feature Importance Trap
+     </h2>
+     <div class="content">
+      <div style="background: #e3f2fd; padding: 25px; border-radius: 12px;">
+       <p style="font-size: 16pt;">
+        You advise a bank on mortgage default prediction. Random Forest achieves excellent AUC. Feature importance:
+        <strong>
+         "prior credit inquiries"
+        </strong>
+        is #1.
+       </p>
+       <p style="font-size: 18pt; margin-top: 15px; font-weight: bold;">
+        The CRO says: "Reject anyone with &gt; 3 inquiries."
+       </p>
+      </div>
+      <p style="font-size: 20pt; margin-top: 20px; text-align: center; font-weight: bold; color: var(--danger-color);">
+       What is wrong with this reasoning?
+      </p>
+     </div>
+     <aside class="notes">
+      Feature importance measures prediction, not causation. People about to default take out MORE inquiries because they're desperate for credit.
+     </aside>
+    </section>
+    <!-- FEATURE IMPORTANCE -->
+    <section id="feature-importance">
+     <h2>
+      Feature Importance &ne; Causation
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+       <div>
+        <p style="font-size: 15pt;">
+         <strong>
+          MDI
+         </strong>
+         (Mean Decrease in Impurity): sums impurity reductions across all splits. Biased toward high-cardinality features.
+        </p>
+        <p style="font-size: 15pt; margin-top: 10px;">
+         <strong>
+          Permutation importance
+         </strong>
+         : shuffles feature values, measures accuracy drop. Less biased.
+        </p>
+        <div style="background: #ffebee; padding: 15px; border-radius: 8px; margin-top: 15px;">
+         <p style="font-size: 14pt;">
+          <strong>
+           Critical:
+          </strong>
+          High importance =
+          <em>
+           predicts
+          </em>
+          the outcome. NOT =
+          <em>
+           causes
+          </em>
+          the outcome.
+         </p>
+         <p style="font-size: 14pt; margin-top: 5px;">
+          Chapter 24 (DML) will give us causal tools.
+         </p>
+        </div>
+       </div>
+       <div style="position: relative; height: 350px; min-width: 0;">
+        <canvas id="featureImportanceChart">
+        </canvas>
+       </div>
+      </div>
+     </div>
+    </section>
+    <!-- INTERACTIVE DEMO: SHAP Waterfall -->
+    <section id="demo-shap" style="padding: 10px 30px 10px 30px !important;">
+     <iframe allow="accelerometer" loading="lazy" scrolling="no" src="https://ryanpiao.github.io/visual-ml-hub/shap_waterfall.html" style="flex: 1; width: 111%; height: 111%; border: none; overflow: hidden; transform: scale(0.9); transform-origin: top left;">
+     </iframe>
+     <p style="font-size: 10pt; color: var(--muted-color); text-align: center; margin: 0;">
+      <i class="fa-solid fa-hand-pointer">
+      </i>
+      Select observation from dropdown &bull; Red = pushes toward default &bull; Blue = pushes away
+     </p>
+    </section>
+    <!-- POLL 3 -->
+    <section id="poll-3">
+     <h2>
+      <i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);">
+      </i>
+      Class Poll
+     </h2>
+     <div class="content" style="text-align: center;">
+      <p class="text-xl" style="margin-bottom: 20px;">
+       <strong>
+        Feature importance in a Random Forest tells you:
+       </strong>
+      </p>
+      <div class="poll-grid poll-grid-2" style="max-width: 750px;">
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 24pt; font-weight: 700;">
+         A
+        </p>
+        <p class="text-lg">
+         What causes the outcome
+        </p>
+       </div>
+       <div style="background: var(--success-color); color: white;">
+        <p style="font-size: 24pt; font-weight: 700; color: white;">
+         B
+        </p>
+        <p class="text-lg" style="color: white;">
+         What predicts the outcome
+        </p>
+       </div>
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 24pt; font-weight: 700;">
+         C
+        </p>
+        <p class="text-lg">
+         What to intervene on
+        </p>
+       </div>
+       <div style="background: #f8f6f3;">
+        <p style="font-size: 24pt; font-weight: 700;">
+         D
+        </p>
+        <p class="text-lg">
+         Model confidence
+        </p>
+       </div>
+      </div>
+      <p class="fragment text-lg" style="margin-top: 20px;">
+       A & C conflate prediction with causation. D confuses importance with confidence.
+      </p>
+     </div>
+     <aside class="notes">
+      A and C conflate prediction with causation. D confuses feature importance with prediction confidence.
+     </aside>
+    </section>
+    <!-- KEY TAKEAWAYS -->
+    <section id="takeaways">
+     <h2>
+      <i class="fa-solid fa-star" style="color: var(--accent-color);">
+      </i>
+      Key Takeaways
+     </h2>
+     <div class="content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+       <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 20pt;">
+         <i class="fa-solid fa-sitemap" style="color: var(--secondary-color);">
+         </i>
+        </p>
+        <p style="font-size: 15pt;">
+         <strong>
+          Decision trees
+         </strong>
+         partition space via Gini &mdash; flexible but overfit.
+        </p>
+       </div>
+       <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #fdf5f0; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--accent-color);">
+        <p style="font-size: 20pt;">
+         <i class="fa-solid fa-layer-group" style="color: var(--accent-color);">
+         </i>
+        </p>
+        <p style="font-size: 15pt;">
+         <strong>
+          Bagging
+         </strong>
+         averages bootstrap trees &mdash; hits the correlation floor &rho;&sigma;&sup2;.
+        </p>
+       </div>
+       <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f8f0; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 20pt;">
+         <i class="fa-solid fa-tree" style="color: var(--success-color);">
+         </i>
+        </p>
+        <p style="font-size: 15pt;">
+         <strong>
+          Random Forests
+         </strong>
+         add feature randomization &mdash; break through the floor.
+        </p>
+       </div>
+       <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f8f0f0; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+        <p style="font-size: 20pt;">
+         <i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);">
+         </i>
+        </p>
+        <p style="font-size: 15pt;">
+         <strong>
+          Feature importance &ne; causation
+         </strong>
+         &mdash; the most important distinction.
+        </p>
+       </div>
+      </div>
+      <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin-top: 14px; text-align: center; border-left: 4px solid #7C3A5F;">
+       <p style="font-size: 16pt;">
+        <i class="fa-solid fa-scale-balanced" style="color: #7C3A5F;">
+        </i>
+        &nbsp;
+        <strong>
+         Always compare against simpler baselines.
+        </strong>
+        Use Ch 18 metrics to evaluate.
+       </p>
+      </div>
+     </div>
+    </section>
+    <!-- EXIT TICKET -->
+    <section id="exit-ticket">
+     <h2>
+      <i class="fa-solid fa-ticket">
+      </i>
+      Exit Ticket
+     </h2>
+     <div class="content" style="text-align: center;">
+      <div style="background: #e3f2fd; padding: 30px; border-radius: 12px; max-width: 700px; margin: 30px auto;">
+       <p style="font-size: 20pt;">
+        Complete this sentence in writing:
+       </p>
+       <p style="font-size: 22pt; margin-top: 15px; font-weight: bold;">
+        "Random Forests reduce variance by
+        <br>
+        <span style="border-bottom: 2px solid var(--primary-color);">
+         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        </span>
+        and
+        <span style="border-bottom: 2px solid var(--primary-color);">
+         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        </span>
+        ."
+       </p>
+      </div>
+      <p style="font-size: 14pt; color: var(--muted-color); margin-top: 15px;">
+       90 seconds. Write it down.
+      </p>
+     </div>
+     <aside class="notes">
+      Target: (1) averaging bootstrap-trained trees (bagging) and (2) restricting splits to random features (decorrelation).
+     </aside>
+    </section>
+   </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js">
+  </script>
+  <script>
+   Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+
+    /* ===== Chart.js Initializations ===== */
+    Chart.defaults.font.family = '"Source Sans 3", sans-serif';
+    Chart.defaults.color = '#3A3632';
+    const isExport = window.location.search.includes('export');
+
+    function initChartOnSlide(slideId, initFn) {
+      const section = document.getElementById(slideId);
+      if (!section) return;
+      let initialized = false;
+      Reveal.on('slidechanged', (event) => {
+        if (!initialized && event.currentSlide === section) {
+          initialized = true;
+          setTimeout(initFn, 100);
+        }
+      });
+      if (Reveal.getCurrentSlide() === section) {
+        setTimeout(() => { initialized = true; initFn(); }, 300);
+      }
+    }
+
+    /* --- Correlation Floor Comparison --- */
+    initChartOnSlide('rf-numerical', () => {
+      const ctx = document.getElementById('correlationFloorChart');
+      if (!ctx) return;
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Bagging (ρ = 0.85)', 'Random Forest (ρ = 0.40)'],
+          datasets: [
+            {
+              label: 'Correlation Floor (ρσ²)',
+              data: [0.425, 0.200],
+              backgroundColor: ['rgba(168, 92, 92, 0.7)', 'rgba(168, 92, 92, 0.35)'],
+              borderRadius: 4
+            },
+            {
+              label: 'Averaging Benefit ((1-ρ)/B · σ²)',
+              data: [0.001, 0.003],
+              backgroundColor: ['rgba(107, 139, 164, 0.7)', 'rgba(107, 139, 164, 0.7)'],
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12, usePointStyle: true } },
+            title: { display: true, text: 'Variance Decomposition: Bagging vs Random Forest', font: { size: 14, weight: '600' }, padding: { bottom: 10 } },
+            tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + c.raw.toFixed(3) } }
+          },
+          scales: {
+            x: { grid: { display: false }, stacked: true, ticks: { font: { size: 13 } } },
+            y: {
+              stacked: true,
+              title: { display: true, text: 'Ensemble Variance', font: { size: 12, weight: '500' } },
+              min: 0, max: 0.5,
+              grid: { color: 'rgba(213, 206, 199, 0.25)', drawBorder: false },
+              ticks: { font: { size: 11 } }
+            }
+          },
+          animation: isExport ? false : { duration: 800 }
+        }
+      });
+    });
+
+    /* --- RF vs Baselines --- */
+    initChartOnSlide('rf-code-results', () => {
+      const ctx = document.getElementById('rfVsBaselinesChart');
+      if (!ctx) return;
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['OLS', 'Ridge', 'Single Tree', 'Random Forest'],
+          datasets: [{
+            label: 'Test RMSE (5-Fold CV)',
+            data: [0.746, 0.746, 0.779, 0.658],
+            backgroundColor: ['#D5CEC7', '#D5CEC7', 'rgba(168, 92, 92, 0.6)', 'rgba(106, 142, 107, 0.8)'],
+            borderRadius: 4,
+            barThickness: 50
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Model Comparison: California Housing', font: { size: 13, weight: '500' }, color: '#8C8580' },
+            tooltip: { callbacks: { label: (c) => 'RMSE: ' + c.raw.toFixed(3) } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 13 } } },
+            y: {
+              title: { display: true, text: 'Test RMSE (lower is better)', font: { size: 12, weight: '500' } },
+              min: 0.5, max: 0.85,
+              grid: { color: 'rgba(213, 206, 199, 0.25)', drawBorder: false },
+              ticks: { font: { size: 11 } }
+            }
+          },
+          animation: isExport ? false : { duration: 800 }
+        }
+      });
+    });
+
+    /* --- Feature Importance --- */
+    initChartOnSlide('feature-importance', () => {
+      const ctx = document.getElementById('featureImportanceChart');
+      if (!ctx) return;
+      const features = ['MedInc', 'AveOccup', 'Latitude', 'Longitude', 'HouseAge', 'AveRooms', 'Population', 'AveBedrms'];
+      const importance = [0.52, 0.14, 0.09, 0.08, 0.06, 0.05, 0.04, 0.02];
+      const colors = importance.map((v, i) => i === 0 ? 'rgba(107, 139, 164, 0.85)' : 'rgba(107, 139, 164, ' + (0.6 - i * 0.06) + ')');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: features,
+          datasets: [{
+            label: 'Feature Importance (MDI)',
+            data: importance,
+            backgroundColor: colors,
+            borderRadius: 4,
+            barThickness: 30
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (c) => c.raw.toFixed(2) } }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Importance (MDI)', font: { size: 12, weight: '500' } },
+              min: 0, max: 0.6,
+              grid: { color: 'rgba(213, 206, 199, 0.25)', drawBorder: false },
+              ticks: { font: { size: 11 } }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { font: { size: 13, weight: '500' } }
+            }
+          },
+          animation: isExport ? false : { duration: 800 }
+        }
+      });
+    });
+  </script>
+ </body>
+</html>
