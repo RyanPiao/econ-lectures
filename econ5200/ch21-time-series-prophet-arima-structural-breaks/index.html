@@ -1,134 +1,674 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Time Series II: Prophet, ARIMA &amp; Structural Breaks — Lecture Viewer</title>
-  <link rel="stylesheet" href="viewer.css">
+  <title>Time Series II: Prophet, ARIMA & Structural Breaks</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
-<body data-mode="presenter" data-theme="light">
+<body>
+  <div class="reveal">
+    <div class="slides">
 
-  <!-- Connection banner (shown when iframe fails) -->
-  <div class="connection-banner" id="connection-banner" hidden>
-    <i class="fas fa-exclamation-triangle"></i>
-    <span>Cannot connect to slides. Open via local server: <code>./serve.sh</code> or <code>python3 -m http.server 8080</code></span>
-  </div>
-
-  <!-- Top Bar -->
-  <header class="viewer-header">
-    <div class="header-left">
-      <span class="lecture-title">Time Series II: Prophet, ARIMA &amp; Structural Breaks</span>
-      <span class="course-code">{{COURSE_CODE}}</span>
-    </div>
-    <div class="header-center">
-      <span class="slide-counter">
-        Slide <span id="current-slide">1</span> / <span id="total-slides">—</span>
-      </span>
-      <span class="pace-indicator" id="pace-indicator"></span>
-    </div>
-    <div class="header-right">
-      <button class="viewer-btn" id="btn-presenter" title="Presenter Mode (P)">
-        <i class="fas fa-chalkboard-teacher"></i>
-      </button>
-      <button class="viewer-btn" id="btn-student" title="Student Mode (U)">
-        <i class="fas fa-user-graduate"></i>
-      </button>
-      <button class="viewer-btn" id="btn-overview" title="Overview (O)">
-        <i class="fas fa-th"></i>
-      </button>
-      <button class="viewer-btn separator" id="btn-popout" title="Open Student Window (W)">
-        <i class="fas fa-external-link-alt"></i>
-      </button>
-      <button class="viewer-btn" id="btn-timer" title="Toggle Timer (T)">
-        <i class="fas fa-clock"></i>
-      </button>
-      <button class="viewer-btn" id="btn-laser" title="Laser Pointer (L)">
-        <i class="fas fa-crosshairs"></i>
-      </button>
-      <button class="viewer-btn" id="btn-black" title="Black Screen (B)">
-        <i class="fas fa-square"></i>
-      </button>
-      <button class="viewer-btn separator" id="btn-theme" title="Toggle Theme">
-        <i class="fas fa-adjust"></i>
-      </button>
-      <button class="viewer-btn" id="btn-fullscreen" title="Fullscreen (F)">
-        <i class="fas fa-expand"></i>
-      </button>
-    </div>
-  </header>
-
-  <!-- Timer Bar (visible by default in presenter mode) -->
-  <div class="timer-bar" id="timer-bar">
-    <div class="timer-display">
-      <span id="timer-elapsed">00:00</span>
-      <span class="timer-separator">/</span>
-      <span id="timer-remaining">—</span>
-    </div>
-    <div class="timer-progress">
-      <div class="timer-progress-fill" id="timer-progress-fill"></div>
-    </div>
-    <div class="timer-controls">
-      <button class="timer-btn" id="timer-start" title="Start"><i class="fas fa-play"></i></button>
-      <button class="timer-btn" id="timer-pause" title="Pause" hidden><i class="fas fa-pause"></i></button>
-      <button class="timer-btn" id="timer-reset" title="Reset"><i class="fas fa-redo"></i></button>
-    </div>
-  </div>
-
-  <!-- Black Screen Overlay -->
-  <div class="black-screen-overlay" id="black-screen" hidden></div>
-
-  <!-- Laser Pointer -->
-  <div class="laser-pointer" id="laser-pointer" hidden></div>
-
-  <!-- Main Content Area -->
-  <main class="viewer-main">
-    <!-- Presenter Mode: slide + notes + next preview -->
-    <div class="presenter-layout">
-      <div class="slide-area" id="slide-area">
-        <iframe id="slide-frame" src="" data-default-src="../presentation.html" allowfullscreen></iframe>
-      </div>
-      <div class="side-panel">
-        <div class="next-preview">
-          <h3>Next Slide <button class="notes-font-btn" id="notes-font-up" title="Increase font">A+</button></h3>
-          <div id="next-slide-content" class="next-slide-box">—</div>
+      <!-- SLIDE 1: Cover -->
+      <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+        <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML & Applied Analytics &bull; Chapter 21</p>
+            <h1 style="font-size: 30pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Time Series II:<br>Prophet, ARIMA &<br>Structural Breaks</h1>
+            <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 0;"></div>
+            <div style="margin-top: auto; padding-bottom: 15px;">
+              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+              <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+            </div>
+          </div>
+          <div style="overflow: hidden;">
+            <img src="figures/ch21-gemini-arima-vs-prophet.png" alt="ARIMA vs Prophet conceptual comparison"
+                 style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
         </div>
-        <div class="speaker-notes">
-          <h3>Speaker Notes <button class="notes-font-btn" id="notes-font-down" title="Decrease font">A-</button></h3>
-          <div id="speaker-notes-content" class="notes-box">—</div>
+      </section>
+
+      <!-- SLIDE 2: Learning Objectives -->
+      <section id="learning-objectives" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">LO1</p>
+            <p style="font-size: 15pt;"><strong>Understand</strong> the Box-Jenkins ARIMA identification-estimation-diagnostic cycle</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">LO2</p>
+            <p style="font-size: 15pt;"><strong>Apply</strong> ARIMA, SARIMA, and Prophet models to economic time series in Python</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">LO3</p>
+            <p style="font-size: 15pt;"><strong>Analyze</strong> forecasting models using MASE and time series backtesting</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--primary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--primary-color);">LO4</p>
+            <p style="font-size: 15pt;"><strong>Evaluate</strong> forecast reliability across structural breaks</p>
+          </div>
         </div>
-      </div>
-    </div>
+        <aside class="notes">Read each LO aloud. Emphasize LO4 — this is what separates 5200 from 3916.</aside>
+      </section>
 
-    <!-- Overview Mode: thumbnail grid -->
-    <div class="overview-layout" hidden>
-      <div id="overview-grid" class="overview-grid"></div>
-    </div>
-  </main>
+      <!-- SLIDE 3: Retrieval Practice -->
+      <section id="retrieval" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-rotate" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+        <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 20px;">
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 20px 25px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 600; color: var(--primary-color);">What does $L^2 y_t$ return?</p>
+            <p class="fragment" style="font-size: 14pt; color: var(--muted-color); margin-top: 8px;">$y_{t-2}$ — the value two periods ago</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 20px 25px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 600; color: var(--primary-color);">ADF test on CPI: p-value = 0.87. What do you conclude?</p>
+            <p class="fragment" style="font-size: 14pt; color: var(--muted-color); margin-top: 8px;">Fail to reject &rarr; non-stationary. Difference and re-test. That gives you $d$.</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 20px 25px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 600; color: var(--primary-color);">Why expanding-window CV instead of random $k$-fold?</p>
+            <p class="fragment" style="font-size: 14pt; color: var(--muted-color); margin-top: 8px;">Temporal dependence &mdash; shuffling leaks future into training</p>
+          </div>
+        </div>
+        <aside class="notes">Quick verbal Q&amp;A. Call on students. These activate Ch 20 concepts that underpin today's lecture.</aside>
+      </section>
 
-  <!-- Keyboard shortcut help (shown on ?) -->
-  <div class="shortcuts-overlay" id="shortcuts-overlay" hidden>
-    <div class="shortcuts-panel">
-      <h2>Keyboard Shortcuts</h2>
-      <div class="shortcut-grid">
-        <div class="shortcut"><kbd>Right</kbd> / <kbd>Space</kbd> Next slide</div>
-        <div class="shortcut"><kbd>Left</kbd> Previous slide</div>
-        <div class="shortcut"><kbd>G</kbd> + number Go to slide</div>
-        <div class="shortcut"><kbd>P</kbd> Presenter mode</div>
-        <div class="shortcut"><kbd>U</kbd> Student mode</div>
-        <div class="shortcut"><kbd>O</kbd> Overview mode</div>
-        <div class="shortcut"><kbd>W</kbd> Open student window (dual monitor)</div>
-        <div class="shortcut"><kbd>T</kbd> Toggle timer</div>
-        <div class="shortcut"><kbd>L</kbd> Laser pointer</div>
-        <div class="shortcut"><kbd>B</kbd> Black screen</div>
-        <div class="shortcut"><kbd>F</kbd> Fullscreen</div>
-        <div class="shortcut"><kbd>?</kbd> This help</div>
-        <div class="shortcut"><kbd>Esc</kbd> Close overlay</div>
-      </div>
-      <button class="viewer-btn" onclick="document.getElementById('shortcuts-overlay').hidden=true">Close</button>
+      <!-- SLIDE 4: Opening Hook -->
+      <section id="hook" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-bullhorn" style="color: var(--accent-color);"></i> Target, Q2 2022</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+          <div>
+            <p style="font-size: 16pt; line-height: 1.7;">In June 2022, Target reported a <strong>quarterly profit collapse of nearly 90%</strong>.</p>
+            <p style="font-size: 16pt; line-height: 1.7; margin-top: 15px;">Demand forecasting models trained on pandemic-era spending patterns <strong>extrapolated the old regime</strong>. Consumer spending rotated back to services.</p>
+            <p style="font-size: 16pt; line-height: 1.7; margin-top: 15px;">The structural break <em>had already occurred</em>.</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div style="background: #fef2ef; border-radius: 8px; padding: 18px; text-align: center;">
+              <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color);">$15.1B</p>
+              <p style="font-size: 12pt; color: var(--muted-color);">Inventory (+43%)</p>
+            </div>
+            <div style="background: #fef2ef; border-radius: 8px; padding: 18px; text-align: center;">
+              <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color);">-90%</p>
+              <p style="font-size: 12pt; color: var(--muted-color);">Quarterly Profit</p>
+            </div>
+            <div style="background: #fef2ef; border-radius: 8px; padding: 18px; text-align: center;">
+              <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color);">-57%</p>
+              <p style="font-size: 12pt; color: var(--muted-color);">Full-Year Operating Income</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">4 minutes. The forecasting models kept projecting the old regime. Today we build models that could have helped — and more importantly, models that know when to stop trusting themselves.</aside>
+      </section>
+
+      <!-- SLIDE 5: Section Divider — ARIMA Foundations -->
+      <section id="section-arima" class="section-divider" data-state="is-section-divider">
+        <h1 style="font-size: 36pt;">ARIMA Foundations</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">Autoregressive + Moving Average + Differencing</p>
+        <p style="font-size: 13pt; color: var(--secondary-color); margin-top: 30px;">13 minutes</p>
+      </section>
+
+      <!-- SLIDE 6: AR/MA Intuition -->
+      <section id="ar-ma-intuition" style="padding: 40px 50px;">
+        <h2>AR + MA: Momentum and Correction</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 25px;">
+          <div style="background: #f0f4f8; border-radius: 8px; padding: 25px; border-top: 4px solid var(--secondary-color);">
+            <h3 style="font-size: 18pt; color: var(--secondary-color); margin-bottom: 12px;"><i class="fa-solid fa-arrow-trend-up"></i> AR = Momentum</h3>
+            <p style="font-size: 15pt; line-height: 1.7;">"Today's value depends on <strong>yesterday's value</strong>."</p>
+            <p style="font-size: 14pt; color: var(--muted-color); margin-top: 10px;">Like driving: your current speed continues your recent trajectory.</p>
+          </div>
+          <div style="background: #fef8f0; border-radius: 8px; padding: 25px; border-top: 4px solid var(--accent-color);">
+            <h3 style="font-size: 18pt; color: var(--accent-color); margin-bottom: 12px;"><i class="fa-solid fa-arrows-rotate"></i> MA = Correction</h3>
+            <p style="font-size: 15pt; line-height: 1.7;">"Today's value depends on <strong>yesterday's surprise</strong>."</p>
+            <p style="font-size: 14pt; color: var(--muted-color); margin-top: 10px;">Like steering: you adjust based on how far off your predicted path you drifted.</p>
+          </div>
+        </div>
+        <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 15px 20px; margin-top: 20px; text-align: center;">
+          <p style="font-size: 15pt;"><strong>Differencing</strong> = measuring <em>speed</em> instead of <em>position</em>. Even if position keeps changing, speed might be constant.</p>
+        </div>
+        <aside class="notes">Build intuition before equations. AR = persistence/momentum. MA = error correction. Differencing = transform non-stationary → stationary.</aside>
+      </section>
+
+      <!-- SLIDE 7: AR(p) Equation -->
+      <section id="ar-equation" style="padding: 40px 50px;">
+        <h2>AR($p$): Autoregressive Process</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-top: 20px;">
+          <p style="font-size: 20pt; text-align: center;">$$Y_t = c + \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \cdots + \phi_p Y_{t-p} + \varepsilon_t$$</p>
+        </div>
+        <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14pt;">
+          <div>
+            <p><strong>$\phi_1, \ldots, \phi_p$</strong> = AR coefficients (persistence)</p>
+            <p style="margin-top: 8px;"><strong>$p$</strong> = number of lags included</p>
+          </div>
+          <div>
+            <p><strong>$\varepsilon_t \sim \text{WN}(0, \sigma^2)$</strong> = white noise</p>
+            <p style="margin-top: 8px;"><strong>$c$</strong> = constant (intercept)</p>
+          </div>
+        </div>
+        <div class="fragment" style="background: #e8f4e8; border-radius: 8px; padding: 15px 20px; margin-top: 15px;">
+          <p style="font-size: 14pt;"><i class="fa-solid fa-lightbulb" style="color: var(--success-color);"></i> <strong>Interpretation:</strong> AR(1) with $\phi_1 = 0.95$ means 95% of today's deviation carries to tomorrow. High $\phi$ = sluggish, persistent series (GDP, CPI).</p>
+        </div>
+        <aside class="notes">AR = regression on your own past. Each phi measures how much a past value influences today.</aside>
+      </section>
+
+      <!-- SLIDE 8: MA(q) Equation -->
+      <section id="ma-equation" style="padding: 40px 50px;">
+        <h2>MA($q$): Moving Average Process</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-top: 20px;">
+          <p style="font-size: 20pt; text-align: center;">$$Y_t = \mu + \varepsilon_t + \theta_1 \varepsilon_{t-1} + \cdots + \theta_q \varepsilon_{t-q}$$</p>
+        </div>
+        <div style="margin-top: 20px; font-size: 14pt;">
+          <p><strong>$\theta_1, \ldots, \theta_q$</strong> = MA coefficients (shock decay)</p>
+          <p style="margin-top: 8px;"><strong>$\varepsilon_{t-j}$</strong> = past forecast errors (white noise shocks)</p>
+        </div>
+        <div class="fragment" style="background: #e8f4e8; border-radius: 8px; padding: 15px 20px; margin-top: 15px;">
+          <p style="font-size: 14pt;"><i class="fa-solid fa-lightbulb" style="color: var(--success-color);"></i> <strong>Key difference:</strong> MA has <em>short memory</em>. MA(1) with $\theta_1 = 0.7$: yesterday's shock echoes at 70%, but by the day after tomorrow, it's gone. AR shocks propagate indefinitely.</p>
+        </div>
+        <aside class="notes">MA = regression on past errors, not past values. Short memory vs AR's long memory. theta = shock absorber.</aside>
+      </section>
+
+      <!-- SLIDE 9: ARIMA Backshift Notation -->
+      <section id="arima-notation" style="padding: 40px 50px;">
+        <h2>ARIMA($p, d, q$) — Unified Model</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-top: 20px;">
+          <p style="font-size: 22pt; text-align: center;">$$\phi(B)(1 - B)^d Y_t = \theta(B) \varepsilon_t$$</p>
+        </div>
+        <div style="margin-top: 20px; font-size: 14pt; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div>
+            <p><strong>$B$</strong> = backshift operator ($BY_t = Y_{t-1}$)</p>
+            <p style="margin-top: 6px; color: var(--muted-color); font-size: 13pt;">Same as lag operator $L$ from Ch 20</p>
+            <p style="margin-top: 10px;"><strong>$(1-B)^d$</strong> = difference $d$ times</p>
+          </div>
+          <div>
+            <p><strong>$\phi(B)$</strong> = AR polynomial</p>
+            <p style="margin-top: 10px;"><strong>$\theta(B)$</strong> = MA polynomial</p>
+            <p style="margin-top: 10px;"><strong>$d$</strong> = from ADF/KPSS (Ch 20)</p>
+          </div>
+        </div>
+        <div class="fragment" style="background: #fff3e0; border-radius: 8px; padding: 15px 20px; margin-top: 15px;">
+          <p style="font-size: 14pt;"><i class="fa-solid fa-circle-info" style="color: var(--accent-color);"></i> <strong>Recipe:</strong> (1) Difference $d$ times for stationarity. (2) AR captures persistence. (3) MA captures shock decay.</p>
+        </div>
+        <aside class="notes">B and L are the same operator. d comes from Chapter 20's stationarity tests. This equation unifies everything.</aside>
+      </section>
+
+      <!-- SLIDE 10: Box-Jenkins Cycle -->
+      <section id="box-jenkins" style="padding: 40px 50px;">
+        <h2>The Box-Jenkins Cycle</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 15px;">
+          <div>
+            <img src="figures/ch21-gemini-box-jenkins-cycle.png" alt="Box-Jenkins four-step iterative cycle"
+                 style="width: 100%; border-radius: 8px;">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14pt;">
+            <div style="background: #f0f4f8; padding: 12px 15px; border-radius: 6px;">
+              <strong>1. Identify:</strong> ACF/PACF &rarr; choose $p, q$
+            </div>
+            <div style="background: #f0f4f8; padding: 12px 15px; border-radius: 6px;">
+              <strong>2. Estimate:</strong> MLE (or <code>auto_arima</code>)
+            </div>
+            <div style="background: #f0f4f8; padding: 12px 15px; border-radius: 6px;">
+              <strong>3. Diagnose:</strong> Ljung-Box on residuals
+            </div>
+            <div style="background: #f0f4f8; padding: 12px 15px; border-radius: 6px;">
+              <strong>4. Forecast:</strong> Multi-step + CI
+            </div>
+            <div class="fragment" style="background: #fef2ef; padding: 12px 15px; border-radius: 6px; border-left: 3px solid var(--accent-color);">
+              <strong>Key:</strong> <code>auto_arima()</code> is Step 2 only. Not a substitute for Steps 1 &amp; 3.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Draw the loop arrow from Step 3 back to Step 1. Emphasize: if Ljung-Box fails, you go BACK to identification.</aside>
+      </section>
+
+      <!-- SLIDE 11: ACF/PACF Table -->
+      <section id="acf-pacf" style="padding: 40px 50px;">
+        <h2>ACF/PACF Identification Rules</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 15px;">
+          <div>
+            <img src="figures/ch21-acf-pacf-identification.png" alt="ACF and PACF patterns for AR, MA, and ARMA identification"
+                 style="width: 100%; border-radius: 8px;">
+          </div>
+          <div>
+            <table style="font-size: 13pt; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--primary-color);">
+                  <th style="padding: 8px; text-align: left;">Pattern</th>
+                  <th style="padding: 8px;">ACF</th>
+                  <th style="padding: 8px;">PACF</th>
+                  <th style="padding: 8px;">Model</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid #ddd;">
+                  <td style="padding: 8px;">AR($p$)</td>
+                  <td style="padding: 8px;">Decays</td>
+                  <td style="padding: 8px;"><strong>Cuts off</strong></td>
+                  <td style="padding: 8px;">Read $p$</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #ddd;">
+                  <td style="padding: 8px;">MA($q$)</td>
+                  <td style="padding: 8px;"><strong>Cuts off</strong></td>
+                  <td style="padding: 8px;">Decays</td>
+                  <td style="padding: 8px;">Read $q$</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px;">ARMA</td>
+                  <td style="padding: 8px;">Both decay</td>
+                  <td style="padding: 8px;">Both decay</td>
+                  <td style="padding: 8px;">AIC search</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="fragment" style="font-size: 13pt; margin-top: 15px; color: var(--muted-color);">"Cuts off" = drops inside $\pm 1.96/\sqrt{T}$ bands. "Decays" = geometric decline.</p>
+          </div>
+        </div>
+        <aside class="notes">This table is the decision tool. Students should memorize: AR = PACF cuts off. MA = ACF cuts off. Both decay = try ARMA.</aside>
+      </section>
+
+      <!-- POLL 1 (vertical stack) -->
+      <section>
+        <section id="poll-1" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: ACF/PACF Identification</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 25px; margin-top: 15px;">
+            <p style="font-size: 16pt; line-height: 1.7;">ACF decays slowly. PACF shows significant spikes at lags 1 and 2, then drops inside the bands.</p>
+            <p style="font-size: 16pt; font-weight: 600; margin-top: 15px;">What model do you fit?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; font-size: 15pt;">
+            <div style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px;">A) MA(2)</div>
+            <div style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px;">B) AR(2)</div>
+            <div style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px;">C) ARMA(2,1)</div>
+            <div style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px;">D) Check AIC first</div>
+          </div>
+          <aside class="notes">Ask for show of hands. Option A is the common confusion (swapping ACF/PACF roles).</aside>
+        </section>
+        <section id="poll-1-reveal">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; AR(2)</h2>
+          <div style="padding: 20px 60px;">
+            <p style="font-size: 15pt; line-height: 1.7;">PACF cuts off at lag 2 + ACF decays slowly = textbook <strong>AR(2)</strong>. The PACF tells you the autoregressive order directly.</p>
+            <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 16px 20px; border-radius: 8px; margin: 16px 0;">
+              <p style="font-size: 14pt; margin: 0;"><strong>Why not A (MA)?</strong> Option A gets it backward &mdash; for MA models, the <em>ACF</em> cuts off while the PACF decays. Always check which plot cuts off: ACF cutoff &rarr; MA. PACF cutoff &rarr; AR.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- SLIDE 13: SARIMA Notation -->
+      <section id="sarima" style="padding: 30px 50px;">
+        <h2>SARIMA: Seasonal Extension</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 25px; margin-top: 10px;">
+          <p style="font-size: 17pt; text-align: center;">$$\phi(B)\Phi(B^m)(1-B)^d(1-B^m)^D Y_t = \theta(B)\Theta(B^m)\varepsilon_t$$</p>
+        </div>
+        <div style="margin-top: 10px; font-size: 13pt;">
+          <p><strong>Lowercase</strong> = non-seasonal &nbsp;&bull;&nbsp; <strong>Uppercase</strong> = seasonal at lag $m$ &nbsp;&bull;&nbsp; $(1-B^{12})Y_t = Y_t - Y_{t-12}$</p>
+        </div>
+        <div style="margin-top: 10px;">
+          <img src="figures/ch21-sarima-cpi-forecast.png" alt="SARIMA forecast on log CPI with widening confidence intervals"
+               style="width: 80%; border-radius: 8px; display: block; margin: 0 auto;">
+        </div>
+        <aside class="notes">5 minutes max. "Uppercase = seasonal layer. The widening CI cones = honest uncertainty." Transition: "This needs per-series expertise. What if you have 50,000 SKUs?"</aside>
+      </section>
+
+      <!-- SLIDE 14: Discussion 1 -->
+      <section id="discussion-1" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Scale vs. Interpretability</h2>
+        <div style="background: #f0f4f8; border-radius: 10px; padding: 30px; margin-top: 25px;">
+          <p style="font-size: 17pt; line-height: 1.8;">You're the data science lead at a retailer with <strong>50,000 SKUs</strong>. Each needs a weekly forecast updated every Sunday night.</p>
+          <p style="font-size: 17pt; line-height: 1.8; margin-top: 15px;">An analyst advocates fitting individual ARIMA models — manually inspecting ACF/PACF for each SKU.</p>
+          <p style="font-size: 20pt; font-weight: 700; color: var(--primary-color); margin-top: 20px;">Would you adopt this approach, or automate?<br>What are you trading off?</p>
+        </div>
+        <p style="font-size: 13pt; color: var(--muted-color); margin-top: 20px; text-align: center;"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share-out</p>
+        <aside class="notes">Push "automate everything" students to name what they lose. Push "manual ARIMA" students to estimate time for 50K inspections.</aside>
+      </section>
+
+      <!-- SLIDE 15: Section Divider — Prophet -->
+      <section id="section-prophet" class="section-divider" data-state="is-section-divider">
+        <h1 style="font-size: 36pt;">Prophet</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">Decomposition-Based Forecasting at Scale</p>
+        <p style="font-size: 13pt; color: var(--secondary-color); margin-top: 30px;">12 minutes</p>
+      </section>
+
+      <!-- SLIDE 16: Prophet Equation -->
+      <section id="prophet-equation" style="padding: 40px 50px;">
+        <h2>Prophet: Forecasting as Regression</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-top: 15px;">
+          <p style="font-size: 22pt; text-align: center;">$$y(t) = g(t) + s(t) + h(t) + \varepsilon_t$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 20px;">
+          <div style="background: #f0f4f8; border-radius: 8px; padding: 18px; text-align: center;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">$g(t)$</p>
+            <p style="font-size: 13pt; margin-top: 8px;">Trend with auto <strong>changepoints</strong></p>
+            <p style="font-size: 12pt; color: var(--muted-color);">Piecewise linear or logistic</p>
+          </div>
+          <div style="background: #fef8f0; border-radius: 8px; padding: 18px; text-align: center;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">$s(t)$</p>
+            <p style="font-size: 13pt; margin-top: 8px;"><strong>Fourier</strong> seasonality</p>
+            <p style="font-size: 12pt; color: var(--muted-color);">Sines + cosines</p>
+          </div>
+          <div style="background: #e8f4e8; border-radius: 8px; padding: 18px; text-align: center;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--success-color);">$h(t)$</p>
+            <p style="font-size: 13pt; margin-top: 8px;"><strong>Holiday</strong> effects</p>
+            <p style="font-size: 12pt; color: var(--muted-color);">User-specified dates</p>
+          </div>
+        </div>
+        <div class="fragment" style="background: #fff3e0; border-radius: 8px; padding: 12px 18px; margin-top: 15px;">
+          <p style="font-size: 14pt;"><i class="fa-solid fa-link" style="color: var(--accent-color);"></i> Changepoints use <strong>L1 regularization</strong> (Laplace prior) — same principle as LASSO (Ch 16). Most potential changes shrink to zero.</p>
+        </div>
+        <aside class="notes">Keep this slide on screen as anchor. Walk through each component. "Remember LASSO from Ch 16? Prophet does the same thing to changepoints."</aside>
+      </section>
+
+      <!-- SLIDE 17: Prophet vs Bai-Perron -->
+      <section id="prophet-vs-bp" style="padding: 40px 50px;">
+        <h2>Prophet Changepoints vs. Bai-Perron</h2>
+        <table style="font-size: 14pt; width: 90%; margin: 25px auto 0; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--primary-color);">
+              <th style="padding: 10px; text-align: left;"></th>
+              <th style="padding: 10px; text-align: center;">Bai-Perron (Ch 20)</th>
+              <th style="padding: 10px; text-align: center;">Prophet Changepoints</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #ddd;">
+              <td style="padding: 10px; font-weight: 600;">Goal</td>
+              <td style="padding: 10px; text-align: center;">Diagnose <em>when</em> DGP changed</td>
+              <td style="padding: 10px; text-align: center;">Incorporate into <em>forecast</em></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ddd;">
+              <td style="padding: 10px; font-weight: 600;">Method</td>
+              <td style="padding: 10px; text-align: center;">Sequential F-tests</td>
+              <td style="padding: 10px; text-align: center;">L1-regularized trend changes</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ddd;">
+              <td style="padding: 10px; font-weight: 600;">Output</td>
+              <td style="padding: 10px; text-align: center;">Break dates + p-values</td>
+              <td style="padding: 10px; text-align: center;">Smooth piecewise trend</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; font-weight: 600;">Use case</td>
+              <td style="padding: 10px; text-align: center;"><strong>Explain the past</strong></td>
+              <td style="padding: 10px; text-align: center;"><strong>Predict the future</strong></td>
+            </tr>
+          </tbody>
+        </table>
+        <aside class="notes">Both valuable. Bai-Perron for papers (explaining). Prophet for production (forecasting).</aside>
+      </section>
+
+      <!-- SLIDE 18: Prophet Decomposition Figure -->
+      <section id="prophet-decomp" style="padding: 25px 50px;">
+        <h2>Prophet Decomposition — Log CPI</h2>
+        <img src="figures/ch21-prophet-decomposition.png" alt="Prophet decomposition showing trend with changepoints, yearly seasonality, and holiday effects"
+             style="width: 75%; border-radius: 8px; display: block; margin: 10px auto 0;">
+        <aside class="notes">Point to changepoints in the trend panel. "Those dashed lines are where Prophet detected slope changes — 2008, 2020, 2021-22."</aside>
+      </section>
+
+      <!-- SLIDE 19: Walmart Case Study -->
+      <section id="walmart" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-building" style="color: var(--secondary-color);"></i> Walmart: 140 Million Forecasts</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.7;">Between 2021&ndash;2023, Walmart rebuilt demand forecasting for <strong>140M SKU-location combinations</strong>.</p>
+            <p style="font-size: 15pt; line-height: 1.7; margin-top: 12px;">The solution: a <strong>hybrid architecture</strong>.</p>
+            <ul style="font-size: 14pt; margin-top: 12px; line-height: 1.8;">
+              <li><strong>Prophet</strong> for irregular seasonality, changepoints</li>
+              <li><strong>SARIMA</strong> for stable, high-volume SKUs</li>
+            </ul>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: #e8f4e8; border-radius: 8px; padding: 15px; text-align: center;">
+              <p style="font-size: 13pt; color: var(--muted-color);">Manual Forecasting Time</p>
+              <p style="font-size: 26pt; font-weight: 700; color: var(--success-color);">-75-90%</p>
+            </div>
+            <div style="background: #f0f4f8; border-radius: 8px; padding: 15px; text-align: center;">
+              <p style="font-size: 13pt; color: var(--muted-color);">Key Insight</p>
+              <p style="font-size: 15pt; font-weight: 600; color: var(--primary-color); margin-top: 5px;">No single model wins everywhere</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">3 minutes. The hybrid is the punchline: neither model alone was best. Prophet for messy series, SARIMA for clean ones.</aside>
+      </section>
+
+      <!-- POLL 2 (vertical stack) -->
+      <section>
+        <section id="poll-2" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Model Choice</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 20px; margin-top: 15px;">
+            <p style="font-size: 16pt; line-height: 1.7;">Prophet detects 3 changepoints in CPI (2008, 2020, 2022). Your boss says "just use ARIMA, it's simpler."</p>
+            <p style="font-size: 16pt; font-weight: 600; margin-top: 12px;">Best response?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; font-size: 14pt;">
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">A) "Prophet always wins with changepoints"</div>
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">B) "Backtest both, compare MASE"</div>
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">C) "ARIMA can't handle changepoints"</div>
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">D) "Prophet is too slow"</div>
+          </div>
+          <aside class="notes">Ask for show of hands. A and C are both overstatements.</aside>
+        </section>
+        <section id="poll-2-reveal">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Backtest both, compare MASE</h2>
+          <div style="padding: 20px 60px;">
+            <p style="font-size: 15pt; line-height: 1.7;">The answer is <strong>always</strong> "backtest both." No model wins universally. Let the data decide via MASE on held-out temporal folds.</p>
+            <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 16px 20px; border-radius: 8px; margin: 16px 0;">
+              <p style="font-size: 14pt; margin: 0;"><strong>Why not A?</strong> Prophet doesn't "always win" &mdash; ARIMA can outperform on clean, low-frequency series. Walmart's research found neither model dominates across all SKUs. The hybrid approach reduced costs 75&ndash;90%.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- SLIDE 21: Section Divider — Evaluation -->
+      <section id="section-eval" class="section-divider" data-state="is-section-divider">
+        <h1 style="font-size: 36pt;">Forecast Evaluation</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">MASE: The Economist's Scorecard</p>
+        <p style="font-size: 13pt; color: var(--secondary-color); margin-top: 30px;">8 minutes</p>
+      </section>
+
+      <!-- SLIDE 22: MAPE Problems -->
+      <section id="mape-problems" style="padding: 40px 50px;">
+        <h2>MAPE: Three Fatal Flaws</h2>
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
+          <div style="background: #fef2ef; border-radius: 8px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;"><strong>1. Division by zero</strong> &mdash; when $y_t = 0$ (intermittent demand), MAPE is undefined</p>
+          </div>
+          <div style="background: #fef2ef; border-radius: 8px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;"><strong>2. Asymmetric penalty</strong> &mdash; over-forecasts penalized more than under-forecasts</p>
+          </div>
+          <div style="background: #fef2ef; border-radius: 8px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;"><strong>3. Scale dependence</strong> &mdash; can't compare MAPE across series with different scales</p>
+          </div>
+        </div>
+        <p class="fragment" style="font-size: 15pt; font-weight: 600; color: var(--primary-color); margin-top: 20px; text-align: center;">We need something better &rarr; MASE</p>
+        <aside class="notes">Quick: 1 minute on MAPE's flaws. Transition to MASE immediately.</aside>
+      </section>
+
+      <!-- SLIDE 23: MASE Formula -->
+      <section id="mase" style="padding: 40px 50px;">
+        <h2>MASE: Mean Absolute Scaled Error</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-top: 15px;">
+          <p style="font-size: 20pt; text-align: center;">$$\text{MASE} = \frac{\displaystyle\frac{1}{h} \sum_{t=1}^{h} |e_t|}{\displaystyle\frac{1}{T-m} \sum_{t=m+1}^{T} |Y_t - Y_{t-m}|}$$</p>
+        </div>
+        <div style="margin-top: 18px; font-size: 14pt;">
+          <p><strong>Numerator:</strong> MAE of your forecast</p>
+          <p style="margin-top: 6px;"><strong>Denominator:</strong> MAE of <strong>seasonal naive</strong> on training data</p>
+        </div>
+        <div class="fragment" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 18px;">
+          <div style="background: #e8f4e8; border-radius: 8px; padding: 15px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">MASE &lt; 1</p>
+            <p style="font-size: 13pt;">Beats naive</p>
+          </div>
+          <div style="background: #fff3e0; border-radius: 8px; padding: 15px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">MASE = 1</p>
+            <p style="font-size: 13pt;">Equals naive</p>
+          </div>
+          <div style="background: #fef2ef; border-radius: 8px; padding: 15px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: #c0392b;">MASE &gt; 1</p>
+            <p style="font-size: 13pt;">Worse than naive</p>
+          </div>
+        </div>
+        <aside class="notes">Write this on the board. Circle the denominator: "This is the genius — benchmarking against the dumbest possible forecast." MASE 0.6 = "40% better than naive."</aside>
+      </section>
+
+      <!-- SLIDE 24: Backtesting Figure -->
+      <section id="backtest" style="padding: 30px 50px;">
+        <h2>Backtesting: SARIMA vs. Prophet on CPI</h2>
+        <img src="figures/ch21-backtest-comparison.png" alt="Expanding-window backtesting comparison of SARIMA and Prophet on CPI data"
+             style="width: 80%; border-radius: 8px; display: block; margin: 15px auto 0;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+          <div style="background: #f0f4f8; border-radius: 8px; padding: 12px; text-align: center;">
+            <p style="font-size: 14pt;">SARIMA avg MASE: <strong>0.45</strong></p>
+            <p style="font-size: 12pt; color: var(--muted-color);">55% better than naive</p>
+          </div>
+          <div style="background: #fef8f0; border-radius: 8px; padding: 12px; text-align: center;">
+            <p style="font-size: 14pt;">Prophet avg MASE: <strong>0.52</strong></p>
+            <p style="font-size: 12pt; color: var(--muted-color);">48% better than naive</p>
+          </div>
+        </div>
+        <aside class="notes">Both beat naive. SARIMA slightly better on this regular series. But M5 showed rankings flip across series.</aside>
+      </section>
+
+      <!-- SLIDE 25: Discussion 2 -->
+      <section id="discussion-2" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: "SARIMA Wins, Case Closed?"</h2>
+        <div style="background: #f0f4f8; border-radius: 10px; padding: 30px; margin-top: 25px;">
+          <p style="font-size: 17pt; line-height: 1.7;">SARIMA gets MASE = 0.45 on CPI. Prophet gets 0.52.</p>
+          <p style="font-size: 17pt; line-height: 1.7; margin-top: 12px;">A colleague says: <em>"SARIMA wins, case closed. Let's deploy it."</em></p>
+          <p style="font-size: 20pt; font-weight: 700; color: var(--primary-color); margin-top: 20px;">What's missing from this analysis?</p>
+        </div>
+        <p style="font-size: 13pt; color: var(--muted-color); margin-top: 20px; text-align: center;"><i class="fa-solid fa-clock"></i> 3 min discussion &rarr; 2 min debrief</p>
+        <aside class="notes">Three gaps: (1) Is 0.07 significant? Diebold-Mariano. (2) M5 showed rankings flip. (3) Structural break robustness.</aside>
+      </section>
+
+      <!-- SLIDE 26: Section Divider — GARCH -->
+      <section id="section-garch" class="section-divider" data-state="is-section-divider">
+        <h1 style="font-size: 36pt;">GARCH</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">When Variance Changes Over Time</p>
+        <p style="font-size: 13pt; color: var(--secondary-color); margin-top: 20px;">5200-DEPTH &bull; 6 minutes</p>
+      </section>
+
+      <!-- SLIDE 27: GARCH Volatility Plot (visual first) -->
+      <section id="garch-visual" style="padding: 30px 50px;">
+        <h2>Volatility Clustering — S&P 500</h2>
+        <img src="figures/ch21-garch-volatility.png" alt="GARCH conditional volatility on S&P 500 showing crisis-period spikes"
+             style="width: 85%; border-radius: 8px; display: block; margin: 10px auto 0;">
+        <p class="fragment" style="font-size: 15pt; text-align: center; margin-top: 12px; font-weight: 600; color: var(--primary-color);">Does this look like constant variance to you?</p>
+        <aside class="notes">Open GARCH with the visual, not the equation. Point to 2008, 2020, 2022. "Large shocks breed large shocks." Then go to the equation.</aside>
+      </section>
+
+      <!-- SLIDE 28: GARCH Equation -->
+      <section id="garch-equation" style="padding: 40px 50px;">
+        <h2>GARCH(1,1) — Engle (1982) &amp; Bollerslev (1986)</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-top: 15px;">
+          <p style="font-size: 22pt; text-align: center;">$$\sigma_t^2 = \omega + \alpha \varepsilon_{t-1}^2 + \beta \sigma_{t-1}^2$$</p>
+        </div>
+        <div style="margin-top: 18px; font-size: 14pt; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div>
+            <p>$\alpha$ = reaction to yesterday's <strong>shock</strong> squared</p>
+            <p style="margin-top: 8px;">$\beta$ = persistence of yesterday's <strong>variance</strong></p>
+          </div>
+          <div>
+            <p>$\omega$ = baseline variance (floor)</p>
+            <p style="margin-top: 8px;">$\alpha + \beta < 1$ = stationarity condition</p>
+          </div>
+        </div>
+        <div class="fragment" style="background: #fff3e0; border-radius: 8px; padding: 15px 20px; margin-top: 15px;">
+          <p style="font-size: 14pt;"><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i> <strong>S&P 500 typical:</strong> $\alpha \approx 0.09$, $\beta \approx 0.90$. Sum = 0.99 &rarr; volatility decays <em>extremely</em> slowly. A March 2020 spike still influenced conditional variance months later.</p>
+        </div>
+        <div class="fragment" style="background: #e8f4e8; border-radius: 8px; padding: 12px 18px; margin-top: 10px;">
+          <p style="font-size: 13pt;"><i class="fa-solid fa-link" style="color: var(--success-color);"></i> <strong>Ch 5 callback:</strong> VaR assuming constant variance underestimates tail risk during crises. GARCH provides the time-varying variance those risk measures need.</p>
+        </div>
+        <aside class="notes">Circle alpha+beta. "When this sum is 0.99, a shock takes ~69 days to halve. That's why the VIX stays elevated for months after a crash."</aside>
+      </section>
+
+      <!-- POLL 3 (vertical stack) -->
+      <section>
+        <section id="poll-3" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: GARCH Interpretation</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 20px; margin-top: 15px;">
+            <p style="font-size: 16pt;">GARCH(1,1) on S&amp;P 500: $\alpha = 0.09$, $\beta = 0.90$.</p>
+            <p style="font-size: 16pt; font-weight: 600; margin-top: 12px;">What does $\alpha + \beta = 0.99$ tell you?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; font-size: 14pt;">
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">A) Nearly non-stationary &mdash; shocks extremely persistent</div>
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">B) Model fits perfectly (99% explained)</div>
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">C) No volatility clustering</div>
+            <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px;">D) Model failed diagnostics</div>
+          </div>
+          <aside class="notes">Ask for show of hands. Option B is the tempting wrong answer — confuses alpha+beta with R-squared.</aside>
+        </section>
+        <section id="poll-3-reveal">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: A &mdash; Nearly non-stationary</h2>
+          <div style="padding: 20px 60px;">
+            <p style="font-size: 15pt; line-height: 1.7;">$\alpha + \beta$ close to 1 means volatility shocks decay extremely slowly. <strong>Half-life &asymp; 69 days.</strong> A sudden crash elevates volatility for months, not days.</p>
+            <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 16px 20px; border-radius: 8px; margin: 16px 0;">
+              <p style="font-size: 14pt; margin: 0;"><strong>Why not B?</strong> $\alpha + \beta$ is <em>not</em> $R^2$. It measures <strong>persistence</strong> of volatility shocks, not goodness of fit. This is one of the most common misinterpretations in financial econometrics.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- SLIDE 30: Key Takeaways -->
+      <section id="takeaways" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>1.</strong> ARIMA = autoregressive <em>momentum</em> ($\phi$) + moving average <em>correction</em> ($\theta$), after differencing for stationarity</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>2.</strong> Box-Jenkins is a <em>cycle</em>, not a command. <code>auto_arima</code> = Step 2 only.</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>3.</strong> Prophet trades parametric interpretability for automated decomposition at scale (L1 changepoints)</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--primary-color);">
+            <p style="font-size: 14pt;"><strong>4.</strong> MASE benchmarks against seasonal naive. &lt; 1 = adds value. &gt; 1 = worse than doing nothing.</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid #7f8c8d;">
+            <p style="font-size: 14pt;"><strong>5.</strong> No single model wins everywhere. Walmart's hybrid reduced costs by 75&ndash;90%.</p>
+          </div>
+        </div>
+        <aside class="notes">Read each slowly. These are the 5 sentences students should carry out of the room.</aside>
+      </section>
+
+      <!-- SLIDE 31: Exit Ticket -->
+      <section id="exit-ticket" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
+        <div style="display: flex; flex-direction: column; gap: 18px; margin-top: 25px;">
+          <div style="background: #f0f4f8; border-radius: 8px; padding: 20px 25px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 600;">1. Write the MASE formula from memory.</p>
+            <p style="font-size: 14pt; color: var(--muted-color); margin-top: 6px;">Label the numerator and denominator.</p>
+          </div>
+          <div style="background: #f0f4f8; border-radius: 8px; padding: 20px 25px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 600;">2. Interpret MASE = 0.7 in one sentence.</p>
+            <p style="font-size: 14pt; color: var(--muted-color); margin-top: 6px;">"My forecast errors are ____% smaller than ____."</p>
+          </div>
+          <div style="background: #f0f4f8; border-radius: 8px; padding: 20px 25px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 600;">3. When would you choose Prophet over ARIMA?</p>
+            <p style="font-size: 14pt; color: var(--muted-color); margin-top: 6px;">Name one scenario.</p>
+          </div>
+        </div>
+        <aside class="notes">2 minutes. Collect on paper or device. Target answers: (1) MASE formula with labeled parts. (2) "30% smaller than seasonal naive." (3) Many series at scale, or irregular changepoints.</aside>
+      </section>
+
     </div>
   </div>
 
-  <script src="viewer.js"></script>
+  <!-- Reveal.js -->
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      width: 1280,
+      height: 720,
+      margin: 0.04,
+      center: false,
+      transition: 'none',
+      plugins: [RevealNotes]
+    });
+  </script>
 </body>
 </html>
