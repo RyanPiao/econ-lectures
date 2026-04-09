@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time Series I: Trends and Decomposition</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- SLIDE 1: Cover -->
+      <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+        <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML & Applied Analytics &bull; Chapter 20</p>
+            <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Time Series I:<br>Trends and Decomposition</h1>
+            <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 0;"></div>
+            <div style="margin-top: auto; padding-bottom: 15px;">
+              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+              <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+            </div>
+          </div>
+          <div style="overflow: hidden;">
+            <img src="figures/ch20-gemini-ts-anatomy.png" alt="Time series anatomy illustration"
+                 style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 2: Learning Objectives -->
+      <section id="learning-objectives" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">LO1</p>
+            <p style="font-size: 15pt;"><strong>Understand</strong> the three components of a time series and why <strong>temporal dependence</strong> invalidates cross-sectional methods</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">LO2</p>
+            <p style="font-size: 15pt;"><strong>Apply</strong> STL decomposition in Python and interpret trend, seasonality, and residual components</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">LO3</p>
+            <p style="font-size: 15pt;"><strong>Analyze</strong> stationarity using ADF + KPSS tests together and determine the correct differencing order</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">LO4</p>
+            <p style="font-size: 15pt;"><strong>Evaluate</strong> structural breaks with Chow test and <code>ruptures</code>, and assess post-break model validity</p>
+          </div>
+        </div>
+        <aside class="notes">Read each LO. Emphasize: "By the end of today, you will have a complete diagnostic toolkit for time series."</aside>
+      </section>
+
+      <!-- SLIDE 3: Retrieval Practice -->
+      <section id="retrieval" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+        <div style="margin-top: 30px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-bottom: 20px;">
+            <p class="text-lg"><strong>Quick Check 1:</strong> In Ch 19, we used <code>GridSearchCV</code> with random shuffling to tune Random Forests. What <strong>assumption about the data</strong> made that safe?</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px;">
+            <p class="text-lg"><strong>Quick Check 2:</strong> In Ch 7, the bootstrap resampled <strong>individual observations</strong>. Why does reordering them preserve the data's properties?</p>
+          </div>
+        </div>
+        <p style="margin-top: 25px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both answers: <strong>independence</strong>. Today, that assumption breaks.</p>
+        <aside class="notes">1 min verbal. Target: "Observations were independent — shuffling preserves statistical properties." Transition: "Today we enter a world where order IS information."</aside>
+      </section>
+
+      <!-- SLIDE 4: Opening Hook -->
+      <section id="hook" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-chart-line" style="color: var(--danger-color);"></i> The Fed's Worst Miss in 40 Years</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+          <div>
+            <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 15px;">
+              <p style="font-size: 40pt; font-weight: 700; color: var(--danger-color);">2.7pp</p>
+              <p style="font-size: 14pt; color: #7f1d1d;">Fed's inflation forecast miss (2021)</p>
+              <p style="font-size: 12pt; color: #991b1b;">Projected 1.8% &rarr; Actual 4.5%</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); border-radius: 12px; padding: 25px; text-align: center;">
+              <p style="font-size: 40pt; font-weight: 700; color: var(--danger-color);">6.8pp</p>
+              <p style="font-size: 14pt; color: #7f1d1d;">Bank of England miss (2022)</p>
+              <p style="font-size: 12pt; color: #991b1b;">Projected 4.0% &rarr; Actual 10.8%</p>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; justify-content: center;">
+            <p class="text-lg" style="line-height: 1.6;">The world's most sophisticated models failed because they assumed <strong>stationarity</strong> &mdash; that the rules governing inflation were stable.</p>
+            <p class="text-lg" style="line-height: 1.6; margin-top: 15px;">COVID created a <strong>structural break</strong>: supply shocks + $5T fiscal stimulus + labor shifts changed the data-generating process.</p>
+            <p style="margin-top: 15px; font-size: 14pt; color: var(--muted-color); font-style: italic;">Gourio & Sarma 2025: Households outpredicted the experts.</p>
+          </div>
+        </div>
+        <aside class="notes">4 min. Dramatic opening. Pause after "2.7 percentage points." Let it sink in. "These aren't amateurs. These are hundreds of PhD economists."</aside>
+      </section>
+
+      <!-- DIVIDER: Section 1 -->
+      <section id="divider-grammar" class="section-divider" data-state="is-section-divider">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 1</p>
+        <h1 style="font-size: 38pt;">The Grammar of Time Series</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">Three components. One lag operator. Memory matters.</p>
+      </section>
+
+      <!-- SLIDE: Three Components -->
+      <section id="components" style="padding: 40px 50px;">
+        <h2>Every Time Series = Three Components</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 25px;">
+          <div class="fragment" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px; padding: 25px; text-align: center;">
+            <p style="font-size: 28pt;"><i class="fa-solid fa-arrow-trend-up" style="color: #1e40af;"></i></p>
+            <p style="font-size: 18pt; font-weight: 700; color: #1e40af;">Trend $T_t$</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Long-run direction. Is GDP growing? Is ridership declining?</p>
+          </div>
+          <div class="fragment" style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); border-radius: 12px; padding: 25px; text-align: center;">
+            <p style="font-size: 28pt;"><i class="fa-solid fa-wave-square" style="color: #047857;"></i></p>
+            <p style="font-size: 18pt; font-weight: 700; color: #047857;">Seasonality $S_t$</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Repeating patterns. December retail spikes. January unemployment claims.</p>
+          </div>
+          <div class="fragment" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 25px; text-align: center;">
+            <p style="font-size: 28pt;"><i class="fa-solid fa-cloud" style="color: #92400e;"></i></p>
+            <p style="font-size: 18pt; font-weight: 700; color: #92400e;">Residual $R_t$</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Everything left. Noise + structure you missed.</p>
+          </div>
+        </div>
+        <div class="fragment" style="text-align: center; margin-top: 25px; background: #f8f6f3; border-radius: 8px; padding: 18px;">
+          <p style="font-size: 22pt;">$$Y_t = T_t + S_t + R_t$$</p>
+          <p style="font-size: 14pt; color: var(--muted-color);">Additive decomposition &mdash; the foundation of everything that follows</p>
+        </div>
+        <aside class="notes">Progressive build: reveal each component one at a time. Draw on board: trend line + seasonal wave + noise cloud = observed. "This visual is the conceptual anchor for the whole chapter."</aside>
+      </section>
+
+      <!-- SLIDE: Lag Operator -->
+      <section id="lag-operator" style="padding: 40px 60px;">
+        <h2>The Lag Operator $L$</h2>
+        <div style="margin-top: 20px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 25px 30px; margin-bottom: 20px;">
+            <p style="font-size: 20pt; text-align: center;">$$Ly_t = y_{t-1} \qquad L^k y_t = y_{t-k}$$</p>
+            <p style="font-size: 15pt; text-align: center; color: var(--muted-color); margin-top: 10px;">$L$ simply "looks backward" one period</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="background: #eef2ff; border-radius: 8px; padding: 20px;">
+              <p style="font-size: 14pt; font-weight: 600; color: var(--secondary-color);">Differencing</p>
+              <p style="font-size: 16pt;">$\Delta y_t = y_t - Ly_t = (1-L)y_t$</p>
+              <p style="font-size: 13pt; color: var(--muted-color);">Today minus yesterday</p>
+            </div>
+            <div style="background: #fef3c7; border-radius: 8px; padding: 20px;">
+              <p style="font-size: 14pt; font-weight: 600; color: #92400e;">Why it matters</p>
+              <p style="font-size: 14pt;">In Ch 21, $L$ becomes the backbone of ARIMA: $\phi(L)y_t = \theta(L)\varepsilon_t$</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Write L on the board. Physically point backward. "L literally means look backward one step." Keep this brief — 2 min.</aside>
+      </section>
+
+      <!-- SLIDE: Key Concept Box -->
+      <section id="temporal-dependence" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Key Concept: Temporal Dependence</h2>
+        <div style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 30px; margin-top: 25px;">
+          <p class="text-lg" style="line-height: 1.7;">Time series observations are <strong>not independent</strong>. Each value depends on its predecessors through $L$. This invalidates:</p>
+          <ul style="margin-top: 15px; font-size: 16pt; line-height: 1.8;">
+            <li><strong>Random shuffling</strong> in cross-validation (Ch 15)</li>
+            <li><strong>Standard bootstrap</strong> resampling (Ch 7)</li>
+            <li><strong>i.i.d. error assumptions</strong> of OLS (Ch 12)</li>
+          </ul>
+          <p class="text-lg" style="margin-top: 15px; font-weight: 600; color: var(--danger-color);">From today forward: every method must respect chronological order.</p>
+        </div>
+        <aside class="notes">This is the bridge from Ch 12-19 to Ch 20+. Emphasize the break: "Everything you learned still works. But the rules of APPLICATION change."</aside>
+      </section>
+
+      <!-- SLIDE: Poll 1 -->
+      <section id="poll-1" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Class Poll</h2>
+        <p class="text-lg" style="margin: 20px 0;">A retail chain's December revenue is <strong>always 20% higher</strong> than November. In 2024, December was <strong>35% higher</strong>. Which component explains the <em>extra</em> 15%?</p>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 900px; margin: 0 auto;">
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #eef2ff; border: 2px solid #c7d2fe;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">A</p>
+            <p style="font-size: 15pt;">Trend &mdash; the economy is growing faster</p>
+          </div>
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #eef2ff; border: 2px solid #c7d2fe;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">B</p>
+            <p style="font-size: 15pt;">Seasonality &mdash; December is always high</p>
+          </div>
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #d1fae5; border: 2px solid #6ee7b7;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">C &#10004;</p>
+            <p style="font-size: 15pt;">Residual &mdash; something unusual happened</p>
+          </div>
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #eef2ff; border: 2px solid #c7d2fe;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">D</p>
+            <p style="font-size: 15pt;">Structural break &mdash; pattern permanently changed</p>
+          </div>
+        </div>
+        <aside class="notes">3 min. The 20% is seasonality. The extra 15% is residual. D is the tempting wrong answer — one data point isn't enough to call a structural break.</aside>
+      </section>
+
+      <!-- DIVIDER: Section 2 -->
+      <section id="divider-decomposition" class="section-divider" data-state="is-section-divider">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 2</p>
+        <h1 style="font-size: 38pt;">Decomposition</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">Taking the series apart to find the surprise</p>
+      </section>
+
+      <!-- SLIDE: STL Decomposition -->
+      <section id="stl" style="padding: 35px 50px;">
+        <h2>STL Decomposition</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 15px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;"><strong>STL</strong> (Cleveland et al. 1990) uses LOESS regression to estimate trend and seasonal components. Three advantages over classical:</p>
+            <ul style="font-size: 14pt; line-height: 1.8; margin-top: 10px;">
+              <li class="fragment">Trend can be <strong>nonlinear</strong></li>
+              <li class="fragment">Seasonal pattern can <strong>evolve</strong> over time</li>
+              <li class="fragment"><code>robust=True</code> <strong>downweights outliers</strong></li>
+            </ul>
+            <div class="fragment" style="background: #fef3c7; border-radius: 8px; padding: 15px; margin-top: 15px;">
+              <p style="font-size: 13pt;"><strong>Additive vs. Multiplicative:</strong> If seasonal swings grow with the level &rarr; multiplicative (or log + additive)</p>
+            </div>
+          </div>
+          <div>
+            <img src="figures/ch20-retail-stl.png" alt="STL decomposition of U.S. retail sales showing 4 panels" style="width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          </div>
+        </div>
+        <aside class="notes">Run STL code live. Show 4-panel plot. Ask: "What do you see in the residual?" March 2020 spike is obvious.</aside>
+      </section>
+
+      <!-- SLIDE: Worked Example -->
+      <section id="worked-example" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> Reading a Decomposition</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px;">
+          <div style="background: #f0fdf4; border-radius: 12px; padding: 25px; border: 1px solid #bbf7d0;">
+            <p style="font-size: 16pt; font-weight: 700; color: #166534;">December 2019 (Normal)</p>
+            <table style="font-size: 14pt; width: 100%; margin-top: 10px;">
+              <tr><td>Trend:</td><td style="text-align: right; font-weight: 600;">$460B</td></tr>
+              <tr><td>Seasonal:</td><td style="text-align: right; font-weight: 600;">+$85B</td></tr>
+              <tr><td>Residual:</td><td style="text-align: right; font-weight: 600;">+$3B</td></tr>
+              <tr style="border-top: 2px solid #166534;"><td><strong>Observed:</strong></td><td style="text-align: right; font-weight: 700;">$548B</td></tr>
+            </table>
+            <p style="font-size: 13pt; color: #166534; margin-top: 10px;">Only $3B is genuinely new information</p>
+          </div>
+          <div style="background: #fef2f2; border-radius: 12px; padding: 25px; border: 1px solid #fecaca;">
+            <p style="font-size: 16pt; font-weight: 700; color: #991b1b;">March 2020 (COVID)</p>
+            <table style="font-size: 14pt; width: 100%; margin-top: 10px;">
+              <tr><td>Trend:</td><td style="text-align: right; font-weight: 600;">$465B</td></tr>
+              <tr><td>Seasonal:</td><td style="text-align: right; font-weight: 600;">-$15B</td></tr>
+              <tr><td style="color: var(--danger-color);">Residual:</td><td style="text-align: right; font-weight: 700; color: var(--danger-color);">-$90B</td></tr>
+              <tr style="border-top: 2px solid #991b1b;"><td><strong>Observed:</strong></td><td style="text-align: right; font-weight: 700;">$360B</td></tr>
+            </table>
+            <p style="font-size: 13pt; color: #991b1b; margin-top: 10px;">$90B residual screams "something abnormal"</p>
+          </div>
+        </div>
+        <aside class="notes">Walk through both columns. "The robust option keeps the trend estimate stable — it doesn't absorb the COVID shock."</aside>
+      </section>
+
+      <!-- SLIDE: Discussion 1 -->
+      <section id="discussion-1" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> In-Class Discussion</h2>
+        <div style="background: #eef2ff; border-radius: 12px; padding: 30px; margin-top: 25px; border-left: 5px solid var(--secondary-color);">
+          <p class="text-xl" style="line-height: 1.6;">You decompose MBTA subway ridership using STL and find a <strong>-200,000 daily trips</strong> residual for March 16, 2020.</p>
+          <p class="text-xl" style="line-height: 1.6; margin-top: 15px;">Your colleague says the decomposition is <strong>"broken"</strong> because the residual is too large.</p>
+          <p class="text-xl" style="line-height: 1.6; margin-top: 15px; color: var(--secondary-color); font-weight: 600;">Is the decomposition broken? What does a massive residual actually tell you?</p>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px; align-items: center;">
+          <span style="background: var(--secondary-color); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13pt;">Think-Pair-Share</span>
+          <span style="background: #f8f6f3; padding: 6px 14px; border-radius: 20px; font-size: 13pt;">5 min</span>
+        </div>
+        <aside class="notes">Key insight: large residual = decomposition working correctly. It identified an event outside normal trend + seasonal patterns. The alternative — absorbing COVID into the trend — would be WORSE.</aside>
+      </section>
+
+      <!-- SLIDE: Discussion 1 Debrief -->
+      <section id="debrief-1" style="padding: 40px 60px;">
+        <h2>Debrief: The Residual Is a Feature, Not a Bug</h2>
+        <div style="margin-top: 20px;">
+          <div style="background: #d1fae5; border-radius: 8px; padding: 20px; margin-bottom: 15px;">
+            <p style="font-size: 16pt;"><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> A massive residual means the decomposition <strong>correctly identified</strong> an extraordinary event</p>
+          </div>
+          <div style="background: #fef2f2; border-radius: 8px; padding: 20px; margin-bottom: 15px;">
+            <p style="font-size: 16pt;"><i class="fa-solid fa-xmark-circle" style="color: var(--danger-color);"></i> Absorbing COVID into the trend would <strong>distort</strong> the entire trend estimate</p>
+          </div>
+          <p class="text-lg" style="margin-top: 20px; color: var(--primary-color);">But how do we know whether the <em>remaining</em> signal is stationary?</p>
+        </div>
+        <aside class="notes">Transition: "We separated the components. Now we test whether what's left is stable enough to model."</aside>
+      </section>
+
+      <!-- DIVIDER: Section 3 -->
+      <section id="divider-stationarity" class="section-divider" data-state="is-section-divider">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 3</p>
+        <h1 style="font-size: 38pt;">Stationarity</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">The foundation of forecasting</p>
+      </section>
+
+      <!-- SLIDE: Stationarity Concept -->
+      <section id="stationarity-concept" style="padding: 35px 50px;">
+        <h2>What Is Stationarity?</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 15px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">A stationary series has <strong>stable statistical properties</strong> over time:</p>
+            <ol style="font-size: 14pt; line-height: 1.8; margin-top: 10px;">
+              <li>$E[Y_t] = \mu$ &mdash; <strong>constant mean</strong></li>
+              <li>$\text{Var}(Y_t) = \sigma^2$ &mdash; <strong>constant variance</strong></li>
+              <li>$\text{Cov}(Y_t, Y_{t-k}) = \gamma(k)$ &mdash; depends only on lag $k$</li>
+            </ol>
+            <div class="fragment" style="background: #fef3c7; border-radius: 8px; padding: 15px; margin-top: 15px;">
+              <p style="font-size: 14pt;"><strong>Why it matters:</strong> Models learn patterns from the past. If patterns change, the model learns rules that <em>expire</em>.</p>
+            </div>
+          </div>
+          <div>
+            <img src="figures/ch20-gemini-stationarity-concept.png" alt="Stationarity concept — stable vs drifting series" style="width: 100%; border-radius: 8px;">
+          </div>
+        </div>
+        <aside class="notes">"If you estimate 2.5% growth from 2010-2019 data, you assume the process is stable. If a break occurred in 2020, your estimate describes a world that no longer exists."</aside>
+      </section>
+
+      <!-- SLIDE: Random Walk + Differencing -->
+      <section id="random-walk" style="padding: 40px 50px;">
+        <h2>The Random Walk &amp; Differencing</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px;">
+          <div style="background: #fef2f2; border-radius: 12px; padding: 25px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">Random Walk (Non-Stationary)</p>
+            <p style="font-size: 18pt; text-align: center; margin: 15px 0;">$Y_t = Y_{t-1} + \varepsilon_t$</p>
+            <ul style="font-size: 14pt; line-height: 1.7;">
+              <li>No tendency to revert to any level</li>
+              <li>Variance grows: $\text{Var}(Y_t) = t\sigma^2$</li>
+              <li>Wanders aimlessly</li>
+            </ul>
+          </div>
+          <div style="background: #d1fae5; border-radius: 12px; padding: 25px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">After Differencing (Stationary)</p>
+            <p style="font-size: 18pt; text-align: center; margin: 15px 0;">$\Delta Y_t = \varepsilon_t$</p>
+            <ul style="font-size: 14pt; line-height: 1.7;">
+              <li>White noise: zero mean, constant variance</li>
+              <li>If $d$ differences needed: series is $I(d)$</li>
+              <li>GDP levels: $I(1)$. GDP growth: $I(0)$.</li>
+            </ul>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 15px;">
+          <img src="figures/ch20-stationarity-before-after.png" alt="GDP levels (non-stationary) vs first differences (stationary)" style="max-height: 200px; border-radius: 8px;">
+        </div>
+        <aside class="notes">Show GDP levels vs differences on board. "The visual contrast is immediate: one trends up, the other fluctuates around zero."</aside>
+      </section>
+
+      <!-- SLIDE: ADF/KPSS Diagnostic Table -->
+      <section id="adf-kpss" style="padding: 35px 50px;">
+        <h2><i class="fa-solid fa-table" style="color: var(--accent-color);"></i> The ADF/KPSS Diagnostic Table</h2>
+        <p style="font-size: 14pt; color: var(--muted-color); margin-bottom: 10px;">Two tests with <strong>opposite null hypotheses</strong> &mdash; same logic as precision + recall (Ch 18)</p>
+        <div style="text-align: center;">
+          <img src="figures/ch20-adf-kpss-diagnostic-table.png" alt="ADF/KPSS 2x2 diagnostic table with four conclusions and recommended actions" style="max-height: 420px; border-radius: 8px;">
+        </div>
+        <p style="font-size: 14pt; text-align: center; margin-top: 10px; font-weight: 600; color: var(--primary-color);">This is the single most important reference from today. Memorize it.</p>
+        <aside class="notes">Write this table on the board. Walk through all four cells. "ADF tests for a unit root (H0: non-stationary). KPSS tests for stationarity (H0: stationary). When they agree, you're confident."</aside>
+      </section>
+
+      <!-- SLIDE: Code Demo -->
+      <section id="stationarity-code" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-code" style="color: var(--secondary-color);"></i> Testing GDP Stationarity</h2>
+        <div style="background: #1e1e2e; border-radius: 10px; padding: 20px 25px; margin-top: 15px;">
+          <pre style="font-size: 13pt; color: #cdd6f4; line-height: 1.5; margin: 0;"><code style="font-family: 'JetBrains Mono', monospace;">from statsmodels.tsa.stattools import adfuller, kpss
+
+# GDP Levels
+adf_p = adfuller(gdp.dropna(), autolag='AIC')[1]
+kpss_p = kpss(gdp.dropna(), regression='c')[1]
+# ADF p=0.99, KPSS p=0.01 → NON-STATIONARY
+
+# GDP First Differences
+adf_p = adfuller(gdp.diff().dropna())[1]
+kpss_p = kpss(gdp.diff().dropna())[1]
+# ADF p=0.0001, KPSS p=0.10 → STATIONARY ✓</code></pre>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+          <div style="background: #fef2f2; border-radius: 8px; padding: 15px; text-align: center;">
+            <p style="font-size: 14pt;"><strong>Levels:</strong> ADF fail, KPSS reject → <span style="color: var(--danger-color); font-weight: 700;">Non-Stationary</span></p>
+          </div>
+          <div style="background: #d1fae5; border-radius: 8px; padding: 15px; text-align: center;">
+            <p style="font-size: 14pt;"><strong>Differences:</strong> ADF reject, KPSS fail → <span style="color: var(--success-color); font-weight: 700;">Stationary ✓</span></p>
+          </div>
+        </div>
+        <aside class="notes">Run this live. Show that GDP levels fail the test, differences pass. "GDP is I(1) — its first difference is the modeling target."</aside>
+      </section>
+
+      <!-- SLIDE: Poll 2 -->
+      <section id="poll-2" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Class Poll</h2>
+        <p class="text-lg" style="margin: 20px 0;">You test monthly CPI: <strong>ADF fails to reject</strong> (p=0.42). <strong>KPSS rejects</strong> (p=0.01). Diagnosis?</p>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 900px; margin: 0 auto;">
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #eef2ff; border: 2px solid #c7d2fe;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">A</p>
+            <p style="font-size: 15pt;">Stationary &mdash; safe to model</p>
+          </div>
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #d1fae5; border: 2px solid #6ee7b7;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">B &#10004;</p>
+            <p style="font-size: 15pt;">Non-stationary &mdash; difference it</p>
+          </div>
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #eef2ff; border: 2px solid #c7d2fe;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">C</p>
+            <p style="font-size: 15pt;">Trend-stationary &mdash; detrend it</p>
+          </div>
+          <div style="padding: 20px; border-radius: 10px; text-align: center; background: #eef2ff; border: 2px solid #c7d2fe;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">D</p>
+            <p style="font-size: 15pt;">Inconclusive &mdash; tests contradict</p>
+          </div>
+        </div>
+        <aside class="notes">D is the tempting wrong answer. "Opposite null hypotheses" ≠ "contradictory results." Both tests point the same direction: non-stationary. They AGREE.</aside>
+      </section>
+
+      <!-- DIVIDER: Section 4 -->
+      <section id="divider-breaks" class="section-divider" data-state="is-section-divider">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 4</p>
+        <h1 style="font-size: 38pt;">Structural Breaks</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">When the rules of the game change permanently</p>
+      </section>
+
+      <!-- SLIDE: Break Types -->
+      <section id="break-types" style="padding: 40px 50px;">
+        <h2>Types of Structural Breaks</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+          <div style="background: #eef2ff; border-radius: 10px; padding: 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700;"><i class="fa-solid fa-arrow-up" style="color: var(--secondary-color);"></i> Level Shift</p>
+            <p style="font-size: 14pt; margin-top: 8px;">MBTA ridership: 600K &rarr; 50K overnight, recovered to only 400K (permanent -30%)</p>
+          </div>
+          <div style="background: #fef3c7; border-radius: 10px; padding: 20px; border-left: 4px solid #92400e;">
+            <p style="font-size: 16pt; font-weight: 700;"><i class="fa-solid fa-chart-line" style="color: #92400e;"></i> Trend Break</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Nvidia: linear growth &rarr; exponential after ChatGPT. Growth <em>rate</em> permanently changed.</p>
+          </div>
+          <div style="background: #fef2f2; border-radius: 10px; padding: 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700;"><i class="fa-solid fa-wave-square" style="color: var(--danger-color);"></i> Variance Break</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Stock volatility: 15% &rarr; 80%+ during 2008 and 2020 crises.</p>
+          </div>
+          <div style="background: #f3e8ff; border-radius: 10px; padding: 20px; border-left: 4px solid #7c3aed;">
+            <p style="font-size: 16pt; font-weight: 700;"><i class="fa-solid fa-link-slash" style="color: #7c3aed;"></i> Parameter Break</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Phillips Curve: unemployment 3.4% + inflation >3% contradicted all pre-COVID models.</p>
+          </div>
+        </div>
+        <aside class="notes">Go through each type quickly. "All four share one property: models trained on pre-break data are WRONG after the break."</aside>
+      </section>
+
+      <!-- SLIDE: Nvidia Case Study -->
+      <section id="nvidia" style="padding: 35px 50px;">
+        <h2><i class="fa-solid fa-microchip" style="color: var(--accent-color);"></i> Case Study: Nvidia's Post-ChatGPT Break</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 10px;">
+          <div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+              <div style="background: #f8f6f3; border-radius: 8px; padding: 12px; text-align: center;">
+                <p style="font-size: 22pt; font-weight: 700; color: var(--primary-color);">$3.6B</p>
+                <p style="font-size: 11pt; color: var(--muted-color);">Q3 2022</p>
+              </div>
+              <div style="background: #fef3c7; border-radius: 8px; padding: 12px; text-align: center;">
+                <p style="font-size: 22pt; font-weight: 700; color: #92400e;">$10.3B</p>
+                <p style="font-size: 11pt; color: var(--muted-color);">Q1 2023</p>
+              </div>
+              <div style="background: #d1fae5; border-radius: 8px; padding: 12px; text-align: center;">
+                <p style="font-size: 22pt; font-weight: 700; color: #166534;">$18.4B</p>
+                <p style="font-size: 11pt; color: var(--muted-color);">Q2 2023</p>
+              </div>
+            </div>
+            <p style="font-size: 14pt; line-height: 1.6;">Any AR model trained on 2018&ndash;2022 data would forecast ~$4&ndash;5B for Q2 2023. Actual: $18.4B &mdash; <strong>missing by 4&times;</strong>.</p>
+            <p style="font-size: 14pt; line-height: 1.6; margin-top: 10px;">The ChatGPT launch was a single <strong>exogenous technology shock</strong> that permanently elevated the series to a new regime.</p>
+          </div>
+          <div>
+            <img src="figures/ch20-nvidia-break.png" alt="Nvidia revenue with PELT change-point detection showing break at ChatGPT launch" style="width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          </div>
+        </div>
+        <aside class="notes">This is the anchor example. "If you trained ARIMA on pre-ChatGPT data, what would it forecast? About $4B. The actual was $18.4B."</aside>
+      </section>
+
+      <!-- SLIDE: Peloton Trap -->
+      <section id="peloton" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-bicycle" style="color: var(--danger-color);"></i> The Peloton Trap: Trend vs. Level Shift</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px;">
+          <div style="background: #d1fae5; border-radius: 12px; padding: 25px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">Nvidia = Trend Break &#10004;</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Growth rate permanently increased. AI demand is not reverting.</p>
+            <p style="font-size: 14pt; margin-top: 8px;">STL trend: <strong>new, steeper slope</strong></p>
+          </div>
+          <div style="background: #fef2f2; border-radius: 12px; padding: 25px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">Peloton = Level Shift &#10008;</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Revenue doubled in 2020, but reverted when gyms reopened.</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Result: <strong>$2.8B loss, stock -95%</strong></p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 18px; margin-top: 20px; text-align: center;">
+          <p style="font-size: 16pt;"><strong>The test:</strong> If STL trend shows a permanent new slope &rarr; trend change. If trend returns to pre-shock trajectory &rarr; temporary level shift.</p>
+        </div>
+        <aside class="notes">"Same apparent pattern — revenue doubling. Opposite reality. One was permanent, one was temporary. How do you tell? Test it."</aside>
+      </section>
+
+      <!-- SLIDE: ruptures Code -->
+      <section id="ruptures-code" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-code" style="color: var(--secondary-color);"></i> Detecting Breaks with <code>ruptures</code></h2>
+        <div style="background: #1e1e2e; border-radius: 10px; padding: 20px 25px; margin-top: 15px;">
+          <pre style="font-size: 13pt; color: #cdd6f4; line-height: 1.5; margin: 0;"><code style="font-family: 'JetBrains Mono', monospace;">import ruptures as rpt
+import numpy as np
+
+# Simulated Nvidia-like revenue
+pre  = np.random.normal(3.5, 0.5, 20)   # ~$3.5B
+post = np.random.normal(15.0, 3.0, 12)  # ~$15B
+data = np.concatenate([pre, post])
+
+# PELT algorithm: detect mean shifts
+algo = rpt.Pelt(model="l2").fit(data)
+breakpoints = algo.predict(pen=10)
+# → [20, 32]  ← break at quarter 20 ✓</code></pre>
+        </div>
+        <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin-top: 15px;">
+          <p style="font-size: 14pt;"><strong>pen parameter:</strong> Higher penalty = fewer, more confident breaks. Lower penalty = more sensitive detection. Always test multiple values.</p>
+        </div>
+        <aside class="notes">Run live. Show the break detection. "The algorithm found the break at exactly quarter 20 — where we planted it."</aside>
+      </section>
+
+      <!-- SLIDE: Discussion 2 -->
+      <section id="discussion-2" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> In-Class Discussion</h2>
+        <div style="background: #eef2ff; border-radius: 12px; padding: 30px; margin-top: 25px; border-left: 5px solid var(--secondary-color);">
+          <p class="text-xl" style="line-height: 1.6;">You're modeling post-COVID <strong>MBTA subway ridership</strong> for Boston's city budget planning. Recovery has stalled at ~70% of 2019 levels.</p>
+          <p class="text-xl" style="line-height: 1.6; margin-top: 15px; color: var(--secondary-color); font-weight: 600;">Would you use an <strong>expanding window</strong> (all history from 2010) or a <strong>sliding window</strong> (post-2020 only)? Defend your choice.</p>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px; align-items: center;">
+          <span style="background: var(--secondary-color); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13pt;">Open Discussion</span>
+          <span style="background: #f8f6f3; padding: 6px 14px; border-radius: 20px; font-size: 13pt;">5 min</span>
+        </div>
+        <aside class="notes">Call on 2-3 students. Key: expanding window argument = more data, more stable. Sliding window argument = old data describes a different world. Nuanced answer: depends on whether you believe the break is permanent.</aside>
+      </section>
+
+      <!-- SLIDE: TS Cross-Validation -->
+      <section id="ts-cv" style="padding: 40px 50px;">
+        <h2>Time Series Cross-Validation</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 15px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;"><strong>The rule from today forward:</strong> never shuffle time series data.</p>
+            <ul style="font-size: 14pt; line-height: 1.8; margin-top: 10px;">
+              <li><strong>Expanding window:</strong> Training set grows with each fold</li>
+              <li><strong>Sliding window:</strong> Fixed-length training window moves forward</li>
+              <li>Use sliding when old data describes a different regime</li>
+            </ul>
+            <div style="background: #fef2f2; border-radius: 8px; padding: 15px; margin-top: 15px;">
+              <p style="font-size: 14pt;"><code>TimeSeriesSplit</code> replaces <code>KFold</code>. <strong>Always.</strong></p>
+            </div>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 10px;">Full implementation in today's lab.</p>
+          </div>
+          <div>
+            <img src="figures/ch20-expanding-window-cv.png" alt="Expanding window cross-validation diagram showing growing training sets" style="width: 100%; border-radius: 8px;">
+          </div>
+        </div>
+        <aside class="notes">Brief — 2 min. "TimeSeriesSplit is your new default. Full implementation in the lab."</aside>
+      </section>
+
+      <!-- SLIDE: Key Takeaways -->
+      <section id="takeaways" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+          <div class="fragment" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;"><strong>Order matters.</strong> Time series observations depend on predecessors. Shuffling destroys information.</p>
+          </div>
+          <div class="fragment" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">2</p>
+            <p style="font-size: 15pt;"><strong>Decompose first.</strong> STL separates trend, seasonality, and residuals. The residual is your modeling target.</p>
+          </div>
+          <div class="fragment" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">3</p>
+            <p style="font-size: 15pt;"><strong>Test with ADF + KPSS.</strong> Opposite nulls catch different problems. The 2&times;2 table is your reference.</p>
+          </div>
+          <div class="fragment" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">4</p>
+            <p style="font-size: 15pt;"><strong>Detect breaks before forecasting.</strong> Pre-break parameters describe a world that may no longer exist.</p>
+          </div>
+          <div class="fragment" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">5</p>
+            <p style="font-size: 15pt;"><strong>Never shuffle time series.</strong> Use expanding or sliding window CV. <code>TimeSeriesSplit</code> is your new default.</p>
+          </div>
+        </div>
+        <aside class="notes">Progressive reveal. "These five sentences are the diagnostic toolkit. If you remember nothing else, remember the ADF/KPSS table."</aside>
+      </section>
+
+      <!-- SLIDE: Exit Ticket -->
+      <section id="exit-ticket" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket (2 min)</h2>
+        <div style="background: linear-gradient(135deg, #eef2ff, #dbeafe); border-radius: 12px; padding: 35px; margin-top: 30px; text-align: center;">
+          <p class="text-xl" style="line-height: 1.6;">Write the <strong>2&times;2 ADF/KPSS diagnostic table</strong> from memory.</p>
+          <p class="text-lg" style="margin-top: 15px; color: var(--muted-color);">For each of the four cells, write the <strong>conclusion</strong> and the <strong>recommended action</strong>.</p>
+        </div>
+        <div style="margin-top: 25px; text-align: center;">
+          <p style="font-size: 14pt; color: var(--muted-color);">Submit on paper or device &bull; Not graded &bull; Helps me see what landed</p>
+        </div>
+        <aside class="notes">2 min. Collect responses. This tests LO3 directly — can they reproduce the diagnostic framework without looking at the slide?</aside>
+      </section>
+
+      <!-- SLIDE: Looking Ahead -->
+      <section id="looking-ahead" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-road" style="color: var(--secondary-color);"></i> Next: Chapter 21</h2>
+        <div style="margin-top: 25px;">
+          <p class="text-lg" style="line-height: 1.7;">Today we learned to <strong>diagnose</strong> &mdash; decompose, test, detect.</p>
+          <p class="text-lg" style="line-height: 1.7; margin-top: 15px;">In Chapter 21, we build the <strong>treatment</strong>:</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <div style="background: #eef2ff; border-radius: 10px; padding: 20px; text-align: center;">
+              <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">ARIMA</p>
+              <p style="font-size: 14pt; margin-top: 8px;">Extends the lag operator $L$ to a full prediction engine</p>
+            </div>
+            <div style="background: #f3e8ff; border-radius: 10px; padding: 20px; text-align: center;">
+              <p style="font-size: 20pt; font-weight: 700; color: #7c3aed;">Prophet</p>
+              <p style="font-size: 14pt; margin-top: 8px;">Forecasting as regression with changepoints + Fourier seasonality</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">"Today was the diagnostic toolkit. Next time we build the models that operate on the clean signals you extracted today."</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+</body>
+</html>
