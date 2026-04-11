@@ -660,6 +660,7 @@
        Answer: B &mdash; AR(2)
       </h2>
       <div class="poll-results-chart" data-poll-id="ch21-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:180px; margin:15px 60px;"></div>
+      <div style="text-align:center; margin-top:8px;"><button onclick="clearPoll('ch21-poll-1')" style="font-size:10px; padding:3px 10px; border-radius:4px; border:1px solid #ccc; background:#f5f5f5; color:#888; cursor:pointer;">Reset votes</button></div>
       <div style="padding: 10px 60px;">
        <p style="font-size: 15pt; line-height: 1.7;">
         PACF cuts off at lag 2 + ACF decays slowly = textbook <strong>AR(2)</strong>. The PACF tells you the autoregressive order directly.
@@ -1202,6 +1203,7 @@
        Answer: B &mdash; Backtest both, compare MASE
       </h2>
       <div class="poll-results-chart" data-poll-id="ch21-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:180px; margin:15px 60px;"></div>
+      <div style="text-align:center; margin-top:8px;"><button onclick="clearPoll('ch21-poll-2')" style="font-size:10px; padding:3px 10px; border-radius:4px; border:1px solid #ccc; background:#f5f5f5; color:#888; cursor:pointer;">Reset votes</button></div>
       <div style="padding: 10px 60px;">
        <p style="font-size: 15pt; line-height: 1.7;">
         The answer is <strong>always</strong> "backtest both." No model wins universally. Let the data decide via MASE on held-out temporal folds.
@@ -1403,6 +1405,7 @@
        Answer: A &mdash; Nearly non-stationary
       </h2>
       <div class="poll-results-chart" data-poll-id="ch21-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:180px; margin:15px 60px;"></div>
+      <div style="text-align:center; margin-top:8px;"><button onclick="clearPoll('ch21-poll-3')" style="font-size:10px; padding:3px 10px; border-radius:4px; border:1px solid #ccc; background:#f5f5f5; color:#888; cursor:pointer;">Reset votes</button></div>
       <div style="padding: 10px 60px;">
        <p style="font-size: 15pt; line-height: 1.7;">
         $\alpha + \beta$ close to 1 means volatility shocks decay extremely slowly. <strong>Half-life &asymp; 69 days.</strong>
@@ -1641,6 +1644,20 @@
     }
 
     // --- Setup click handlers on poll options ---
+    // --- Clear votes for a poll ---
+    window.clearPoll = function(pollId) {
+      if (!confirm("Clear all votes for this poll?")) return;
+      supaFetch("DELETE", "poll_votes?poll_id=eq." + pollId).then(function() {
+        renderResults(pollId, {});
+        // Also re-enable voting for this user
+        delete voted[pollId];
+        var grid = document.querySelector('.poll-grid[data-poll-id="'+pollId+'"]');
+        if (grid) grid.querySelectorAll(".poll-option").forEach(function(o) {
+          o.classList.remove("disabled", "voted");
+        });
+      });
+    };
+
     document.querySelectorAll(".poll-grid").forEach(function(grid) {
       var pollId = grid.dataset.pollId;
       grid.querySelectorAll(".poll-option").forEach(function(opt) {
