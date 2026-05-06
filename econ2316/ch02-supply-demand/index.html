@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>
+   Supply, Demand, and Market Equilibrium &mdash; ECON 2316 Ch 2
+  </title>
+  <!-- Reveal.js core -->
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <!-- Custom styles -->
+  <link href="styles.css" rel="stylesheet">
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax for LaTeX equations -->
+  <script>
+   window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+      startup: { ready: () => { MathJax.startup.defaultReady(); } }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+   .timer-badge { display: inline-block; background: #f0f5f8; color: var(--secondary-color); padding: 6px 14px; border-radius: 16px; font-size: 12pt; font-weight: 600; }
+   .timer-badge i { margin-right: 6px; }
+  </style>
+ </head>
+ <body>
+  <div class="reveal">
+   <div class="slides">
+
+    <!-- ===== Slide 1 — Cover ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="title" style="padding: 0;">
+     <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+      <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+       <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">
+        ECON 2316 &bull; Microeconomic Theory &bull; Chapter 2
+       </p>
+       <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">
+        Supply, Demand, and Market Equilibrium
+       </h1>
+       <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; max-width: 460px; margin-top: 20px;">
+        From graphs to algebra &mdash; functions, integrals, and total differentiation.
+       </p>
+       <div style="margin-top: auto; padding-bottom: 15px;">
+        <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; margin-bottom: 8px;">
+         Dr. Richeng Piao
+        </p>
+        <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; line-height: 1.8;">
+         Department of Economics
+         <br>
+         Northeastern University &mdash; 100 min
+        </p>
+       </div>
+      </div>
+      <div style="overflow: hidden; background: linear-gradient(135deg, #1C2833 0%, #2E4053 50%, #5EA8A7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 30px;">
+       <i class="fa-solid fa-egg" style="font-size: 110pt; color: rgba(255,255,255,0.55); margin-bottom: 20px;"></i>
+       <p style="font-size: 14pt; opacity: 0.9; text-align: center; line-height: 1.5;">
+        From the FRED egg series to <br>the NYC congestion welfare integral.
+       </p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 2 — Learning Objectives ===== -->
+    <section id="learning-objectives" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 14px;">By the end of class today, you will be able to&hellip;</p>
+     <div style="display: flex; flex-direction: column; gap: 9px;">
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">2.1</p>
+       <p style="font-size: 14pt;"><strong>Express</strong> demand and supply as functions \(Q^d(p; \alpha_D)\) and \(Q^s(p; \alpha_S)\); solve a linear market for \(p^*\) and \(Q^*\) algebraically. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L3)</span></p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">2.2</p>
+       <p style="font-size: 14pt;"><strong>Compute</strong> consumer and producer surplus as integrals; recognize the triangle as the linear special case. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L3)</span></p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">2.3</p>
+       <p style="font-size: 14pt;"><strong>Derive</strong> comparative statics \(dp^*/d\alpha\) and \(dQ^*/d\alpha\) via total differentiation; sign both. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">2.4</p>
+       <p style="font-size: 14pt;"><strong>Distinguish</strong> "movement along" from "shift of" a curve as different partial derivatives; diagnose press headlines. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">2.5</p>
+       <p style="font-size: 14pt;"><strong>Critique</strong> linear-market predictions in light of constant-elasticity alternatives (preview of Ch 3). <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L5)</span></p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 3 — Retrieval Practice ===== -->
+    <section id="retrieval">
+     <h2><i class="fa-solid fa-rotate-right" style="color: var(--secondary-color);"></i> Retrieval Practice (3 min)</h2>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 12px;">Quick &mdash; no grade, just hands. Wake up your 1116 muscles.</p>
+     <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="background: #f0f5f8; padding: 14px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Q1 &mdash; Demand shifters</p>
+       <p style="font-size: 14pt;">Name <strong>two</strong> things that shift the demand curve.</p>
+      </div>
+      <div style="background: #f0f5f8; padding: 14px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Q2 &mdash; Eyeball equilibrium</p>
+       <p style="font-size: 14pt;">If \(Q^d = 100 - 2p\) and \(Q^s = 20 + p\), where does the market clear? <em>(Try in your head; we'll do it on a calculator next.)</em></p>
+      </div>
+      <div style="background: #f0f5f8; padding: 14px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Q3 &mdash; Surplus area</p>
+       <p style="font-size: 14pt;">Consumer surplus is the area where, exactly?</p>
+      </div>
+     </div>
+     <p style="font-size: 12pt; color: var(--muted-color); margin-top: 14px; font-style: italic;">Today: we promote curves to functions, areas to integrals, comparative-statics arrows to derivatives.</p>
+     <aside class="notes">Q1 target: income, prices of substitutes/complements, tastes, expectations, number of buyers. Q2: 100-2p = 20+p → p ≈ 26.67, Q ≈ 46.67. Q3: above price, below demand curve, between Q=0 and Q*. Bridge: same economics, sharper math.</aside>
+    </section>
+
+    <!-- ===== Slide 4 — Opening Hook ===== -->
+    <section id="opening-hook">
+     <h2><i class="fa-solid fa-egg" style="color: #f59e0b;"></i> The Grocery Manager in Spring 2026</h2>
+     <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.65;">
+        A category manager at a Midwestern supermarket chain prices her egg shelf for Q3 2026.
+       </p>
+       <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 13pt; line-height: 1.6;">
+         <strong>FRED APU0000708111</strong> &mdash; US retail egg price.<br>
+         &bull; Pre-2022 baseline: \$1.50&ndash;\$2.00<br>
+         &bull; January 2025 peak: <strong>\$4.95</strong><br>
+         &bull; April 2025: \$5.12<br>
+         &bull; March 2026: \$2.35
+        </p>
+       </div>
+       <p style="font-size: 14pt; line-height: 1.65; margin-top: 14px;">
+        Principles told her the <em>direction</em>. Her buyers want a <em>number</em>: where does the cost-of-goods line land in September?
+       </p>
+       <div style="background: #f0fdf4; padding: 12px 18px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-arrow-right" style="color: var(--success-color);"></i> <strong>Today's three tools:</strong> algebra, integrals, total differentiation.</p>
+       </div>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="FRED APU0000708111: US retail egg prices 2022-2026 with HPAI shock bands" src="figures/figure_003_egg_prices_fred.png" style="max-width: 100%; max-height: 460px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+     <aside class="notes">Anchor for the entire 100 min. We'll return to this chart at Walkthrough 2.5 (back out implied supply recovery from the price decline) and at the exit ticket.</aside>
+    </section>
+
+    <!-- ===== Slide 5 — Roadmap ===== -->
+    <section id="roadmap">
+     <h2><i class="fa-solid fa-route" style="color: var(--accent-color);"></i> Today's Roadmap</h2>
+     <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: grid; grid-template-columns: 80px 1fr; align-items: center; background: #f0f5f8; padding: 11px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color);">§2.1</p>
+       <p style="font-size: 14pt;">Demand and supply as <strong>functions</strong> &mdash; \(Q^d(p)\) vs \(p^d(Q)\).</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 80px 1fr; align-items: center; background: #f0f5f8; padding: 11px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color);">§2.2</p>
+       <p style="font-size: 14pt;"><strong>Market clearing</strong> by equation &mdash; \(p^* = (a-c)/(b+d)\).</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 80px 1fr; align-items: center; background: #f0f5f8; padding: 11px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color);">§2.3</p>
+       <p style="font-size: 14pt;"><strong>CS &amp; PS as integrals</strong> &mdash; triangle is the linear special case.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 80px 1fr; align-items: center; background: #f0f5f8; padding: 11px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color);">§2.4</p>
+       <p style="font-size: 14pt;"><strong>Comparative statics</strong> &mdash; total-differentiate the market-clearing equation.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 80px 1fr; align-items: center; background: #f0f5f8; padding: 11px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color);">§2.5</p>
+       <p style="font-size: 14pt;"><strong>Movement along</strong> vs <strong>shift</strong> &mdash; two different partial derivatives.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 80px 1fr; align-items: center; background: #f0f5f8; padding: 11px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color);">§2.6</p>
+       <p style="font-size: 14pt;"><strong>Beyond linear</strong> &mdash; constant-elasticity preview of Ch 3.</p>
+      </div>
+     </div>
+     <p style="font-size: 12pt; color: var(--muted-color); margin-top: 16px; text-align: center; font-style: italic;">4 polls &middot; 3 discussions &middot; 1 exit ticket &middot; 5-min break at 0:55</p>
+    </section>
+
+    <!-- ===== Section 1 divider ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-section-1">
+     <h1>&sect;2.1 &nbsp;Demand and Supply as Functions</h1>
+     <p style="font-size: 16pt; color: var(--muted-color); margin-top: 16px; text-align: center;">12 min &middot; Promoting curves to functions, with names and shifters</p>
+    </section>
+
+    <!-- ===== Slide 6 — §1 Why functions ===== -->
+    <section id="s1-intuition">
+     <h2>Why bother promoting demand to a function?</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 8px;">
+      <div style="background: #fef2f2; padding: 22px; border-radius: 10px; border-left: 4px solid var(--danger-color);">
+       <p style="font-size: 13pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Graph (Principles)</p>
+       <p style="font-size: 15pt; line-height: 1.6;">Direction questions:</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 6px; font-style: italic;">"Prices fell, so quantity demanded rose."</p>
+      </div>
+      <div style="background: #f0fdf4; padding: 22px; border-radius: 10px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 13pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Function (2316)</p>
+       <p style="font-size: 15pt; line-height: 1.6;">Magnitude questions:</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 6px; font-style: italic;">"At \(p = \$10\), \(Q^d = 150\) million dozens/wk."</p>
+      </div>
+     </div>
+     <div class="key-result" style="margin-top: 16px;">
+      <p><strong>The grocery manager needs the second.</strong> Every tool today &mdash; market clearing, surplus integrals, comparative statics &mdash; starts by treating demand and supply as functions.</p>
+     </div>
+    </section>
+
+    <!-- ===== Slide 7 — §1 The functions and their shifters ===== -->
+    <section id="s1-functions">
+     <h2>The two functions, with shifters</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 6px;">
+      <div style="background: #f8f6f3; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 15pt; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">Demand</p>
+       <p style="font-size: 18pt; text-align: center; margin: 12px 0;">\(Q^d(p; \alpha_D)\)</p>
+       <p style="font-size: 13pt; color: var(--muted-color); line-height: 1.55;"><strong>Own price</strong> \(p\) and a vector of <strong>demand shifters</strong> \(\alpha_D\): income, prices of substitutes &amp; complements, tastes, expectations, number of buyers.</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 15pt; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">Supply</p>
+       <p style="font-size: 18pt; text-align: center; margin: 12px 0;">\(Q^s(p; \alpha_S)\)</p>
+       <p style="font-size: 13pt; color: var(--muted-color); line-height: 1.55;">Same own price; <strong>supply shifters</strong> \(\alpha_S\): input prices, technology, number of sellers, expectations &mdash; and for our running example, the size of the laying flock.</p>
+      </div>
+     </div>
+     <div class="key-result" style="margin-top: 16px;">
+      <p><strong>Two derivatives, two meanings:</strong> \(\partial Q^d/\partial p\) is <em>movement along</em> (slope of demand curve, holding shifters fixed); \(\partial Q^d/\partial \alpha_D\) is <em>shift</em> (the whole curve moves). §2.5 hinges on this distinction.</p>
+     </div>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; text-align: center;">Workhorse all chapter: <strong>linear</strong> \(Q^d = a - bp\), \(Q^s = c + dp\) with \(a, b, c, d &gt; 0\).</p>
+    </section>
+
+    <!-- ===== Slide 8 — §1 Marshallian cross + inverse demand ===== -->
+    <section id="s1-inverse">
+     <h2>Inverse functions and the Marshallian cross</h2>
+     <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">The Marshallian cross plots <strong>inverses</strong>:</p>
+       <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 10px; margin-top: 8px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 13pt; margin: 0;"><strong>Inverse demand:</strong> \(p^d(Q)\). For \(Q^d = a - bp\), \(p^d(Q) = (a-Q)/b\).</p>
+        <p style="font-size: 13pt; margin: 8px 0 0;"><strong>Inverse supply:</strong> \(p^s(Q)\). For \(Q^s = c + dp\), \(p^s(Q) = (Q-c)/d\).</p>
+       </div>
+       <p style="font-size: 13pt; color: var(--muted-color); line-height: 1.6; margin-top: 12px;">Marshall (1890) thought of quantity as the independent variable: "for each \(Q\) brought to market, what is the demand price and the supply price?" &mdash; and put \(p\) vertically to match. We live with the convention because surplus integrals naturally take inverse demand as the integrand.</p>
+       <div class="key-result" style="margin-top: 12px;">
+        <p>Same functions, different axes. <strong>Solve for equilibrium with \(Q^d(p)\); compute surplus with \(p^d(Q)\).</strong></p>
+       </div>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="Side-by-side panels showing demand and supply as functions vs their inverses" src="figures/figure_001_demand_supply_functions.png" style="max-width: 100%; max-height: 480px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 9 — §1 Heads Up 2.1 ===== -->
+    <section id="s1-headsup-1">
+     <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Heads Up 2.1 &mdash; \(Q^d(p)\) is not \(p^d(Q)\)</h2>
+     <div class="misconception" style="margin-top: 14px;">
+      <p><strong>The single most common source of wrong-surplus errors.</strong> They're reciprocals in the linear case but they're <em>different functions</em>.</p>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+      <div style="background: #f8f6f3; padding: 18px 22px; border-radius: 10px;">
+       <p style="font-size: 13pt; font-weight: 600; color: var(--primary-color);">Same numbers, two objects</p>
+       <p style="font-size: 14pt; line-height: 1.7; margin-top: 8px;">If \(Q^d(p) = 200 - 5p\), then plug \(p = 10\) to get \(Q = 150\).</p>
+       <p style="font-size: 14pt; line-height: 1.7;">If \(p^d(Q) = (200 - Q)/5\), plug \(Q = 150\) to get \(p = 10\).</p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 8px; font-style: italic;">Both correct. Different domains and ranges.</p>
+      </div>
+      <div style="background: #f0f5f8; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Rule of thumb</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;">&bull; Solving for equilibrium &rarr; \(Q^d(p)\)<br>&bull; Computing surplus &rarr; \(p^d(Q)\)</p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 10 — §1 Application 2.1: Used cars ===== -->
+    <section id="s1-app-usedcars">
+     <h2><i class="fa-solid fa-car" style="color: var(--accent-color);"></i> Application 2.1 &mdash; Used Cars, Spring 2026</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+      <div>
+       <div class="stat-highlight">
+        <div class="number">204.8 &rarr; 215.3</div>
+        <div class="label">Manheim Used Vehicle Value Index, end-2024 to March 2026</div>
+       </div>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 6px;">
+        Wholesale used-car prices rose. Reported retail volumes <strong>also rose</strong>.
+       </p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 10px; color: var(--muted-color); font-style: italic;">
+        Source: Cox Automotive, Manheim UVVI monthly releases 2024&ndash;2026.
+       </p>
+      </div>
+      <div>
+       <p style="font-size: 14pt; font-weight: 600; color: var(--primary-color);">If you read this as <em>"supply shifted out"</em> &mdash; you'd be wrong.</p>
+       <div style="background: #f0fdf4; padding: 14px 20px; border-radius: 10px; margin-top: 10px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 13pt; margin: 0;">A supply shift outward predicts: \(p \downarrow\) and \(Q \uparrow\) &mdash; <strong>opposite directions</strong>.</p>
+        <p style="font-size: 13pt; margin: 8px 0 0;">Same-direction co-movement is the signature of a <strong>demand shift along a relatively steep supply curve</strong>.</p>
+       </div>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px;">
+        <i class="fa-solid fa-arrow-right" style="color: var(--secondary-color);"></i> §2.5 returns to this with the formal partial-derivative diagnostic. Heads Up 2.4 puts a name on the trap.
+       </p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 11 (vertical stack) — Poll #1 ===== -->
+    <section>
+     <section id="poll-1">
+      <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #1: The Used-Car Trap</h2>
+      <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px;">
+       <p style="font-size: 15pt; line-height: 1.75;">
+        Used-car prices rose 5% and used-car sales volumes rose 3% over the same period. <strong>Most likely explanation?</strong>
+       </p>
+      </div>
+      <div class="poll-grid" data-poll-id="ch02-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+       <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Supply shifted outward</div>
+       <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Demand shifted outward along a steep supply curve</div>
+       <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Both demand and supply shifted out</div>
+       <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cannot tell from \(p\), \(Q\) alone</div>
+      </div>
+      <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 60 sec to vote</span></p>
+      <aside class="notes">Click to vote. Press down-arrow to reveal answer.</aside>
+     </section>
+     <section data-poll-results="ch02-poll-1" id="poll-1-reveal" style="display: flex; flex-direction: column;">
+      <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Demand shift along steep supply</h2>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+       <div class="poll-results-chart" data-poll-id="ch02-poll-1" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+       <div style="padding: 14px 50px 0;">
+        <p style="font-size: 15pt; line-height: 1.7;">
+         Same-direction co-movement of \(p\) and \(Q\) <em>is the diagnostic for a demand shift</em>.
+        </p>
+        <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); padding: 14px 22px; border-radius: 8px; margin: 16px 0;">
+         <p style="font-size: 14pt; margin: 0;"><strong>Trap (A):</strong> A supply shift <em>outward</em> would lower price &mdash; \(p \downarrow\), \(Q \uparrow\). The two would move <em>opposite</em> directions.</p>
+        </div>
+       </div>
+      </div>
+     </section>
+    </section>
+
+    <!-- ===== Slide 12 — Discussion 1 ===== -->
+    <section id="discussion-1">
+     <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 1 &mdash; Headline Diagnosis</h2>
+     <div class="content" style="justify-content: center;">
+      <div style="background: #f0f5f8; padding: 22px; border-radius: 12px; max-width: 940px; margin: 0 auto;">
+       <p style="font-size: 14pt; font-weight: 600; line-height: 1.6; margin-bottom: 10px;">For each headline, classify the underlying market move and write down what data would confirm it.</p>
+       <p style="font-size: 13pt; line-height: 1.65; margin: 6px 0;"><strong>1.</strong> <em>"Used cars: prices and volumes both up &mdash; supply crunch easing"</em> (WSJ, March 2026)</p>
+       <p style="font-size: 13pt; line-height: 1.65; margin: 6px 0;"><strong>2.</strong> <em>"Egg shortage drives spring 2025 price spike to record \$5.12"</em> (CNN, May 2025)</p>
+       <p style="font-size: 13pt; line-height: 1.65; margin: 6px 0;"><strong>3.</strong> <em>"Austin rents finally moderate as construction catches up"</em> (Bloomberg, late 2024)</p>
+      </div>
+      <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> Think 90s &middot; Pair 90s &middot; Random call &times; 3</span></p>
+     </div>
+     <aside class="notes">
+      Targets: (1) trap from Heads Up 2.4 &mdash; same-direction co-movement = demand shift along steep supply, NOT "supply easing." (2) Unambiguous supply shift inward (HPAI) along inelastic demand. (3) Short-run-to-long-run transition: SR steep supply gave way to LR flatter supply as construction completed (Walkthrough 2.6 tonight).
+     </aside>
+    </section>
+
+    <!-- ===== Section 2 divider ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-section-2">
+     <h1>&sect;2.2 &nbsp;Market Clearing &mdash; Equilibrium by Equation</h1>
+     <p style="font-size: 16pt; color: var(--muted-color); margin-top: 16px; text-align: center;">13 min &middot; The egg market in algebra</p>
+    </section>
+
+    <!-- ===== Slide 13 — §2 Intuition + linear formula ===== -->
+    <section id="s2-formula">
+     <h2>Equilibrium = the equation \(Q^d(p^*) = Q^s(p^*)\)</h2>
+     <p style="font-size: 14pt; line-height: 1.65;">A market clears when the quantity buyers want at the prevailing price equals the quantity sellers want. With functions, that statement becomes an <strong>equation</strong> we solve.</p>
+     <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; margin-top: 14px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 14pt; color: var(--primary-color); font-weight: 600; margin-bottom: 8px;">For the linear system \(Q^d = a - bp\), \(Q^s = c + dp\):</p>
+      <p style="font-size: 18pt; text-align: center; margin: 14px 0;">\[ p^* = \frac{a - c}{b + d}, \qquad Q^* = \frac{ad + bc}{b + d}.\]</p>
+      <p style="font-size: 13pt; color: var(--muted-color); text-align: center; font-style: italic;">Memorize the formula. Pay special attention to the denominator \(b + d\).</p>
+     </div>
+     <div class="key-result" style="margin-top: 14px;">
+      <p>The denominator \(b + d\) &mdash; <strong>the sum of the slopes</strong> &mdash; will keep reappearing in §2.4's comparative-statics formulas. Same arithmetic, multiple uses.</p>
+     </div>
+    </section>
+
+    <!-- ===== Slide 14 — §2 Walkthrough 2.1: Pre-HPAI ===== -->
+    <section id="s2-w21">
+     <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Walkthrough 2.1 &mdash; Pre-HPAI Egg Equilibrium</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+       <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 11pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Problem</p>
+        <p style="font-size: 13pt; margin: 0;">US egg market in millions of dozens/wk:<br>Demand: \(Q^d = 200 - 5p\)<br>Supply: \(Q^s = 50 + 10p\)<br>Find \(p^*\), \(Q^*\), CS, PS.</p>
+       </div>
+       <div class="fragment fade-in" style="background: #fef9f3; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 10px;">
+        <p style="font-size: 11pt; color: var(--accent-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Set up</p>
+        <p style="font-size: 13pt; margin: 0;">Set \(Q^d(p) = Q^s(p)\); solve for \(p^*\); plug back for \(Q^*\); compute surplus triangles.</p>
+       </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+       <div class="fragment fade-in" style="background: #e8f4f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 11pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Solve</p>
+        <ul style="font-size: 13pt; line-height: 1.55; padding-left: 18px; margin: 0;">
+         <li class="fragment fade-in">\(200 - 5p = 50 + 10p \Rightarrow 150 = 15p\)</li>
+         <li class="fragment fade-in">\(p^* = \$10\)</li>
+         <li class="fragment fade-in">\(Q^* = 200 - 5(10) = 150\) million dozens/wk</li>
+         <li class="fragment fade-in">Choke price \(p^d(0) = 40\). Inverse-supply at \(Q=0\): \(p = -5\).</li>
+         <li class="fragment fade-in">\(CS = \tfrac{1}{2}\cdot 150 \cdot 30 = \$2{,}250\)M/wk</li>
+         <li class="fragment fade-in">\(PS = \tfrac{1}{2}\cdot 150 \cdot 15 = \$1{,}125\)M/wk</li>
+        </ul>
+       </div>
+       <div class="fragment fade-in" style="background: #e8f5e9; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--success-color); text-align: center;">
+        <p style="font-size: 14pt; margin: 0; color: var(--success-color);"><strong>\((p^*, Q^*) = (\$10, 150)\)</strong></p>
+        <p style="font-size: 12pt; margin: 4px 0 0;">Total surplus \(\approx \$3{,}375\)M/wk</p>
+       </div>
+      </div>
+     </div>
+     <aside class="notes">Press 2 for 2-min timer. Click through Set up → Solve box → 6 solve steps → Answer. The point of W2.1 is the contrast: this calculation took 30 seconds. Eyeballing the diagram in Principles took longer and got 2-decimal-place precision instead of exact.</aside>
+    </section>
+
+    <!-- ===== Slide 15 — §2 Walkthrough 2.2: Post-HPAI ===== -->
+    <section id="s2-w22">
+     <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Walkthrough 2.2 &mdash; Post-HPAI Shift</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px;">
+      <div>
+       <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 11pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Problem</p>
+        <p style="font-size: 13pt; margin: 0;">HPAI culls ~168M laying hens. Demand unchanged. Supply shifts inward to \(\widetilde Q^s = 20 + 10p\). Find new \((\tilde p^*, \tilde Q^*)\) and \(\Delta CS\).</p>
+       </div>
+       <div class="fragment fade-in" style="background: #e8f4f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color); margin-top: 10px;">
+        <p style="font-size: 11pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Solve</p>
+        <ul style="font-size: 13pt; line-height: 1.55; padding-left: 18px; margin: 0;">
+         <li class="fragment fade-in">\(200 - 5p = 20 + 10p \Rightarrow 180 = 15p\)</li>
+         <li class="fragment fade-in">\(\tilde p^* = \$12\), \(\tilde Q^* = 140\)</li>
+         <li class="fragment fade-in">\(\Delta p = +\$2\) (+20%); \(\Delta Q = -10\) (&minus;6.7%)</li>
+         <li class="fragment fade-in">\(\widetilde{CS} = \tfrac{1}{2}\cdot 140 \cdot 28 = \$1{,}960\)M</li>
+         <li class="fragment fade-in"><strong style="color: var(--danger-color);">\(\Delta CS = -\$290\)M/wk</strong></li>
+        </ul>
+       </div>
+       <div class="fragment fade-in" style="background: #fff3e0; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 10px;">
+        <p style="font-size: 12pt; margin: 0; line-height: 1.55;">
+         <strong>Why \(\Delta Q = -10\), not \(-30\)?</strong> The 30-unit inward shift was clawed back: \(2/3\) absorbed by movement-along-demand (the \$2 price rise pulled 20 units of supply back along the new curve), \(1/3\) by net quantity decrease.
+        </p>
+       </div>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="Marshallian cross showing pre-HPAI equilibrium at (10, 150) and post-HPAI at (12, 140) with arrow tracing the move" src="figures/figure_002_egg_market_clearing.png" style="max-width: 100%; max-height: 480px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 16 — §2 Application 2.2: Cocoa parallel ===== -->
+    <section id="s2-cocoa">
+     <h2><i class="fa-solid fa-mug-hot" style="color: #8B4513;"></i> Application 2.2 &mdash; Cocoa 2024&ndash;2026: Same Math, 3&times; the Scale</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.65;">
+        Cocoa futures: <strong>~\$2,500&ndash;\$3,000/ton</strong> through 2023 &rarr; <strong>~\$10,900/ton</strong> April 2024 (Cacao Swollen Shoot Virus + West Africa weather) &rarr; <strong>~\$2,900/ton</strong> February 2026.
+       </p>
+       <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; margin-top: 12px; border-left: 4px solid var(--accent-color);">
+        <p style="font-size: 13pt; line-height: 1.6; margin: 0;">
+         ICCO bulletins: 2023/24 production 4.45 Mt vs 4.78 Mt grindings &rarr; 374K-ton deficit. By Q1 2026: <strong>75K-ton surplus</strong>.
+        </p>
+       </div>
+       <p style="font-size: 14pt; line-height: 1.65; margin-top: 12px;">
+        Same Walkthrough 2.1 + 2.2 algebra. Different numbers. <strong>Different units. Different commodity. Identical equations.</strong>
+       </p>
+       <p style="font-size: 12pt; color: var(--muted-color); margin-top: 12px; font-style: italic;">
+        Sources: ICE cocoa futures; ICCO Quarterly Bulletin of Cocoa Statistics 2024 Q2&ndash;Q4 + 2026 Q1.
+       </p>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="ICE cocoa futures monthly closing prices 2023-2026 with shaded 2024 supply crisis band" src="figures/figure_004_cocoa_futures.png" style="max-width: 100%; max-height: 480px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 17 (vertical stack) — Poll #2 ===== -->
+    <section>
+     <section id="poll-2">
+      <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #2: Predict the Recovery</h2>
+      <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px;">
+       <p style="font-size: 14pt; line-height: 1.7;">
+        Continue Walkthrough 2.2's egg market: \(Q^d = 200 - 5p\), post-shock \(\widetilde Q^s = 20 + 10p\), equilibrium \((\$12, 140)\).
+       </p>
+       <p style="font-size: 14pt; line-height: 1.7; margin-top: 8px;">
+        The flock partially recovers, parameterized as \(Q^s = 20 + 10p + \alpha\) with <strong>\(\alpha = 15\)</strong> units of recovery (half the original shock). What's the new \(p^*\)?
+       </p>
+      </div>
+      <div class="poll-grid" data-poll-id="ch02-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+       <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) \$10 (full recovery to pre-shock)</div>
+       <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) \$11 (halfway back)</div>
+       <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) \$11.50</div>
+       <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) \$12 (no change)</div>
+      </div>
+      <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 60 sec to vote</span></p>
+      <aside class="notes">Click to vote. Press down-arrow to reveal answer.</aside>
+     </section>
+     <section data-poll-results="ch02-poll-2" id="poll-2-reveal" style="display: flex; flex-direction: column;">
+      <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; \$11, exactly halfway</h2>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+       <div class="poll-results-chart" data-poll-id="ch02-poll-2" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+       <div style="padding: 14px 50px 0;">
+        <p style="font-size: 14pt; line-height: 1.7;">
+         \(200 - 5p = 35 + 10p \Rightarrow 165 = 15p \Rightarrow p^* = \$11\), \(Q^* = 145\).
+        </p>
+        <div style="background: #f0fdf4; border-left: 4px solid var(--success-color); padding: 14px 22px; border-radius: 8px; margin: 16px 0;">
+         <p style="font-size: 14pt; margin: 0;"><strong>Why <em>exactly</em> halfway?</strong> Because supply is linear and the shifter \(\alpha\) enters as a constant. We'll prove \(dp^*/d\alpha = -1/15\) in §2.4 &mdash; the price drop per unit of recovery is exactly \(1/15\), so 15 units of recovery exactly halve the \$2 shock.</p>
+        </div>
+       </div>
+      </div>
+     </section>
+    </section>
+
+    <!-- ===== Section 3 divider ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-section-3">
+     <h1>&sect;2.3 &nbsp;Surplus as Integrals</h1>
+     <p style="font-size: 16pt; color: var(--muted-color); margin-top: 16px; text-align: center;">12 min &middot; The triangle is the linear special case</p>
+    </section>
+
+    <!-- ===== Slide 18 — §3 Triangle vs Integral ===== -->
+    <section id="s3-intuition">
+     <h2>From triangle to integral</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 8px;">
+      <div style="background: #fef2f2; padding: 22px; border-radius: 10px; border-left: 4px solid var(--danger-color);">
+       <p style="font-size: 13pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Principles</p>
+       <p style="font-size: 15pt; line-height: 1.6;">Consumer surplus = triangle above \(p^*\), below demand, between \(Q = 0\) and \(Q^*\).</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px; color: var(--muted-color);">
+        Works perfectly &mdash; <em>when demand is linear</em>.
+       </p>
+      </div>
+      <div style="background: #f0fdf4; padding: 22px; border-radius: 10px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 13pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">2316</p>
+       <p style="font-size: 15pt; line-height: 1.6;">Same intuition, more general object: a definite <strong>integral</strong> of inverse demand minus \(p^*\).</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;">Triangle = linear special case. Integral handles <em>everything</em>.</p>
+      </div>
+     </div>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-top: 16px; text-align: center; font-style: italic;">Dupuit (1844) introduced the triangle. Modern micro generalizes via the integral.</p>
+    </section>
+
+    <!-- ===== Slide 19 — §3 The integral form ===== -->
+    <section id="s3-integral">
+     <h2>The integral form</h2>
+     <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">
+        At quantity \(q\), the inverse demand \(p^d(q)\) is the <strong>willingness to pay</strong> of the marginal buyer of the \(q\)-th unit. Per-unit surplus is \(p^d(q) - p^*\). Summing &mdash; integrating &mdash; over all infra-marginal units:
+       </p>
+       <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 17pt; text-align: center; margin: 8px 0;">\[ CS = \int_0^{Q^*}\bigl[p^d(q) - p^*\bigr]\,dq.\]</p>
+        <p style="font-size: 17pt; text-align: center; margin: 8px 0;">\[ PS = \int_0^{Q^*}\bigl[p^* - p^s(q)\bigr]\,dq.\]</p>
+       </div>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; line-height: 1.6;">Producer surplus is symmetric: marginal seller's WTA is \(p^s(q)\); per-unit surplus is \(p^* - p^s(q)\).</p>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="Marshallian cross with curved inverse demand and shaded CS region above p* and below pd(Q)" src="figures/figure_005_cs_as_integral.png" style="max-width: 100%; max-height: 460px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 20 — §3 Calculus Corner 2.1 ===== -->
+    <section id="s3-cc-21">
+     <h2><i class="fa-solid fa-square-root-variable" style="color: var(--accent-color);"></i> Calculus Corner 2.1 &mdash; Triangle is the Linear Case</h2>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 8px;">Linear inverse demand \(p^d(Q) = \alpha - \beta Q\) with equilibrium \((p^*, Q^*)\):</p>
+     <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 15pt; line-height: 1.9;">
+       \[ CS = \int_0^{Q^*}\bigl[(\alpha - \beta q) - p^*\bigr]\,dq = (\alpha - p^*)Q^* - \tfrac{\beta}{2}(Q^*)^2.\]
+      </p>
+      <p style="font-size: 13pt; color: var(--muted-color); text-align: center; margin: 6px 0 12px;">Substitute \(p^* = \alpha - \beta Q^*\):</p>
+      <p style="font-size: 16pt; text-align: center; margin: 8px 0;">
+       \[ CS = \tfrac{1}{2}\beta (Q^*)^2 = \tfrac{1}{2}(\alpha - p^*) Q^*. \]
+      </p>
+      <p style="font-size: 13pt; color: var(--muted-color); text-align: center; font-style: italic;">Exactly the triangle formula.</p>
+     </div>
+     <div class="key-result" style="margin-top: 16px;">
+      <p>The integral <strong>is</strong> the triangle when demand is linear. The integral form earns its keep when demand <strong>isn't</strong> &mdash; constant-elasticity, polynomial, log-linear, anything. See <em>Math Appendix A.8</em>.</p>
+     </div>
+    </section>
+
+    <!-- ===== Slide 21 — §3 Heads Up 2.2 ===== -->
+    <section id="s3-headsup-2">
+     <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Heads Up 2.2 &mdash; Integrate the <em>Inverse</em>, not the Direct, Demand</h2>
+     <div class="misconception" style="margin-top: 14px;">
+      <p>The CS integrand is \(p^d(q) - p^*\), where \(p^d\) is <strong>inverse demand</strong>. Students who grab \(Q^d(p)\) and integrate \(\int Q^d(p)\,dp\) get a geometrically different (and wrong) object.</p>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+      <div style="background: #fff3e0; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">If you have \(Q^d(p)\)</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;"><strong>Invert first.</strong> Solve for \(p\) as a function of \(Q\), then integrate with respect to \(Q\) from \(0\) to \(Q^*\).</p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">Example: \(Q^d = 200 - 5p \Rightarrow p^d(Q) = (200-Q)/5\).</p>
+      </div>
+      <div style="background: #f0fdf4; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 13pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Easy diagnostic</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;">If your integrand has units of price, you're integrating with respect to <strong>quantity</strong>. ✓</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 6px;">If your integrand has units of quantity, you're doing it wrong.</p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 22 — §3 Theory and Data 2.1: NYC Congestion ===== -->
+    <section id="s3-td-1">
+     <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Theory &amp; Data 2.1 &mdash; NYC Congestion Pricing Welfare</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">
+        <strong>Davis et al., NBER WP 33584</strong> (March 2025; revised January 2026) measured the short-run welfare effects of NYC's January 2025 congestion-pricing program.
+       </p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 10px;">
+        Method: vehicle-entry data + speed measurements + calibrated elasticities &rarr; integrate the time-cost-adjusted inverse demand for CBD trips.
+       </p>
+       <div style="background: #f8f6f3; padding: 12px 18px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin: 0;">
+         The calculation is exactly the §2.3 integral. Different units (time-cost vs dollar-price), identical mechanics.
+        </p>
+       </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; justify-content: center;">
+       <div class="stat-highlight" style="background: #f0f5f8; border-radius: 10px; padding: 18px;">
+        <div class="number">≥ \$14.3M</div>
+        <div class="label">Driver welfare gain per week</div>
+       </div>
+       <div class="stat-highlight" style="background: #f0f5f8; border-radius: 10px; padding: 18px;">
+        <div class="number">~\$523M/yr</div>
+        <div class="label">Toll revenue, passenger vehicles</div>
+       </div>
+       <div class="stat-highlight" style="background: #f0fdf4; border-radius: 10px; padding: 14px;">
+        <div class="number" style="color: var(--success-color); font-size: 22pt;">\$750M/yr</div>
+        <div class="label">Driver surplus alone, before revenue use</div>
+       </div>
+      </div>
+     </div>
+     <div class="key-result" style="margin-top: 14px;">
+      <p><strong>The integral lets you evaluate real policies in dollar terms.</strong> Tonight's chapter is the toolkit; the policy questions Ch 17 will revisit explicitly.</p>
+     </div>
+    </section>
+
+    <!-- ===== Slide 23 — Break ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="break">
+     <h1><i class="fa-solid fa-mug-hot" style="color: var(--accent-color); font-size: 0.7em; margin-right: 12px;"></i>Break</h1>
+     <p style="font-size: 16pt; color: var(--muted-color); margin-top: 16px; text-align: center;">5 min &middot; Press 5 for the timer</p>
+    </section>
+
+    <!-- ===== Slide 24 (vertical stack) — Poll #3 ===== -->
+    <section>
+     <section id="poll-3">
+      <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #3: Which Integral Computes CS?</h2>
+      <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+       <p style="font-size: 14pt; line-height: 1.7;">
+        You're given linear demand \(Q^d(p) = 200 - 5p\) and equilibrium price \(p^* = \$10\). Which is the <strong>right</strong> integral for consumer surplus?
+       </p>
+      </div>
+      <div class="poll-grid" data-poll-id="ch02-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; font-size: 13pt;">
+       <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) \(\int_0^{10}(200 - 5p)\,dp\)</div>
+       <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) \(\int_{10}^{40}(200 - 5p)\,dp\)</div>
+       <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) \(\int_0^{150}\bigl[(200-q)/5 - 10\bigr]\,dq\)</div>
+       <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) \(\int_0^{150}(200-q)/5\,dq\)</div>
+      </div>
+      <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 90 sec to vote</span></p>
+      <aside class="notes">B is the legitimate alternative form. C is the canonical form used through the rest of the book. A and D miss the "subtract \(p^*\)" step.</aside>
+     </section>
+     <section data-poll-results="ch02-poll-3" id="poll-3-reveal" style="display: flex; flex-direction: column;">
+      <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; integrate \([p^d(q) - p^*]\) over \([0, Q^*]\)</h2>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+       <div class="poll-results-chart" data-poll-id="ch02-poll-3" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+       <div style="padding: 14px 50px 0;">
+        <div style="background: #f0fdf4; border-left: 4px solid var(--success-color); padding: 14px 22px; border-radius: 8px;">
+         <p style="font-size: 14pt; margin: 0;"><strong>C is canonical.</strong> Integrand: <em>inverse demand minus \(p^*\)</em>. Bounds: \([0, Q^*]\). The "minus \(p^*\)" step is what makes it surplus, not just value.</p>
+        </div>
+        <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); padding: 14px 22px; border-radius: 8px; margin-top: 12px;">
+         <p style="font-size: 13pt; margin: 0;"><strong>B is also legitimate</strong> &mdash; the same triangle, integrated in price-space from \(p^*\) up to the choke price. Geometrically equivalent. Throughout the book we use form C because it generalizes to non-linear demand cleanly.</p>
+        </div>
+       </div>
+      </div>
+     </section>
+    </section>
+
+    <!-- ===== Section 4 divider ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-section-4">
+     <h1>&sect;2.4 &nbsp;Comparative Statics via Total Differentiation</h1>
+     <p style="font-size: 16pt; color: var(--muted-color); margin-top: 16px; text-align: center;">15 min &middot; One formula, every market</p>
+    </section>
+
+    <!-- ===== Slide 25 — §4 Intuition ===== -->
+    <section id="s4-intuition">
+     <h2>Brute force vs structure</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 8px;">
+      <div style="background: #fef2f2; padding: 22px; border-radius: 10px; border-left: 4px solid var(--danger-color);">
+       <p style="font-size: 13pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Brute force</p>
+       <p style="font-size: 15pt; line-height: 1.6;">Re-solve the whole system after every parameter change.</p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 8px;">Works, but hides <em>why</em> the price moves the way it does.</p>
+      </div>
+      <div style="background: #f0fdf4; padding: 22px; border-radius: 10px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 13pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Total differentiation</p>
+       <p style="font-size: 15pt; line-height: 1.6;">One formula gives \(dp^*/d\alpha\) and \(dQ^*/d\alpha\) directly from partial derivatives.</p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 8px;">Same answer, with structure: <em>why</em> elastic vs inelastic markets respond differently.</p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 26 — §4 Calculus Corner 2.2 ===== -->
+    <section id="s4-cc-22">
+     <h2><i class="fa-solid fa-square-root-variable" style="color: var(--accent-color);"></i> Calculus Corner 2.2 &mdash; The Comparative-Statics Formula</h2>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 8px;">Equilibrium implicitly defines \(p^* = p^*(\alpha)\) via \(Q^d(p^*, \alpha) = Q^s(p^*, \alpha)\). Total-differentiate both sides; isolate \(dp^*/d\alpha\):</p>
+     <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 16pt; text-align: center; margin: 8px 0;">
+       \[ \boxed{\;\frac{dp^*}{d\alpha} = \frac{\partial Q^s/\partial\alpha - \partial Q^d/\partial\alpha}{\partial Q^d/\partial p - \partial Q^s/\partial p}\;}\]
+      </p>
+      <p style="font-size: 14pt; line-height: 1.5; margin-top: 8px;">Quantity drops out by chain rule:</p>
+      <p style="font-size: 16pt; text-align: center; margin: 8px 0;">
+       \[ \frac{dQ^*}{d\alpha} = \frac{\partial Q^d}{\partial p}\cdot\frac{dp^*}{d\alpha} + \frac{\partial Q^d}{\partial \alpha}.\]
+      </p>
+     </div>
+     <div class="key-result" style="margin-top: 14px;">
+      <p>
+       <strong>Sign analysis.</strong> Denominator is always negative (demand slopes down, supply slopes up). Numerator's sign flips with the type of shifter:
+       supply shifters \((\partial Q^s/\partial\alpha &gt; 0)\) make \(dp^*/d\alpha &lt; 0\); demand shifters reverse it. <strong>Sign \(dQ^*/d\alpha\) separately</strong> &mdash; that's Heads Up 2.3.
+      </p>
+     </div>
+    </section>
+
+    <!-- ===== Slide 27 — §4 Walkthrough 2.5 (a)+(b) ===== -->
+    <section id="s4-w25-ab">
+     <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Walkthrough 2.5 &mdash; Egg Recovery (a) + (b)</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px;">
+      <div>
+       <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 11pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Problem</p>
+        <p style="font-size: 13pt; margin: 0;">Post-HPAI: \(Q^d = 200 - 5p\), \(\widetilde Q^s = 20 + 10p\). Parameterize as \(Q^s(p, \alpha) = 20 + 10p + \alpha\). (a) Derive \(dp^*/d\alpha\), \(dQ^*/d\alpha\). (b) Solve at \(\alpha = 15\).</p>
+       </div>
+       <div class="fragment fade-in" style="background: #e8f4f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color); margin-top: 10px;">
+        <p style="font-size: 11pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Partials</p>
+        <p style="font-size: 13pt; margin: 0;">\(\partial Q^d/\partial p = -5\), \(\partial Q^s/\partial p = 10\), \(\partial Q^d/\partial \alpha = 0\), \(\partial Q^s/\partial \alpha = 1\).</p>
+       </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+       <div class="fragment fade-in" style="background: #fff3e0; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+        <p style="font-size: 12pt; color: var(--accent-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Part (a) &mdash; Derivatives</p>
+        <p style="font-size: 14pt; margin: 4px 0;">\(\dfrac{dp^*}{d\alpha} = \dfrac{1 - 0}{-5 - 10} = -\dfrac{1}{15}\)</p>
+        <p style="font-size: 14pt; margin: 4px 0;">\(\dfrac{dQ^*}{d\alpha} = (-5)\cdot(-1/15) + 0 = \dfrac{1}{3}\)</p>
+        <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin-top: 4px;">Supply recovery lowers price (~\$0.067/unit) and raises quantity (~0.333/unit).</p>
+       </div>
+       <div class="fragment fade-in" style="background: #e8f5e9; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 12pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Part (b) &mdash; Direct solve at \(\alpha = 15\)</p>
+        <p style="font-size: 13pt; margin: 0; line-height: 1.55;">\(200 - 5p = 35 + 10p \Rightarrow p^* = \$11\), \(Q^* = 145\).</p>
+        <p style="font-size: 13pt; margin-top: 4px;"><strong>Exactly halfway from post-shock \((\$12, 140)\) to pre-shock \((\$10, 150)\).</strong> Confirms (a): \(\Delta p^* = -1/15 \times 15 = -1\) ✓.</p>
+       </div>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 28 — §4 Walkthrough 2.5 (c) Implied Δα ===== -->
+    <section id="s4-w25-c">
+     <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Walkthrough 2.5 (c) &mdash; Inverting Real FRED Data</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">
+        Observed FRED data:<br>
+        <strong>Jan 2025:</strong> \$4.95<br>
+        <strong>Mar 2026:</strong> \$2.35<br>
+        <strong>\(\Delta p = -\$2.60\)</strong>
+       </p>
+       <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 10px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 13pt; line-height: 1.6; margin: 0;">
+         Invert \(dp^*/d\alpha = -1/15\):
+        </p>
+        <p style="font-size: 16pt; text-align: center; margin: 10px 0;">
+         \(\Delta\alpha = -\Delta p \cdot 15 = 2.60 \times 15 = \mathbf{39}\)
+        </p>
+        <p style="font-size: 13pt; color: var(--muted-color); text-align: center; margin: 0;">million dozens/wk of implied recovery</p>
+       </div>
+      </div>
+      <div>
+       <div style="background: #fff3e0; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+        <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Reality check</p>
+        <p style="font-size: 13pt; line-height: 1.5; margin: 0;">USDA NASS: ~19M-bird flock recovery &times; ~0.48 dozens/bird-week &asymp; <strong>~9M dozens/wk</strong>.</p>
+        <p style="font-size: 13pt; line-height: 1.5; margin-top: 6px;">Linear-model says 39M; flock alone explains ~9M. Gap is real.</p>
+       </div>
+       <div class="key-result" style="margin-top: 12px;">
+        <p style="font-size: 13pt;">
+         <strong>The gap points to:</strong> wholesale-inventory drawdowns, food-service substitution away from shell eggs, and the linear model breaking down far from its calibration point. Don't over-claim the fit; <em>do</em> claim that direction and rough magnitude are consistent with partial supply recovery.
+        </p>
+       </div>
+       <p style="font-size: 12pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">§2.6 returns to this. Ch 3 reorganizes via elasticity.</p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 29 — §4 Comparative-statics figure ===== -->
+    <section id="s4-fig">
+     <h2>Visualizing the supply recovery</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">
+        Original \(Q^s_0 = 20 + 10p\) and partially-recovered \(Q^s_1 = 35 + 10p\) (\(\alpha = 15\)) against unchanged demand.
+       </p>
+       <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; margin-top: 12px;">
+        <p style="font-size: 13pt; line-height: 1.6; margin: 0;">\(E_0 = (\$12, 140)\) &rarr; \(E_1 = (\$11, 145)\)</p>
+        <p style="font-size: 13pt; line-height: 1.6; margin-top: 6px;">Equilibrium moves <strong>along the demand curve</strong> &mdash; that's the diagnostic for a pure supply shifter.</p>
+       </div>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">
+        Margin annotations: \(dp^*/d\alpha = -1/15 &lt; 0\); \(dQ^*/d\alpha = 1/3 &gt; 0\).
+       </p>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="Comparative statics figure: original and partially-recovered supply, equilibrium moves from E0 to E1 along demand" src="figures/figure_006_comparative_statics.png" style="max-width: 100%; max-height: 480px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 30 — §4 Heads Up 2.3 ===== -->
+    <section id="s4-headsup-3">
+     <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Heads Up 2.3 &mdash; Sign <em>Both</em> Derivatives</h2>
+     <div class="misconception" style="margin-top: 14px;">
+      <p>
+       Students sign \(dp^*/d\alpha\) correctly and assume the quantity move follows. <strong>It doesn't.</strong>
+      </p>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px;">
+      <div style="background: #f0f5f8; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Supply shifts</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;">\(p\) and \(Q\) move <strong>opposite</strong> directions.</p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">Outward supply: \(p \downarrow\), \(Q \uparrow\). Inward (HPAI): \(p \uparrow\), \(Q \downarrow\).</p>
+      </div>
+      <div style="background: #fff3e0; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Demand shifts</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;">\(p\) and \(Q\) move <strong>same</strong> direction.</p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">Outward demand: \(p \uparrow\), \(Q \uparrow\). Inward: \(p \downarrow\), \(Q \downarrow\).</p>
+      </div>
+     </div>
+     <p style="font-size: 12pt; color: var(--muted-color); margin-top: 14px; font-style: italic; text-align: center;">
+      Staples et al. (2020) <em>JEE</em>: this is among the most persistent comparative-statics homework errors. Always sign <em>both</em>.
+     </p>
+    </section>
+
+    <!-- ===== Slide 31 — §4 Application 2.3 + TheoryAndData 2.2 ===== -->
+    <section id="s4-app-redsea">
+     <h2><i class="fa-solid fa-ship" style="color: var(--secondary-color);"></i> Application 2.3 + Theory &amp; Data 2.2</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+      <div style="background: #f0f5f8; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 14pt; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">Red Sea 2024 &mdash; supply-side shock</p>
+       <p style="font-size: 13pt; line-height: 1.6;">Houthi attacks force Asia&ndash;Europe rerouting around Cape of Good Hope. UNCTAD Feb 2024:</p>
+       <ul style="font-size: 13pt; line-height: 1.55; margin-top: 6px;">
+        <li>Suez tonnage <strong>&minus;50%</strong></li>
+        <li>Cape arrivals <strong>+89%</strong></li>
+        <li>SCFI <strong>more than doubled</strong></li>
+       </ul>
+       <p style="font-size: 12pt; color: var(--muted-color); margin-top: 8px; font-style: italic;">
+        Predicted by \(dp^*/d\alpha &gt; 0\) for an inward supply shift. The number was the question.
+       </p>
+      </div>
+      <div style="background: #fff3e0; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 14pt; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">Philadelphia soda tax &mdash; pass-through</p>
+       <p style="font-size: 13pt; line-height: 1.6;">Seiler, Tuchman, Yao (2020 <em>JMR</em>) on the 1.5¢/oz tax, scanner data:</p>
+       <div class="stat-highlight" style="margin: 10px 0;">
+        <div class="number" style="color: var(--accent-color); font-size: 32pt;">97%</div>
+        <div class="label">avg pass-through to retail</div>
+       </div>
+       <p style="font-size: 13pt; line-height: 1.55;">Result: <strong>+34% retail price, &minus;46% local sales</strong>. High pass-through &harr; elastic supply meeting inelastic short-run demand.</p>
+       <p style="font-size: 12pt; color: var(--muted-color); margin-top: 8px; font-style: italic;">Ch 3 rewrites this in elasticity form &mdash; the tax-incidence formula.</p>
+      </div>
+     </div>
+     <div class="key-result" style="margin-top: 14px;">
+      <p>When one side is much more elastic than the other, the <strong>less-elastic side absorbs most of the cost shock</strong>. The Red Sea pattern + Philadelphia pattern share the same logic.</p>
+     </div>
+    </section>
+
+    <!-- ===== Slide 32 — Discussion 2 ===== -->
+    <section id="discussion-2">
+     <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 2 &mdash; The Red Sea Pass-Through</h2>
+     <div class="content" style="justify-content: center;">
+      <div style="background: #f0f5f8; padding: 22px; border-radius: 12px; max-width: 940px; margin: 0 auto;">
+       <p style="font-size: 14pt; font-weight: 600; line-height: 1.6;">
+        In the 2024 Red Sea disruption, ocean-freight rates roughly <strong>doubled</strong>. Yet retailers reported only modest price increases on goods imported from Asia.
+       </p>
+       <p style="font-size: 13pt; line-height: 1.6; margin-top: 10px;"><strong>1.</strong> Why might the <em>retail</em> price (downstream) move much less than the <em>freight</em> price (upstream)?</p>
+       <p style="font-size: 13pt; line-height: 1.6; margin-top: 6px;"><strong>2.</strong> What does that say about the relative elasticities of (a) freight supply, (b) freight demand, (c) retail-good supply, (d) retail-good demand?</p>
+      </div>
+      <p style="margin-top: 16px; text-align: center; font-size: 14pt; color: var(--muted-color); font-style: italic;">
+       Stand on a spectrum: how much of the freight-cost shock reached consumer prices on Asian-import goods?
+      </p>
+      <p style="margin-top: 12px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 90 sec think + 90 sec spectrum</span></p>
+     </div>
+     <aside class="notes">Targets: freight is one input among many; retail prices reflect total cost (manufacturing + materials + freight + retail markup), so 100% pass-through at the freight level is a smaller fraction at the retail level. Plus retailers have downstream pricing flexibility. Ch 3's tax-incidence formula formalizes pass-through depending on relative elasticities of upstream vs downstream.</aside>
+    </section>
+
+    <!-- ===== Section 5 divider ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-section-5">
+     <h1>&sect;2.5 &nbsp;Movement Along vs Shift</h1>
+     <p style="font-size: 16pt; color: var(--muted-color); margin-top: 16px; text-align: center;">8 min &middot; Two partial derivatives, two phenomena</p>
+    </section>
+
+    <!-- ===== Slide 33 — §5 Two partial derivatives ===== -->
+    <section id="s5-two-partials">
+     <h2>Same picture, formal language</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">
+        In Principles, "change in quantity demanded" vs "change in demand" was a <em>graphical</em> distinction.
+       </p>
+       <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; margin-top: 10px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 14pt; line-height: 1.6; margin: 0;">In 2316, they're <strong>two different partial derivatives</strong> of \(Q^d(p; \alpha_D)\):</p>
+        <p style="font-size: 14pt; line-height: 1.7; margin-top: 8px;">&bull; \(\partial Q^d/\partial p\) = movement along the curve</p>
+        <p style="font-size: 14pt; line-height: 1.7; margin-top: 4px;">&bull; \(\partial Q^d/\partial \alpha_D\) = shift of the curve</p>
+       </div>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; line-height: 1.55;">
+        Writing \(Q^d(p; \alpha_D)\) explicitly forces you to say which parameter you're holding fixed &mdash; which resolves ~80% of market commentary's ambiguity.
+       </p>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="Two-panel diagram. Left: movement along fixed demand curve. Right: shift of demand curve to a new intersection with fixed supply." src="figures/figure_007_movement_vs_shift.png" style="max-width: 100%; max-height: 460px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 34 — §5 Walkthrough 2.6: Housing SR vs LR ===== -->
+    <section id="s5-w26">
+     <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Walkthrough 2.6 &mdash; Housing: Same Demand Shift, Two Time Horizons</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px;">
+      <div>
+       <div style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 11pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Setup</p>
+        <p style="font-size: 13pt; line-height: 1.55; margin: 0;">
+         Demand: \(Q^d = 100 - p + \alpha_D\)<br>
+         SR supply (steep): \(Q^s_{SR} = 40 + 0.1p\)<br>
+         LR supply (flatter): \(Q^s_{LR} = 40 + p\)<br>
+         Demand pulse: \(\Delta\alpha_D = 10\)
+        </p>
+       </div>
+       <div class="fragment fade-in" style="background: #fff3e0; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 10px;">
+        <p style="font-size: 12pt; color: var(--accent-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">Same formula, two answers</p>
+        <p style="font-size: 13pt; line-height: 1.6; margin: 0;">\(\dfrac{dp^*}{d\alpha_D} = \dfrac{1}{b + d}\)</p>
+        <p style="font-size: 13pt; line-height: 1.6; margin-top: 4px;">SR: \(b = 1\), \(d = 0.1\) &rarr; \(\dfrac{1}{1.1} \approx 0.909\)</p>
+        <p style="font-size: 13pt; line-height: 1.6; margin-top: 4px;">LR: \(b = 1\), \(d = 1\) &rarr; \(\dfrac{1}{2} = 0.500\)</p>
+       </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+       <div class="fragment fade-in" style="background: #e8f4f8; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 12pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">SR equilibrium (months)</p>
+        <p style="font-size: 13pt; margin: 0;">Before: \((\$5{,}450, 45.5\text{K})\). After: \((\$6{,}360, 46.4\text{K})\).</p>
+        <p style="font-size: 13pt; margin-top: 4px;"><strong>\(\Delta p \approx +\$910\)/mo, \(\Delta Q \approx +0.9\text{K}\) units</strong> &mdash; rent absorbs almost the entire shock.</p>
+       </div>
+       <div class="fragment fade-in" style="background: #e8f5e9; padding: 12px 18px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 12pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin: 0 0 4px;">LR equilibrium (years)</p>
+        <p style="font-size: 13pt; margin: 0;">Before: \((\$3{,}000, 70\text{K})\). After: \((\$3{,}500, 75\text{K})\).</p>
+        <p style="font-size: 13pt; margin-top: 4px;"><strong>\(\Delta p = +\$500\)/mo, \(\Delta Q = +5\text{K}\) units</strong> &mdash; rent rises less, builders respond.</p>
+       </div>
+       <div class="fragment fade-in" style="background: #f0f5f8; padding: 12px 18px; border-radius: 8px; text-align: center; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 13pt; margin: 0;"><strong>"Rents spike because supply isn't keeping up"</strong> &mdash; literally correct, but it's a <em>time-horizon</em> claim. The SR-to-LR transition is the full story.</p>
+       </div>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 35 — §5 Austin vs Cleveland data ===== -->
+    <section id="s5-austin-cleveland">
+     <h2><i class="fa-solid fa-house" style="color: var(--accent-color);"></i> Austin vs Cleveland &mdash; Same Shock, Different Supply Slopes</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">
+        Same national-level demand pulse (post-2020 remote-work + migration), <strong>dramatically different metro paths</strong>.
+       </p>
+       <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; margin-top: 10px;">
+        <p style="font-size: 13pt; line-height: 1.6; margin: 0;">
+         <strong>Austin:</strong> sharp 2021&ndash;2022 rent spike, partial 2023&ndash;2024 moderation. Supply slope close to SR (zoning, geography, slow permitting).
+        </p>
+        <p style="font-size: 13pt; line-height: 1.6; margin-top: 6px;">
+         <strong>Cleveland:</strong> smoother growth. Supply slope closer to LR (more elastic).
+        </p>
+       </div>
+       <p style="font-size: 12pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">
+        Source: Zillow Observed Rent Index (ZORI), 2020&ndash;2026.
+       </p>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="ZORI rent paths for Austin (steep 2021-2022 spike) vs Cleveland (smoother growth) 2020-2026" src="figures/figure_009_metro_rents.png" style="max-width: 100%; max-height: 460px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 36 — §5 Application 2.4: Greedflation ===== -->
+    <section id="s5-greedflation">
+     <h2><i class="fa-solid fa-hand-holding-dollar" style="color: var(--secondary-color);"></i> Application 2.4 &mdash; The "Greedflation" Debate (2022&ndash;2024)</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+      <div style="background: #fef2f2; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--danger-color);">
+       <p style="font-size: 13pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Greedflation hypothesis</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;">Both \(\alpha_S\) (input-cost shifter) <em>and</em> a behavioral parameter (markup \(\mu\)) shifted together.</p>
+      </div>
+      <div style="background: #f0fdf4; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 13pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Textbook hypothesis</p>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 8px;">Only \(\alpha_S\) shifted; the price rise is the comparative-statics prediction of Walkthrough 2.5.</p>
+      </div>
+     </div>
+     <div class="key-result" style="margin-top: 16px;">
+      <p>
+       <strong>Empirical test:</strong> Ganapati, Shapiro, Walker (2020 <em>AEJ:Applied</em>) found ~70% pass-through in US manufacturing &mdash; roughly what a competitive-pricing model predicts. Markups did rise in some sectors but the macro picture is mixed.
+      </p>
+     </div>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; text-align: center; font-style: italic; line-height: 1.5;">
+      <strong>Methodological lesson:</strong> "shift of supply" vs "movement along supply" vs "change in firms' objective function" are <em>different claims</em> that can be tested separately. The function-based language makes the hypotheses precise enough to argue about.
+     </p>
+    </section>
+
+    <!-- ===== Slide 37 — §5 Heads Up 2.4 ===== -->
+    <section id="s5-headsup-4">
+     <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Heads Up 2.4 &mdash; Same-Direction Co-Movement</h2>
+     <div class="misconception" style="margin-top: 14px;">
+      <p>
+       <strong>"Used-car prices went up <em>and</em> volumes went up, so supply must have shifted out."</strong> No.
+      </p>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px;">
+      <div style="background: #f0f5f8; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--secondary-color); text-align: center;">
+       <i class="fa-solid fa-arrow-up" style="color: var(--secondary-color); font-size: 28pt;"></i> <i class="fa-solid fa-arrow-up" style="color: var(--secondary-color); font-size: 28pt;"></i>
+       <p style="font-size: 14pt; margin-top: 10px;"><strong>\(p \uparrow\) and \(Q \uparrow\) together</strong></p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">Demand shift along stable supply</p>
+      </div>
+      <div style="background: #fff3e0; padding: 18px 22px; border-radius: 10px; border-left: 4px solid var(--accent-color); text-align: center;">
+       <i class="fa-solid fa-arrow-down" style="color: var(--accent-color); font-size: 28pt;"></i> <i class="fa-solid fa-arrow-up" style="color: var(--accent-color); font-size: 28pt;"></i>
+       <p style="font-size: 14pt; margin-top: 10px;"><strong>\(p \downarrow\) and \(Q \uparrow\)</strong></p>
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">Supply shift along stable demand</p>
+      </div>
+     </div>
+     <p style="font-size: 12pt; color: var(--muted-color); margin-top: 14px; font-style: italic; text-align: center;">
+      Every financial-news headline that said "booming used-car market shows supply crunch easing" was diagnosing the wrong shifter.
+     </p>
+    </section>
+
+    <!-- ===== Slide 38 (vertical stack) — Poll #4 ===== -->
+    <section>
+     <section id="poll-4">
+      <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #4: Austin vs Cleveland</h2>
+      <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+       <p style="font-size: 14pt; line-height: 1.7;">
+        Austin rents rose <strong>25%</strong> from 2020 to 2022; Cleveland rents rose <strong>10%</strong> over the same period. Most likely explanation?
+       </p>
+      </div>
+      <div class="poll-grid" data-poll-id="ch02-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 14pt;">
+       <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Austin had a much bigger demand shift</div>
+       <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Austin's supply curve is steeper (closer to SR)</div>
+       <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Both A and B</div>
+       <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cleveland residents are more price-sensitive</div>
+      </div>
+      <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 60 sec to vote</span></p>
+      <aside class="notes">Click to vote. Press down-arrow to reveal answer.</aside>
+     </section>
+     <section data-poll-results="ch02-poll-4" id="poll-4-reveal" style="display: flex; flex-direction: column;">
+      <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; Both A and B compound</h2>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+       <div class="poll-results-chart" data-poll-id="ch02-poll-4" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+       <div style="padding: 14px 50px 0;">
+        <p style="font-size: 14pt; line-height: 1.7;">
+         Demand shifted more in fast-growing Austin (population inflow); <em>and</em> Austin's housing supply is more inelastic (zoning + slow permitting).
+        </p>
+        <div style="background: #f0fdf4; border-left: 4px solid var(--success-color); padding: 14px 22px; border-radius: 8px; margin: 12px 0;">
+         <p style="font-size: 13pt; margin: 0;"><strong>Why C beats A or B alone:</strong> if only A, Cleveland would still match Austin proportionally to its smaller demand pulse; if only B, Cleveland's flatter LR-like supply would absorb the same demand pulse with smaller \(\Delta p\). Both compound.</p>
+        </div>
+       </div>
+      </div>
+     </section>
+    </section>
+
+    <!-- ===== Section 6 divider ===== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-section-6">
+     <h1>&sect;2.6 &nbsp;Beyond Linear</h1>
+     <p style="font-size: 16pt; color: var(--muted-color); margin-top: 16px; text-align: center;">3 min &middot; Where Ch 3 picks up</p>
+    </section>
+
+    <!-- ===== Slide 39 — §6 Linear vs CE preview ===== -->
+    <section id="s6-linear-vs-ce">
+     <h2>Linear is a starting point, not the destination</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 22px; align-items: center;">
+      <div>
+       <p style="font-size: 14pt; line-height: 1.6;">
+        The linear approximation works <em>near</em> the observed equilibrium and breaks down <em>far from</em> it.
+       </p>
+       <div style="background: #fef2f2; padding: 14px 20px; border-radius: 10px; margin-top: 10px; border-left: 4px solid var(--danger-color);">
+        <p style="font-size: 13pt; line-height: 1.6; margin: 0;">
+         A linear egg model fit at \((\$10, 150)\) gives nonsense at \(p = \$1\) (\(Q^d = 195\) million dozens? no) or \(p = \$30\) (\(Q^s &lt; 0\)? no).
+        </p>
+       </div>
+       <p style="font-size: 14pt; line-height: 1.6; margin-top: 12px;">
+        <strong>Constant-elasticity demand</strong> \(Q^d = A p^{-\varepsilon}\) is closer to the data for many commodities (cigarettes, gasoline, electricity).
+       </p>
+       <div style="background: #f0fdf4; padding: 12px 18px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-arrow-right" style="color: var(--success-color);"></i> <strong>Ch 3</strong> reorganizes around <strong>elasticity</strong> &mdash; a unit-free pure number that scales across markets.</p>
+       </div>
+      </div>
+      <div style="text-align: center;">
+       <img class="figure" alt="Linear vs constant-elasticity demand: both fit the observed equilibrium exactly but diverge in the tails" src="figures/figure_010_linear_vs_constant_elasticity.png" style="max-width: 100%; max-height: 460px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 40 — Forward seeds ===== -->
+    <section id="forward-seeds">
+     <h2><i class="fa-solid fa-seedling" style="color: var(--success-color);"></i> Where today's tools go next</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Ch 3 &mdash; Elasticity</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;">Today's \(dp^*/d\alpha = -1/(b+d)\) becomes the <strong>tax-incidence formula</strong>. Pass-through ratios get a closed form.</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Ch 6 &mdash; Demand</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;">CS splits into <strong>Hicksian (compensated)</strong> vs <strong>Marshallian (uncompensated)</strong> variants. Same integral form, different demand objects.</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Ch 10 &mdash; Perfect Competition</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;">Today's welfare integral becomes the formal <strong>welfare theorem</strong>: competitive equilibrium maximizes total surplus.</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Ch 11 &mdash; Monopoly</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;"><strong>DWL of monopoly</strong> = the same integral, with \(P_m &gt; MC\) replacing \(P^* = MC\).</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--success-color); grid-column: span 2;">
+       <p style="font-size: 13pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Ch 17 &mdash; Externalities</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;"><strong>NYC congestion pricing</strong> returns as a Pigouvian-tax application. The Davis et al. \$14.3M/wk welfare gain is the §2.3 integral evaluated on the externality-corrected market.</p>
+      </div>
+     </div>
+    </section>
+
+    <!-- ===== Slide 41 — Key Takeaways ===== -->
+    <section id="key-takeaways">
+     <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+     <ol style="font-size: 14pt; line-height: 1.75; padding-left: 24px; margin-top: 8px; list-style: decimal;">
+      <li><strong>Demand and supply are functions, not curves.</strong> Algebra beats eyeballing. Linear: \(p^* = (a-c)/(b+d)\).</li>
+      <li><strong>Surplus is an integral.</strong> Triangle is the linear special case. Real policies (NYC congestion pricing) get evaluated by the integral, in dollars.</li>
+      <li><strong>Comparative statics is one formula.</strong> Total-differentiate the market-clearing condition; sign both \(dp^*/d\alpha\) and \(dQ^*/d\alpha\) separately.</li>
+      <li><strong>Movement along ≠ shift.</strong> Two different partial derivatives. Co-movement direction of \(p\) and \(Q\) is the diagnostic.</li>
+      <li><strong>Linear is a starting point.</strong> Ch 3 generalizes via elasticity.</li>
+     </ol>
+     <div class="key-result" style="margin-top: 18px;">
+      <p>The grocery manager from the opening hook now has the tools to translate USDA's Q3 flock forecast into a Q4 shelf price. The rest of the book generalizes the toolkit.</p>
+     </div>
+    </section>
+
+    <!-- ===== Slide 42 — Exit Ticket ===== -->
+    <section id="exit-ticket">
+     <h2><i class="fa-solid fa-clipboard-check" style="color: var(--secondary-color);"></i> Exit Ticket (2 min)</h2>
+     <div class="content" style="justify-content: center;">
+      <div style="background: #f0f5f8; padding: 24px 28px; border-radius: 12px; max-width: 920px; margin: 0 auto;">
+       <p style="font-size: 14pt; font-weight: 600; line-height: 1.6; margin-bottom: 12px;">Sign \(dp^*/d\alpha\) and \(dQ^*/d\alpha\) for each parameter change. <em>One sentence each.</em></p>
+       <ol style="font-size: 13pt; line-height: 1.85; padding-left: 22px; list-style: decimal;">
+        <li>Positive supply shifter (e.g., productivity improvement)</li>
+        <li>Positive demand shifter (e.g., income rises in a normal-good market)</li>
+        <li>Negative supply shifter (e.g., the HPAI cull)</li>
+        <li>Compare 1 to 3: in one sentence, why are the <em>signs of \(dQ^*\)</em> the same in absolute terms?</li>
+       </ol>
+      </div>
+      <p style="margin-top: 16px; text-align: center; font-size: 13pt; color: var(--muted-color); font-style: italic;">
+       Drop in your section folder before you leave. Next class: Ch 3 &mdash; Elasticity and Government Intervention.
+      </p>
+     </div>
+     <aside class="notes">Targets: (1) dp* &lt; 0, dQ* &gt; 0; (2) dp* &gt; 0, dQ* &gt; 0; (3) dp* &gt; 0, dQ* &lt; 0; (4) dQ*/dα = b/(b+d) &gt; 0 in absolute terms — the direction of the supply shift flips, but the magnitude formula is symmetric.</aside>
+    </section>
+
+    <!-- ===== Slide 43 — Resources ===== -->
+    <section id="resources">
+     <h2><i class="fa-solid fa-book" style="color: var(--accent-color);"></i> Resources for self-study</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Textbook</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;">Goolsbee/Levitt/Syverson 4e ch 2; Varian <em>Intermediate Microeconomics with Calculus</em> ch 1.</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Math Appendix A</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;"><strong>A.3</strong> implicit function theorem (formal comparative statics);<br><strong>A.8</strong> integration as area (surplus integrals).</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Practice problems</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;">EOC Problems 1&ndash;15. Especially:<br>&bull; <strong>P13</strong> (egg partial recovery extension of W2.5)<br>&bull; <strong>P11</strong> (constant-elasticity surplus integral &mdash; does it converge?)</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Data</p>
+       <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;"><strong>FRED <code>APU0000708111</code></strong> &mdash; egg prices monthly. <code>fred.stlouisfed.org/series/APU0000708111</code></p>
+      </div>
+     </div>
+     <p style="font-size: 13pt; color: var(--muted-color); margin-top: 16px; text-align: center; font-style: italic;">
+      Next class: Ch 3 &mdash; Elasticity and Government Intervention.
+     </p>
+    </section>
+
+   </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+   Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: 'all',
+      showSlideNumber: 'all',
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      pdfMaxPagesPerSlide: 1,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+   .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap">
+   <div class="cd-pill" id="cd-pill">
+    <div>
+     <div class="cd-label">Activity Timer</div>
+     <div class="cd-time" id="cd-time">0:00</div>
+    </div>
+    <div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div>
+   </div>
+  </div>
+  <script>
+   (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+   .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+   (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    var IS_FILE = (window.location.protocol === "file:");
+    var localTallies = {};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});if(IS_FILE){if(!localTallies[pid])localTallies[pid]={};localTallies[pid][ch]=(localTallies[pid][ch]||0)+1;render(pid,localTallies[pid]);return;}sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*80);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){if(IS_FILE){render(pid,localTallies[pid]||{});return;}sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){render(pid,localTallies[pid]||{});});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;if(IS_FILE){localTallies[pid]={};render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});return;}sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);if(!IS_FILE){setInterval(function(){fetchR(pid);},2000);}});
+  })();
+  </script>
+ </body>
+</html>
