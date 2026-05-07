@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Literacy & Generative Tools for Economists</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- MathJax -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase for live polls -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============================================ -->
+      <!-- SLIDE 1: TITLE -->
+      <!-- ============================================ -->
+      <section>
+        <section id="title">
+          <div style="display: grid; grid-template-columns: 55% 45%; align-items: center; height: 100%;">
+            <div style="text-align: left; padding-right: 1em;">
+              <h1 style="font-size: 36pt; margin-bottom: 0.3em;">AI Literacy &<br>Generative Tools<br>for Economists</h1>
+              <p style="font-size: 16pt; color: var(--secondary); margin-bottom: 0.5em;">Chapter 25 of 26</p>
+              <p style="font-size: 14pt; color: var(--text-muted);">ECON 3916: Data Science for Economists</p>
+              <p style="font-size: 12pt; color: var(--text-muted);">75 min | Presentation + Lab</p>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center;">
+              <img src="figures/figure_003_rag_pipeline.png" alt="RAG pipeline architecture diagram" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+            </div>
+          </div>
+          <aside class="notes">Welcome to Chapter 25. Today we cover AI literacy — how to use LLMs, RAG pipelines, and AI coding tools responsibly as an economist. This is the second-to-last topic before the Capstone.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 2: LEARNING OBJECTIVES -->
+      <!-- ============================================ -->
+      <section>
+        <section id="learning-objectives">
+          <h2>Learning Objectives</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em; margin-top: 1em;">
+            <div class="lo-card" style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; border-left: 4px solid var(--secondary);">
+              <p style="font-size: 11pt; color: var(--secondary); font-weight: bold;">LO1 — Understand</p>
+              <p style="font-size: 13pt;"><strong>Explain</strong> what LLMs, embeddings, and RAG are and how they differ from supervised ML</p>
+            </div>
+            <div class="lo-card" style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; border-left: 4px solid var(--accent);">
+              <p style="font-size: 11pt; color: var(--accent); font-weight: bold;">LO2 — Apply</p>
+              <p style="font-size: 13pt;"><strong>Use</strong> AI coding tools with effective prompt engineering</p>
+            </div>
+            <div class="lo-card" style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; border-left: 4px solid var(--success);">
+              <p style="font-size: 11pt; color: var(--success); font-weight: bold;">LO3 — Evaluate</p>
+              <p style="font-size: 13pt;"><strong>Evaluate</strong> AI-generated analysis using verification frameworks</p>
+            </div>
+          </div>
+          <aside class="notes">Three objectives today: understand the mechanism, use the tools, verify the output. Notice the Bloom's levels — we're climbing from understanding to evaluation.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 3: RETRIEVAL PRACTICE -->
+      <!-- ============================================ -->
+      <section>
+        <section id="retrieval-practice">
+          <h2><i class="fas fa-brain"></i> Retrieval Practice</h2>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <p style="font-size: 16pt; margin-bottom: 0.8em;" class="fragment fade-in"><strong>1.</strong> In Ch 23, you converted FOMC minutes into vectors. What technique? <span class="fragment" style="color: var(--accent);">→ TF-IDF</span></p>
+            <p style="font-size: 16pt; margin-bottom: 0.8em;" class="fragment fade-in"><strong>2.</strong> Why can't LASSO directly estimate a treatment effect in DML? <span class="fragment" style="color: var(--accent);">→ Regularization bias shrinks θ toward zero</span></p>
+            <p style="font-size: 16pt;" class="fragment fade-in"><strong>3.</strong> What was the key idea behind cross-fitting? <span class="fragment" style="color: var(--accent);">→ Nuisance model never predicts on its own training data</span></p>
+          </div>
+          <aside class="notes">Quick-fire recall. 60 seconds per question. Point to students, don't wait for raised hands. These warm up the neural pathways: TF-IDF extends to embeddings, DML's verification discipline extends to AI tools.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 4: OPENING HOOK -->
+      <!-- ============================================ -->
+      <section>
+        <section id="opening-hook">
+          <h2><i class="fas fa-gavel"></i> Mata v. Avianca (2023)</h2>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <p style="font-size: 15pt;" class="fragment fade-in">Attorney Steven Schwartz submitted a legal brief citing <strong>6 federal court decisions</strong></p>
+            <p style="font-size: 15pt;" class="fragment fade-in">Complete with case names, docket numbers, and quoted passages</p>
+            <p style="font-size: 15pt; color: var(--danger);" class="fragment fade-in"><strong>Every single case was fabricated by ChatGPT</strong></p>
+            <p style="font-size: 15pt;" class="fragment fade-in">$5,000 fine + required notification to every named judge</p>
+          </div>
+          <div class="fragment fade-in" style="margin-top: 1.5em; padding: 0.8em; background: var(--bg-subtle); border-radius: 8px; border-left: 4px solid var(--accent);">
+            <p style="font-size: 16pt; font-weight: bold; text-align: center;">How would you verify whether an AI-generated economic claim is true?</p>
+          </div>
+          <aside class="notes">Open with energy. This story grabs attention because every student has used ChatGPT. Pause after the question — let it land. Don't answer it yet. The entire lecture builds toward the answer.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 5: CONCEPT BRIDGE -->
+      <!-- ============================================ -->
+      <section>
+        <section id="concept-bridge">
+          <h2>From DML to RAG</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em; margin-top: 1em;">
+            <div style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; text-align: center;">
+              <p style="font-size: 14pt; color: var(--secondary); font-weight: bold;">Chapter 24: DML</p>
+              <p style="font-size: 13pt;">ML → residuals → clean causal estimate</p>
+              <p style="font-size: 12pt; color: var(--text-muted);">Residualizes out <em>confounding</em></p>
+            </div>
+            <div style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; text-align: center;">
+              <p style="font-size: 14pt; color: var(--accent); font-weight: bold;">Chapter 25: RAG</p>
+              <p style="font-size: 13pt;">Retrieved docs → grounded context → verifiable output</p>
+              <p style="font-size: 12pt; color: var(--text-muted);">Residualizes out <em>hallucination</em></p>
+            </div>
+          </div>
+          <p style="font-size: 14pt; margin-top: 1.5em; text-align: center; color: var(--primary);">Same epistemic discipline — checking assumptions, verifying outputs, understanding what can go wrong</p>
+          <aside class="notes">Draw the parallel explicitly. Students who struggled with DML will appreciate the simpler framing. The thread: ML serves causation in Ch 24, RAG serves verification in Ch 25.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SECTION DIVIDER: FROM ML TO LLMS -->
+      <!-- ============================================ -->
+      <section class="section-divider" data-state="is-section-divider">
+        <section id="section-1-divider">
+          <h1 style="font-size: 36pt;">Section 1</h1>
+          <h2 style="font-size: 24pt; color: var(--secondary);">From Traditional ML to Language Models</h2>
+          <aside class="notes">Transition to the first content section. We'll cover LLMs, stochastic parrots, and embeddings.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 6: LLM = NEXT TOKEN PREDICTION -->
+      <!-- ============================================ -->
+      <section>
+        <section id="llm-mechanism">
+          <h2>LLMs Are Conditional Probability Machines</h2>
+          <div style="text-align: center; margin: 1em 0;">
+            <p style="font-size: 18pt;">$$P(w_{t+1} \mid w_1, w_2, \ldots, w_t)$$</p>
+          </div>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <p style="font-size: 14pt;" class="fragment fade-in">Given all previous tokens, predict the <strong>next token</strong></p>
+            <p style="font-size: 14pt;" class="fragment fade-in">No fact database. No verification. Just <strong>pattern matching at scale</strong></p>
+            <p style="font-size: 14pt;" class="fragment fade-in">When ChatGPT writes "CPI was 3.2%," it's producing a high-probability token sequence — the number may or may not be correct</p>
+          </div>
+          <aside class="notes">This is it. The entire foundation of ChatGPT, Claude, Gemini — they predict the next word. Profoundly simple and profoundly powerful. But zero built-in fact-checking.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 7: TOKEN PREDICTION FIGURE -->
+      <!-- ============================================ -->
+      <section>
+        <section id="token-prediction-figure">
+          <h2>Next-Token Prediction in Action</h2>
+          <div style="display: flex; justify-content: center; margin-top: 0.3em;">
+            <img src="figures/figure_001_token_prediction.png" alt="Probability distribution over candidate next tokens for 'The Federal Reserve raised interest ___' showing 'rates' at 42% probability" style="width: 65%; border-radius: 8px;">
+          </div>
+          <p style="font-size: 12pt; color: var(--text-muted); margin-top: 0.3em;">The model assigns probabilities to every possible next token. "Rates" is most likely — but the model doesn't <em>know</em> what the Fed actually did.</p>
+          <aside class="notes">Walk through the figure. The model picks 'rates' because that's the most common completion in its training data. It could be wrong. It has no way to check.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 8: STOCHASTIC PARROTS -->
+      <!-- ============================================ -->
+      <section>
+        <section id="stochastic-parrots">
+          <h2>Stochastic Parrots</h2>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <p style="font-size: 14pt;">Bender et al. (2021): LLMs produce fluent text by <strong>stitching together statistical patterns</strong> without understanding meaning</p>
+            <div style="margin: 1em 0; padding: 0.8em; background: var(--bg-subtle); border-radius: 8px;">
+              <p style="font-size: 14pt; text-align: center;"><em>"The unemployment rate fell to 3.4% in January 2023"</em></p>
+              <p style="font-size: 12pt; text-align: center; color: var(--text-muted);">↑ Not a verified fact. A high-probability token sequence.</p>
+            </div>
+            <p style="font-size: 14pt;" class="fragment fade-in">Like a parrot reproducing speech without comprehension</p>
+            <p style="font-size: 14pt;" class="fragment fade-in">The number might be correct. It might not. <strong>The model cannot tell the difference.</strong></p>
+          </div>
+          <aside class="notes">The parrot metaphor is precise. Students will remember it. Key point: the model has no truth-checking mechanism. It's not lying — it's not capable of lying. It's generating patterns.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 9: TF-IDF VS EMBEDDINGS -->
+      <!-- ============================================ -->
+      <section>
+        <section id="embeddings">
+          <h2>From TF-IDF to Embeddings</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; margin-top: 0.5em;">
+            <div style="text-align: center;">
+              <p style="font-size: 14pt; font-weight: bold; color: var(--secondary);">Ch 23: TF-IDF (Sparse)</p>
+              <p style="font-size: 12pt;">One dimension per word<br>Mostly zeros<br>No meaning captured</p>
+            </div>
+            <div style="text-align: center;">
+              <p style="font-size: 14pt; font-weight: bold; color: var(--accent);">Ch 25: Embeddings (Dense)</p>
+              <p style="font-size: 12pt;">384–1536 dimensions<br>Every dimension carries info<br>Similar meanings cluster</p>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 0.8em;">
+            <p style="font-size: 14pt;">$$\text{embed}(\text{"inflation expectations"}) \approx \text{embed}(\text{"price forecasts"})$$</p>
+          </div>
+          <aside class="notes">Connect to Ch 23: same idea — text as numbers — with a much richer representation. The TF-IDF vectors were sparse; embeddings are dense and capture meaning.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 10: EMBEDDINGS FIGURE -->
+      <!-- ============================================ -->
+      <section>
+        <section id="embeddings-figure">
+          <h2>Sparse vs Dense Representations</h2>
+          <div style="display: flex; justify-content: center;">
+            <img src="figures/figure_002_tfidf_vs_embeddings.png" alt="TF-IDF produces scattered points while embeddings cluster documents by semantic meaning — monetary, fiscal, and trade policy documents form distinct groups" style="width: 70%; border-radius: 8px;">
+          </div>
+          <aside class="notes">Left: TF-IDF scatters documents randomly because it can't capture meaning. Right: embeddings cluster similar documents together. This is why RAG works — you can find relevant documents by meaning, not just keywords.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 11: POLL 1 -->
+      <!-- ============================================ -->
+      <section>
+        <section id="poll-1">
+          <h2><i class="fas fa-chart-bar"></i> Class Poll</h2>
+          <p style="font-size: 15pt; margin-bottom: 1em;">An LLM says "US inflation was 3.1% in December 2024." What is this statement?</p>
+          <div class="poll-grid" data-poll-id="ch25-poll-1">
+            <div class="poll-option" data-value="A">A verified fact from the model's database</div>
+            <div class="poll-option" data-value="B">A statistical prediction based on economic models</div>
+            <div class="poll-option" data-value="C">A high-probability token sequence based on training patterns</div>
+            <div class="poll-option" data-value="D">Definitely a hallucination</div>
+          </div>
+          <div data-poll-results="ch25-poll-1" style="display:none;"></div>
+          <aside class="notes">Many students will pick (A) — they think of AI as a search engine. The reveal is the teaching moment: it's not looking up facts, it's completing patterns. That's the fundamental distinction.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 12: POLL 1 REVEAL -->
+      <!-- ============================================ -->
+      <section>
+        <section id="poll-1-reveal">
+          <h2>Answer: (C) High-Probability Token Sequence</h2>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <p style="font-size: 14pt;" class="fragment fade-in"><strong>(A) Wrong:</strong> LLMs don't have a "database" they query</p>
+            <p style="font-size: 14pt;" class="fragment fade-in"><strong>(B) Wrong:</strong> LLMs aren't running economic forecasting models</p>
+            <p style="font-size: 14pt; color: var(--accent);" class="fragment fade-in"><strong>(C) Correct:</strong> The model generates tokens statistically likely to follow "US inflation was." The number might happen to be correct — we just can't tell from the model alone.</p>
+            <p style="font-size: 14pt;" class="fragment fade-in"><strong>(D) Wrong:</strong> The claim might be correct — "hallucination" means we'd need to verify</p>
+          </div>
+          <aside class="notes">Reinforce: it's not looking up facts. It's completing a pattern. Everything else in this lecture builds on this distinction.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 13: DISCUSSION 1 -->
+      <!-- ============================================ -->
+      <section>
+        <section id="discussion-1">
+          <h2><i class="fas fa-comments"></i> Discussion: When Should You Trust AI?</h2>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <p style="font-size: 15pt; margin-bottom: 1em;"><strong>Think-Pair-Share (4 min)</strong></p>
+            <p style="font-size: 14pt;">"When should you trust an AI-generated economic claim? What verification would you need before including it in a research paper?"</p>
+            <div style="margin-top: 1em; padding: 0.8em; background: var(--bg-subtle); border-radius: 8px;">
+              <p style="font-size: 12pt;"><strong>Pair prompts:</strong></p>
+              <p style="font-size: 12pt;">• Trust AI more for qualitative summaries or quantitative claims?</p>
+              <p style="font-size: 12pt;">• Trusting AI to write code vs. stating facts — same or different?</p>
+              <p style="font-size: 12pt;">• How is this like trusting a Wikipedia article?</p>
+            </div>
+          </div>
+          <aside class="notes">90 seconds for pairs, then cold-call 2-3. Listen for: "check the source," "run it yourself," "compare to official data." These anticipate the verification framework in Section 4.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SECTION DIVIDER: AI-ASSISTED DEVELOPMENT -->
+      <!-- ============================================ -->
+      <section class="section-divider" data-state="is-section-divider">
+        <section id="section-2-divider">
+          <h1 style="font-size: 36pt;">Section 2</h1>
+          <h2 style="font-size: 24pt; color: var(--secondary);">AI-Assisted Development</h2>
+          <aside class="notes">Now that we understand the mechanism, how do we use these tools productively?</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 14: AI CODING TOOL SPECTRUM -->
+      <!-- ============================================ -->
+      <section>
+        <section id="coding-spectrum">
+          <h2>The AI Coding Tool Spectrum</h2>
+          <table style="font-size: 13pt; width: 90%; margin: 1em auto;">
+            <thead>
+              <tr><th style="width: 20%;">Mode</th><th style="width: 35%;">What It Does</th><th style="width: 45%;">Example</th></tr>
+            </thead>
+            <tbody>
+              <tr class="fragment fade-in"><td><strong>Autocomplete</strong></td><td>Predicts next few tokens as you type</td><td><code>df.groupby('state')</code> → <code>.agg({'income': 'median'})</code></td></tr>
+              <tr class="fragment fade-in"><td><strong>Chat</strong></td><td>Answers code questions</td><td>"How do I compute robust SEs in statsmodels?"</td></tr>
+              <tr class="fragment fade-in"><td><strong>Agentic</strong></td><td>Plans and executes multi-step tasks</td><td>"Download FRED data, merge, run regression, plot"</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size: 13pt; color: var(--danger); margin-top: 0.5em;" class="fragment fade-in">Risk increases from left to right — agentic mode can propagate subtle errors silently</p>
+          <aside class="notes">The spectrum matters because productivity gains and risks both increase as you move right. Autocomplete is safe; agentic mode can generate entire pipelines with hidden errors.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 15: PRODUCTIVITY PARADOX -->
+      <!-- ============================================ -->
+      <section>
+        <section id="productivity-paradox">
+          <h2>The Productivity Paradox</h2>
+          <div style="display: flex; justify-content: center; margin: 0.5em 0;">
+            <img src="figures/figure_005_productivity_comparison.png" alt="METR study actual (-19%) vs perceived (+20%) vs Peng et al. (+55.8%)" style="width: 80%; border-radius: 8px;">
+          </div>
+          <div style="text-align: center;">
+            <p style="font-size: 14pt; margin-top: 0.5em;" class="fragment fade-in">Perception gap: <strong>~40 percentage points</strong></p>
+            <p style="font-size: 13pt; color: var(--text-muted);" class="fragment fade-in">Simple tasks: AI accelerates. Complex tasks: AI may slow you down.</p>
+          </div>
+          <aside class="notes">Let this land. Students will be surprised. The takeaway: the benefit depends on context. For labs — well-defined tasks — AI helps. For complex codebases requiring deep understanding, it can slow you down.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 16: COMPARATIVE ADVANTAGE -->
+      <!-- ============================================ -->
+      <section>
+        <section id="comparative-advantage">
+          <h2>Comparative Advantage with AI</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; margin-top: 1em;">
+            <div style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; border-left: 4px solid var(--success);">
+              <p style="font-size: 14pt; font-weight: bold; color: var(--success);">Your Advantage</p>
+              <p style="font-size: 13pt;">Domain knowledge<br>Causal reasoning<br>Identification strategy<br>Economic interpretation<br>Judgment calls</p>
+            </div>
+            <div style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; border-left: 4px solid var(--secondary);">
+              <p style="font-size: 14pt; font-weight: bold; color: var(--secondary);">AI's Advantage</p>
+              <p style="font-size: 13pt;">Data loading code<br>Table formatting<br>Matplotlib styling<br>Library syntax<br>Boilerplate setup</p>
+            </div>
+          </div>
+          <p style="font-size: 13pt; margin-top: 1em; text-align: center; color: var(--accent);">When debugging AI code takes longer than writing it yourself → you've violated comparative advantage</p>
+          <aside class="notes">Ricardo's principle applied. AI is your research assistant, not your co-author. You decide the identification strategy; AI writes the pandas code.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 17: POLL 2 -->
+      <!-- ============================================ -->
+      <section>
+        <section id="poll-2">
+          <h2><i class="fas fa-chart-bar"></i> Class Poll</h2>
+          <p style="font-size: 15pt; margin-bottom: 1em;">The METR study found that experienced developers using AI tools were:</p>
+          <div class="poll-grid" data-poll-id="ch25-poll-2">
+            <div class="poll-option" data-value="A">55% faster</div>
+            <div class="poll-option" data-value="B">26% faster</div>
+            <div class="poll-option" data-value="C">About the same speed</div>
+            <div class="poll-option" data-value="D">19% slower</div>
+          </div>
+          <div data-poll-results="ch25-poll-2" style="display:none;"></div>
+          <aside class="notes">If many students pick (A) or (B), it demonstrates the very perception bias the study found. The correct answer (D) surprises — and they thought they were 20% faster.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 18: DISCUSSION 2 -->
+      <!-- ============================================ -->
+      <section>
+        <section id="discussion-2">
+          <h2><i class="fas fa-comments"></i> Your Comparative Advantage</h2>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <p style="font-size: 15pt; margin-bottom: 1em;"><strong>Open Discussion (5 min)</strong></p>
+            <p style="font-size: 14pt;">"What is YOUR comparative advantage over AI?"</p>
+            <div style="margin-top: 1em; padding: 0.8em; background: var(--bg-subtle); border-radius: 8px;">
+              <p style="font-size: 12pt;">• Which parts of your labs could AI have done?</p>
+              <p style="font-size: 12pt;">• Could AI have chosen the right treatment variable in Ch 24?</p>
+              <p style="font-size: 12pt;">• What happens as AI improves? Does your advantage shift?</p>
+            </div>
+          </div>
+          <aside class="notes">Get 3-4 student responses. Push the boundary: what happens as AI gets better at domain tasks? Connect to the career section later.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SECTION DIVIDER: RAG -->
+      <!-- ============================================ -->
+      <section class="section-divider" data-state="is-section-divider">
+        <section id="section-3-divider">
+          <h1 style="font-size: 36pt;">Section 3</h1>
+          <h2 style="font-size: 24pt; color: var(--secondary);">RAG: Grounding AI in Evidence</h2>
+          <aside class="notes">The technical core of the lecture. How do we make AI output trustworthy?</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 19: HALLUCINATION PROBLEM -->
+      <!-- ============================================ -->
+      <section>
+        <section id="hallucination">
+          <h2>The Hallucination Problem</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-top: 1em;">
+            <div style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; text-align: center;">
+              <p style="font-size: 28pt; font-weight: bold; color: var(--danger);">$67.4B</p>
+              <p style="font-size: 12pt;">Global business losses from AI hallucinations (2024)</p>
+            </div>
+            <div style="background: var(--bg-subtle); padding: 1em; border-radius: 8px; text-align: center;">
+              <p style="font-size: 28pt; font-weight: bold; color: var(--danger);">41%</p>
+              <p style="font-size: 12pt;">Hallucination rate in finance-related queries</p>
+            </div>
+          </div>
+          <div style="margin-top: 1em; text-align: left; max-width: 85%; margin-left: auto; margin-right: auto;">
+            <p style="font-size: 13pt;" class="fragment fade-in"><strong>Air Canada chatbot:</strong> Fabricated bereavement policy → court ruled airline liable</p>
+            <p style="font-size: 13pt;" class="fragment fade-in"><strong>Industry shift:</strong> From "ban AI" → "deploy AI responsibly" (JPMorgan: 450+ use cases, $1.3B/yr)</p>
+          </div>
+          <aside class="notes">These are not hypothetical risks. Real money lost, real legal consequences. The industry didn't ban AI — they built guardrails. RAG is the primary guardrail.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 20: RAG PIPELINE -->
+      <!-- ============================================ -->
+      <section>
+        <section id="rag-pipeline">
+          <h2>How RAG Works: 4 Stages</h2>
+          <div style="display: flex; justify-content: center;">
+            <img src="figures/figure_003_rag_pipeline.png" alt="RAG pipeline: Documents are chunked, embedded into a vector database, user question retrieves similar chunks, LLM generates answer grounded in context" style="width: 75%; border-radius: 8px;">
+          </div>
+          <p style="font-size: 12pt; text-align: center; margin-top: 0.3em; color: var(--text-muted);">Same FOMC corpus from Ch 23 — now as a RAG knowledge base instead of TF-IDF vectors</p>
+          <aside class="notes">Walk through each stage with FOMC example. Stage 1: split minutes into paragraphs. Stage 2: each paragraph becomes a vector. Stage 3: embed your question, find 5 most similar paragraphs. Stage 4: LLM summarizes those specific paragraphs.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 21: RAG RETRIEVAL EQUATION -->
+      <!-- ============================================ -->
+      <section>
+        <section id="rag-equation">
+          <h2>Retrieval: Finding Relevant Documents</h2>
+          <div style="text-align: center; margin: 1em 0;">
+            <p style="font-size: 18pt;">$$\text{retrieved} = \arg\max_{d \in \mathcal{D}} \; \text{sim}(\text{embed}(q), \text{embed}(d))$$</p>
+          </div>
+          <div style="text-align: left; max-width: 80%; margin: 0 auto;">
+            <p style="font-size: 13pt;" class="fragment fade-in">$q$ = your question</p>
+            <p style="font-size: 13pt;" class="fragment fade-in">$\mathcal{D}$ = all document chunks in the vector database</p>
+            <p style="font-size: 13pt;" class="fragment fade-in">$\text{sim}(\cdot, \cdot)$ = cosine similarity (how close are the vectors?)</p>
+            <p style="font-size: 13pt;" class="fragment fade-in">Instead of making things up → the model reads <strong>YOUR documents</strong> first</p>
+          </div>
+          <aside class="notes">This is the key equation. The model doesn't hallucinate about the Fed because it's reading the actual FOMC minutes, not generating from memory. It's the difference between citing a source and answering from memory on an exam.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 22: POLL 3 -->
+      <!-- ============================================ -->
+      <section>
+        <section id="poll-3">
+          <h2><i class="fas fa-chart-bar"></i> Class Poll</h2>
+          <p style="font-size: 15pt; margin-bottom: 1em;">RAG reduces hallucination by:</p>
+          <div class="poll-grid" data-poll-id="ch25-poll-3">
+            <div class="poll-option" data-value="A">Retraining the model on your specific data</div>
+            <div class="poll-option" data-value="B">Retrieving relevant documents before generating an answer</div>
+            <div class="poll-option" data-value="C">Filtering the model's output with rule-based checks</div>
+            <div class="poll-option" data-value="D">Using a smaller, more focused model</div>
+          </div>
+          <div data-poll-results="ch25-poll-3" style="display:none;"></div>
+          <aside class="notes">This is the conceptual core of LO1. (B) is correct. (A) describes fine-tuning — different approach, much more expensive.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 23: RAG VS FINE-TUNING DECISION -->
+      <!-- ============================================ -->
+      <section>
+        <section id="decision-scenario">
+          <h2><i class="fas fa-balance-scale"></i> Decision: RAG vs Fine-Tuning</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-top: 0.5em;">
+            <div style="background: var(--bg-subtle); padding: 0.8em; border-radius: 8px; border-top: 3px solid var(--secondary);">
+              <p style="font-size: 13pt; font-weight: bold; color: var(--secondary);">RAG Pipeline</p>
+              <p style="font-size: 11pt;">Setup: ~$2,000</p>
+              <p style="font-size: 11pt;">Monthly: $350–$2,850</p>
+              <p style="font-size: 11pt;">Updates: Near-zero cost</p>
+              <p style="font-size: 11pt;">Accuracy: 91% (FinanceBench)</p>
+            </div>
+            <div style="background: var(--bg-subtle); padding: 0.8em; border-radius: 8px; border-top: 3px solid var(--accent);">
+              <p style="font-size: 13pt; font-weight: bold; color: var(--accent);">Fine-Tuned Model</p>
+              <p style="font-size: 11pt;">Setup: $10K–$50K</p>
+              <p style="font-size: 11pt;">Monthly: $2K–$5K</p>
+              <p style="font-size: 11pt;">Updates: $500–$5K per retrain</p>
+              <p style="font-size: 11pt;">Accuracy: Varies by content</p>
+            </div>
+          </div>
+          <p style="font-size: 14pt; margin-top: 1em; text-align: center;"><strong>Scenario:</strong> 500 FOMC documents, $5K/month budget. <span style="color: var(--accent);">Which do you choose?</span></p>
+          <aside class="notes">Let students argue for 2 minutes. Then reveal: for a changing corpus, RAG dominates. 91% accuracy, near-zero update costs, traceable answers. Fine-tuning only for static corpora with domain-specific reasoning needs.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SECTION DIVIDER: EVALUATION -->
+      <!-- ============================================ -->
+      <section class="section-divider" data-state="is-section-divider">
+        <section id="section-4-divider">
+          <h1 style="font-size: 36pt;">Section 4</h1>
+          <h2 style="font-size: 24pt; color: var(--secondary);">Evaluating AI-Generated Analysis</h2>
+          <aside class="notes">The payoff section. How do you verify what AI tells you?</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 24: VERIFICATION FRAMEWORK -->
+      <!-- ============================================ -->
+      <section>
+        <section id="verification">
+          <h2>The 4-Step Verification Framework</h2>
+          <div style="text-align: left; max-width: 85%; margin: 0 auto;">
+            <div style="margin-bottom: 0.5em; padding: 0.5em; background: var(--bg-subtle); border-radius: 6px;" class="fragment fade-in">
+              <p style="font-size: 14pt;"><strong>1. Source Verification</strong> — Does the claim cite a verifiable source? No source → unverified.</p>
+            </div>
+            <div style="margin-bottom: 0.5em; padding: 0.5em; background: var(--bg-subtle); border-radius: 6px;" class="fragment fade-in">
+              <p style="font-size: 14pt;"><strong>2. Consistency Check</strong> — Does it pass a sanity test? "15% unemployment" → your domain knowledge flags this.</p>
+            </div>
+            <div style="margin-bottom: 0.5em; padding: 0.5em; background: var(--bg-subtle); border-radius: 6px;" class="fragment fade-in">
+              <p style="font-size: 14pt;"><strong>3. Adversarial Testing</strong> — Ask the same question differently. Different answers → at least one is wrong.</p>
+            </div>
+            <div style="margin-bottom: 0.5em; padding: 0.5em; background: var(--bg-subtle); border-radius: 6px;" class="fragment fade-in">
+              <p style="font-size: 14pt;"><strong>4. Reproduction</strong> — Re-run the analysis yourself. AI accelerates; it doesn't replace.</p>
+            </div>
+          </div>
+          <p style="font-size: 12pt; color: var(--text-muted); margin-top: 0.5em; text-align: center;" class="fragment fade-in">These are the same habits from 24 chapters of this course — applied to AI output</p>
+          <aside class="notes">Source verification = citing your data source. Consistency checks = sanity-checking coefficients. Adversarial testing = robustness checks. Reproduction = reproduction. You already know how to do this.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 25: POLL 4 -->
+      <!-- ============================================ -->
+      <section>
+        <section id="poll-4">
+          <h2><i class="fas fa-chart-bar"></i> Class Poll</h2>
+          <p style="font-size: 15pt; margin-bottom: 1em;">Your AI says "unemployment hit 15% last quarter." First step?</p>
+          <div class="poll-grid" data-poll-id="ch25-poll-4">
+            <div class="poll-option" data-value="A">Check the source — ask for the BLS release</div>
+            <div class="poll-option" data-value="B">Ask the AI to verify its own claim</div>
+            <div class="poll-option" data-value="C">Run the analysis yourself immediately</div>
+            <div class="poll-option" data-value="D">Accept it if the prompt was well-crafted</div>
+          </div>
+          <div data-poll-results="ch25-poll-4" style="display:none;"></div>
+          <aside class="notes">(A) is correct — source verification is fastest and most informative. Never ask AI to verify itself — that's like asking a witness to grade their own credibility.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 26: CAREER & AI ADOPTION -->
+      <!-- ============================================ -->
+      <section>
+        <section id="career">
+          <h2>The AI-Literate Economist in 2026</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-top: 0.5em;">
+            <div>
+              <div style="text-align: center; margin-bottom: 0.5em;">
+                <p style="font-size: 36pt; font-weight: bold; color: var(--accent);">56%</p>
+                <p style="font-size: 12pt;">Wage premium for AI skills (PwC 2025)</p>
+                <p style="font-size: 11pt; color: var(--text-muted);">Up from 25% in 2024</p>
+              </div>
+              <div style="text-align: center;">
+                <p style="font-size: 28pt; font-weight: bold; color: var(--secondary);">73%</p>
+                <p style="font-size: 12pt;">Engineering teams using AI daily</p>
+              </div>
+            </div>
+            <div>
+              <img src="figures/figure_004_ai_adoption_trend.png" alt="AI adoption trend rising from 18% to 73% over 2024-2026" style="width: 100%; border-radius: 8px;">
+            </div>
+          </div>
+          <aside class="notes">End with energy. The 56% premium is for people who combine domain expertise with AI tools — exactly what they've been training to do. Connect to today's lab: portfolio website as proof of concept.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 27: KEY TAKEAWAYS -->
+      <!-- ============================================ -->
+      <section>
+        <section id="takeaways">
+          <h2>Key Takeaways</h2>
+          <div style="text-align: left; max-width: 90%; margin: 0 auto;">
+            <p style="font-size: 14pt; margin-bottom: 0.5em;" class="fragment fade-in"><strong>1.</strong> LLMs predict tokens, not facts. Hallucination rates reach 41% in financial contexts.</p>
+            <p style="font-size: 14pt; margin-bottom: 0.5em;" class="fragment fade-in"><strong>2.</strong> AI productivity depends on context — 55.8% speedup for simple tasks, 19% slowdown for complex ones.</p>
+            <p style="font-size: 14pt; margin-bottom: 0.5em;" class="fragment fade-in"><strong>3.</strong> RAG grounds AI in your documents — chunk → embed → retrieve → generate. 91% accuracy on financial benchmarks.</p>
+            <p style="font-size: 14pt; margin-bottom: 0.5em;" class="fragment fade-in"><strong>4.</strong> Verify like an economist — source, consistency, adversarial, reproduction.</p>
+            <p style="font-size: 14pt;" class="fragment fade-in"><strong>5.</strong> AI literacy is a career multiplier — 56% wage premium and growing.</p>
+          </div>
+          <aside class="notes">Read all five. The thread connecting them: epistemic rigor. The same discipline that makes you a good economist makes you a good AI user.</aside>
+        </section>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- SLIDE 28: EXIT TICKET -->
+      <!-- ============================================ -->
+      <section>
+        <section id="exit-ticket">
+          <h2><i class="fas fa-ticket-alt"></i> Exit Ticket</h2>
+          <div style="max-width: 80%; margin: 1em auto; text-align: left;">
+            <div style="padding: 1em; background: var(--bg-subtle); border-radius: 8px; margin-bottom: 1em;">
+              <p style="font-size: 15pt;"><strong>1.</strong> Explain in one sentence how RAG reduces hallucination compared to using an LLM alone.</p>
+            </div>
+            <div style="padding: 1em; background: var(--bg-subtle); border-radius: 8px;">
+              <p style="font-size: 15pt;"><strong>2.</strong> One thing I'm still unclear about from today's lecture.</p>
+            </div>
+          </div>
+          <p style="font-size: 14pt; margin-top: 1.5em; text-align: center; color: var(--secondary);"><strong>Next time:</strong> Chapter 26 — Capstone: From Question to Recommendation</p>
+          <aside class="notes">Collect or review digitally. Q1 targets LO1. If students can articulate the retrieval-then-generate mechanism, they've got the core idea. Review Q2 responses to calibrate lab.</aside>
+        </section>
+      </section>
+
+      <!-- EXTRA-SLIDES-START -->
+      <!-- EXTRA-SLIDES-END -->
+
+    </div><!-- .slides -->
+  </div><!-- .reveal -->
+
+  <!-- Reveal.js initialization -->
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/math/math.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      showSlideNumber: 'speaker',
+      transition: 'fade',
+      transitionSpeed: 'default',
+      backgroundTransition: 'fade',
+      center: true,
+      width: 1920,
+      height: 1080,
+      margin: 0.05,
+      plugins: [ RevealNotes, RevealMath.MathJax3 ]
+    });
+  </script>
+
+  <!-- Poll interaction script (Supabase live polls) -->
+  <script>
+    document.querySelectorAll('.poll-option').forEach(option => {
+      option.addEventListener('click', function() {
+        const pollGrid = this.closest('.poll-grid');
+        pollGrid.querySelectorAll('.poll-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+      });
+    });
+  </script>
+</body>
+</html>

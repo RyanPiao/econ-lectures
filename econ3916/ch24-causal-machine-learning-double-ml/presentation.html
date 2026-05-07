@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Causal ML: Double Machine Learning</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- SLIDE 1: Cover -->
+      <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+        <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 24</p>
+            <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Causal ML:<br>Double Machine Learning</h1>
+            <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 0;"></div>
+            <div style="margin-top: auto; padding-bottom: 15px;">
+              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+              <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+            </div>
+          </div>
+          <div style="overflow: hidden;">
+            <img src="figures/cover-ch24-econ3916-causal-machine-learning-double-ml.png" alt="Abstract illustration of causal inference and machine learning convergence"
+                 style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 2: Learning Objectives -->
+      <section id="learning-objectives" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+          <div style="background: #f8f6f3; padding: 18px 20px; border-radius: 10px; border-left: 4px solid #2980B9;">
+            <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; margin-bottom: 6px;">LO1 — UNDERSTAND</p>
+            <p style="font-size: 14pt; line-height: 1.5;">Why naive ML produces <strong>regularization bias</strong> and how <strong>Neyman orthogonality</strong> + <strong>cross-fitting</strong> resolve it</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 18px 20px; border-radius: 10px; border-left: 4px solid #27AE60;">
+            <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; margin-bottom: 6px;">LO2 — APPLY</p>
+            <p style="font-size: 14pt; line-height: 1.5;">Estimate the <strong>ATE</strong> of 401(k) eligibility on wealth using the <strong>DoubleML</strong> Python package</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 18px 20px; border-radius: 10px; border-left: 4px solid #E67E22;">
+            <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; margin-bottom: 6px;">LO3 — ANALYZE</p>
+            <p style="font-size: 14pt; line-height: 1.5;">Analyze <strong>CATE</strong> across subgroups — who benefits most from a policy intervention?</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 18px 20px; border-radius: 10px; border-left: 4px solid #8E44AD;">
+            <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; margin-bottom: 6px;">LO4 — EVALUATE</p>
+            <p style="font-size: 14pt; line-height: 1.5;">When is DML appropriate vs. A/B tests, OLS, or instrumental variables?</p>
+          </div>
+        </div>
+        <aside class="notes">4 LOs. LO4 is exposure, not mastery — the method choice table is a reference tool.</aside>
+      </section>
+
+      <!-- SLIDE 3: Retrieval Practice -->
+      <section id="retrieval" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-rotate-right" style="color: var(--accent-color);"></i> Retrieval Practice</h2>
+        <div style="margin-top: 20px;">
+          <div class="fragment" style="background: #f8f6f3; padding: 18px 24px; border-radius: 10px; margin-bottom: 14px;">
+            <p style="font-size: 16pt; line-height: 1.6;"><strong>Ch 9:</strong> What did <em>random assignment</em> buy us in the Lalonde experiment?</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; padding: 18px 24px; border-radius: 10px; margin-bottom: 14px;">
+            <p style="font-size: 16pt; line-height: 1.6;"><strong>Ch 15:</strong> If a model has low training error but high test error — which dominates, bias or variance?</p>
+          </div>
+          <div class="fragment" style="background: #f8f6f3; padding: 18px 24px; border-radius: 10px;">
+            <p style="font-size: 16pt; line-height: 1.6;"><strong>Ch 19:</strong> How does a Random Forest reduce variance compared to a single decision tree?</p>
+          </div>
+        </div>
+        <aside class="notes">3-4 min. Quick-fire. Target: random assignment eliminates selection bias (Ch 9), overfitting = high variance (Ch 15), bagging + feature randomization (Ch 19). "Today we combine ALL of these ideas into something new."</aside>
+      </section>
+
+      <!-- SLIDE 4: Opening Hook -->
+      <section id="hook" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-bolt" style="color: var(--accent-color);"></i> DoorDash: Half the Cost, Same Orders</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 15px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.7;">At KDD 2025, DoorDash revealed that most promotional spending was wasted on customers who would have ordered <em>anyway</em>.</p>
+            <p style="font-size: 15pt; line-height: 1.7; margin-top: 12px;">A/B tests could estimate the <strong>average</strong> effect. But DoorDash needed the <strong>individual-level</strong> causal response.</p>
+            <p style="font-size: 15pt; line-height: 1.7; margin-top: 12px;">DML controlled for hundreds of behavioral confounders — order history, cuisine preferences, weather, competitors.</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #EBF5FB, #D4EFDF); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <p style="font-size: 36pt; font-weight: 700; color: #27AE60; margin-bottom: 8px;">~50%</p>
+            <p style="font-size: 14pt; color: var(--text-color); text-align: center;">lower cost per<br>incremental order</p>
+            <div style="width: 40px; height: 2px; background: var(--line-color); margin: 12px 0;"></div>
+            <p style="font-size: 24pt; font-weight: 700; color: #2980B9; margin-bottom: 8px;">8.03%</p>
+            <p style="font-size: 14pt; color: var(--text-color); text-align: center;">Qini score<br>(best of all methods)</p>
+          </div>
+        </div>
+        <aside class="notes">4 min. "Half the cost. Same orders. That's what happens when you stop treating prediction and causation as the same thing."</aside>
+      </section>
+
+      <!-- SLIDE 5: Poll 1 (vertical stack) -->
+      <section>
+        <section id="poll-1" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Regularization Bias</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px; margin-top: 12px;">
+            <p style="font-size: 15pt; line-height: 1.6;">You run <strong>LASSO</strong> with a treatment variable and 200 controls. As you increase the penalty &lambda;, what happens to your treatment effect estimate &theta;&#770;?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch24-poll1-lasso-bias" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Unbiased — LASSO only affects the controls</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Biased toward zero — regularization contaminates &theta;&#770;</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Biased away from zero — LASSO inflates effects</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Depends entirely on sample size</div>
+          </div>
+          <aside class="notes">Students click to vote. 3 min.</aside>
+        </section>
+        <section id="poll-1-reveal" data-poll-results="ch24-poll1-lasso-bias">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B — Biased Toward Zero</h2>
+          <div class="poll-results-chart" data-poll-id="ch24-poll1-lasso-bias" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:12px 60px;"></div>
+          <div style="padding: 8px 60px;">
+            <p style="font-size: 14pt; line-height: 1.6;">The penalty shrinks <strong>all</strong> coefficients — including controls correlated with treatment. When those controls get shrunk, the confounding they absorbed leaks back into &theta;&#770;.</p>
+            <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 14px 18px; border-radius: 8px; margin: 14px 0;">
+              <p style="font-size: 13pt; margin: 0;"><strong>Key insight:</strong> Bias-variance tradeoff works differently for prediction vs. causation. Small prediction bias is OK; any causal bias corrupts the treatment effect.</p>
+            </div>
+          </div>
+          <aside class="notes">This is the fundamental problem DML solves. The penalty that makes LASSO great for prediction breaks it for causation.</aside>
+        </section>
+      </section>
+
+      <!-- SLIDE 6: Regularization Bias Figure -->
+      <section id="reg-bias" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-chart-column" style="color: var(--accent-color);"></i> Regularization Bias in Action</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 12px;">
+          <div style="text-align: center;">
+            <img src="figures/ch24-regularization-bias.png" alt="Histogram showing LASSO ATE distribution biased left versus DML distribution centered on truth" style="max-height: 420px; border-radius: 8px;">
+          </div>
+          <div style="display: flex; flex-direction: column; justify-content: center;">
+            <div style="background: #FDEDEC; border-left: 4px solid #E74C3C; padding: 16px; border-radius: 8px; margin-bottom: 14px;">
+              <p style="font-size: 14pt;"><strong>Naive LASSO:</strong> ~$4.12 (TRUE = $5.00)</p>
+              <p style="font-size: 13pt; color: var(--muted-color);">Biased downward by regularization</p>
+            </div>
+            <div style="background: #E8F5E9; border-left: 4px solid #27AE60; padding: 16px; border-radius: 8px;">
+              <p style="font-size: 14pt;"><strong>DML:</strong> ~$5.02 (TRUE = $5.00)</p>
+              <p style="font-size: 13pt; color: var(--muted-color);">Centered on truth via orthogonality</p>
+            </div>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 16px; font-style: italic;">Simulated: n=5,000, p=100, TRUE ATE=5.0</p>
+          </div>
+        </div>
+        <aside class="notes">Run simulation live if time permits. Key: bias persists even at n=50,000.</aside>
+      </section>
+
+      <!-- SLIDE 7: DML Solution (vertical stack: 3-step process + cross-fitting) -->
+      <section>
+        <section id="dml-solution" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-color);"></i> The DML Solution: 3 Steps</h2>
+          <img src="figures/ch24-dml-process-flow.png" alt="DML 3-step process: residualize Y, residualize D, regress residuals" style="max-width: 95%; margin-top: 10px; border-radius: 8px;">
+          <div style="background: #EBF5FB; border-radius: 10px; padding: 16px 20px; margin-top: 14px;">
+            <p style="font-size: 14pt; line-height: 1.6;"><strong>Intuition:</strong> Strip the confounding "tune" from both Y and D using ML. Whatever correlation remains between the residuals is the <em>causal effect</em>.</p>
+          </div>
+          <aside class="notes">FWL theorem from Ch 13 extended to any ML model. "Double" = two residualization steps.</aside>
+        </section>
+        <section id="cross-fitting" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-shield-halved" style="color: var(--accent-color);"></i> Cross-Fitting: The Anti-Overfitting Firewall</h2>
+          <div style="text-align: center; margin-top: 10px;">
+            <img src="figures/ch24-cross-fitting-diagram.png" alt="Cross-fitting diagram showing K-fold splitting for nuisance estimation" style="max-height: 340px; border-radius: 8px;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+            <div style="background: #f8f6f3; padding: 14px; border-radius: 8px;">
+              <p style="font-size: 13pt;"><strong>Same logic as CV (Ch 15)</strong></p>
+              <p style="font-size: 13pt; color: var(--muted-color);">Train on K-1 folds, predict on held-out fold</p>
+            </div>
+            <div style="background: #f8f6f3; padding: 14px; border-radius: 8px;">
+              <p style="font-size: 13pt;"><strong>Different purpose</strong></p>
+              <p style="font-size: 13pt; color: var(--muted-color);">CV measures prediction error; cross-fitting measures a causal parameter</p>
+            </div>
+          </div>
+          <aside class="notes">Draw K=2 first on board. Left trains, right predicts. Swap. Stack. Students who remember CV from Ch 15 will see the parallel immediately.</aside>
+        </section>
+      </section>
+
+      <!-- SLIDE 8: Poll 2 -->
+      <section>
+        <section id="poll-2" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Cross-Fitting</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px; margin-top: 12px;">
+            <p style="font-size: 15pt; line-height: 1.6;">In DML with cross-fitting using <strong>K=5 folds</strong>, how many observations are used to <strong>TRAIN</strong> each nuisance model?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch24-poll2-cross-fitting" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) 20% of the data — one fold</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) 80% of the data — all folds except one</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) 100% of the data — max power</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) 50% — a standard train/test split</div>
+          </div>
+        </section>
+        <section id="poll-2-reveal" data-poll-results="ch24-poll2-cross-fitting">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B — 80%</h2>
+          <div class="poll-results-chart" data-poll-id="ch24-poll2-cross-fitting" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:12px 60px;"></div>
+          <div style="padding: 8px 60px;">
+            <p style="font-size: 14pt; line-height: 1.6;">For each fold, we train on 80% and predict on the held-out 20%. Then we rotate.</p>
+            <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 14px 18px; border-radius: 8px; margin: 14px 0;">
+              <p style="font-size: 13pt; margin: 0;"><strong>Same splitting, different objective:</strong> In CV, we measure prediction error. In cross-fitting, we compute causal residuals.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- SLIDE 9: 401(k) Application -->
+      <section id="application" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-code" style="color: var(--accent-color);"></i> 401(k) Eligibility: DML in Action</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 10px;">
+          <div>
+            <p style="font-size: 13pt; line-height: 1.6; margin-bottom: 10px;"><strong>Data:</strong> 9,915 households (SIPP 1991). Treatment: employer offers 401(k). Outcome: net financial assets.</p>
+            <pre style="font-size: 11pt; background: #1e1e1e; color: #d4d4d4; padding: 14px; border-radius: 8px; overflow-x: auto;"><code>dml_data = DoubleMLData(
+    data_401k,
+    y_col='net_tfa',
+    d_cols='e401',
+    x_cols=['age','inc','fsize',
+            'educ','marr','twoearn',
+            'pira','hown']
+)
+
+ml_l = RandomForestRegressor(
+    n_estimators=500, max_depth=7)
+ml_m = RandomForestRegressor(
+    n_estimators=500, max_depth=7)
+
+dml_plr = DoubleMLPLR(
+    dml_data, ml_l, ml_m, n_folds=5)
+dml_plr.fit()</code></pre>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px; justify-content: center;">
+            <div style="background: #FDEDEC; border-left: 4px solid #E74C3C; padding: 16px; border-radius: 8px;">
+              <p style="font-size: 20pt; font-weight: 700; color: #E74C3C;">~$19,000</p>
+              <p style="font-size: 13pt;">Naive OLS (with selection bias)</p>
+            </div>
+            <div style="background: #E8F5E9; border-left: 4px solid #27AE60; padding: 16px; border-radius: 8px;">
+              <p style="font-size: 20pt; font-weight: 700; color: #27AE60;">~$8,762</p>
+              <p style="font-size: 13pt;">DML estimate (bias removed)</p>
+            </div>
+            <div style="background: #FEF9E7; border-left: 4px solid #F39C12; padding: 16px; border-radius: 8px;">
+              <p style="font-size: 20pt; font-weight: 700; color: #F39C12;">~$10,200</p>
+              <p style="font-size: 13pt;">Selection bias stripped by DML</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Compare: Lalonde Ch 9 = $15,205 selection bias. Here = $10,200. DML achieves what randomization does — without an experiment.</aside>
+      </section>
+
+      <!-- SLIDE 10: CATE (vertical stack: concept + figure) -->
+      <section>
+        <section id="cate-concept" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-users" style="color: var(--accent-color);"></i> From ATE to CATE: Who Benefits Most?</h2>
+          <div style="margin-top: 15px;">
+            <p style="font-size: 16pt; line-height: 1.7;">The ATE of $8,762 is an <strong>average</strong>. But does every household benefit equally?</p>
+            <div style="background: #EBF5FB; border-radius: 10px; padding: 18px 22px; margin-top: 16px;">
+              <p style="font-size: 15pt; text-align: center; margin-bottom: 4px;"><strong>Conditional Average Treatment Effect</strong></p>
+              <p style="font-size: 18pt; text-align: center; font-family: 'Times New Roman', serif;">&tau;(<strong>x</strong>) = E[Y<sub>i</sub>(1) &minus; Y<sub>i</sub>(0) | <strong>X</strong><sub>i</sub> = <strong>x</strong>]</p>
+            </div>
+            <p style="font-size: 15pt; line-height: 1.7; margin-top: 16px;">The treatment effect for a person with <em>these specific</em> characteristics. The mean can be a poor summary of a heterogeneous population (Ch 4).</p>
+          </div>
+          <aside class="notes">Same lesson from Ch 4 — the mean masks heterogeneity. The ATE inherits the mean's vulnerability.</aside>
+        </section>
+        <section id="cate-figure" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> CATE by Income Quartile</h2>
+          <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 10px;">
+            <div style="text-align: center;">
+              <img src="figures/ch24-cate-income-quartiles.png" alt="Bar chart showing CATE growing dramatically from Q1 to Q4" style="max-height: 400px; border-radius: 8px;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center;">
+              <div style="background: #f8f6f3; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14pt; font-weight: 600;">Q1 (lowest)</span>
+                <span style="font-size: 16pt; font-weight: 700; color: #3498DB;">~$1,200</span>
+              </div>
+              <div style="background: #f8f6f3; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14pt; font-weight: 600;">Q2</span>
+                <span style="font-size: 16pt; font-weight: 700; color: #2ECC71;">~$4,800</span>
+              </div>
+              <div style="background: #f8f6f3; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14pt; font-weight: 600;">Q3</span>
+                <span style="font-size: 16pt; font-weight: 700; color: #E67E22;">~$9,500</span>
+              </div>
+              <div style="background: #f8f6f3; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14pt; font-weight: 600;">Q4 (highest)</span>
+                <span style="font-size: 16pt; font-weight: 700; color: #E74C3C;">~$18,400</span>
+              </div>
+              <p style="font-size: 12pt; color: var(--muted-color); margin-top: 6px; text-align: center;"><strong>15x difference</strong> between Q1 and Q4</p>
+            </div>
+          </div>
+          <aside class="notes">This is the punchline. Q1 gets $1,200. Q4 gets $18,400. Is a universal mandate good policy?</aside>
+        </section>
+      </section>
+
+      <!-- SLIDE 11: Discussion 1 -->
+      <section id="discussion-1" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion: The 401(k) Policy Debate</h2>
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 24px 28px; margin-top: 18px; text-align: center;">
+          <p style="font-size: 18pt; line-height: 1.6; font-weight: 600;">Given that 401(k) eligibility has a 15x larger wealth effect for Q4 ($18,400) vs. Q1 ($1,200):</p>
+          <p style="font-size: 20pt; line-height: 1.6; color: var(--accent-color); font-weight: 700; margin-top: 12px;">Is a universal 401(k) mandate good policy?</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px;">
+          <div style="background: #E8F5E9; padding: 16px; border-radius: 8px;">
+            <p style="font-size: 13pt; font-weight: 700; color: #27AE60;">FOR the mandate</p>
+            <p style="font-size: 13pt;">Any positive effect > no effect. Universal programs are simpler to administer.</p>
+          </div>
+          <div style="background: #FDEDEC; padding: 16px; border-radius: 8px;">
+            <p style="font-size: 13pt; font-weight: 700; color: #E74C3C;">AGAINST the mandate</p>
+            <p style="font-size: 13pt;">Progressive matching, auto-enrollment, and Saver's Credit may serve Q1 better.</p>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 14px;">
+          <span class="timer-badge"><i class="fa-solid fa-clock"></i> 5 min — Think (1) + Pair (2) + Share (2)</span>
+        </div>
+        <aside class="notes">Think-pair-share. "One of you argues FOR, the other AGAINST." 3-4 pairs share. If stalls: "What if the government doubled the employer match for Q1 workers?"</aside>
+      </section>
+
+      <!-- SLIDE 12: Discussion Debrief -->
+      <section id="debrief-1" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Debrief: CATE Enables Targeted Policy</h2>
+        <p style="font-size: 16pt; line-height: 1.7; margin-top: 15px;">CATE transforms a binary "does the policy work?" into "<strong>for whom</strong> does it work?"</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 18px;">
+          <div style="background: #f8f6f3; padding: 16px; border-radius: 8px; text-align: center;">
+            <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700;">DOORDASH</p>
+            <p style="font-size: 13pt;">Which customers respond to promotions?</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 16px; border-radius: 8px; text-align: center;">
+            <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700;">AMAZON</p>
+            <p style="font-size: 13pt;">Which product categories are price-sensitive?</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 16px; border-radius: 8px; text-align: center;">
+            <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700;">UBER</p>
+            <p style="font-size: 13pt;">Where do driver bonuses actually increase supply?</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.7; margin-top: 18px;">In every case, the ATE told an incomplete story. The <strong>distribution</strong> of effects determined optimal action.</p>
+        <aside class="notes">Bridge to production scale. Amazon $400M, Uber $120M. "The average can disguise a story where treatment works brilliantly in some contexts and fails in others."</aside>
+      </section>
+
+      <!-- SLIDE 13: Lalonde Callback -->
+      <section id="lalonde" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-timeline" style="color: var(--accent-color);"></i> The Lalonde Callback: Full Circle</h2>
+        <p style="font-size: 15pt; color: var(--muted-color); margin-top: 10px;">Same data, three chapters, increasingly sophisticated analysis</p>
+        <table class="table-standard" style="margin-top: 18px; width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: var(--secondary-color); color: white;">
+              <th style="padding: 12px 14px; font-size: 14pt; text-align: left;">Chapter</th>
+              <th style="padding: 12px 14px; font-size: 14pt; text-align: left;">Method</th>
+              <th style="padding: 12px 14px; font-size: 14pt; text-align: left;">Estimate</th>
+              <th style="padding: 12px 14px; font-size: 14pt; text-align: left;">Key Insight</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: #f8f6f3;">
+              <td style="padding: 12px 14px; font-size: 14pt;">Ch 8</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">Two-sample t-test</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">$1,794</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">Statistical significance</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 14px; font-size: 14pt;">Ch 9</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">Permutation + Bootstrap</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">$1,794 (ATE)</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">Randomization makes it causal</td>
+            </tr>
+            <tr style="background: #E8F5E9; font-weight: 600;">
+              <td style="padding: 12px 14px; font-size: 14pt;">Ch 24</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">DML</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">~$1,600-$2,100</td>
+              <td style="padding: 12px 14px; font-size: 14pt;">Recovers benchmark from observational data</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 15pt; line-height: 1.7; margin-top: 16px; text-align: center;"><strong>The causal inference toolkit has come full circle.</strong></p>
+        <aside class="notes">Emotional payoff of the causal arc. Ask students to trace the progression.</aside>
+      </section>
+
+      <!-- SLIDE 14: Poll 3 (vertical stack) -->
+      <section>
+        <section id="poll-3" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Method Choice</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px; margin-top: 12px;">
+            <p style="font-size: 15pt; line-height: 1.6;">You have <strong>observational data</strong> with 200 measured confounders, but you suspect an important <strong>unmeasured confounder</strong> (e.g., "motivation"). Which approach is most appropriate?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch24-poll3-method-choice" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) DML — it handles high dimensions</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) IV/2SLS — need instrument for unmeasured confounding</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) A/B test — randomize everything</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) OLS with all 200 controls</div>
+          </div>
+        </section>
+        <section id="poll-3-reveal" data-poll-results="ch24-poll3-method-choice">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B — Instrumental Variables</h2>
+          <div class="poll-results-chart" data-poll-id="ch24-poll3-method-choice" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:12px 60px;"></div>
+          <div style="padding: 8px 60px;">
+            <p style="font-size: 14pt; line-height: 1.6;">DML requires <strong>conditional ignorability</strong> — ALL confounders must be observed. If there's an unmeasured confounder, DML inherits the same bias.</p>
+            <div style="background: #FEF9E7; border-left: 4px solid #F39C12; padding: 14px 18px; border-radius: 8px; margin: 14px 0;">
+              <p style="font-size: 13pt; margin: 0;"><strong>Rule of thumb:</strong> If you CAN randomize → A/B test. If all confounders are observed → DML. If unmeasured confounding → need an instrument or natural experiment.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- SLIDE 15: Discussion 2 -->
+      <section id="discussion-2" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion: DML vs. A/B Testing</h2>
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 24px 28px; margin-top: 18px; text-align: center;">
+          <p style="font-size: 18pt; line-height: 1.6; font-weight: 600;">When should you use DML versus just running an A/B test?</p>
+          <p style="font-size: 16pt; line-height: 1.6; color: var(--accent-color); margin-top: 10px;">Give a specific scenario where each approach wins.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px;">
+          <div style="background: #EBF5FB; padding: 16px; border-radius: 8px;">
+            <p style="font-size: 13pt; font-weight: 700; color: #2980B9;">A/B TEST WINS</p>
+            <p style="font-size: 13pt;">Cheap, fast, ethical to randomize (website UX, ad copy, email subject lines)</p>
+          </div>
+          <div style="background: #E8F5E9; padding: 16px; border-radius: 8px;">
+            <p style="font-size: 13pt; font-weight: 700; color: #27AE60;">DML WINS</p>
+            <p style="font-size: 13pt;">Can't randomize (education, historical policy, ethical constraints)</p>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 14px;">
+          <span class="timer-badge"><i class="fa-solid fa-clock"></i> 4 min — Pairs (2) + Class (2)</span>
+        </div>
+        <aside class="notes">Each pair: one scenario for A/B, one for DML. Collect on board. Key: "If you CAN randomize, do it. DML is for when you can't."</aside>
+      </section>
+
+      <!-- SLIDE 16: Key Takeaways -->
+      <section id="takeaways" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px;">
+          <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; border-left: 4px solid #E74C3C;">
+            <p style="font-size: 14pt; line-height: 1.5;"><strong>1.</strong> Naive ML fails for causation — regularization bias is <strong>first-order</strong> and does not vanish with more data.</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; border-left: 4px solid #2980B9;">
+            <p style="font-size: 14pt; line-height: 1.5;"><strong>2.</strong> DML = FWL + ML — partial out confounders from <em>both</em> Y and D, then regress residuals.</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; border-left: 4px solid #27AE60;">
+            <p style="font-size: 14pt; line-height: 1.5;"><strong>3.</strong> Cross-fitting = CV for causation — same K-fold splitting, different objective.</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; border-left: 4px solid #E67E22;">
+            <p style="font-size: 14pt; line-height: 1.5;"><strong>4.</strong> CATE reveals what ATE hides — 401(k) effect ranges from $1,200 (Q1) to $18,400 (Q4).</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; border-left: 4px solid #8E44AD;">
+            <p style="font-size: 14pt; line-height: 1.5;"><strong>5.</strong> DML requires <strong>conditional ignorability</strong> — if unmeasured confounders exist, you need an instrument.</p>
+          </div>
+        </div>
+        <aside class="notes">3 min. Rapid review. Point to each as you summarize. "This is the capstone of causal methods — you now have a toolkit from t-tests to DML."</aside>
+      </section>
+
+      <!-- SLIDE 17: Exit Ticket -->
+      <section id="exit-ticket" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 28px 32px; margin-top: 24px;">
+          <p style="font-size: 18pt; line-height: 1.7; font-weight: 600; margin-bottom: 16px;">Write your response (paper or device):</p>
+          <div style="background: white; padding: 18px 22px; border-radius: 8px; border: 2px solid var(--line-color); margin-bottom: 14px;">
+            <p style="font-size: 16pt; line-height: 1.6;"><strong>1.</strong> List the <strong>3 steps of DML</strong> and explain in <strong>one sentence</strong> why cross-fitting is necessary.</p>
+          </div>
+          <div style="background: white; padding: 18px 22px; border-radius: 8px; border: 2px solid var(--line-color);">
+            <p style="font-size: 16pt; line-height: 1.6;"><strong>2.</strong> One thing I'm still confused about from today's lecture.</p>
+          </div>
+        </div>
+        <p style="font-size: 13pt; color: var(--muted-color); margin-top: 16px; text-align: center;"><strong>Next:</strong> Ch 25 — AI Literacy &amp; Generative Tools for Economists &nbsp;|&nbsp; <strong>Lab:</strong> lab_24_double_ml.ipynb</p>
+        <aside class="notes">2 min. Target: (1) Residualize Y, residualize D, regress residuals. Cross-fitting prevents overfitting from biasing the causal estimate. (2) Collect to identify confusion points.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

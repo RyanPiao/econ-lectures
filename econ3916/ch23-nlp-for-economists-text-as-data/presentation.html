@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>NLP for Economists: Text as Data</title>
+  <!-- Reveal.js core -->
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <!-- MathJax for equations -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- Custom styles -->
+  <link href="styles.css" rel="stylesheet">
+ </head>
+ <body>
+  <div class="reveal">
+   <div class="slides">
+
+    <!-- ========== SLIDE 1: TITLE ========== -->
+    <section class="section-divider" data-state="is-section-divider" id="title" style="padding: 0;">
+     <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+      <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+       <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">
+        ECON 3916 &bull; Data Science for Economists &bull; Chapter 23
+       </p>
+       <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">
+        NLP for Economists:<br>Text as Data
+       </h1>
+       <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 0;"></div>
+       <div style="margin-top: auto; padding-bottom: 15px;">
+        <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">
+         Dr. Richeng Piao
+        </p>
+        <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">
+         Department of Economics<br>Northeastern University
+        </p>
+       </div>
+      </div>
+      <div style="overflow: hidden;">
+       <img alt="NLP for economists — converting text to numerical features" src="figures/ch23-tfidf-heatmap.png" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+     </div>
+     <aside class="notes">Welcome to Chapter 23. Today we learn to convert text — specifically Federal Reserve meeting minutes — into numbers that your ML algorithms can process.</aside>
+    </section>
+
+    <!-- ========== SLIDE 2: LEARNING OBJECTIVES ========== -->
+    <section id="learning-objectives" style="padding: 40px 50px;">
+     <h2 style="margin-bottom: 20px;">
+      <i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives
+     </h2>
+     <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">23.1</p>
+       <p style="font-size: 16pt;"><strong>[Understand]</strong> Explain <strong>bag-of-words</strong>, tokenization, and why <strong>TF-IDF</strong> improves on raw word counts</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">23.2</p>
+       <p style="font-size: 16pt;"><strong>[Apply]</strong> Build a complete <strong>text preprocessing pipeline</strong> &mdash; tokenization, stop words, TF-IDF &mdash; in scikit-learn</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">23.3</p>
+       <p style="font-size: 16pt;"><strong>[Analyze]</strong> Analyze FOMC minutes using the <strong>Loughran-McDonald</strong> lexicon and correlate with rate decisions</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+       <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">23.4</p>
+       <p style="font-size: 16pt;"><strong>[Evaluate]</strong> Evaluate when <strong>domain-specific lexicons</strong> outperform general-purpose alternatives</p>
+      </div>
+     </div>
+     <aside class="notes">Four objectives at Bloom's levels 2 through 5. By the end of today, you'll have built a complete NLP pipeline from scratch in the lab.</aside>
+    </section>
+
+    <!-- ========== SLIDE 3: RETRIEVAL PRACTICE ========== -->
+    <section id="retrieval-practice" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-rotate" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+     <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px;">
+      <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); padding: 20px 24px; border-radius: 8px;">
+       <p style="font-size: 15pt; font-weight: 600; color: var(--secondary-color); margin-bottom: 6px;">Chapter 22 &mdash; Clustering</p>
+       <p style="font-size: 16pt;">In K-Means, what does each cell in the feature matrix \(\mathbf{X}\) represent? What were the rows and columns?</p>
+      </div>
+      <div style="background: #f8f6f3; border-left: 4px solid var(--accent-color); padding: 20px 24px; border-radius: 8px;">
+       <p style="font-size: 15pt; font-weight: 600; color: var(--accent-color); margin-bottom: 6px;">Chapter 6 &mdash; Feature Engineering</p>
+       <p style="font-size: 16pt;">What is <strong>feature engineering</strong>? Why does the choice of features shape your results?</p>
+      </div>
+     </div>
+     <p style="font-size: 14pt; color: var(--muted-color); margin-top: 24px;"><i class="fa-solid fa-lightbulb"></i> Today's matrix has words as features and documents as observations &mdash; the same structure, new input type.</p>
+     <aside class="notes">Two quick recall questions. In Ch 22, rows were countries, columns were economic indicators, and cells were standardized values. Feature engineering is the art of transforming raw data into features algorithms can use. Today: same structure, but words become features.</aside>
+    </section>
+
+    <!-- ========== SLIDE 4: OPENING HOOK ========== -->
+    <section id="opening-hook" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-bolt" style="color: var(--accent-color);"></i> A $214 Billion Bet on Language</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px;">
+      <div>
+       <p style="font-size: 16pt; line-height: 1.6;">In February 2026, <strong>Man Group</strong> &mdash; managing $213.9B &mdash; partnered with Anthropic to deploy LLMs across its trading infrastructure.</p>
+       <p style="font-size: 16pt; line-height: 1.6; margin-top: 12px;">The edge, they argued, now lived in <em>language</em>: earnings calls, regulatory filings, central bank communications.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+       <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--secondary-color);">
+        <p style="font-size: 14pt;"><strong>JPMorgan Chase</strong> &mdash; 450+ AI use cases, $1.3B AI budget</p>
+       </div>
+       <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--accent-color);">
+        <p style="font-size: 14pt;"><strong>Fidelity</strong> &mdash; NLP on 37.5M customer calls annually</p>
+       </div>
+       <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--success-color);">
+        <p style="font-size: 14pt;"><strong>SEC</strong> &mdash; 30 AI use cases scanning EDGAR filings</p>
+       </div>
+      </div>
+     </div>
+     <div style="background: var(--secondary-color); color: white; padding: 16px 24px; border-radius: 8px; margin-top: 20px; text-align: center;">
+      <p style="font-size: 18pt; font-weight: 600;">How do you convert a 10,000-word Federal Reserve document into numbers?</p>
+     </div>
+     <aside class="notes">Start with: "Let me tell you about a 214 billion dollar bet on language." Man Group, JPMorgan, Fidelity — the pattern is unmistakable. Text is now a primary data input. End with the question on the blue banner — this is our throughline.</aside>
+    </section>
+
+    <!-- ========== SLIDE 5: CONCEPT EXTENSION BRIDGE ========== -->
+    <section id="concept-bridge" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-bridge" style="color: var(--secondary-color);"></i> From Chapter 22 to Today</h2>
+     <div style="display: grid; grid-template-columns: 1fr 50px 1fr; align-items: center; gap: 0; margin-top: 20px;">
+      <div style="background: #f8f6f3; padding: 20px; border-radius: 8px; text-align: center;">
+       <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color);">Chapter 22</p>
+       <p style="font-size: 16pt; margin-top: 8px;">Countries &times; Economic Indicators</p>
+       <p style="font-size: 14pt; color: var(--muted-color);">GDP, life expectancy, trade</p>
+      </div>
+      <div style="text-align: center;">
+       <i class="fa-solid fa-arrow-right" style="font-size: 24pt; color: var(--accent-color);"></i>
+      </div>
+      <div style="background: #f8f6f3; padding: 20px; border-radius: 8px; text-align: center;">
+       <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">Chapter 23</p>
+       <p style="font-size: 16pt; margin-top: 8px;">Documents &times; Words</p>
+       <p style="font-size: 14pt; color: var(--muted-color);">FOMC meetings, TF-IDF weights</p>
+      </div>
+     </div>
+     <div style="background: var(--accent-color); color: white; padding: 18px 24px; border-radius: 8px; margin-top: 24px; text-align: center;">
+      <p style="font-size: 18pt; font-weight: 600; font-style: italic;">Text is not a new kind of data. It is a feature engineering problem applied to an unfamiliar input.</p>
+     </div>
+     <aside class="notes">This is the key bridge. In Ch 22, rows were countries and columns were World Bank indicators. Today, rows are FOMC meetings and columns are words. Same matrix, same algorithms. Repeat the terracotta banner line — students should internalize this.</aside>
+    </section>
+
+    <!-- ========== DIVIDER: FROM NUMBERS TO WORDS ========== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-dtm">
+     <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 3px;">Section 1</p>
+     <h1 style="font-size: 36pt;">The Document-Term Matrix</h1>
+     <p style="font-size: 16pt; color: var(--muted-color);">Converting text to the feature matrix \(\mathbf{X}\)</p>
+    </section>
+
+    <!-- ========== SLIDE 7: DTM CONCEPT ========== -->
+    <section id="dtm-concept" style="padding: 40px 50px;">
+     <h2>The Bag-of-Words Model</h2>
+     <p style="font-size: 16pt; line-height: 1.6;">Treat each document as an <strong>unordered collection of words</strong>, ignoring grammar and word order.</p>
+     <div style="margin-top: 16px; overflow-x: auto;">
+      <table style="font-size: 14pt; width: 100%; border-collapse: collapse;">
+       <thead>
+        <tr style="background: var(--secondary-color); color: white;">
+         <th style="padding: 10px 14px; text-align: left;">Document</th>
+         <th style="padding: 10px 14px;">inflation</th>
+         <th style="padding: 10px 14px;">rate</th>
+         <th style="padding: 10px 14px;">committee</th>
+         <th style="padding: 10px 14px;">labor</th>
+         <th style="padding: 10px 14px;">growth</th>
+         <th style="padding: 10px 14px;">tapering</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr style="background: #f8f6f3;">
+         <td style="padding: 10px 14px; font-weight: 600;">Jan 2023</td>
+         <td style="padding: 10px 14px; text-align: center;">15</td>
+         <td style="padding: 10px 14px; text-align: center;">22</td>
+         <td style="padding: 10px 14px; text-align: center;">18</td>
+         <td style="padding: 10px 14px; text-align: center;">8</td>
+         <td style="padding: 10px 14px; text-align: center;">5</td>
+         <td style="padding: 10px 14px; text-align: center;">0</td>
+        </tr>
+        <tr>
+         <td style="padding: 10px 14px; font-weight: 600;">Mar 2023</td>
+         <td style="padding: 10px 14px; text-align: center;">12</td>
+         <td style="padding: 10px 14px; text-align: center;">19</td>
+         <td style="padding: 10px 14px; text-align: center;">20</td>
+         <td style="padding: 10px 14px; text-align: center;">11</td>
+         <td style="padding: 10px 14px; text-align: center;">7</td>
+         <td style="padding: 10px 14px; text-align: center;">3</td>
+        </tr>
+        <tr style="background: #f8f6f3;">
+         <td style="padding: 10px 14px; font-weight: 600;">Jun 2023</td>
+         <td style="padding: 10px 14px; text-align: center;">9</td>
+         <td style="padding: 10px 14px; text-align: center;">25</td>
+         <td style="padding: 10px 14px; text-align: center;">17</td>
+         <td style="padding: 10px 14px; text-align: center;">14</td>
+         <td style="padding: 10px 14px; text-align: center;">3</td>
+         <td style="padding: 10px 14px; text-align: center;">0</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+     <p style="font-size: 15pt; margin-top: 14px; color: var(--muted-color);">\(\mathbf{X} \in \mathbb{R}^{n \times p}\) &mdash; same structure as Chapter 22, with words as features</p>
+     <aside class="notes">Draw this table on the board. Rows = FOMC meetings. Columns = words. Cells = word counts. This IS the X matrix from Chapter 22 — just with words instead of GDP per capita. Ask: "Which column tells you the most about what Jan 2023 discussed?" This sets up Poll 1.</aside>
+    </section>
+
+    <!-- ========== SLIDE 8: FOMC CORPUS ========== -->
+    <section id="fomc-corpus" style="padding: 40px 50px;">
+     <h2>The FOMC Minutes Corpus</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px;">
+      <div>
+       <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+         <div style="width: 48px; height: 48px; background: var(--secondary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18pt; font-weight: 700; flex-shrink: 0;">260+</div>
+         <p style="font-size: 15pt;">documents (8 meetings/year since 1994)</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+         <div style="width: 48px; height: 48px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14pt; font-weight: 700; flex-shrink: 0;">5-15K</div>
+         <p style="font-size: 15pt;">tokens per document</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+         <div style="width: 48px; height: 48px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18pt; font-weight: 700; flex-shrink: 0;">30+</div>
+         <p style="font-size: 15pt;">years of tightening &amp; easing cycles</p>
+        </div>
+       </div>
+      </div>
+      <div style="background: #f8f6f3; padding: 18px; border-radius: 8px;">
+       <p style="font-size: 14pt; font-weight: 600; color: var(--secondary-color); margin-bottom: 8px;">Available via:</p>
+       <ul style="font-size: 14pt; line-height: 1.8;">
+        <li>Federal Reserve website</li>
+        <li>HuggingFace (<code>gtfintechlab/FOMC_Minutes</code>)</li>
+        <li>Kaggle</li>
+       </ul>
+       <p style="font-size: 14pt; color: var(--muted-color); margin-top: 12px;">Spans multiple policy regimes &mdash; ideal for validating text-derived signals.</p>
+      </div>
+     </div>
+     <aside class="notes">This is the dataset you'll work with in the lab. Over 260 FOMC meeting minutes spanning 30+ years. The corpus spans tightening cycles, easing cycles, the financial crisis, COVID — every major monetary policy event. Available for free from HuggingFace.</aside>
+    </section>
+
+    <!-- ========== POLL 1 (vertical stack) ========== -->
+    <section>
+     <section id="poll-1-question" style="padding: 40px 50px;">
+      <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Class Poll</h2>
+      <p style="font-size: 20pt; font-weight: 600; margin-top: 20px;">Which word tells you the MOST about a specific FOMC meeting?</p>
+      <div class="poll-grid" data-poll-id="ch23-poll1-informative-word" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px;">
+       <div class="poll-option" data-value="A" style="background: #f8f6f3; padding: 18px; border-radius: 8px; border: 2px solid transparent; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>A)</strong> "committee" &mdash; appears in every meeting</p>
+       </div>
+       <div class="poll-option" data-value="B" style="background: #f8f6f3; padding: 18px; border-radius: 8px; border: 2px solid transparent; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>B)</strong> "inflation" &mdash; high in some meetings, absent in others</p>
+       </div>
+       <div class="poll-option" data-value="C" style="background: #f8f6f3; padding: 18px; border-radius: 8px; border: 2px solid transparent; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>C)</strong> "the" &mdash; most frequent word in English</p>
+       </div>
+       <div class="poll-option" data-value="D" style="background: #f8f6f3; padding: 18px; border-radius: 8px; border: 2px solid transparent; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>D)</strong> "economic" &mdash; appears in 250 of 260 meetings</p>
+       </div>
+      </div>
+      <div data-poll-results="ch23-poll1-informative-word"></div>
+      <aside class="notes">Give students 30 seconds to vote. Most will pick B or D. The key distinction: D sounds informative but appears in almost every document — it carries no discriminating information.</aside>
+     </section>
+     <section id="poll-1-reveal" style="padding: 40px 50px;">
+      <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Poll 1 Reveal</h2>
+      <div style="background: var(--success-color); color: white; padding: 20px 24px; border-radius: 8px; margin-top: 16px;">
+       <p style="font-size: 20pt; font-weight: 700;">Answer: (B) "inflation"</p>
+      </div>
+      <div style="margin-top: 20px;">
+       <p style="font-size: 16pt; line-height: 1.6;">A word that appears in <strong>many</strong> documents tells you nothing about what makes <em>this</em> meeting special.</p>
+       <p style="font-size: 16pt; line-height: 1.6; margin-top: 10px;">A word that is frequent in <em>this</em> document but <strong>rare</strong> across the corpus &mdash; that is the distinctive signal.</p>
+       <p style="font-size: 18pt; font-weight: 600; color: var(--accent-color); margin-top: 16px;">This is exactly what TF-IDF formalizes.</p>
+      </div>
+      <aside class="notes">Transition: "The formula we're about to see rewards words like 'inflation' and penalizes words like 'committee.' Let me show you why."</aside>
+     </section>
+    </section>
+
+    <!-- ========== DIVIDER: TF-IDF ========== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-tfidf">
+     <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 3px;">Section 2</p>
+     <h1 style="font-size: 36pt;">TF-IDF</h1>
+     <p style="font-size: 16pt; color: var(--muted-color);">Importance = Frequency &times; Rarity</p>
+    </section>
+
+    <!-- ========== SLIDE 11: TF-IDF FORMULA ========== -->
+    <section id="tfidf-formula" style="padding: 40px 50px;">
+     <h2>Term Frequency &ndash; Inverse Document Frequency</h2>
+     <div style="background: #f8f6f3; padding: 24px 30px; border-radius: 8px; text-align: center; margin-top: 16px;">
+      <p style="font-size: 22pt;">\[\text{TF-IDF}(t, d, D) = \underbrace{\text{TF}(t, d)}_{\text{frequency in this doc}} \times \underbrace{\log\frac{|D|}{df(t)}}_{\text{rarity across corpus}}\]</p>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px;">
+      <div style="background: #f8f6f3; padding: 14px; border-radius: 8px; border-top: 3px solid var(--secondary-color);">
+       <p style="font-size: 13pt; font-weight: 600; color: var(--secondary-color);">TF(t, d)</p>
+       <p style="font-size: 13pt;">How often word <em>t</em> appears in <em>this</em> document</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px; border-radius: 8px; border-top: 3px solid var(--accent-color);">
+       <p style="font-size: 13pt; font-weight: 600; color: var(--accent-color);">|D|</p>
+       <p style="font-size: 13pt;">Total documents in corpus (260 FOMC meetings)</p>
+      </div>
+      <div style="background: #f8f6f3; padding: 14px; border-radius: 8px; border-top: 3px solid var(--danger-color);">
+       <p style="font-size: 13pt; font-weight: 600; color: var(--danger-color);">df(t)</p>
+       <p style="font-size: 13pt;">Documents containing word <em>t</em> (corpus-wide commonness)</p>
+      </div>
+     </div>
+     <p style="font-size: 16pt; margin-top: 16px;"><strong>High TF-IDF</strong> = frequent here, rare everywhere else. <strong>Low TF-IDF</strong> = ubiquitous word.</p>
+     <aside class="notes">Walk through the formula slowly. TF captures local frequency. IDF captures global rarity. The product rewards words that are distinctive to a specific document. This is the single most important formula in the chapter.</aside>
+    </section>
+
+    <!-- ========== SLIDE 12: WORKED EXAMPLE ========== -->
+    <section id="tfidf-worked" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> Worked Example: January 2023 FOMC</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px;">
+      <div style="background: #f0f7f4; padding: 20px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+       <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">"inflation"</p>
+       <p style="font-size: 14pt; margin-top: 8px;">TF = 15 / 5,000 = 0.003</p>
+       <p style="font-size: 14pt;">df = 40 of 260 meetings</p>
+       <p style="font-size: 14pt;">IDF = log(260/40) &asymp; 1.87</p>
+       <p style="font-size: 18pt; font-weight: 700; margin-top: 10px; color: var(--success-color);">TF-IDF = 0.0056 &check;</p>
+      </div>
+      <div style="background: #fdf0f0; padding: 20px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+       <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">"committee"</p>
+       <p style="font-size: 14pt; margin-top: 8px;">TF = 25 / 5,000 = 0.005</p>
+       <p style="font-size: 14pt;">df = 260 of 260 meetings</p>
+       <p style="font-size: 14pt;">IDF = log(260/260) = log(1) = <strong>0</strong></p>
+       <p style="font-size: 18pt; font-weight: 700; margin-top: 10px; color: var(--danger-color);">TF-IDF = 0 &cross;</p>
+      </div>
+     </div>
+     <div style="background: var(--accent-color); color: white; padding: 14px 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+      <p style="font-size: 16pt;">"committee" appears <strong>more often</strong> but carries <strong>zero information</strong> &mdash; information &prop; rarity, not frequency</p>
+     </div>
+     <aside class="notes">This is the aha moment. Circle IDF = 0 for "committee." Students physically see why the most frequent words are the least informative. The terracotta banner drives it home: information is proportional to rarity.</aside>
+    </section>
+
+    <!-- ========== SLIDE 13: CODE BRIDGE ========== -->
+    <section id="tfidf-code" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-code" style="color: var(--secondary-color);"></i> In Code: TfidfVectorizer</h2>
+     <pre style="background: #1e1e2e; color: #cdd6f4; padding: 20px 24px; border-radius: 8px; font-size: 14pt; line-height: 1.6; margin-top: 16px; overflow-x: auto;"><code>from sklearn.feature_extraction.text import TfidfVectorizer
+
+vectorizer = TfidfVectorizer(
+    max_features=1000,       # Keep top 1000 words
+    stop_words='english',    # Remove common English words
+    ngram_range=(1, 2),      # Bigrams: "interest rate", "labor market"
+    sublinear_tf=True,       # 1 + log(tf) &mdash; diminishing returns
+)
+
+X_tfidf = vectorizer.fit_transform(documents)
+# Shape: (260, 1000) &mdash; 260 meetings &times; 1000 features</code></pre>
+     <p style="font-size: 15pt; margin-top: 16px; color: var(--muted-color);"><strong>sublinear_tf</strong>: Mentioning "growth" 20 times &ne; 20&times; more growth-focused. Diminishing marginal information.</p>
+     <aside class="notes">Show this for 30 seconds. "This is what you'll run in the lab. Four key parameters: max_features, stop_words, ngram_range, sublinear_tf. We'll discuss each in the lab." Move on quickly.</aside>
+    </section>
+
+    <!-- ========== DISCUSSION 1 (vertical stack) ========== -->
+    <section>
+     <section id="discussion-1-question" style="padding: 40px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion</h2>
+      <div style="background: #f8f6f3; padding: 28px 32px; border-radius: 8px; border-left: 5px solid var(--secondary-color); margin-top: 24px;">
+       <p style="font-size: 20pt; line-height: 1.5;">You count the word <strong>"inflation"</strong> 15 times in January 2023 FOMC minutes and 12 times in March 2023.</p>
+       <p style="font-size: 20pt; line-height: 1.5; margin-top: 12px;">Can you conclude January was <em>more focused</em> on inflation? <strong>Why or why not?</strong></p>
+      </div>
+      <p style="font-size: 16pt; color: var(--muted-color); margin-top: 20px;"><i class="fa-solid fa-users"></i> Think-pair-share: 2 min with a partner, then 2 min class discussion</p>
+      <aside class="notes">Two issues students should identify: (1) document length — 15 in a 15,000-word doc is less concentrated than 12 in 5,000 words. TF normalizes for this. (2) Corpus context — if "inflation" appears in most meetings, even 15 isn't distinctive. IDF handles this.</aside>
+     </section>
+     <section id="discussion-1-debrief" style="padding: 40px 50px;">
+      <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Discussion Debrief</h2>
+      <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px;">
+       <div style="background: #fdf0f0; padding: 18px 22px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+        <p style="font-size: 14pt; font-weight: 600; color: var(--danger-color);">Problem 1: Document Length</p>
+        <p style="font-size: 15pt;">15 mentions in 15,000 words (0.1%) &lt; 12 mentions in 5,000 words (0.24%). <strong>TF normalizes</strong> for document length.</p>
+       </div>
+       <div style="background: #fdf0f0; padding: 18px 22px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+        <p style="font-size: 14pt; font-weight: 600; color: var(--danger-color);">Problem 2: Corpus Context</p>
+        <p style="font-size: 15pt;">If "inflation" appears in 200 of 260 meetings, even 15 mentions is not distinctive. <strong>IDF penalizes</strong> common words.</p>
+       </div>
+      </div>
+      <p style="font-size: 16pt; font-weight: 600; color: var(--success-color); margin-top: 16px;">TF-IDF handles both problems &mdash; it accounts for document-level frequency AND corpus-level rarity.</p>
+      <aside class="notes">Bridge from this debrief: "Now that we can convert text to numbers, we need to decide which numbers carry economic meaning. That's where domain-specific dictionaries come in."</aside>
+     </section>
+    </section>
+
+    <!-- ========== DIVIDER: SENTIMENT ========== -->
+    <section class="section-divider" data-state="is-section-divider" id="divider-sentiment">
+     <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 3px;">Section 3</p>
+     <h1 style="font-size: 36pt;">Sentiment Analysis</h1>
+     <p style="font-size: 16pt; color: var(--muted-color);">Why generic dictionaries fail &mdash; and what works</p>
+    </section>
+
+    <!-- ========== SLIDE 16: WHY GENERIC FAILS ========== -->
+    <section id="generic-fails" style="padding: 40px 50px;">
+     <h2>Why Generic Sentiment Fails</h2>
+     <p style="font-size: 16pt; line-height: 1.6;">The Harvard General Inquirer (1960s) classifies words for everyday English. In financial text, this fails spectacularly:</p>
+     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-top: 16px;">
+      <div style="background: #fdf0f0; padding: 14px; border-radius: 8px; text-align: center;">
+       <p style="font-size: 16pt; font-weight: 700;">"liability"</p>
+       <p style="font-size: 13pt; color: var(--danger-color);">Harvard: NEGATIVE</p>
+       <p style="font-size: 13pt; color: var(--success-color);">Reality: accounting term</p>
+      </div>
+      <div style="background: #fdf0f0; padding: 14px; border-radius: 8px; text-align: center;">
+       <p style="font-size: 16pt; font-weight: 700;">"tax"</p>
+       <p style="font-size: 13pt; color: var(--danger-color);">Harvard: NEGATIVE</p>
+       <p style="font-size: 13pt; color: var(--success-color);">Reality: line item</p>
+      </div>
+      <div style="background: #fdf0f0; padding: 14px; border-radius: 8px; text-align: center;">
+       <p style="font-size: 16pt; font-weight: 700;">"capital"</p>
+       <p style="font-size: 13pt; color: var(--danger-color);">Harvard: NEGATIVE</p>
+       <p style="font-size: 13pt; color: var(--success-color);">Reality: balance sheet</p>
+      </div>
+      <div style="background: #fdf0f0; padding: 14px; border-radius: 8px; text-align: center;">
+       <p style="font-size: 16pt; font-weight: 700;">"foreign"</p>
+       <p style="font-size: 13pt; color: var(--danger-color);">Harvard: NEGATIVE</p>
+       <p style="font-size: 13pt; color: var(--success-color);">Reality: geographic</p>
+      </div>
+     </div>
+     <div style="background: var(--danger-color); color: white; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+      <p style="font-size: 28pt; font-weight: 700;">73.8%</p>
+      <p style="font-size: 16pt;">of Harvard "negative" words are NOT negative in financial text</p>
+      <p style="font-size: 13pt; margin-top: 4px;">Loughran &amp; McDonald (2011), <em>Journal of Finance</em></p>
+     </div>
+     <aside class="notes">Write 73.8% on the board in large letters. "If I gave you a thermometer that read wrong 73.8% of the time, would you use it to decide if you have a fever?" Students laugh — then realize this is exactly what happens with general dictionaries on financial text. This is attenuation bias from Chapter 12.</aside>
+    </section>
+
+    <!-- ========== SLIDE 17: LM COMPARISON FIGURE ========== -->
+    <section id="harvard-vs-lm" style="padding: 30px 50px;">
+     <h2>Harvard GI vs. Loughran-McDonald</h2>
+     <div style="text-align: center; margin-top: 10px;">
+      <img alt="Comparison of Harvard General Inquirer vs Loughran-McDonald classification — Harvard misclassifies neutral financial vocabulary as negative" src="figures/ch23-harvard-vs-lm.png" style="max-height: 520px; border-radius: 8px;">
+     </div>
+     <aside class="notes">This figure visually demonstrates the systematic misclassification. Point out specific examples in the figure. Transition to Poll 2.</aside>
+    </section>
+
+    <!-- ========== POLL 2 (vertical stack) ========== -->
+    <section>
+     <section id="poll-2-question" style="padding: 40px 50px;">
+      <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Class Poll</h2>
+      <p style="font-size: 20pt; font-weight: 600; margin-top: 20px;">Which of these words is NEGATIVE in a 10-K annual filing?</p>
+      <div class="poll-grid" data-poll-id="ch23-poll2-negative-word" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px;">
+       <div class="poll-option" data-value="A" style="background: #f8f6f3; padding: 18px; border-radius: 8px; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>A)</strong> "liability" &mdash; every company has liabilities</p>
+       </div>
+       <div class="poll-option" data-value="B" style="background: #f8f6f3; padding: 18px; border-radius: 8px; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>B)</strong> "litigation" &mdash; the company is being sued</p>
+       </div>
+       <div class="poll-option" data-value="C" style="background: #f8f6f3; padding: 18px; border-radius: 8px; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>C)</strong> "capital" &mdash; an accounting category</p>
+       </div>
+       <div class="poll-option" data-value="D" style="background: #f8f6f3; padding: 18px; border-radius: 8px; cursor: pointer;">
+        <p style="font-size: 16pt;"><strong>D)</strong> "foreign" &mdash; describes a geographic segment</p>
+       </div>
+      </div>
+      <div data-poll-results="ch23-poll2-negative-word"></div>
+      <aside class="notes">Most students will correctly pick B. The key reveal: the Harvard dictionary classifies ALL FOUR as negative. Only LM correctly identifies B as the only genuinely negative word.</aside>
+     </section>
+     <section id="poll-2-reveal" style="padding: 40px 50px;">
+      <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Poll 2 Reveal</h2>
+      <div style="background: var(--success-color); color: white; padding: 18px 24px; border-radius: 8px; margin-top: 16px;">
+       <p style="font-size: 20pt; font-weight: 700;">Answer: (B) "litigation" &mdash; being sued IS negative</p>
+      </div>
+      <p style="font-size: 16pt; margin-top: 16px;">The Harvard General Inquirer classifies <strong>all four</strong> as negative.</p>
+      <p style="font-size: 16pt; margin-top: 8px;">Only the <strong>Loughran-McDonald lexicon</strong> correctly identifies liability, capital, and foreign as <strong>neutral</strong> in financial context.</p>
+      <p style="font-size: 16pt; margin-top: 16px; font-weight: 600; color: var(--accent-color);">Lesson: Always use domain-specific lexicons for economic text.</p>
+      <aside class="notes">Transition: "So how do we fix this? We need a dictionary built FROM financial text, not imported from everyday English."</aside>
+     </section>
+    </section>
+
+    <!-- ========== SLIDE 19: LM LEXICON ========== -->
+    <section id="lm-lexicon" style="padding: 40px 50px;">
+     <h2>The Loughran-McDonald Lexicon</h2>
+     <table style="font-size: 14pt; width: 100%; border-collapse: collapse; margin-top: 16px;">
+      <thead>
+       <tr style="background: var(--secondary-color); color: white;">
+        <th style="padding: 10px 14px; text-align: left;">Category</th>
+        <th style="padding: 10px 14px; text-align: left;">Examples</th>
+        <th style="padding: 10px 14px; text-align: center;">Words</th>
+       </tr>
+      </thead>
+      <tbody>
+       <tr style="background: #fdf0f0;"><td style="padding: 10px 14px; font-weight: 600; color: var(--danger-color);">Negative</td><td style="padding: 10px 14px;">loss, impairment, default, litigation, adverse</td><td style="padding: 10px 14px; text-align: center;">~2,350</td></tr>
+       <tr><td style="padding: 10px 14px; font-weight: 600; color: var(--success-color);">Positive</td><td style="padding: 10px 14px;">achieve, benefit, gain, improve, profitable</td><td style="padding: 10px 14px; text-align: center;">~354</td></tr>
+       <tr style="background: #f8f6f3;"><td style="padding: 10px 14px; font-weight: 600; color: var(--accent-color);">Uncertainty</td><td style="padding: 10px 14px;">approximate, contingent, possible, uncertain</td><td style="padding: 10px 14px; text-align: center;">~290</td></tr>
+       <tr><td style="padding: 10px 14px; font-weight: 600;">Litigious</td><td style="padding: 10px 14px;">claimant, defendant, deposition, tribunal</td><td style="padding: 10px 14px; text-align: center;">~900</td></tr>
+       <tr style="background: #f8f6f3;"><td style="padding: 10px 14px; font-weight: 600;">Constraining</td><td style="padding: 10px 14px;">commit, obligation, prohibit, restrict</td><td style="padding: 10px 14px; text-align: center;">~180</td></tr>
+      </tbody>
+     </table>
+     <div style="background: #f8f6f3; padding: 16px 20px; border-radius: 8px; margin-top: 16px; text-align: center;">
+      <p style="font-size: 16pt;">\[\text{Sent}(d) = \frac{N_{\text{pos}} - N_{\text{neg}}}{N_{\text{pos}} + N_{\text{neg}} + \varepsilon}\]</p>
+      <p style="font-size: 14pt; color: var(--muted-color); margin-top: 6px;">Ranges from &minus;1 (all negative) to +1 (all positive)</p>
+     </div>
+     <aside class="notes">Move quickly through the table — students don't need to memorize the counts. The key insight: 6.6x more negative words than positive (2,350 vs 354) reflects that companies have many more ways to disclose bad news than good news. The formula is straightforward — you'll implement it in the lab.</aside>
+    </section>
+
+    <!-- ========== SLIDE 20: BLOOMBERG + SENTIMENT FIGURE ========== -->
+    <section id="bloomberg-fedspeak" style="padding: 30px 50px;">
+     <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> FedSpeak Sentiment vs. Rate Decisions</h2>
+     <div style="text-align: center; margin-top: 8px;">
+      <img alt="LM sentiment score plotted against Federal Funds Rate from 1994-2025, showing correlation between hawkish language and rate hikes" src="figures/ch23-sentiment-vs-rate.png" style="max-height: 420px; border-radius: 8px;">
+     </div>
+     <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; margin-top: 12px;">
+      <p style="font-size: 15pt;"><strong>Bloomberg FedSpeak Pipeline:</strong> LM lexicon + fine-tuned transformers &rarr; correctly predicted <strong>14 of 16</strong> rate decisions during 2022&ndash;23 tightening cycle</p>
+     </div>
+     <aside class="notes">The same dictionary you'll use in the lab powers a system that correctly called 14 of 16 rate decisions at one of the world's largest financial data companies. This is not a toy exercise — it's production infrastructure.</aside>
+    </section>
+
+    <!-- ========== SLIDE 21: DECISION SCENARIO ========== -->
+    <section id="decision-scenario" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-scale-balanced" style="color: var(--accent-color);"></i> Decision Scenario</h2>
+     <p style="font-size: 16pt; margin-top: 12px;">Your hedge fund client wants sentiment analysis on FOMC minutes. Three options:</p>
+     <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 16px;">
+      <div style="display: grid; grid-template-columns: 80px 1fr; background: #f8f6f3; border-radius: 8px; padding: 16px; border-left: 4px solid var(--danger-color); align-items: center;">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--danger-color); text-align: center;">A</p>
+       <div><p style="font-size: 15pt;"><strong>Harvard GI</strong> &mdash; Free, fast, general-purpose. ~73.8% misclassification on financial text.</p></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 80px 1fr; background: #f8f6f3; border-radius: 8px; padding: 16px; border-left: 4px solid var(--success-color); align-items: center;">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--success-color); text-align: center;">B</p>
+       <div><p style="font-size: 15pt;"><strong>Loughran-McDonald</strong> &mdash; Free, domain-specific, standard in finance research. Transparent &amp; replicable.</p></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 80px 1fr; background: #f8f6f3; border-radius: 8px; padding: 16px; border-left: 4px solid var(--secondary-color); align-items: center;">
+       <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color); text-align: center;">C</p>
+       <div><p style="font-size: 15pt;"><strong>Fine-tuned Transformer</strong> &mdash; $50K+ to develop, best accuracy, black box. Bloomberg's approach.</p></div>
+      </div>
+     </div>
+     <p style="font-size: 16pt; font-weight: 600; color: var(--accent-color); margin-top: 16px; text-align: center;">Show of hands: which do you recommend?</p>
+     <aside class="notes">Most pick B. The interesting debate: B vs C. For research papers, B is the standard (referees trust it). For a trading desk with $1B+ at stake, C may be worth the investment for 2-3% accuracy gain. A is never correct for financial text. Cut point: if running long, skip this and go to takeaways.</aside>
+    </section>
+
+    <!-- ========== SLIDE 22: KEY TAKEAWAYS ========== -->
+    <section id="takeaways" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+      <div style="display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;">
+       <div style="width: 32px; height: 32px; background: var(--secondary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">1</div>
+       <p style="font-size: 15pt;"><strong>Text is a feature engineering problem.</strong> The DTM is the same \(\mathbf{X}\) matrix from Ch 22, with words as features.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;">
+       <div style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">2</div>
+       <p style="font-size: 15pt;"><strong>TF-IDF weights by distinctiveness.</strong> Frequent here + rare everywhere = high signal.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;">
+       <div style="width: 32px; height: 32px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">3</div>
+       <p style="font-size: 15pt;"><strong>Domain-specific lexicons are essential.</strong> Harvard GI misclassifies 73.8% of financial "negative" words.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;">
+       <div style="width: 32px; height: 32px; background: var(--danger-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">4</div>
+       <p style="font-size: 15pt;"><strong>The pipeline works.</strong> Tokenize &rarr; TF-IDF &rarr; LM sentiment &rarr; correlate with rate decisions.</p>
+      </div>
+     </div>
+     <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; margin-top: 16px;">
+      <p style="font-size: 14pt; color: var(--muted-color);"><strong>Next:</strong> Ch 24 uses text features as <em>controls</em> in causal estimation (DML). Ch 25 queries FOMC docs with natural language (RAG).</p>
+     </div>
+     <aside class="notes">Read these four points slowly. Students should be writing them down. Forward seeds: today's tools become inputs to next week's methods.</aside>
+    </section>
+
+    <!-- ========== SLIDE 23: LAB OVERVIEW ========== -->
+    <section id="lab-overview" style="padding: 40px 50px;">
+     <h2><i class="fa-solid fa-laptop-code" style="color: var(--secondary-color);"></i> Lab: FedSpeak Analysis</h2>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+      <div>
+       <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center;">
+         <div style="background: var(--secondary-color); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">1</div>
+         <p style="font-size: 14pt;">Load FOMC minutes from HuggingFace <span style="color: var(--muted-color);">(guided)</span></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center;">
+         <div style="background: var(--secondary-color); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">2</div>
+         <p style="font-size: 14pt;">Preprocess text: tokenize, lemmatize, stop words <span style="color: var(--muted-color);">(guided)</span></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center;">
+         <div style="background: var(--accent-color); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">3</div>
+         <p style="font-size: 14pt;">Build TF-IDF matrix <span style="color: var(--accent-color); font-weight: 600;">(your task)</span></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center;">
+         <div style="background: var(--accent-color); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">4</div>
+         <p style="font-size: 14pt;">Compute LM sentiment scores <span style="color: var(--accent-color); font-weight: 600;">(your task)</span></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center;">
+         <div style="background: var(--secondary-color); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">5</div>
+         <p style="font-size: 14pt;">Visualize sentiment over time <span style="color: var(--muted-color);">(guided)</span></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center;">
+         <div style="background: var(--accent-color); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">6</div>
+         <p style="font-size: 14pt;">Cluster FOMC meetings with K-Means <span style="color: var(--accent-color); font-weight: 600;">(your task &mdash; Ch 22 callback)</span></p>
+        </div>
+       </div>
+      </div>
+      <div style="text-align: center;">
+       <img alt="FOMC meetings clustered by K-Means on TF-IDF vectors, showing distinct linguistic regimes" src="figures/ch23-fomc-clusters.png" style="max-height: 380px; border-radius: 8px;">
+       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 8px;">Your output: FOMC language regimes</p>
+      </div>
+     </div>
+     <aside class="notes">Open the lab notebook. Parts 1-2 are guided — run as-is. Parts 3-4 have blanks to fill in. Part 6 is the Chapter 22 callback — same K-Means algorithm on text features.</aside>
+    </section>
+
+   </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+    });
+  </script>
+ </body>
+</html>

@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Causal ML: Double Machine Learning</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax for LaTeX equations -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- COVER -->
+      <section id="cover">
+        <h1 style="font-size:36pt; margin-bottom:0.3em;">Causal ML: Double Machine Learning</h1>
+        <p style="font-size:18pt; color:#666;">ECON 5200 &mdash; Chapter 24 of 26</p>
+        <p style="font-size:14pt; color:#999;">April 2026 &bull; 75 min &bull; Presentation + Lab</p>
+        <aside class="notes">Welcome. Today we bridge prediction and causation — the culmination of Chapters 9–23.</aside>
+      </section>
+
+      <!-- LEARNING OBJECTIVES -->
+      <section id="learning-objectives">
+        <h2><i class="fas fa-bullseye"></i> Learning Objectives</h2>
+        <ol style="font-size:15pt; line-height:1.7;">
+          <li class="fragment"><strong>Understand</strong> why naive ML produces biased causal estimates (regularization bias)</li>
+          <li class="fragment"><strong>Apply</strong> DML to estimate the ATE of 401(k) eligibility on wealth</li>
+          <li class="fragment"><strong>Analyze</strong> heterogeneous treatment effects (CATE) across subgroups</li>
+          <li class="fragment"><strong>Evaluate</strong> DML assumptions: conditional ignorability, overlap, nuisance specification</li>
+        </ol>
+        <aside class="notes">Four objectives spanning Bloom's L2–L5. Every objective has an assessment moment today.</aside>
+      </section>
+
+      <!-- RETRIEVAL PRACTICE -->
+      <section id="retrieval">
+        <h2><i class="fas fa-brain"></i> Retrieval Practice</h2>
+        <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
+          <p class="fragment"><strong>Ch 9:</strong> What made the Lalonde ATE estimate <em>causal</em>?<br><span style="color:#666;">&rarr; Randomization. Random assignment &rArr; no selection bias.</span></p>
+          <p class="fragment"><strong>Ch 15:</strong> LASSO trades a small increase in ___ for a large decrease in ___.<br><span style="color:#666;">&rarr; Bias for variance. Today we'll see why that breaks causation.</span></p>
+          <p class="fragment"><strong>Ch 16:</strong> What does the L1 penalty do to unimportant coefficients?<br><span style="color:#666;">&rarr; Shrinks them to zero. But what if a "unimportant" predictor is a crucial confounder?</span></p>
+        </div>
+        <aside class="notes">3 min. Quick-fire verbal. Activate prior knowledge from Chapters 9, 15, 16.</aside>
+      </section>
+
+      <!-- HOOK -->
+      <section id="hook">
+        <h2><i class="fas fa-rocket"></i> DoorDash's \$400M Question</h2>
+        <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
+          <p>Most promotional spending was <strong>wasted</strong> on customers who would have ordered anyway.</p>
+          <p class="fragment">A/B tests estimated the <em>average</em> effect &mdash; but DoorDash needed the <em>individual-level</em> causal response.</p>
+          <p class="fragment"><strong>DML + CATE targeting</strong> &rarr; same incremental orders at <span style="color:#e74c3c; font-weight:700;">half the cost per incremental order</span>.</p>
+          <p class="fragment" style="color:#666; font-size:13pt;">Also: Amazon (marketplace fees, \$400M lift), Uber (driver incentives, \$120M GMV lift).</p>
+        </div>
+        <aside class="notes">4 min. The DoorDash story hooks because of the quantified payoff. Transition: "DoorDash needed DML because naive ML was giving them the wrong answers."</aside>
+      </section>
+
+      <!-- SEC 1: REGULARIZATION BIAS -->
+      <section id="reg-bias-intro">
+        <h2>The Temptation</h2>
+        <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
+          <p>You have powerful prediction tools: Random Forests, LASSO, cross-validation.</p>
+          <p class="fragment">Why not include the treatment \(D_i\) alongside controls \(\mathbf{X}_i\) in a LASSO and read off \(\hat{\theta}\)?</p>
+          <p class="fragment" style="color:#e74c3c; font-weight:600;">This is one of the most common mistakes in applied data science.</p>
+          <p class="fragment"><strong>ECB TLTRO III:</strong> Naive ML overestimated credit supply effect by 40% (2.0 pp &rarr; 1.2 pp after DML).</p>
+        </div>
+        <aside class="notes">Set up the problem. The ECB case makes it concrete — billions in policy at stake.</aside>
+      </section>
+
+      <section id="partial-linear-model">
+        <h2>The Partial Linear Model</h2>
+        <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
+          <p>\[Y_i = \theta_0 D_i + g_0(\mathbf{X}_i) + \varepsilon_i\]</p>
+          <ul style="line-height:1.8;">
+            <li>\(\theta_0\) = the causal parameter we want</li>
+            <li>\(g_0(\mathbf{X}_i)\) = unknown, complex function of confounders</li>
+            <li>\(D_i = m_0(\mathbf{X}_i) + V_i\) &mdash; treatment depends on confounders too</li>
+          </ul>
+          <p class="fragment">\(g_0\) and \(m_0\) are <strong>nuisance parameters</strong> &mdash; we need to account for them but don't care about their values.</p>
+        </div>
+        <aside class="notes">Write the model on the board. "Nuisance" = necessary but not interesting. We care ONLY about theta.</aside>
+      </section>
+
+      <section id="why-lasso-fails">
+        <h2>Why LASSO Fails</h2>
+        <div style="font-size:14pt; text-align:left; max-width:85%; margin:auto;">
+          <p>\[\hat{\theta}_{\text{LASSO}} = \arg\min_{\theta,\beta}\left\{\sum(Y_i - \theta D_i - \mathbf{X}_i'\beta)^2 + \lambda\|\beta\|_1\right\}\]</p>
+          <p class="fragment">The penalty \(\lambda\|\beta\|_1\) shrinks control coefficients &rarr; <strong>under-controls for confounders</strong>.</p>
+          <p class="fragment">Omitted confounding leaks into \(\hat{\theta}\) &rarr; <strong>first-order bias that persists as \(n \to \infty\)</strong>.</p>
+        </div>
+        <img src="figures/figure_001_regularization_bias.png" alt="Regularization bias: LASSO shrinkage causes confounding to leak into the treatment effect" style="max-height:220px; margin-top:10px;" class="fragment">
+        <aside class="notes">Draw DAG: X→D, X→Y, D→Y. If LASSO under-controls X, some X→D→Y path gets misattributed to D→Y.</aside>
+      </section>
+
+      <!-- POLL 1 -->
+      <section id="poll-1">
+        <h2><i class="fas fa-poll"></i> Class Poll</h2>
+        <p style="font-size:15pt; font-weight:600;">You run LASSO with treatment + 200 controls. The treatment coefficient will be:</p>
+        <div class="poll-grid" data-poll-id="ch24-poll1" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:80%; margin:20px auto;">
+          <div class="poll-option" data-choice="A" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>A.</strong> Unbiased ATE</div>
+          <div class="poll-option" data-choice="B" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>B.</strong> Biased upward</div>
+          <div class="poll-option" data-choice="C" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>C.</strong> Biased toward zero</div>
+          <div class="poll-option" data-choice="D" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>D.</strong> Depends on controls</div>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch24-poll1')" style="margin-top:10px; padding:6px 14px; font-size:12pt; cursor:pointer;">Reset Poll</button>
+        <aside class="notes">Answer: C. The L1 penalty shrinks ALL coefficients toward zero, including the treatment coefficient indirectly.</aside>
+      </section>
+
+      <section id="poll-1-results" data-poll-results="ch24-poll1">
+        <h2>Poll Results</h2>
+        <div class="poll-results-chart" data-poll-id="ch24-poll1" style="display:flex; align-items:flex-end; justify-content:center; gap:30px; height:250px; margin-top:30px;"></div>
+        <p style="font-size:15pt; margin-top:30px;" class="fragment"><strong>Answer: C.</strong> LASSO shrinks coefficients toward zero &mdash; including the treatment coefficient. Under-controlled confounders leak bias into \(\hat{\theta}\). This is <em>first-order</em> bias: more data doesn't fix it.</p>
+        <aside class="notes">Reveal and discuss. Transition: "So how do we use ML for prediction without corrupting the causal estimate?"</aside>
+      </section>
+
+      <!-- DISCUSSION 1 -->
+      <section id="discussion-1">
+        <h2><i class="fas fa-comments"></i> Discussion</h2>
+        <p style="font-size:17pt; font-weight:600; max-width:85%; margin:auto;">"LASSO's bias doesn't vanish with more data. What does this break in our Ch 15 bias-variance story?"</p>
+        <p style="font-size:14pt; color:#666; margin-top:20px;">Think-pair-share: 2 min think, 2 min discuss, 1 min share.</p>
+        <p class="fragment" style="font-size:14pt; max-width:80%; margin:20px auto;"><strong>Key insight:</strong> Prediction bias and causal bias have different consequences. Prediction bias means slightly off forecasts. Causal bias means wrong policy decisions. DML uses biased ML for nuisance (acceptable) while keeping the causal estimate unbiased.</p>
+        <aside class="notes">5 min total. Look for students to articulate that bias-variance tradeoff is about MSE minimization, but causal inference needs unbiasedness for theta specifically.</aside>
+      </section>
+
+      <!-- SEC 2: DML SOLUTION -->
+      <section id="dml-intuition">
+        <h2>The DML Solution: Partialling Out</h2>
+        <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
+          <p><strong>Recall FWL (Ch 13):</strong> Residualize both \(Y\) and \(D\) against controls, then regress residuals.</p>
+          <p class="fragment"><strong>DML extends FWL to high dimensions:</strong> Replace OLS with any ML model in the "cleaning" step.</p>
+          <ol class="fragment" style="line-height:1.8;">
+            <li><strong>Predict \(Y\) from \(\mathbf{X}\)</strong> using ML &rarr; \(\tilde{Y}_i = Y_i - \hat{g}(\mathbf{X}_i)\)</li>
+            <li><strong>Predict \(D\) from \(\mathbf{X}\)</strong> using ML &rarr; \(\tilde{D}_i = D_i - \hat{m}(\mathbf{X}_i)\)</li>
+            <li><strong>Regress residuals:</strong> \(\hat{\theta}_{\text{DML}} = (\sum\tilde{D}_i^2)^{-1}\sum\tilde{D}_i\tilde{Y}_i\)</li>
+          </ol>
+        </div>
+        <aside class="notes">Draw two parallel pipelines: Y→ML→Ỹ and D→ML→D̃, then Ỹ ~ D̃ → θ̂. Three steps: "clean Y, clean D, regress residuals."</aside>
+      </section>
+
+      <section id="cross-fitting">
+        <h2>Cross-Fitting: The Anti-Overfitting Firewall</h2>
+        <div style="font-size:14pt; text-align:left; max-width:85%; margin:auto;">
+          <p><strong>Problem:</strong> If we train \(\hat{g}\) and \(\hat{m}\) on the same data, overfitting leaks into \(\hat{\theta}\).</p>
+          <p class="fragment"><strong>Solution:</strong> K-fold cross-fitting (same logic as cross-validation, Ch 15):</p>
+          <ol class="fragment" style="line-height:1.8;">
+            <li>Split into \(K\) folds</li>
+            <li>For each fold: train nuisance on \(K{-}1\) folds, compute residuals on holdout</li>
+            <li>Stack all residuals &rarr; estimate \(\hat{\theta}\) from the full set</li>
+          </ol>
+        </div>
+        <img src="figures/figure_002_cross_fitting_diagram.png" alt="Cross-fitting diagram showing K-fold sample splitting for causal estimation" style="max-height:200px; margin-top:10px;" class="fragment">
+        <aside class="notes">Draw K=2 case on board first. Left half trains, right half computes residuals. Swap. Stack. Key phrase: "Prediction serves causation."</aside>
+      </section>
+
+      <section id="neyman-orthogonality">
+        <h2>Neyman Orthogonality</h2>
+        <div style="font-size:14pt; text-align:left; max-width:85%; margin:auto;">
+          <p>Small errors in \(\hat{g}\) and \(\hat{m}\) get <strong>multiplied together</strong> before affecting \(\hat{\theta}\).</p>
+          <p class="fragment">If nuisance errors are \(O(n^{-1/4})\), their product is \(O(n^{-1/2})\) &mdash; negligible relative to sampling noise.</p>
+          <p class="fragment" style="font-weight:600;">Result: DML achieves \(\sqrt{n}\) consistency &mdash; same rate as OLS.</p>
+          <p class="fragment" style="color:#666; font-size:13pt;"><em>5200 detail:</em> Score function \(\psi = \tilde{D}_i(\tilde{Y}_i - \theta\tilde{D}_i)\) satisfies \(\partial_\eta E[\psi] = 0\) at the truth.</p>
+        </div>
+        <aside class="notes">Intuition: errors in nuisance enter θ̂ only at SECOND order. ML models can be imperfect — they just need to be "good enough."</aside>
+      </section>
+
+      <!-- 401(k) APPLICATION -->
+      <section id="401k-setup">
+        <h2>Application: 401(k) Eligibility</h2>
+        <div style="font-size:14pt; text-align:left; max-width:85%; margin:auto;">
+          <p><strong>Data:</strong> 9,915 households from the 1991 SIPP.</p>
+          <p><strong>Treatment:</strong> Employer offers 401(k) plan (\(D = \texttt{e401}\)).</p>
+          <p><strong>Outcome:</strong> Net total financial assets (\(Y = \texttt{net\_tfa}\)).</p>
+          <p><strong>Challenge:</strong> Employers offering 401(k)s differ systematically &mdash; higher-income, more financially sophisticated workers.</p>
+          <p class="fragment" style="font-weight:600;">Question: Does 401(k) eligibility <em>cause</em> higher wealth?</p>
+        </div>
+        <aside class="notes">Set up the policy question. This is the same causal challenge we've seen since Chapter 9 — selection bias.</aside>
+      </section>
+
+      <section id="401k-results">
+        <h2>DML vs. Naive OLS</h2>
+        <div style="display:flex; justify-content:center; gap:30px; margin-top:20px;">
+          <div style="text-align:center; padding:20px 30px; border:3px solid #e74c3c; border-radius:12px;" class="fragment">
+            <p style="font-size:13pt; color:#666;">Naive OLS (no controls)</p>
+            <p style="font-size:28pt; font-weight:700; color:#e74c3c;">~$19,000</p>
+            <p style="font-size:11pt; color:#999;">Causal + selection bias</p>
+          </div>
+          <div style="text-align:center; padding:20px 30px; border:3px solid #2ecc71; border-radius:12px;" class="fragment">
+            <p style="font-size:13pt; color:#666;">DML (RF nuisance, 5-fold)</p>
+            <p style="font-size:28pt; font-weight:700; color:#2ecc71;">~$8,762</p>
+            <p style="font-size:11pt; color:#999;">Causal effect only</p>
+          </div>
+        </div>
+        <p class="fragment" style="font-size:15pt; margin-top:20px;">The <strong>~$10,000 gap</strong> is selection bias removed by DML.</p>
+        <img src="figures/figure_004_dml_vs_naive.png" alt="DML vs naive LASSO comparison of ATE estimates" style="max-height:160px; margin-top:10px;" class="fragment">
+        <aside class="notes">Show both estimates. Ask: "Which is the selection bias?" The $10K difference. Same decomposition as Ch 9 Lalonde.</aside>
+      </section>
+
+      <!-- POLL 2 -->
+      <section id="poll-2">
+        <h2><i class="fas fa-poll"></i> Class Poll</h2>
+        <p style="font-size:15pt; font-weight:600;">In DML cross-fitting, why not use a single held-out test set?</p>
+        <div class="poll-grid" data-poll-id="ch24-poll2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:80%; margin:20px auto;">
+          <div class="poll-option" data-choice="A" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>A.</strong> Less data for estimation</div>
+          <div class="poll-option" data-choice="B" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>B.</strong> Overfitting persists</div>
+          <div class="poll-option" data-choice="C" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>C.</strong> Test set too small</div>
+          <div class="poll-option" data-choice="D" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>D.</strong> ALL obs used for both</div>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch24-poll2')" style="margin-top:10px; padding:6px 14px; font-size:12pt; cursor:pointer;">Reset Poll</button>
+        <aside class="notes">Answer: D. Cross-fitting uses ALL observations for training AND estimation.</aside>
+      </section>
+
+      <section id="poll-2-results" data-poll-results="ch24-poll2">
+        <h2>Poll Results</h2>
+        <div class="poll-results-chart" data-poll-id="ch24-poll2" style="display:flex; align-items:flex-end; justify-content:center; gap:30px; height:250px; margin-top:30px;"></div>
+        <p style="font-size:15pt; margin-top:30px;" class="fragment"><strong>Answer: D.</strong> Every observation is used for training (in K-1 folds) AND for residual computation (in its holdout fold). More efficient than wasting a fixed test set — same reason K-fold CV beats a single train/test split.</p>
+      </section>
+
+      <!-- DISCUSSION 2 -->
+      <section id="discussion-2">
+        <h2><i class="fas fa-comments"></i> Discussion</h2>
+        <p style="font-size:17pt; font-weight:600; max-width:85%; margin:auto;">"DoorDash, Amazon, 401(k) &mdash; completely different domains. What's the common structure?"</p>
+        <p style="font-size:14pt; color:#666; margin-top:20px;">Open discussion: 5 min.</p>
+        <div class="fragment" style="font-size:14pt; max-width:80%; margin:20px auto; text-align:left;">
+          <p><strong>Three common features:</strong></p>
+          <ol>
+            <li>High-dimensional confounders (hundreds of variables)</li>
+            <li>Treatment is NOT randomly assigned</li>
+            <li>The goal is a <em>causal</em> effect, not a prediction</li>
+          </ol>
+          <p style="margin-top:10px;">If any one is missing: few confounders &rarr; OLS, random assignment &rarr; A/B test, prediction goal &rarr; standard ML.</p>
+        </div>
+        <aside class="notes">5 min. Guide students to identify the 3 features that define the DML use case.</aside>
+      </section>
+
+      <!-- SEC 3: CATE -->
+      <section id="cate-intro">
+        <h2>From ATE to CATE</h2>
+        <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
+          <p>ATE of \$8,762 is an <em>average</em>. Does every household benefit equally?</p>
+          <p class="fragment">\[\tau(\mathbf{x}) = E[Y_i(1) - Y_i(0) \mid \mathbf{X}_i = \mathbf{x}]\]</p>
+          <p class="fragment">The ATE is a mean &mdash; and it inherits the mean's vulnerability to heterogeneity (Ch 4 callback).</p>
+        </div>
+        <aside class="notes">Transition from average to individual effects. The CATE reveals the full story.</aside>
+      </section>
+
+      <section id="cate-results">
+        <h2>CATE by Income Quartile</h2>
+        <img src="figures/figure_003_cate_income_quartiles.png" alt="CATE showing 401(k) effects from $1,200 (Q1) to $18,400 (Q4)" style="max-height:320px;">
+        <p class="fragment" style="font-size:14pt; margin-top:15px;">The ATE of \$8,762 masks a <strong>15-fold difference</strong> between bottom and top quartiles.</p>
+        <p class="fragment" style="font-size:13pt; color:#666;">Policy implication: Universal 401(k) mandates primarily benefit high-income workers.</p>
+        <aside class="notes">The Q1→Q4 jump is the punchline. Ask: "Is a universal 401(k) mandate good policy if benefits are so unequal?"</aside>
+      </section>
+
+      <section id="industry-scale">
+        <h2>CATE at Industry Scale</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; font-size:13pt; text-align:left; max-width:90%; margin:auto;">
+          <div style="padding:15px; background:#f8f9fa; border-radius:8px; border-left:4px solid #3498db;">
+            <p style="font-weight:700; color:#3498db;">Amazon</p>
+            <p>Fee elasticity near zero for niche products, substantial for "head" products with alternatives.</p>
+            <p style="font-weight:600;">\$400M revenue lift from targeted fees.</p>
+          </div>
+          <div style="padding:15px; background:#f8f9fa; border-radius:8px; border-left:4px solid #e74c3c;">
+            <p style="font-weight:700; color:#e74c3c;">Uber</p>
+            <p>Price sensitivity 22% lower during rain events than OLS estimated.</p>
+            <p style="font-weight:600;">3.4% utilization increase, \$120M GMV lift.</p>
+          </div>
+        </div>
+        <aside class="notes">Both cases: high-dimensional confounders + DML + CATE analysis reveals where the effect is largest.</aside>
+      </section>
+
+      <!-- DECISION SCENARIO -->
+      <section id="decision-scenario">
+        <h2><i class="fas fa-balance-scale"></i> Decision Scenario</h2>
+        <p style="font-size:15pt; font-weight:600; max-width:85%; margin:auto;">Your firm: 500 features, observational data, n=50K.<br>CEO asks: "Does our loyalty program increase spending?"</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:80%; margin:20px auto; font-size:14pt;">
+          <div style="padding:12px; border:2px solid #ddd; border-radius:8px;"><strong>A.</strong> Run an A/B test</div>
+          <div style="padding:12px; border:2px solid #ddd; border-radius:8px;"><strong>B.</strong> OLS with 500 controls</div>
+          <div style="padding:12px; border:2px solid #2ecc71; border-radius:8px; font-weight:600;" class="fragment"><strong>C.</strong> Double Machine Learning ✓</div>
+          <div style="padding:12px; border:2px solid #ddd; border-radius:8px;"><strong>D.</strong> Find an instrument</div>
+        </div>
+        <p class="fragment" style="font-size:13pt; color:#666;">A = gold standard IF you can randomize (but can't un-enroll members). B = unstable in 500 dims. D = hard to find valid instrument.</p>
+        <aside class="notes">3 min. Show of hands first, then reveal. C is right: high-dimensional confounders + observational + causal question.</aside>
+      </section>
+
+      <!-- SEC 4: DIAGNOSTICS -->
+      <section id="assumptions">
+        <h2>Three DML Assumptions</h2>
+        <div style="font-size:14pt; text-align:left; max-width:85%; margin:auto;">
+          <p class="fragment"><strong>1. Conditional Ignorability:</strong> \(Y(1), Y(0) \perp D \mid \mathbf{X}\)<br><span style="color:#666;">After conditioning, treatment is as-good-as-random. DML can't fix unmeasured confounders.</span></p>
+          <p class="fragment"><strong>2. Overlap (Positivity):</strong> \(0 < P(D=1|\mathbf{X}) < 1\)<br><span style="color:#666;">Both treated and untreated must exist at every covariate combination.</span></p>
+          <p class="fragment"><strong>3. Nuisance Quality:</strong> \(\hat{g}, \hat{m}\) converge faster than \(n^{-1/4}\)<br><span style="color:#666;">ML models must be "good enough" predictors.</span></p>
+        </div>
+        <img src="figures/figure_005_overlap_propensity.png" alt="Propensity score overlap showing treated vs control distributions" style="max-height:160px; margin-top:10px;" class="fragment">
+        <aside class="notes">Three assumptions. Overlap is checkable (propensity score histogram). Conditional ignorability is the hardest — it's untestable.</aside>
+      </section>
+
+      <section id="lalonde-callback">
+        <h2>The Lalonde Callback: Full Circle</h2>
+        <table style="font-size:14pt; margin:auto; border-collapse:collapse;">
+          <tr style="border-bottom:2px solid #333;"><th style="padding:8px 16px;">Chapter</th><th style="padding:8px 16px;">Method</th><th style="padding:8px 16px;">Estimate</th><th style="padding:8px 16px;">Key Insight</th></tr>
+          <tr class="fragment"><td style="padding:8px 16px;">Ch 8</td><td>Two-sample t-test</td><td>\$1,794</td><td>Statistical significance ≠ causal</td></tr>
+          <tr class="fragment"><td style="padding:8px 16px;">Ch 9</td><td>Permutation + Bootstrap</td><td>\$1,794 (ATE)</td><td>Randomization <em>makes</em> it causal</td></tr>
+          <tr class="fragment" style="background:#d5f5e3;"><td style="padding:8px 16px;"><strong>Ch 24</strong></td><td><strong>DML</strong></td><td><strong>~\$1,600–\$2,100</strong></td><td><strong>Recovers benchmark from obs. data</strong></td></tr>
+        </table>
+        <p class="fragment" style="font-size:14pt; margin-top:20px;">Same data, three chapters, increasingly sophisticated analysis. <br><strong>DML doesn't replace experiments &mdash; but when experiments are impossible, it's the next best thing.</strong></p>
+        <aside class="notes">This is the emotional payoff of the causal arc. Ask students to trace the progression from Ch 8 to Ch 24.</aside>
+      </section>
+
+      <!-- POLL 3 -->
+      <section id="poll-3">
+        <h2><i class="fas fa-poll"></i> Class Poll</h2>
+        <p style="font-size:15pt; font-weight:600;">The DML estimate is ~\$8,762. Naive OLS says ~\$19K. The ~\$10K difference represents:</p>
+        <div class="poll-grid" data-poll-id="ch24-poll3" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:80%; margin:20px auto;">
+          <div class="poll-option" data-choice="A" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>A.</strong> Measurement error</div>
+          <div class="poll-option" data-choice="B" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>B.</strong> Selection bias removed</div>
+          <div class="poll-option" data-choice="C" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>C.</strong> Random noise</div>
+          <div class="poll-option" data-choice="D" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>D.</strong> Treatment heterogeneity</div>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch24-poll3')" style="margin-top:10px; padding:6px 14px; font-size:12pt; cursor:pointer;">Reset Poll</button>
+      </section>
+
+      <section id="poll-3-results" data-poll-results="ch24-poll3">
+        <h2>Poll Results</h2>
+        <div class="poll-results-chart" data-poll-id="ch24-poll3" style="display:flex; align-items:flex-end; justify-content:center; gap:30px; height:250px; margin-top:30px;"></div>
+        <p style="font-size:15pt; margin-top:30px;" class="fragment"><strong>Answer: B.</strong> The \$10K gap is selection bias &mdash; 401(k) firms have wealthier workers for other reasons. DML's two-step residualization strips that away. Same logic as Lalonde in Ch 9.</p>
+      </section>
+
+      <!-- METHOD CHOICE -->
+      <section id="method-choice">
+        <h2>Choosing the Right Method</h2>
+        <img src="figures/figure_006_method_choice.png" alt="Decision tree for choosing between A/B test, OLS, DML, and IV methods" style="max-height:400px;">
+        <aside class="notes">Reference slide — students will revisit this for their capstone projects. Key: if you CAN randomize, always do it.</aside>
+      </section>
+
+      <!-- CONNECTIONS -->
+      <section id="connections">
+        <h2><i class="fas fa-link"></i> Connections</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; font-size:13pt; text-align:left; max-width:90%; margin:auto;">
+          <div>
+            <p style="font-weight:700;">Causal Arc (Ch 9 → 10 → 24)</p>
+            <ul style="line-height:1.7;">
+              <li>Experiments → DAGs → ML-powered causation</li>
+              <li>Prediction <em>serves</em> causation</li>
+            </ul>
+          </div>
+          <div>
+            <p style="font-weight:700;">ML Arc (Ch 15–23 → 24)</p>
+            <ul style="line-height:1.7;">
+              <li>CV → Cross-fitting</li>
+              <li>LASSO → Nuisance learner</li>
+              <li>RF → Default DML engine</li>
+              <li>TF-IDF → Causal controls</li>
+            </ul>
+          </div>
+        </div>
+        <p class="fragment" style="font-size:13pt; margin-top:15px;"><strong>Next:</strong> Ch 25 (AI Literacy) &bull; Ch 26 (Capstone — your DML project)</p>
+        <aside class="notes">This chapter is the synthesis of both arcs. Every ML tool becomes an ingredient in the DML recipe.</aside>
+      </section>
+
+      <!-- TAKEAWAYS -->
+      <section id="takeaways">
+        <h2><i class="fas fa-star"></i> Key Takeaways</h2>
+        <ol style="font-size:14pt; line-height:2; max-width:85%; margin:auto; text-align:left;">
+          <li class="fragment"><strong>Naive ML fails for causation</strong> &mdash; regularization bias persists even with infinite data</li>
+          <li class="fragment"><strong>DML separates prediction from causation</strong> &mdash; ML handles confounders, orthogonality protects \(\hat{\theta}\)</li>
+          <li class="fragment"><strong>Cross-fitting = CV for causal inference</strong> &mdash; same K-fold logic, different objective</li>
+          <li class="fragment"><strong>ATE can hide heterogeneity</strong> &mdash; 401(k) effects: \$1,200 (Q1) to \$18,400 (Q4)</li>
+          <li class="fragment"><strong>Three assumptions required</strong> &mdash; conditional ignorability, overlap, adequate nuisance models</li>
+        </ol>
+        <aside class="notes">2 min. Read through the five takeaways. These are the five sentences students should remember.</aside>
+      </section>
+
+      <!-- EXIT TICKET -->
+      <section id="exit-ticket">
+        <h2><i class="fas fa-ticket-alt"></i> Exit Ticket</h2>
+        <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
+          <p><strong>1.</strong> Complete: "Cross-fitting prevents _________ by ensuring nuisance models are trained on different observations than those used to _________."</p>
+          <p style="margin-top:20px;"><strong>2.</strong> One thing I'm confused about from today.</p>
+        </div>
+        <p style="font-size:13pt; color:#999; margin-top:30px;">Write on paper or device. 2 minutes.</p>
+        <aside class="notes">Expected: "overfitting bias" ... "estimate the treatment effect from residuals." Collect and review before next class.</aside>
+      </section>
+
+      <!-- LAB PREVIEW -->
+      <section id="lab-preview">
+        <h2><i class="fas fa-laptop-code"></i> Lab Preview</h2>
+        <div style="font-size:14pt; text-align:left; max-width:85%; margin:auto;">
+          <p><strong>Part 1 (Guided):</strong> Demonstrate regularization bias on simulated data</p>
+          <p><strong>Part 2 (Semi-guided):</strong> Manual 2-fold cross-fitting &mdash; understand <em>why</em> it works</p>
+          <p><strong>Part 3 (Open-ended):</strong> 401(k) ATE + CATE + Causal Forest visualization</p>
+        </div>
+        <p style="font-size:14pt; margin-top:20px; font-weight:600;">Notebook: <code>lab_24_dml_401k.ipynb</code></p>
+        <aside class="notes">Preview the lab structure. Students should start Part 1 during remaining class time if available.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

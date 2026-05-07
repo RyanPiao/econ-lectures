@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unsupervised Learning: Clustering Economies</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax for equations -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ SLIDE 1: COVER ============ -->
+      <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+        <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML & Applied Analytics &bull; Chapter 22</p>
+            <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Unsupervised Learning:<br>Clustering Economies</h1>
+            <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 0;"></div>
+            <div style="margin-top: auto; padding-bottom: 15px;">
+              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+              <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+            </div>
+          </div>
+          <div style="overflow: hidden;">
+            <img src="figures/cover-clustering-economies.png" alt="Abstract illustration of data clustering and pattern discovery"
+                 style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SLIDE 2: LEARNING OBJECTIVES ============ -->
+      <section id="learning-objectives" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">22.1</p>
+            <p style="font-size: 16pt;"><strong>Understand</strong> Lloyd's algorithm and why the centroid inherits the mean's vulnerability to outliers</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">22.2</p>
+            <p style="font-size: 16pt;"><strong>Apply</strong> K-Means clustering and PCA in Python with proper standardization and silhouette evaluation</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">22.3</p>
+            <p style="font-size: 16pt;"><strong>Analyze</strong> clustering results using elbow and silhouette methods; explain why they sometimes disagree</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">22.4</p>
+            <p style="font-size: 16pt;"><strong>Evaluate</strong> algorithmic clustering vs. expert classification (World Bank) — tradeoffs of fit vs. interpretability</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SLIDE 3: RETRIEVAL PRACTICE ============ -->
+      <section id="retrieval-practice" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+          <div style="background: #f8f6f3; padding: 25px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt; font-weight: 600; color: var(--secondary-color); margin-bottom: 10px;">From Chapter 4</p>
+            <p style="font-size: 17pt;">What is the arithmetic mean's <strong>breakdown point</strong>?</p>
+            <p class="fragment fade-up" style="font-size: 15pt; color: var(--success-color); margin-top: 12px; font-weight: 600;">\(1/n\) — one extreme observation can drag the mean arbitrarily far</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 25px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt; font-weight: 600; color: var(--accent-color); margin-bottom: 10px;">From Chapter 15</p>
+            <p style="font-size: 17pt;">What happens when you make a model <strong>more complex</strong>?</p>
+            <p class="fragment fade-up" style="font-size: 15pt; color: var(--success-color); margin-top: 12px; font-weight: 600;">Bias ↓ but Variance ↑ — the fundamental tradeoff returns today</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="margin-top: 25px; font-size: 16pt; text-align: center; color: var(--muted-color);">Today's centroid = multivariate mean (Ch 4). Choosing K = bias-variance (Ch 15).</p>
+        <aside class="notes">Fire these quickly — under 1 min each. If students hesitate on breakdown point, use the "Bill Gates walks into a bar" example. These are the exact concepts that return today in higher dimensions.</aside>
+      </section>
+
+      <!-- ============ SLIDE 4: OPENING HOOK — NUBANK ============ -->
+      <section id="hook-nubank" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Nubank: Discovering Hidden Structure</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 15px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">Brazilian fintech Nubank (<strong>131M customers</strong>, Q4 2025) segmented by demographics for years. Then their data science team ran <strong>K-Means clustering</strong> on behavioral features...</p>
+            <p class="fragment fade-up" style="font-size: 15pt; line-height: 1.6; margin-top: 12px;">The algorithm found <strong>four distinct clusters</strong> — cutting across every demographic boundary.</p>
+          </div>
+          <div>
+            <div class="fragment fade-up" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="background: #e8f4f8; padding: 10px 15px; border-radius: 6px; font-size: 14pt;"><strong>Mass Market:</strong> 104.7M users</div>
+              <div style="background: #fef3c7; padding: 10px 15px; border-radius: 6px; font-size: 14pt;"><strong>Super Core:</strong> 9.8M users</div>
+              <div style="background: #d1fae5; padding: 10px 15px; border-radius: 6px; font-size: 14pt;"><strong>High Income:</strong> 3M users</div>
+              <div style="background: #fce7f3; padding: 10px 15px; border-radius: 6px; font-size: 14pt;"><strong>SME Segment:</strong> 5.2M users</div>
+            </div>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: linear-gradient(135deg, #f0f5f8, #e8eef3); padding: 18px 25px; border-radius: 10px; margin-top: 15px; text-align: center;">
+          <p style="font-size: 18pt; font-weight: 600;">ARPU: $11 → $15 (mature cohorts: $26)</p>
+          <p style="font-size: 14pt; color: var(--muted-color);">One unsupervised algorithm — no labels — reshaped the entire product strategy</p>
+        </div>
+        <aside class="notes">Tell this as a story. Key tension: they assumed 2 types, the algorithm found 4. Emphasize no labels. Then transition: "Today we learn the math behind this — and apply it to cluster 160 countries."</aside>
+      </section>
+
+      <!-- ============ SLIDE 5: CONCEPT BRIDGE ============ -->
+      <section id="concept-bridge" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-bridge" style="color: var(--secondary-color);"></i> The Concept Extension Bridge</h2>
+        <div style="background: #f8f6f3; padding: 25px 30px; border-radius: 10px; margin-top: 15px;">
+          <p style="font-size: 17pt; line-height: 1.6;">In Chapters 12–21, every model had a target variable \(y\). Today we <strong>remove \(y\) entirely</strong>.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px;">
+          <div class="fragment fade-up" style="padding: 20px; border: 2px solid var(--secondary-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--secondary-color); font-size: 15pt;">Chapter 4 Callback</p>
+            <p style="font-size: 15pt; margin-top: 8px;">The centroid = multivariate mean<br>→ breakdown point \(1/n\)</p>
+          </div>
+          <div class="fragment fade-up" style="padding: 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Chapter 15 Callback</p>
+            <p style="font-size: 15pt; margin-top: 8px;">Choosing K = bias-variance<br>Too few ↔ underfit, too many ↔ overfit</p>
+          </div>
+        </div>
+        <aside class="notes">Ask: "What changes when the labels disappear?" Students should mention: can't compute accuracy, R-squared, MASE. Preview the two new metrics: WCSS and silhouette score.</aside>
+      </section>
+
+      <!-- ============ SLIDE 6: SUPERVISED VS UNSUPERVISED ============ -->
+      <section id="supervised-unsupervised" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i> Supervised vs. Unsupervised</h2>
+        <img src="figures/ch22-gemini-supervised-vs-unsupervised.png" alt="Supervised learning maps features to labels; unsupervised learning discovers structure from features alone" style="max-height: 300px; margin: 15px auto; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 10px;">
+          <div style="background: #e8f4f8; padding: 15px 20px; border-radius: 8px;">
+            <p style="font-size: 15pt; font-weight: 600; color: var(--secondary-color);">Clustering</p>
+            <p style="font-size: 14pt;">Partition observations into similar groups</p>
+            <p style="font-size: 13pt; color: var(--muted-color);">Canonical: K-Means</p>
+          </div>
+          <div style="background: #fef3c7; padding: 15px 20px; border-radius: 8px;">
+            <p style="font-size: 15pt; font-weight: 600; color: var(--accent-color);">Dimensionality Reduction</p>
+            <p style="font-size: 14pt;">Compress features while preserving information</p>
+            <p style="font-size: 13pt; color: var(--muted-color);">Canonical: PCA</p>
+          </div>
+        </div>
+        <aside class="notes">Draw 2 blobs on board — "How many groups?" Clear. Then draw a gradient — answer depends on how many you impose. Clustering = modeling choice, not fact.</aside>
+      </section>
+
+      <!-- ============ SLIDE 7: POLL 1 — STANDARDIZATION ============ -->
+      <section id="poll-standardization" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Poll: Most Critical Step?</h2>
+        <p style="font-size: 16pt; margin-bottom: 15px;">You have 160 countries, 10 features. GDP ranges $300–$120K. Gini ranges 25–65. Before K-Means, which step is <strong>most critical</strong>?</p>
+        <div class="poll-grid poll-grid-2" data-poll-id="ch22-econ5200-poll1" style="gap: 15px; max-width: 850px; margin: 0 auto;">
+          <div class="poll-option" data-choice="A" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--secondary-color);">A.</strong> Choose the number of clusters K
+          </div>
+          <div class="poll-option" data-choice="B" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--success-color);">B.</strong> Standardize all features to mean 0, variance 1
+          </div>
+          <div class="poll-option" data-choice="C" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--accent-color);">C.</strong> Run PCA to reduce dimensions first
+          </div>
+          <div class="poll-option" data-choice="D" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--danger-color);">D.</strong> Remove outlier countries (Qatar, Luxembourg)
+          </div>
+        </div>
+        <aside class="notes">Correct: B. Without scaling, $10K GDP difference contributes 10^8 to Euclidean distance. 10-pt Gini contributes 100. GDP is literally 1 million times more influential.</aside>
+      </section>
+
+      <!-- ============ SLIDE 7b: POLL 1 RESULTS ============ -->
+      <section id="poll1-results" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--success-color);"></i> Answer: Standardize First</h2>
+        <div data-poll-results data-poll-id="ch22-econ5200-poll1" style="display: flex; justify-content: center; align-items: flex-end; gap: 30px; height: 200px; margin: 20px auto;">
+          <div class="poll-results-chart" data-poll-id="ch22-econ5200-poll1" style="display: flex; justify-content: center; align-items: flex-end; gap: 30px; height: 200px;"></div>
+        </div>
+        <div style="background: #d1fae5; padding: 18px 25px; border-radius: 10px; margin-top: 20px;">
+          <p style="font-size: 16pt;"><strong>Why B?</strong> Without StandardScaler: GDP contributes \(10{,}000^2 = 10^8\) to distance. Gini contributes \(10^2 = 100\). You're clustering on <strong>one variable</strong> while ignoring nine.</p>
+        </div>
+        <p style="font-size: 14pt; color: var(--muted-color); margin-top: 10px;">$$z_{ij} = \frac{x_{ij} - \bar{x}_j}{s_j}$$</p>
+        <button class="reset-btn" onclick="clearPoll('ch22-econ5200-poll1')" style="margin-top:10px;padding:6px 16px;border-radius:6px;border:1px solid #ccc;cursor:pointer;font-size:12pt;">Reset Poll</button>
+        <aside class="notes">After revealing, emphasize: standardization is the most common error in student clustering pipelines. The lab has this as Error #1.</aside>
+      </section>
+
+      <!-- ============ SLIDE 8: LLOYD'S ALGORITHM ============ -->
+      <section id="lloyds-algorithm" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-arrows-rotate" style="color: var(--secondary-color);"></i> K-Means: Lloyd's Algorithm</h2>
+        <img src="figures/ch22-kmeans-iteration.png" alt="K-Means iteration showing assignment and update steps converging to stable clusters" style="max-height: 240px; margin: 10px auto; display: block;">
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 100px 1fr; align-items: center; background: #f8f6f3; padding: 12px 18px; border-radius: 6px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color);">Step 0</p>
+            <p style="font-size: 14pt;">Select \(K\) initial centroids \(\mu_1, \ldots, \mu_K\)</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 100px 1fr; align-items: center; background: #e8f4f8; padding: 12px 18px; border-radius: 6px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color);">Assign</p>
+            <p style="font-size: 14pt;">\(c_i = \arg\min_{k} \|\mathbf{x}_i - \mu_k\|^2\) — each point → nearest centroid</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 100px 1fr; align-items: center; background: #fef3c7; padding: 12px 18px; border-radius: 6px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">Update</p>
+            <p style="font-size: 14pt;">\(\mu_k = \frac{1}{|C_k|} \sum_{i \in C_k} \mathbf{x}_i\) — centroid → cluster mean</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 100px 1fr; align-items: center; background: #d1fae5; padding: 12px 18px; border-radius: 6px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">Repeat</p>
+            <p style="font-size: 14pt;">Until convergence. Minimizes WCSS: \(\sum_k \sum_{i \in C_k} \|\mathbf{x}_i - \mu_k\|^2\)</p>
+          </div>
+        </div>
+        <aside class="notes">Progressive build: show each step one at a time. Write the 3-country worked example on the board alongside. Emphasize: each iteration reduces WCSS — guaranteed convergence but to LOCAL minimum.</aside>
+      </section>
+
+      <!-- ============ SLIDE 9: CENTROID FRAGILITY ============ -->
+      <section id="centroid-fragility" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> The Centroid Is a Mean</h2>
+        <img src="figures/ch22-gemini-kmeans-convergence.png" alt="K-Means convergence illustration showing centroid updates and cluster assignments stabilizing" style="max-height: 220px; margin: 10px auto; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 15px;">
+          <div style="background: #fef2f2; padding: 18px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 600; color: var(--danger-color);">K-Means (Centroid)</p>
+            <p style="font-size: 14pt; margin-top: 6px;">Uses the <strong>mean</strong> as cluster center<br>Breakdown point: \(1/n\)<br>One outlier distorts all boundaries</p>
+          </div>
+          <div class="fragment fade-up" style="background: #d1fae5; padding: 18px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 600; color: var(--success-color);">K-Medoids (PAM)</p>
+            <p style="font-size: 14pt; margin-top: 6px;">Uses actual <strong>data point</strong> as center<br>Robust like the median<br>Tradeoff: \(O(n^2)\) vs \(O(n \cdot K \cdot t)\)</p>
+          </div>
+        </div>
+        <aside class="notes">Callback to Chapter 4: "Remember the mean has breakdown point 1/n? Today's centroid is that mean in 10 dimensions." This sets up Discussion 1.</aside>
+      </section>
+
+      <!-- ============ SLIDE 10: DISCUSSION 1 — OUTLIER ============ -->
+      <section id="discussion-outlier" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Qatar Problem</h2>
+        <div style="background: #f0f5f8; padding: 25px; border-radius: 12px; max-width: 850px; margin: 10px auto;">
+          <p style="font-size: 17pt; font-weight: 600;">Cluster 2 has 50 countries, avg GDP $12K. A petrostate with GDP $5M joins. Centroid jumps to ~$110K.</p>
+          <p style="font-size: 15pt; margin-top: 12px; color: var(--muted-color);">What do you do?</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; max-width: 850px; margin-left: auto; margin-right: auto;">
+          <div style="padding: 14px; border: 2px solid var(--secondary-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--secondary-color); font-size: 14pt;">A: Switch to K-Medoids</p>
+            <p style="font-size: 13pt;">Robust, but \(O(n^2)\)</p>
+          </div>
+          <div style="padding: 14px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 14pt;">B: Remove the outlier</p>
+            <p style="font-size: 13pt;">Common, but discards info</p>
+          </div>
+          <div style="padding: 14px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 14pt;">C: Increase K</p>
+            <p style="font-size: 13pt;">Symptom fix, not cause</p>
+          </div>
+          <div style="padding: 14px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--danger-color); font-size: 14pt;">D: Log-transform GDP</p>
+            <p style="font-size: 13pt;">Compresses scale, keeps data</p>
+          </div>
+        </div>
+        <p style="margin-top: 12px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs → 3 min share</span></p>
+        <aside class="notes">Give pairs 2 min. Cold-call 3 groups. Most choose B (remove outlier) — challenge: "If you remove Qatar, what about Luxembourg? Where's the line?" Push toward D (log-transform) as practical compromise.</aside>
+      </section>
+
+      <!-- ============ SLIDE 11: CHOOSING K ============ -->
+      <section id="choosing-k" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-sliders" style="color: var(--secondary-color);"></i> Choosing K: Elbow & Silhouette</h2>
+        <img src="figures/ch22-elbow-silhouette.png" alt="Elbow method WCSS plot and silhouette score plot side by side for WDI country data" style="max-height: 280px; margin: 10px auto; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 15px;">
+          <div>
+            <p style="font-size: 15pt; font-weight: 600; color: var(--secondary-color);">Elbow Method</p>
+            <p style="font-size: 14pt;">WCSS vs. K — look for sharp bend</p>
+            <p style="font-size: 13pt; color: var(--danger-color); margin-top: 6px;">⚠️ Often ambiguous in real data</p>
+          </div>
+          <div>
+            <p style="font-size: 15pt; font-weight: 600; color: var(--accent-color);">Silhouette Score</p>
+            <p style="font-size: 14pt;">\(s(i) = \frac{b(i) - a(i)}{\max(a(i), b(i))}\)</p>
+            <p style="font-size: 13pt; color: var(--success-color); margin-top: 6px;">✓ Maximum = best K (principled)</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; margin-top: 12px; text-align: center;">
+          <p style="font-size: 15pt;">Choosing K = <strong>bias-variance tradeoff</strong>: K=1 (max bias) ↔ K=n (max variance)</p>
+        </div>
+        <aside class="notes">Show both plots side-by-side. They often disagree — that's the teaching moment. "There is no single correct K. In economics, domain knowledge matters as much as any metric."</aside>
+      </section>
+
+      <!-- ============ SLIDE 12: POLL 2 — WHICH K? ============ -->
+      <section id="poll-which-k" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Poll: Which K?</h2>
+        <p style="font-size: 16pt; margin-bottom: 15px;">Elbow → K=3. Silhouette → K=4. World Bank → K=4. Policy audience. Your choice?</p>
+        <div class="poll-grid poll-grid-2" data-poll-id="ch22-econ5200-poll2" style="gap: 15px; max-width: 850px; margin: 0 auto;">
+          <div class="poll-option" data-choice="A" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--secondary-color);">A.</strong> K=3 — elbow is most cited
+          </div>
+          <div class="poll-option" data-choice="B" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--success-color);">B.</strong> K=4 — silhouette is more principled
+          </div>
+          <div class="poll-option" data-choice="C" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--accent-color);">C.</strong> K=4 — match World Bank for comparability
+          </div>
+          <div class="poll-option" data-choice="D" style="padding: 18px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15pt;">
+            <strong style="color: var(--danger-color);">D.</strong> Run both, report both, discuss differences
+          </div>
+        </div>
+        <aside class="notes">Best: D. Should generate disagreement. Challenge C voters: "If the algorithm says 3 groups fit better, does matching institutions make your analysis better or worse?" Depends on audience and question.</aside>
+      </section>
+
+      <!-- ============ SLIDE 12b: POLL 2 RESULTS ============ -->
+      <section id="poll2-results" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--success-color);"></i> Best Answer: Run Both</h2>
+        <div data-poll-results data-poll-id="ch22-econ5200-poll2" style="display: flex; justify-content: center; align-items: flex-end; gap: 30px; height: 200px; margin: 20px auto;">
+          <div class="poll-results-chart" data-poll-id="ch22-econ5200-poll2" style="display: flex; justify-content: center; align-items: flex-end; gap: 30px; height: 200px;"></div>
+        </div>
+        <div style="background: #d1fae5; padding: 18px 25px; border-radius: 10px; margin-top: 20px;">
+          <p style="font-size: 16pt;"><strong>D is strongest:</strong> report both K=3 and K=4, discuss differences. Shows intellectual rigor.</p>
+          <p style="font-size: 14pt; margin-top: 8px; color: var(--muted-color);">B is also strong (silhouette is principled). C reflects a legitimate practical concern (comparability). K is a modeling choice, not a ground truth.</p>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch22-econ5200-poll2')" style="margin-top:10px;padding:6px 16px;border-radius:6px;border:1px solid #ccc;cursor:pointer;font-size:12pt;">Reset Poll</button>
+        <aside class="notes">Landing point: K is always a modeling choice. For policy: comparability matters. For research: statistical fit matters. For consulting: probably both.</aside>
+      </section>
+
+      <!-- ============ SLIDE 13: PCA ============ -->
+      <section id="pca" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-compress" style="color: var(--secondary-color);"></i> PCA: Dimensionality Reduction</h2>
+        <img src="figures/ch22-gemini-pca-projection.png" alt="PCA finds the best camera angle to project high-dimensional data onto 2D while preserving maximum variance" style="max-height: 250px; margin: 10px auto; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 10px;">
+          <div>
+            <p style="font-size: 15pt; font-weight: 600;">The Math</p>
+            <p style="font-size: 14pt;">\(\mathbf{w}_1 = \arg\max_{\|\mathbf{w}\|=1} \text{Var}(\mathbf{X}\mathbf{w})\)</p>
+            <p style="font-size: 13pt; margin-top: 8px;">Eigenvalue decomposition of covariance matrix</p>
+            <p style="font-size: 13pt; margin-top: 4px;">EVR: \(\text{EVR}_j = \lambda_j / \sum \lambda_l\)</p>
+          </div>
+          <div class="fragment fade-up">
+            <p style="font-size: 15pt; font-weight: 600;">The Intuition</p>
+            <p style="font-size: 14pt;">Like photographing a 3D sculpture — find the angle showing the most variation</p>
+            <p style="font-size: 13pt; margin-top: 8px;">In WDI data: PC1 + PC2 ≈ 60–80% of variance</p>
+            <p style="font-size: 13pt; margin-top: 4px;">PC1 ≈ "general development" axis</p>
+          </div>
+        </div>
+        <aside class="notes">Show PCA scatter with cluster colors. Students see recognizable groups. "Does PC1 have an economic interpretation?" Walk through loadings. Key: PCA components are mathematical — economists supply meaning.</aside>
+      </section>
+
+      <!-- ============ SLIDE 14: PCA COUNTRY CLUSTERS ============ -->
+      <section id="pca-clusters" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-globe" style="color: var(--secondary-color);"></i> Country Clusters in PCA Space</h2>
+        <img src="figures/ch22-pca-country-clusters.png" alt="160 countries projected onto PC1 and PC2, colored by K-Means cluster — showing development groupings" style="max-height: 420px; margin: 10px auto; display: block;">
+        <p style="font-size: 14pt; color: var(--muted-color); text-align: center; margin-top: 8px;">160 countries • 10 WDI indicators • K=4 clusters • PCA 2D projection</p>
+        <aside class="notes">Point out exemplars: "Norway and the US together; China and Brazil might be in different clusters than you expect." This is the visual payoff of the entire pipeline.</aside>
+      </section>
+
+      <!-- ============ SLIDE 15: DISCUSSION 2 — MULTIVARIATE VS UNIVARIATE ============ -->
+      <section id="discussion-multivariate" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Multivariate vs. Simple</h2>
+        <div style="background: #f0f5f8; padding: 25px; border-radius: 12px; max-width: 850px; margin: 10px auto;">
+          <p style="font-size: 16pt; font-weight: 600;">The IMF uses 79 variables to cluster crisis-risk countries. Your manager says: "Just use GDP per capita."</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 15px; max-width: 850px; margin-left: auto; margin-right: auto;">
+          <div style="padding: 15px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color);">Make the case FOR clustering</p>
+            <p style="font-size: 13pt;">Captures structure single variables miss. Costa Rica example.</p>
+          </div>
+          <div style="padding: 15px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--danger-color);">Make the case AGAINST</p>
+            <p style="font-size: 13pt;">Transparent, deterministic, administratively actionable.</p>
+          </div>
+        </div>
+        <p style="margin-top: 12px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min formulate → 3 min debate</span></p>
+        <aside class="notes">Split the room: left side FOR multivariate, right side AGAINST. One representative each. Landing: "Both useful. World Bank = transparent. Algorithm = richer. Know when each fits."</aside>
+      </section>
+
+      <!-- ============ SLIDE 16: FULL PIPELINE ============ -->
+      <section id="full-pipeline" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-diagram-project" style="color: var(--secondary-color);"></i> The Full Pipeline</h2>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; padding: 10px 18px; border-radius: 6px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;"><strong>Download</strong> — 10 WDI indicators via <code>wbgapi</code></p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #e8f4f8; padding: 10px 18px; border-radius: 6px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">2</p>
+            <p style="font-size: 15pt;"><strong>Standardize</strong> — StandardScaler (mean 0, var 1)</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #fef3c7; padding: 10px 18px; border-radius: 6px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--accent-color);">3</p>
+            <p style="font-size: 15pt;"><strong>Choose K</strong> — Elbow + Silhouette + Domain knowledge</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #d1fae5; padding: 10px 18px; border-radius: 6px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">4</p>
+            <p style="font-size: 15pt;"><strong>Fit K-Means</strong> — K-Means++, n_init='auto', random_state=42</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #fce7f3; padding: 10px 18px; border-radius: 6px;">
+            <p style="font-size: 16pt; font-weight: 700; color: #7C3A5F;">5</p>
+            <p style="font-size: 15pt;"><strong>PCA → Visualize</strong> — Project 10D → 2D, color by cluster</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f0f5f8; padding: 10px 18px; border-radius: 6px;">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">6</p>
+            <p style="font-size: 15pt;"><strong>Interpret</strong> — Compare to World Bank income groups (ARI ≈ 0.6–0.8)</p>
+          </div>
+        </div>
+        <aside class="notes">Walk through pipeline end-to-end. Pedagogical climax: the cross-tab showing agreement and disagreement with World Bank. "Which system is right?" Neither.</aside>
+      </section>
+
+      <!-- ============ SLIDE 17: CLUSTER PROFILES ============ -->
+      <section id="cluster-profiles" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-table" style="color: var(--secondary-color);"></i> Cluster Profiles</h2>
+        <img src="figures/ch22-cluster-profiles.png" alt="Heatmap showing cluster centroids across all 10 development indicators — each cluster has a distinct economic fingerprint" style="max-height: 400px; margin: 10px auto; display: block;">
+        <p style="font-size: 14pt; color: var(--muted-color); text-align: center; margin-top: 8px;">World Bank FY2026: Low ≤ $1,135 • Lower-middle $1,136–$4,495 • Upper-middle $4,496–$13,935 • High > $13,935</p>
+        <aside class="notes">Key takeaway: the algorithmic clusters broadly agree with World Bank but catch boundary cases. Costa Rica: reclassified in FY2026, but multivariate model may have predicted it earlier.</aside>
+      </section>
+
+      <!-- ============ SLIDE 18: KEY TAKEAWAYS ============ -->
+      <section id="takeaways" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; gap: 10px;">
+            <p style="font-size: 20pt; color: var(--secondary-color);">1</p>
+            <p style="font-size: 16pt;"><strong>K-Means partitions data into K groups</strong> by alternating assignment + update. Converges to local minimum only.</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; gap: 10px;">
+            <p style="font-size: 20pt; color: var(--secondary-color);">2</p>
+            <p style="font-size: 16pt;"><strong>The centroid is a multivariate mean</strong> with breakdown point \(1/n\) — one outlier distorts all boundaries.</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; gap: 10px;">
+            <p style="font-size: 20pt; color: var(--secondary-color);">3</p>
+            <p style="font-size: 16pt;"><strong>Standardize before clustering.</strong> Without it, the highest-scale feature dominates all distances.</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; gap: 10px;">
+            <p style="font-size: 20pt; color: var(--secondary-color);">4</p>
+            <p style="font-size: 16pt;"><strong>Choosing K = bias-variance tradeoff.</strong> Elbow + silhouette provide guidance; domain knowledge provides the rest.</p>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 40px 1fr; align-items: start; gap: 10px;">
+            <p style="font-size: 20pt; color: var(--secondary-color);">5</p>
+            <p style="font-size: 16pt;"><strong>Algorithmic vs. expert classification</strong> — both valuable, neither "correct." Different questions, different tools.</p>
+          </div>
+        </div>
+        <aside class="notes">Read each takeaway aloud. These are the 5 sentences students should remember tomorrow.</aside>
+      </section>
+
+      <!-- ============ SLIDE 19: EXIT TICKET ============ -->
+      <section id="exit-ticket" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
+        <div style="background: #f0f5f8; padding: 35px; border-radius: 12px; max-width: 700px; margin: 30px auto; text-align: center;">
+          <p style="font-size: 20pt; font-weight: 600;">Name <strong>one advantage</strong> and <strong>one disadvantage</strong> of K-Means for clustering economic data.</p>
+          <p style="font-size: 14pt; color: var(--muted-color); margin-top: 15px;">Write on paper or submit via form. 2 minutes.</p>
+        </div>
+        <p style="text-align: center; margin-top: 20px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min</span></p>
+        <div class="fragment fade-up" style="margin-top: 20px; text-align: center;">
+          <p style="font-size: 15pt; color: var(--muted-color);">Next class: <strong>Chapter 23 — NLP: Text as Data</strong><br>Same K-Means, but on TF-IDF vectors instead of economic indicators</p>
+        </div>
+        <aside class="notes">Scan responses. If most cite "fast" but miss outlier sensitivity, reinforce Ch 4 callback. Preview Ch 23: same algorithm, different input format.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>
