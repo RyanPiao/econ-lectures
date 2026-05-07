@@ -192,6 +192,57 @@
 
 .reveal .slides section.stack { padding: 0 !important; }
 
+/* === Vertical-spacing fix (2026-05-07) ===
+   Without this, every slide whose content is shorter than ~620px piles at the top
+   with a big empty band at the bottom (the default flex-start). Goal: keep h2 near
+   the top, then distribute remaining height around the body so content sits in the
+   visual center of the slide.
+
+   Mechanism: change the section's justify-content to space-between so the section's
+   children spread top-to-bottom. The h2 hugs the top; everything after it grows to
+   fill. Then the FIRST non-h2 child gets margin-top: auto + margin-bottom: auto,
+   which centers it in the remaining space below the title rule.
+
+   Applies to all regular content slides — skips section-divider (already centered)
+   and stack containers (vertical poll stacks). */
+
+.reveal .slides section:not(.section-divider):not(.stack) {
+  justify-content: flex-start !important;
+}
+
+.reveal .slides section:not(.section-divider):not(.stack) > h2:first-child {
+  flex: 0 0 auto;
+}
+
+.reveal .slides section:not(.section-divider):not(.stack) > h2:first-child ~ * {
+  flex-shrink: 0;
+}
+
+/* The actual centering: the FIRST non-h2 element absorbs available top space. */
+.reveal .slides section:not(.section-divider):not(.stack) > h2:first-child + * {
+  margin-top: auto;
+}
+
+/* The LAST element absorbs available bottom space so the content block
+   ends up vertically centered in whatever remains below the h2 rule. */
+.reveal .slides section:not(.section-divider):not(.stack) > h2:first-child + * ~ *:last-child:not(aside) {
+  margin-bottom: auto;
+}
+
+/* Single-content-block slides (h2 + one block): the "+ * ~ *:last-child" selector
+   matches nothing because there's only one sibling. Handle this case directly:
+   when h2 is followed by exactly one element, that element gets symmetric auto-margins. */
+.reveal .slides section:not(.section-divider):not(.stack) > h2:first-child + *:last-of-type:not(aside) {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+/* Aside (speaker notes) is invisible during the talk — never let it eat layout space. */
+.reveal .slides section > aside.notes {
+  position: absolute;
+  visibility: hidden;
+}
+
 .reveal .slides section > .content {
   flex: 1;
   display: flex;
