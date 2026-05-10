@@ -18,9 +18,8 @@
 .reveal .slides section .grid-2col,
 .reveal .slides section .grid-3col    { align-items: flex-start !important; }
 .reveal .slides section .col          { justify-content: flex-start !important; }
-.reveal .slides section:not(.section-divider):not(.stack):not(.bg-video) > h2 {
-  margin-bottom: 0.6em !important;
-}
+/* h2 margin handled in the tightness-fix block below — keep it at 0.
+   The h2's own padding-bottom + underline supplies all the visual separation. */
 
 /* Two-column grid utility (per style-upgrades-2026-05.md §6) */
 .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: flex-start; }
@@ -260,18 +259,23 @@
 
 .reveal .slides section.stack { padding: 0 !important; }
 
-/* === Modest spacing breathe-room (2026-05-07, revised) ===
-   Original layout: content piled tight under the h2 with the rest of the slide
-   empty. Goal: keep the original top-anchored layout but spread the content
-   blocks themselves apart a little so the slide doesn't look top-heavy.
-   No vertical centering — keep the deck reading the same as before, just looser. */
+/* === Tightness fix (2026-05-10, revised) ===
+   h2 already has padding-bottom: 10px + border-bottom: 1.5px from the base
+   layout — that's enough visual separation. Keep the title close to its
+   subtitle by killing margin-bottom and shrinking row-gap. */
 
 .reveal .slides section:not(.section-divider):not(.stack) {
-  row-gap: 14px;
+  row-gap: 8px;
 }
 
-.reveal .slides section:not(.section-divider):not(.stack) > h2:first-child {
-  margin-bottom: 6px;
+.reveal .slides section:not(.section-divider):not(.stack):not(.bg-video) > h2:first-child {
+  margin-bottom: 0 !important;
+}
+
+/* If the FIRST element after h2 is a small caption/subtitle paragraph, glue
+   it to the title (no row-gap above). */
+.reveal .slides section:not(.section-divider):not(.stack):not(.bg-video) > h2 + p {
+  margin-top: 8px !important;
 }
 
 /* ===========================================
