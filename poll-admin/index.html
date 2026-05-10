@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poll Admin — Lecture Decks</title>
+<style>
+  :root {
+    --bg: #fbfaf6;
+    --card: #f7f5ef;
+    --border: #edebe4;
+    --text: #111418;
+    --muted: #5a6068;
+    --accent: #0a2e5c;
+    --danger: #9d0208;
+    --warn: #d4a017;
+    --ok: #2d6a4f;
+    --A: #3b82f6;
+    --B: #22c55e;
+    --C: #f97316;
+    --D: #a855f7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  header {
+    background: var(--accent); color: white;
+    padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 22px; font-weight: 700; }
+  header .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  header button, header input { font: inherit; }
+  main { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+  .summary {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 24px;
+    display: flex; gap: 24px; flex-wrap: wrap; align-items: center;
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat .num { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .course {
+    background: white; border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 24px; overflow: hidden;
+  }
+  .course-head {
+    background: var(--card); padding: 12px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .course-head h2 { margin: 0; font-size: 18px; color: var(--accent); }
+  .course-head .meta { font-size: 13px; color: var(--muted); }
+  .course-body { padding: 8px 0; }
+
+  .chapter { padding: 8px 18px; border-bottom: 1px solid var(--border); }
+  .chapter:last-child { border-bottom: 0; }
+  .chapter-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 8px 0;
+  }
+  .chapter-head h3 { margin: 0; font-size: 15px; }
+  .chapter-head .meta { font-size: 13px; color: var(--muted); }
+
+  .polls { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 4px 0 12px; }
+  .poll {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 16px; align-items: center;
+    background: var(--bg); border-radius: 6px; padding: 10px 14px;
+    border: 1px solid var(--border);
+  }
+  .poll-id { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; color: var(--accent); font-weight: 600; }
+  .poll-bars { display: flex; gap: 4px; height: 36px; align-items: flex-end; }
+  .poll-bars .bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 36px; }
+  .poll-bars .bar { width: 28px; border-radius: 3px 3px 0 0; min-height: 2px; }
+  .poll-bars .bar-A { background: var(--A); }
+  .poll-bars .bar-B { background: var(--B); }
+  .poll-bars .bar-C { background: var(--C); }
+  .poll-bars .bar-D { background: var(--D); }
+  .poll-bars .bar-other { background: var(--muted); }
+  .poll-bars .lbl { font-size: 10px; font-weight: 600; color: var(--muted); }
+  .poll-bars .cnt { font-size: 11px; font-weight: 700; color: var(--text); }
+  .poll-total { font-size: 13px; color: var(--muted); min-width: 80px; text-align: right; }
+
+  button {
+    font: 13px/1.2 inherit; cursor: pointer; padding: 6px 12px;
+    border-radius: 4px; border: 1px solid var(--border); background: white;
+    transition: all 0.15s ease;
+  }
+  button:hover { background: var(--card); }
+  button.danger { color: var(--danger); border-color: #e0c2c2; }
+  button.danger:hover { background: #fef2f2; }
+  button.danger-solid { background: var(--danger); color: white; border-color: var(--danger); }
+  button.danger-solid:hover { background: #7d0107; }
+  button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  input[type="text"], input[type="search"] {
+    font: inherit; padding: 6px 10px; border-radius: 4px;
+    border: 1px solid #d8d8d8; background: white;
+    min-width: 200px;
+  }
+  header input { background: rgba(255,255,255,0.95); color: var(--text); border: 0; }
+
+  .empty {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+    background: var(--card); border-radius: 8px; border: 2px dashed var(--border);
+  }
+  .empty h3 { margin: 0 0 8px; color: var(--text); font-weight: 600; }
+  .empty p { margin: 0; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: white; padding: 10px 16px; border-radius: 6px;
+    font-size: 14px; opacity: 0; transition: opacity 0.2s ease;
+    pointer-events: none; z-index: 100;
+  }
+  .toast.visible { opacity: 1; }
+  .toast.error { background: var(--danger); }
+  .toast.ok { background: var(--ok); }
+
+  .footer { text-align: center; padding: 24px; color: var(--muted); font-size: 12px; }
+  .footer code { background: var(--card); padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+
+  @media (max-width: 700px) {
+    .poll { grid-template-columns: 1fr; }
+    .poll-total { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 Poll Admin</h1>
+  <div class="controls">
+    <input type="search" id="filter" placeholder="Filter by poll ID, course, or chapter…">
+    <button id="refresh" title="Refresh now">↻ Refresh</button>
+    <button id="auto" title="Toggle auto-refresh (every 5s)">⏱ Auto</button>
+    <button class="danger-solid" id="clearAll" title="Delete ALL votes from ALL courses">🗑 Clear ALL</button>
+  </div>
+</header>
+
+<main>
+  <div class="summary" id="summary">
+    <div class="stat"><span class="num" id="totalVotes">—</span><span class="lbl">Total votes</span></div>
+    <div class="stat"><span class="num" id="totalPolls">—</span><span class="lbl">Distinct polls</span></div>
+    <div class="stat"><span class="num" id="totalCourses">—</span><span class="lbl">Courses</span></div>
+    <div class="stat"><span class="num" id="lastUpdate">—</span><span class="lbl">Last fetched</span></div>
+  </div>
+
+  <div id="content"></div>
+</main>
+
+<div class="footer">
+  Backend: <code>dpntbrsorgbivmntwmod.supabase.co</code> · table <code>poll_votes</code><br>
+  Naming convention: <code>{course}-ch{NN}-poll-{N}</code> (e.g. <code>econ2316-ch03-poll-1</code>). Polls without a <code>{course}-</code> prefix are grouped under <strong>ECON 1116 (legacy)</strong>.
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // === Supabase config (anon key — same as embedded in lecture decks) ===
+  const SU = "https://dpntbrsorgbivmntwmod.supabase.co";
+  const SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+
+  // === Course code → display name ===
+  const COURSE_NAMES = {
+    "econ1116": "ECON 1116 — Principles of Microeconomics",
+    "econ2316": "ECON 2316 — Macroeconomics",  // adjust as needed
+    "econ3916": "ECON 3916 — Data Science for Economists",
+    "econ5200": "ECON 5200 — Data Science for Economists (grad)",
+    "_legacy": "ECON 1116 (legacy — pre-prefix polls)"
+  };
+
+  // === Helpers ===
+  function sf(method, path, body) {
+    const opts = {
+      method,
+      headers: {
+        "apikey": SK,
+        "Authorization": "Bearer " + SK,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Prefer": "return=representation"
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    return fetch(SU + "/rest/v1/" + path, opts);
+  }
+
+  function toast(msg, kind) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = "toast visible " + (kind || "");
+    setTimeout(() => { t.className = "toast"; }, 2200);
+  }
+
+  function parsePollId(pid) {
+    // Examples:
+    //   econ1116-ch03-poll-1   → course="econ1116", chapter="03", num="1"
+    //   ch03-poll-1            → course="_legacy",  chapter="03", num="1"
+    //   custom-poll-id         → course="_legacy",  chapter="??", num=pid
+    const m1 = pid.match(/^(econ\d+)-ch(\d+)-poll-(\d+)$/i);
+    if (m1) return { course: m1[1].toLowerCase(), chapter: m1[2], num: m1[3] };
+    const m2 = pid.match(/^ch(\d+)-poll-(\d+)$/i);
+    if (m2) return { course: "_legacy", chapter: m2[1], num: m2[2] };
+    const m3 = pid.match(/^(econ\d+)-ch(\d+)-(.+)$/i);
+    if (m3) return { course: m3[1].toLowerCase(), chapter: m3[2], num: m3[3] };
+    return { course: "_legacy", chapter: "??", num: pid };
+  }
+
+  function courseLabel(code) {
+    return COURSE_NAMES[code] || code;
+  }
+
+  // === Data fetch ===
+  let allRows = [];
+  let lastFetch = 0;
+
+  async function fetchAll() {
+    try {
+      const r = await sf("GET", "poll_votes?select=poll_id,choice");
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      allRows = await r.json();
+      lastFetch = Date.now();
+      render();
+    } catch (e) {
+      toast("Fetch failed: " + e.message, "error");
+    }
+  }
+
+  // === Aggregation ===
+  function aggregate(rows) {
+    const polls = {};
+    rows.forEach(row => {
+      const pid = row.poll_id;
+      if (!polls[pid]) polls[pid] = { id: pid, A: 0, B: 0, C: 0, D: 0, other: 0, total: 0 };
+      const k = ["A", "B", "C", "D"].includes(row.choice) ? row.choice : "other";
+      polls[pid][k]++;
+      polls[pid].total++;
+    });
+
+    const byCourse = {};
+    Object.values(polls).forEach(p => {
+      const meta = parsePollId(p.id);
+      if (!byCourse[meta.course]) byCourse[meta.course] = {};
+      const ch = "ch" + meta.chapter;
+      if (!byCourse[meta.course][ch]) byCourse[meta.course][ch] = [];
+      byCourse[meta.course][ch].push(Object.assign({}, p, meta));
+    });
+
+    return { polls, byCourse };
+  }
+
+  // === Render ===
+  function render() {
+    const filter = document.getElementById("filter").value.toLowerCase();
+    const visibleRows = filter ? allRows.filter(r => r.poll_id.toLowerCase().includes(filter)) : allRows;
+    const { polls, byCourse } = aggregate(visibleRows);
+
+    // Summary
+    document.getElementById("totalVotes").textContent = visibleRows.length.toLocaleString();
+    document.getElementById("totalPolls").textContent = Object.keys(polls).length;
+    document.getElementById("totalCourses").textContent = Object.keys(byCourse).length;
+    const ago = lastFetch ? Math.round((Date.now() - lastFetch) / 1000) + "s ago" : "—";
+    document.getElementById("lastUpdate").textContent = ago;
+
+    // Body
+    const root = document.getElementById("content");
+    if (Object.keys(byCourse).length === 0) {
+      root.innerHTML = `
+        <div class="empty">
+          <h3>${filter ? "No matches" : "No polls yet"}</h3>
+          <p>${filter ? "Clear the filter to see all polls." : "Polls will appear here once students vote in any deployed lecture deck."}</p>
+        </div>`;
+      return;
+    }
+
+    const courseOrder = Object.keys(byCourse).sort((a, b) => {
+      // Real courses first, _legacy last
+      if (a === "_legacy") return 1;
+      if (b === "_legacy") return -1;
+      return a.localeCompare(b);
+    });
+
+    root.innerHTML = courseOrder.map(courseCode => {
+      const chapters = byCourse[courseCode];
+      const chOrder = Object.keys(chapters).sort();
+      const courseTotal = chOrder.reduce((sum, ch) => sum + chapters[ch].reduce((s, p) => s + p.total, 0), 0);
+      const courseDelta = courseCode === "_legacy" ? "" :
+        `<button class="danger" data-action="clear-course" data-course="${courseCode}">Clear all ${courseCode} polls</button>`;
+      return `
+        <section class="course">
+          <div class="course-head">
+            <h2>${courseLabel(courseCode)}</h2>
+            <div class="meta">
+              ${courseTotal} votes across ${chOrder.length} chapter${chOrder.length === 1 ? "" : "s"}
+              ${courseDelta}
+            </div>
+          </div>
+          <div class="course-body">
+            ${chOrder.map(ch => renderChapter(courseCode, ch, chapters[ch])).join("")}
+          </div>
+        </section>`;
+    }).join("");
+
+    // Wire buttons
+    root.querySelectorAll("button[data-action]").forEach(btn => {
+      btn.addEventListener("click", handleAction);
+    });
+  }
+
+  function renderChapter(courseCode, ch, polls) {
+    const chTotal = polls.reduce((s, p) => s + p.total, 0);
+    const pollOrder = polls.sort((a, b) => parseInt(a.num) - parseInt(b.num));
+    const chPrefix = courseCode === "_legacy" ? `${ch}-` : `${courseCode}-${ch}-`;
+    return `
+      <div class="chapter">
+        <div class="chapter-head">
+          <h3>Chapter ${ch.replace("ch", "")} <span class="meta">(${chTotal} votes)</span></h3>
+          <button class="danger" data-action="clear-chapter" data-prefix="${chPrefix}">Clear chapter</button>
+        </div>
+        <div class="polls">
+          ${pollOrder.map(p => renderPoll(p)).join("")}
+        </div>
+      </div>`;
+  }
+
+  function renderPoll(p) {
+    const max = Math.max(p.A, p.B, p.C, p.D, p.other, 1);
+    const bar = (k) => {
+      const n = p[k] || 0;
+      const h = Math.max(2, (n / max) * 32);
+      return `<div class="bar-wrap"><span class="cnt">${n}</span><div class="bar bar-${k}" style="height:${h}px"></div><span class="lbl">${k}</span></div>`;
+    };
+    return `
+      <div class="poll">
+        <div class="poll-id">${p.id}</div>
+        <div class="poll-bars">${bar("A")}${bar("B")}${bar("C")}${bar("D")}${p.other > 0 ? bar("other") : ""}</div>
+        <div class="poll-total">
+          <strong>${p.total}</strong> vote${p.total === 1 ? "" : "s"}
+          <button class="danger" data-action="clear-poll" data-pid="${p.id}" style="margin-left:6px">Clear</button>
+        </div>
+      </div>`;
+  }
+
+  // === Actions ===
+  async function handleAction(e) {
+    const a = e.target.dataset.action;
+    if (a === "clear-poll") {
+      const pid = e.target.dataset.pid;
+      if (!confirm(`Delete ALL votes for poll "${pid}"?\n\nThis cannot be undone.`)) return;
+      await deleteWhere(`poll_id=eq.${encodeURIComponent(pid)}`, `Cleared votes for ${pid}`);
+    } else if (a === "clear-chapter") {
+      const prefix = e.target.dataset.prefix;
+      if (!confirm(`Delete ALL votes for polls starting with "${prefix}"?\n\nThis cannot be undone.`)) return;
+      await deleteWhere(`poll_id=like.${encodeURIComponent(prefix)}*`, `Cleared chapter polls (${prefix}…)`);
+    } else if (a === "clear-course") {
+      const course = e.target.dataset.course;
+      if (!confirm(`Delete ALL votes for course "${course}" (every chapter, every poll)?\n\nThis cannot be undone.`)) return;
+      await deleteWhere(`poll_id=like.${encodeURIComponent(course + "-")}*`, `Cleared all ${course} polls`);
+    }
+  }
+
+  async function deleteWhere(filter, successMsg) {
+    try {
+      const r = await sf("DELETE", "poll_votes?" + filter);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      toast(successMsg, "ok");
+      await fetchAll();
+    } catch (e) {
+      toast("Delete failed: " + e.message, "error");
+    }
+  }
+
+  // Clear ALL — extra-safe gate (typed confirmation)
+  document.getElementById("clearAll").addEventListener("click", async () => {
+    const phrase = prompt('Type "CLEAR EVERYTHING" to delete every poll vote in EVERY course (irreversible):');
+    if (phrase !== "CLEAR EVERYTHING") {
+      if (phrase !== null) toast("Confirmation phrase did not match — nothing deleted.", "error");
+      return;
+    }
+    try {
+      // PostgREST requires a filter for DELETE; use a tautology
+      const r = await sf("DELETE", "poll_votes?id=gte.0");
+      if (!r.ok) {
+        // Fall back to the poll_id filter (works without an `id` column)
+        const r2 = await sf("DELETE", "poll_votes?poll_id=neq.__nonexistent__");
+        if (!r2.ok) throw new Error("HTTP " + r2.status);
+      }
+      toast("All polls cleared.", "ok");
+      await fetchAll();
+    } catch (e) {
+      toast("Clear-all failed: " + e.message, "error");
+    }
+  });
+
+  // Filter
+  document.getElementById("filter").addEventListener("input", render);
+
+  // Refresh
+  document.getElementById("refresh").addEventListener("click", fetchAll);
+
+  // Auto-refresh
+  let autoTimer = null;
+  document.getElementById("auto").addEventListener("click", (e) => {
+    if (autoTimer) {
+      clearInterval(autoTimer);
+      autoTimer = null;
+      e.target.textContent = "⏱ Auto";
+    } else {
+      autoTimer = setInterval(fetchAll, 5000);
+      e.target.textContent = "⏱ Auto (on)";
+      e.target.style.background = "var(--ok)";
+      e.target.style.color = "white";
+    }
+  });
+
+  // Initial load
+  fetchAll();
+</script>
+</body>
+</html>
