@@ -18,12 +18,12 @@ ax.plot(2.0, 0, 'o', color='#16a34a', markersize=12, zorder=5)
 ax.plot(1.0, 0, 'D', color='#dc2626', markersize=10, zorder=6)
 
 # Labels
-ax.text(0.5, -0.35, 'U.S. OC\n0.5 avocados', ha='center', fontsize=9, fontweight='bold', color='#2563eb')
-ax.text(2.0, -0.35, 'Mexico OC\n2.0 avocados', ha='center', fontsize=9, fontweight='bold', color='#16a34a')
+ax.text(0.5, -0.45, 'U.S. OC\n0.5 avocados', ha='center', fontsize=9, fontweight='bold', color='#2563eb')
+ax.text(2.0, -0.45, 'Mexico OC\n2.0 avocados', ha='center', fontsize=9, fontweight='bold', color='#16a34a')
 ax.text(1.0, 0.32, 'Trade price = 1.0\n(both gain)', ha='center', fontsize=9, fontweight='bold', color='#dc2626')
 
 # Zone label
-ax.text(1.25, -0.65, 'Mutually beneficial trade zone', ha='center', fontsize=10, fontstyle='italic', color='#475569')
+ax.text(1.25, 0.8, 'Mutually beneficial trade zone', ha='center', fontsize=10, fontstyle='italic', color='#475569')
 
 # Axis
 ax.set_xlim(0, 2.5)
