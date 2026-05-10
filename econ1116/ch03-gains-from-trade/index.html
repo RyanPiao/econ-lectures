@@ -892,7 +892,7 @@
     <!-- VIDEO: PRODUCTION (full-bleed, R2 hosted)    -->
     <!-- ============================================ -->
     <section id="production-video" class="bg-video" data-background-color="#000000">
-     <video autoplay loop muted playsinline preload="metadata" data-src="https://pub-fa3318ef831f4dbaa4ee4bef1dc209b6.r2.dev/lectures/ch03/ch03-production.mp4" title="Production process — factors → goods/services">
+     <video autoplay loop muted playsinline preload="auto" data-autoplay="true" data-src="https://pub-fa3318ef831f4dbaa4ee4bef1dc209b6.r2.dev/lectures/ch03/ch03-production.mp4" title="Production process — factors → goods/services">
      </video>
      <aside class="notes">
       Full-bleed production video served from R2; auto-plays muted on slide enter, loops while shown. Bridges from the four factors of production (previous slide) to production methods + Ford recipes (next slides).
@@ -4473,17 +4473,29 @@
    // For PDF export (?export), preload the first frame so decktape captures it.
    (function(){
      var isExport = window.location.search.indexOf('export') !== -1;
+     function tryPlay(v){
+       try {
+         var p = v.play();
+         if (p && p.catch) p.catch(function(){
+           // Autoplay blocked. Force first-frame render by nudging currentTime
+           // so the slide isn't black. User can press Space/click to actually play.
+           try { v.currentTime = 0.05; } catch(_){}
+         });
+       } catch(_){}
+     }
      function loadVideo(v){
        var url = v.dataset.src;
        if (!url) return;
-       if (!v.src) v.src = url;
-       if (!isExport) {
-         var p = v.play();
-         if (p && p.catch) p.catch(function(){ /* autoplay blocked: harmless */ });
+       if (!v.src) {
+         v.src = url;
+         v.load();
        }
+       if (!isExport) tryPlay(v);
      }
      function pauseVideo(v){
-       try { v.pause(); v.currentTime = 0; } catch(_){}
+       try { v.pause(); } catch(_){}
+       // NOTE: do NOT reset currentTime — coming back to the slide will resume
+       // mid-clip, and resetting can cause a flash of black on some browsers.
      }
      if (isExport) {
        // For export, attach src so decktape captures the poster/first frame.
@@ -4492,6 +4504,13 @@
        });
        return;
      }
+     // Pre-warm ALL videos by setting src at page-load (small ranged request
+     // for metadata only); this guarantees a renderable first frame on slide
+     // enter even if autoplay is blocked. preload="metadata"/"auto" controls
+     // how aggressive the prefetch is.
+     document.querySelectorAll('video[data-src]').forEach(function(v){
+       if (!v.src) { v.src = v.dataset.src; v.load(); }
+     });
      Reveal.on('ready', function(e){
        e.currentSlide.querySelectorAll('video[data-src]').forEach(loadVideo);
      });
