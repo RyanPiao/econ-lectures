@@ -187,11 +187,14 @@
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
     <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
       <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">The idea</p>
-      <p style="font-size: 14pt; line-height: 1.65; margin-top: 8px;">
-        \(\dfrac{A}{B} = 2\) &nbsp;means &nbsp;&ldquo;\(A\) is <strong>twice</strong> \(B\).&rdquo;<br>
-        \(\dfrac{A}{B} = 0.5\) means &ldquo;\(A\) is <strong>half</strong> of \(B\).&rdquo;<br>
-        \(\dfrac{A}{B} = 1\) &nbsp;means &ldquo;\(A\) and \(B\) are <strong>equal</strong>.&rdquo;
-      </p>
+      <div style="display: grid; grid-template-columns: 110px 1fr; row-gap: 16px; column-gap: 10px; align-items: center; margin-top: 10px;">
+        <p style="font-size: 14pt; text-align: center; margin: 0;">\(\dfrac{A}{B} = 2\)</p>
+        <p style="font-size: 13pt; margin: 0;">&ldquo;\(A\) is <strong>twice</strong> \(B\).&rdquo;</p>
+        <p style="font-size: 14pt; text-align: center; margin: 0;">\(\dfrac{A}{B} = 0.5\)</p>
+        <p style="font-size: 13pt; margin: 0;">&ldquo;\(A\) is <strong>half</strong> of \(B\).&rdquo;</p>
+        <p style="font-size: 14pt; text-align: center; margin: 0;">\(\dfrac{A}{B} = 1\)</p>
+        <p style="font-size: 13pt; margin: 0;">&ldquo;\(A\) and \(B\) are <strong>equal</strong>.&rdquo;</p>
+      </div>
       <p style="font-size: 13pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">
         Apple \$1, water bottle \$2: ratio \(= 2/1 = 2\) &mdash; water is 2&times; the apple.
       </p>
@@ -298,21 +301,21 @@
         <input class="iv-slider" data-control="ee-price" max="38" min="2" step="1" type="range" value="10">
       </div>
     </div>
-    <div class="iv-card" data-iv="tax-wedge">
-      <p class="iv-cap"><span class="iv-num">Figure 7.2</span> &mdash; Tax Wedge & Pass-Through</p>
-      <svg class="iv-svg" data-target="tax-wedge" preserveaspectratio="xMidYMid meet" viewbox="0 0 480 280"></svg>
+    <div class="iv-card" data-iv="demand-slope">
+      <p class="iv-cap"><span class="iv-num">Figure 6.2</span> &mdash; Demand slope: inelastic \(\leftrightarrow\) elastic</p>
+      <svg class="iv-svg" data-target="demand-slope" preserveaspectratio="xMidYMid meet" viewbox="0 0 480 280"></svg>
       <div class="iv-controls">
-        <label class="iv-label">Tax \(t\) <span class="iv-readout" data-readout="tw-t">$0</span></label>
-        <input class="iv-slider" data-control="tw-t" max="6" min="0" step="0.5" type="range" value="0">
+        <label class="iv-label">Slope \(b\) <span class="iv-readout" data-readout="ds-slope">5 &middot; inelastic</span></label>
+        <input class="iv-slider" data-control="ds-slope" max="5" min="0" step="1" type="range" value="2">
       </div>
     </div>
   </div>
   <div class="key-result" style="margin-top: 4px;">
     <p style="font-size: 13pt;">
-      <strong>Today's promotions.</strong> Left: Principles' midpoint becomes a <em>point</em> derivative \((dQ/dp)(p/Q)\). Right: Principles' &ldquo;burden splits&rdquo; become \(\varepsilon_S/(\varepsilon_S - \varepsilon_D)\) &mdash; a formula, not a guess.
+      <strong>Two ways elasticity changes.</strong> Left: <em>walk along</em> a fixed demand curve &mdash; \(\varepsilon\) varies because \(p/Q\) varies. Right: <em>pivot the demand curve</em> at a fixed point &mdash; \(\varepsilon\) varies because \(b = -dQ/dp\) varies. Both pictures appear repeatedly in §3.2–3.5.
     </p>
   </div>
-  <aside class="notes">Drag the price slider to walk along the linear demand &mdash; watch elasticity vary even though the slope is constant. Drag the tax slider to widen the wedge and watch buyer-burden vs seller-burden update live.</aside>
+  <aside class="notes">Drag the left slider to walk along the linear demand — watch \(\varepsilon\) vary even though slope \(b\) is constant. Drag the right slider to pivot the demand curve at the anchor (Q*=100, p*=10), morphing from nearly vertical (perfectly inelastic) to nearly horizontal (perfectly elastic).</aside>
 </section>
 
 <!-- ===== Slide 9 — Point elasticity formula ===== -->
@@ -1970,75 +1973,66 @@
     var eLab = el("text", { x: f.x(MAX_Q*0.55), y: f.M.top + 18, fill: zoneFill, "font-size": 13, "font-weight": 700 }, svg);
     eLab.textContent = "ε_D = " + (isFinite(eps) ? eps.toFixed(2) : "−∞") + "  (" + zone + ")";
   }
-  // ── Tax Wedge ──────────────────────────────────────────────────────
-  // Demand Q^d = 200 - 5p, supply Q^s = 50 + 10p; tax t shifts seller price down by t
-  function renderTaxWedge(svg, t){
+  // ── Demand Slope: from perfectly inelastic to perfectly elastic ───
+  // Demand Q = a - b*p is pivoted around a fixed anchor (Q*, p*) = (100, 10).
+  // Slider index 0..5 maps to b ∈ {0.05, 1, 5, 10, 50, 500} → ε at anchor ∈ {−0.005, −0.1, −0.5, −1, −5, −50}.
+  function renderDemandSlope(svg, slopeIdx){
     clear(svg);
     var f = plotFrame(svg);
     drawAxes(svg, f);
-    // Demand
-    var dPts = [];
-    for (var p = 0; p <= MAX_P; p += 1){
-      var q = D_INT_Q - D_SLOPE * p;
-      if (q < 0) continue;
-      dPts.push([q, p]);
+    var bValues = [0.05, 1, 5, 10, 50, 500];
+    var labels = ["perfectly inelastic", "very inelastic", "inelastic", "unit elastic", "elastic", "perfectly elastic"];
+    var b = bValues[slopeIdx];
+    var zoneLabel = labels[slopeIdx];
+    var Qstar = 100, pstar = 10;
+    var aInt = Qstar + b * pstar; // demand: Q = aInt - b*p, line passes through (Qstar, pstar)
+    // Sample the demand line in (Q, p) space; clip to plot frame
+    var pts = [];
+    var N = 200;
+    for (var i = 0; i <= N; i++){
+      var pSample = (i / N) * MAX_P;
+      var qSample = aInt - b * pSample;
+      if (qSample >= 0 && qSample <= MAX_Q) pts.push([qSample, pSample]);
     }
-    el("polyline", { points: dPts.map(function(d){return f.x(d[0])+","+f.y(d[1]);}).join(" "), fill: "none", stroke: BLUE, "stroke-width": 2.5 }, svg);
-    var dl = el("text", { x: f.x(40), y: f.y(30) + 4, fill: BLUE, "font-size": 13, "font-weight": 700 }, svg);
-    dl.textContent = "D";
-    // Supply Q = 50 + 10p (original)
-    var sPts = [];
-    for (var p2 = 0; p2 <= MAX_P; p2 += 1){
-      var qs = 50 + 10 * p2;
-      if (qs > MAX_Q) continue;
-      sPts.push([qs, p2]);
-    }
-    el("polyline", { points: sPts.map(function(d){return f.x(d[0])+","+f.y(d[1]);}).join(" "), fill: "none", stroke: RED, "stroke-width": 2.5 }, svg);
-    var sl = el("text", { x: f.x(190), y: f.y(15), fill: RED, "font-size": 13, "font-weight": 700 }, svg);
-    sl.textContent = "S";
-    // Original equilibrium: Q = 200 - 5p = 50 + 10p → 15p = 150 → p* = 10, Q* = 150
-    var pStar = 10, qStar = 150;
-    // Tax shifts effective supply up by t (price buyers pay vs seller-price)
-    // New supply curve plotted as Q^s_post(p_c) = 50 + 10(p_c - t)
-    if (t > 0){
-      var sPostPts = [];
-      for (var p3 = 0; p3 <= MAX_P; p3 += 1){
-        var qsp = 50 + 10 * (p3 - t);
-        if (qsp < 0 || qsp > MAX_Q) continue;
-        sPostPts.push([qsp, p3]);
+    // For very steep (low-b) lines, the pSample sweep may miss; fall back to sweeping Q
+    if (pts.length < 2){
+      pts = [];
+      for (var j = 0; j <= N; j++){
+        var qS2 = (j / N) * MAX_Q;
+        var pS2 = (aInt - qS2) / b;
+        if (pS2 >= 0 && pS2 <= MAX_P) pts.push([qS2, pS2]);
       }
-      el("polyline", { points: sPostPts.map(function(d){return f.x(d[0])+","+f.y(d[1]);}).join(" "), fill: "none", stroke: RED, "stroke-width": 2.2, "stroke-dasharray": "6,4" }, svg);
-      var sl2 = el("text", { x: f.x(190), y: f.y(15) - 14, fill: RED, "font-size": 12, "font-weight": 700, "font-style": "italic" }, svg);
-      sl2.textContent = "S+t";
-      // Solve for post-tax equilibrium: 200 - 5 p_c = 50 + 10(p_c - t) → p_c = (150 + 10t)/15 = 10 + 2t/3
-      var pC = 10 + (2*t)/3;
-      var pS = pC - t;
-      var qT = D_INT_Q - D_SLOPE * pC;
-      // Mark p_c, p_s, Q_t
-      var ex = f.x(qT), ey = f.y(pC), eyS = f.y(pS);
-      // Wedge bracket
-      el("line", { x1: ex, y1: ey, x2: ex, y2: eyS, stroke: VIOLET, "stroke-width": 3 }, svg);
-      el("line", { x1: ex, y1: ey, x2: f.M.left, y2: ey, stroke: GREEN, "stroke-width": 1, "stroke-dasharray": "4,3" }, svg);
-      el("line", { x1: ex, y1: eyS, x2: f.M.left, y2: eyS, stroke: GREEN, "stroke-width": 1, "stroke-dasharray": "4,3" }, svg);
-      el("circle", { cx: ex, cy: ey, r: 5, fill: BLUE, stroke: "#fff", "stroke-width": 1.5 }, svg);
-      el("circle", { cx: ex, cy: eyS, r: 5, fill: RED, stroke: "#fff", "stroke-width": 1.5 }, svg);
-      var pcLab = el("text", { x: f.M.left + 4, y: ey - 4, fill: BLUE, "font-size": 11, "font-weight": 700 }, svg);
-      pcLab.textContent = "p_c=$" + pC.toFixed(2);
-      var psLab = el("text", { x: f.M.left + 4, y: eyS + 12, fill: RED, "font-size": 11, "font-weight": 700 }, svg);
-      psLab.textContent = "p_s=$" + pS.toFixed(2);
-      // Pass-through readout (top-right)
-      var consShare = (2/3); // ε_S=2/3, ε_D=-1/3 → ε_S/(ε_S - ε_D) = 2/3
-      var prodShare = 1 - consShare;
-      var ptLab = el("text", { x: f.x(MAX_Q*0.55), y: f.M.top + 18, fill: VIOLET, "font-size": 12, "font-weight": 700 }, svg);
-      ptLab.textContent = "buyer " + (consShare*100).toFixed(0) + "% / seller " + (prodShare*100).toFixed(0) + "%";
-    } else {
-      // Pre-tax equilibrium dot
-      el("circle", { cx: f.x(qStar), cy: f.y(pStar), r: 6, fill: GREEN, stroke: "#fff", "stroke-width": 2 }, svg);
-      var elab = el("text", { x: f.x(qStar) + 8, y: f.y(pStar) - 6, fill: GREEN, "font-size": 12, "font-weight": 700 }, svg);
-      elab.textContent = "E*";
-      var ptLab2 = el("text", { x: f.x(MAX_Q*0.55), y: f.M.top + 18, fill: AXIS, "font-size": 12, "font-weight": 600 }, svg);
-      ptLab2.textContent = "no tax — drag slider →";
     }
+    // Draw the demand line
+    if (pts.length >= 2){
+      el("polyline", {
+        points: pts.map(function(d){return f.x(d[0]) + "," + f.y(d[1]);}).join(" "),
+        fill: "none", stroke: BLUE, "stroke-width": 3, "stroke-linecap": "round"
+      }, svg);
+    }
+    // D label — pick a midpoint that's visible
+    var midIdx = Math.floor(pts.length / 2);
+    if (pts.length > 0){
+      var midPt = pts[midIdx];
+      var dl = el("text", { x: f.x(midPt[0]) + 10, y: f.y(midPt[1]) - 8, fill: BLUE, "font-size": 13, "font-weight": 700 }, svg);
+      dl.textContent = "D";
+    }
+    // Anchor (Qstar, pstar) with drop lines + green dot
+    var ax = f.x(Qstar), ay = f.y(pstar);
+    el("line", { x1: ax, y1: ay, x2: ax, y2: f.M.top + f.ph, stroke: GREEN, "stroke-width": 1.2, "stroke-dasharray": "4,3" }, svg);
+    el("line", { x1: f.M.left, y1: ay, x2: ax, y2: ay, stroke: GREEN, "stroke-width": 1.2, "stroke-dasharray": "4,3" }, svg);
+    el("circle", { cx: ax, cy: ay, r: 6, fill: GREEN, stroke: "#fff", "stroke-width": 2 }, svg);
+    var co = el("text", { x: ax + 8, y: ay - 6, fill: GREEN, "font-size": 11, "font-weight": 700 }, svg);
+    co.textContent = "(100, $10)";
+    // Elasticity readout
+    var eps = -b * pstar / Qstar;
+    var zoneFill = GREEN;
+    if (Math.abs(eps) >= 0.99 && Math.abs(eps) <= 1.01) zoneFill = AMBER;
+    else if (Math.abs(eps) > 1.01) zoneFill = RED;
+    var eLab = el("text", { x: f.x(MAX_Q*0.55), y: f.M.top + 18, fill: zoneFill, "font-size": 12, "font-weight": 700 }, svg);
+    eLab.textContent = "b = " + (b < 0.1 ? b.toFixed(2) : b) + ",  ε_D = " + eps.toFixed(2);
+    var zLab = el("text", { x: f.x(MAX_Q*0.55), y: f.M.top + 36, fill: zoneFill, "font-size": 12, "font-weight": 700, "font-style": "italic" }, svg);
+    zLab.textContent = zoneLabel;
   }
   function setReadout(name, text){
     document.querySelectorAll('[data-readout="' + name + '"]').forEach(function(n){ n.textContent = text; });
@@ -2055,16 +2049,19 @@
       eeCtl.addEventListener("input", renderEE);
       renderEE();
     }
-    var twSvg = document.querySelector('svg[data-target="tax-wedge"]');
-    var twCtl = document.querySelector('input[data-control="tw-t"]');
-    if (twSvg && twCtl){
-      var renderTW = function(){
-        var t = parseFloat(twCtl.value);
-        renderTaxWedge(twSvg, t);
-        setReadout("tw-t", "$" + t.toFixed(1));
+    var dsSvg = document.querySelector('svg[data-target="demand-slope"]');
+    var dsCtl = document.querySelector('input[data-control="ds-slope"]');
+    if (dsSvg && dsCtl){
+      var dsBValues = [0.05, 1, 5, 10, 50, 500];
+      var dsLabels = ["perfectly inelastic", "very inelastic", "inelastic", "unit elastic", "elastic", "perfectly elastic"];
+      var renderDS = function(){
+        var idx = parseInt(dsCtl.value, 10);
+        renderDemandSlope(dsSvg, idx);
+        var b = dsBValues[idx];
+        setReadout("ds-slope", (b < 0.1 ? b.toFixed(2) : b) + " · " + dsLabels[idx]);
       };
-      twCtl.addEventListener("input", renderTW);
-      renderTW();
+      dsCtl.addEventListener("input", renderDS);
+      renderDS();
     }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
