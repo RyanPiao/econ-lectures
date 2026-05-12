@@ -4486,25 +4486,30 @@
      function loadVideo(v){
        var url = v.dataset.src;
        if (!url) return;
-       if (!v.src) {
-         v.src = url;
-         v.load();
-       }
-       if (!isExport) {
-         // Always rewind to the start on slide-enter so the video replays
-         // from the beginning every visit. Without this, returning to a
-         // slide after the video has ended (no `loop` attr) leaves it
-         // frozen on the last frame because v.play() on an ended video
-         // doesn't auto-restart.
-         try { v.currentTime = 0; } catch(_){}
+       if (!v.src) { v.src = url; v.load(); }
+       if (isExport) return;
+       // Always rewind to start on slide-enter so the video replays from
+       // the beginning every visit. Without this, returning to a slide
+       // after the video ended (no `loop` attr) leaves it frozen on the
+       // last frame because play() on an ended video doesn't auto-restart.
+       // Pause→seek→play is more reliable than just setting currentTime,
+       // and we listen for `seeked` to call play() once the seek has
+       // actually completed (the seek is async on many browsers).
+       try { v.pause(); } catch(_){}
+       var playOnSeek = function() {
+         v.removeEventListener('seeked', playOnSeek);
          tryPlay(v);
-       }
+       };
+       v.addEventListener('seeked', playOnSeek, { once: true });
+       try { v.currentTime = 0; } catch(_){ v.removeEventListener('seeked', playOnSeek); tryPlay(v); }
+       // Belt-and-suspenders: if the seek event never fires (e.g. already
+       // at 0), force a play after a tick anyway.
+       setTimeout(function(){
+         if (v.paused && !v.ended) tryPlay(v);
+       }, 150);
      }
      function pauseVideo(v){
        try { v.pause(); } catch(_){}
-       // NOTE: do NOT reset currentTime here — loadVideo handles the
-       // restart on re-enter. Resetting on pause can cause a flash of
-       // black during the exit transition on some browsers.
      }
      if (isExport) {
        // For export, attach src so decktape captures the poster/first frame.
