@@ -1740,10 +1740,111 @@
         </p>
       </div>
     </div>
-    <div style="text-align: center;">
-      <img alt="Cobb-Douglas indifference map at three utility levels" class="figure" src="figures/figure_002_cobb_douglas_ic_family.png" style="max-width: 100%; max-height: 460px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
+    <div>
+      <div class="iv-card" data-iv="alpha-slider" style="min-height: 0;">
+        <p class="iv-cap"><span class="iv-num">Try it</span> &mdash; slide \(\alpha\) to morph the indifference map</p>
+        <svg data-target="alpha-slider" preserveaspectratio="xMidYMid meet" viewbox="0 0 380 360" style="width: 100%; height: auto; max-width: 320px; max-height: 300px; display: block; margin: 0 auto; flex: none;"></svg>
+        <div style="padding: 4px 14px 0;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 13pt; color: var(--primary-color); font-weight: 700;">\(\alpha\) =</span>
+            <input type="range" min="0.05" max="0.95" step="0.05" value="0.5" data-target="alpha-slider-input" style="flex: 1; accent-color: var(--secondary-color);">
+            <span data-target="alpha-readout" style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; min-width: 3em; text-align: right; font-variant-numeric: tabular-nums;">0.50</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 10pt; color: var(--muted-color); margin-top: 2px;">
+            <span style="font-style: italic;">&larr; flat ICs (only \(x_2\) matters)</span>
+            <span style="font-style: italic;">symmetric</span>
+            <span style="font-style: italic;">steep ICs (only \(x_1\) matters) &rarr;</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+  <script>
+  (function () {
+    var svg = document.querySelector('svg[data-target="alpha-slider"]');
+    var slider = document.querySelector('input[data-target="alpha-slider-input"]');
+    var readout = document.querySelector('[data-target="alpha-readout"]');
+    if (!svg || !slider || !readout) return;
+    var NS = "http://www.w3.org/2000/svg";
+    var W = 380, H = 360;
+    var M = { top: 18, right: 22, bottom: 42, left: 58 };
+    var pw = W - M.left - M.right; // 300
+    var ph = H - M.top - M.bottom; // 300
+    var XMAX = 10, YMAX = 10;
+    function x2p(x) { return M.left + (x / XMAX) * pw; }
+    function y2p(y) { return M.top + ph - (y / YMAX) * ph; }
+    var anchors = [3, 5, 7];
+    var colors = ["#7c1d3b", "#a44a64", "#c47b8e"];
+    function el(tag, attrs) {
+      var e = document.createElementNS(NS, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      return e;
+    }
+    function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+    function draw(alpha) {
+      clear(svg);
+      // plot frame
+      svg.appendChild(el("rect", { x: M.left, y: M.top, width: pw, height: ph, fill: "white", stroke: "#d1d5db", "stroke-width": 1 }));
+      // light grid
+      for (var i = 1; i < 5; i++) {
+        svg.appendChild(el("line", { x1: M.left + (i / 5) * pw, y1: M.top, x2: M.left + (i / 5) * pw, y2: M.top + ph, stroke: "#eef0f4", "stroke-width": 1 }));
+        svg.appendChild(el("line", { x1: M.left, y1: M.top + (i / 5) * ph, x2: M.left + pw, y2: M.top + (i / 5) * ph, stroke: "#eef0f4", "stroke-width": 1 }));
+      }
+      // tick labels
+      for (var i = 0; i <= 5; i++) {
+        var v = (i / 5) * XMAX;
+        var tx = el("text", { x: x2p(v), y: M.top + ph + 14, "text-anchor": "middle", "font-size": 11, fill: "#4b5563" });
+        tx.textContent = String(v);
+        svg.appendChild(tx);
+        var ty = el("text", { x: M.left - 6, y: y2p(v) + 4, "text-anchor": "end", "font-size": 11, fill: "#4b5563" });
+        ty.textContent = String(v);
+        svg.appendChild(ty);
+      }
+      // axis labels
+      var xl = el("text", { x: M.left + pw / 2, y: M.top + ph + 30, "text-anchor": "middle", "font-size": 13, "font-style": "italic", fill: "#374151" });
+      xl.textContent = "x₁";
+      svg.appendChild(xl);
+      var yl = el("text", { x: 14, y: M.top + ph / 2, "text-anchor": "middle", "font-size": 13, "font-style": "italic", fill: "#374151" });
+      yl.setAttribute("transform", "rotate(-90, 14, " + (M.top + ph / 2) + ")");
+      yl.textContent = "x₂";
+      svg.appendChild(yl);
+      // ICs through diagonal anchors: x1^alpha * x2^(1-alpha) = U where U = a (since (a,a) gives U=a)
+      var beta = -alpha / (1 - alpha);
+      var Cexp = 1 / (1 - alpha);
+      for (var ai = 0; ai < anchors.length; ai++) {
+        var a = anchors[ai];
+        var Cmul = Math.pow(a, Cexp);
+        var pts = [];
+        var n = 600;
+        for (var i = 0; i < n; i++) {
+          var t = i / (n - 1);
+          var x1 = 0.12 + t * (XMAX - 0.12);
+          var x2 = Cmul * Math.pow(x1, beta);
+          if (isFinite(x2) && x2 >= 0 && x2 <= YMAX) {
+            pts.push(x2p(x1).toFixed(1) + "," + y2p(x2).toFixed(1));
+          }
+        }
+        if (pts.length > 1) {
+          svg.appendChild(el("polyline", { points: pts.join(" "), fill: "none", stroke: colors[ai], "stroke-width": 2.4, opacity: 0.95 }));
+        }
+        // anchor marker + label
+        svg.appendChild(el("circle", { cx: x2p(a), cy: y2p(a), r: 3.5, fill: colors[ai], stroke: "white", "stroke-width": 1.5 }));
+        var lbl = el("text", { x: x2p(a) + 7, y: y2p(a) - 7, "font-size": 11, "font-weight": 700, fill: colors[ai] });
+        lbl.textContent = "U=" + a;
+        svg.appendChild(lbl);
+      }
+    }
+    function update() {
+      var alpha = parseFloat(slider.value);
+      readout.textContent = alpha.toFixed(2);
+      draw(alpha);
+    }
+    slider.addEventListener("input", update);
+    // Keep arrow keys local to the slider instead of advancing reveal.js
+    slider.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    update();
+  })();
+  </script>
 </section>
 
 <!-- ===== Slide 34 — Calculus Corner 4.3 — Cobb-Douglas MRS in closed form ===== -->
