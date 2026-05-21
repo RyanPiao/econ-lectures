@@ -12,19 +12,19 @@ x_line = [0, 16]
 y_line = [4, 0]
 ax.plot(x_line, y_line, color='#6d28d9', linewidth=4, zorder=5)
 
-# Markers + labels
-ax.plot(0, 4, 'o', color='#dc2626', markersize=18, zorder=6,
-        markeredgecolor='#7f1d1d', markeredgewidth=1.5)
+# Markers + labels (clip_on=False so axis-sitting markers aren't half-cut)
+ax.plot(0, 4, 'o', color='#dc2626', markersize=18, zorder=10,
+        markeredgecolor='#7f1d1d', markeredgewidth=1.5, clip_on=False)
 ax.annotate('4 lbs Beef', xy=(0, 4), xytext=(0.6, 4.25),
             fontsize=14, weight='bold', color='#dc2626', ha='left')
 
-ax.plot(8, 2, 'o', color='#ea580c', markersize=18, zorder=6,
-        markeredgecolor='#9a3412', markeredgewidth=1.5)
+ax.plot(8, 2, 'o', color='#ea580c', markersize=18, zorder=10,
+        markeredgecolor='#9a3412', markeredgewidth=1.5, clip_on=False)
 ax.annotate('2 lbs Beef\n+ 8 Avocados', xy=(8, 2), xytext=(8.4, 2.6),
             fontsize=12, weight='bold', color='#ea580c')
 
-ax.plot(16, 0, 'o', color='#15803d', markersize=18, zorder=6,
-        markeredgecolor='#14532d', markeredgewidth=1.5)
+ax.plot(16, 0, 'o', color='#15803d', markersize=18, zorder=10,
+        markeredgecolor='#14532d', markeredgewidth=1.5, clip_on=False)
 ax.annotate('16 Avocados', xy=(16, 0), xytext=(14.6, 0.45),
             fontsize=14, weight='bold', color='#15803d')
 

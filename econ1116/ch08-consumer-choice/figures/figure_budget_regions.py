@@ -30,14 +30,14 @@ ax.fill(not_affordable_x, not_affordable_y, color='#fee2e2', alpha=0.85, zorder=
 ax.plot(x_line, y_line, color='#6d28d9', linewidth=4, zorder=7,
         solid_capstyle='round')
 
-# Endpoint markers
-ax.plot(0, 4, 'o', color='#dc2626', markersize=18, zorder=6,
-        markeredgecolor='#7f1d1d', markeredgewidth=1.5)
+# Endpoint markers (clip_on=False so axis-sitting markers aren't half-cut)
+ax.plot(0, 4, 'o', color='#dc2626', markersize=18, zorder=10,
+        markeredgecolor='#7f1d1d', markeredgewidth=1.5, clip_on=False)
 ax.annotate('4 lbs Beef', xy=(0, 4), xytext=(0.6, 4.25),
             fontsize=13, weight='bold', color='#dc2626', ha='left')
 
-ax.plot(16, 0, 'o', color='#15803d', markersize=18, zorder=6,
-        markeredgecolor='#14532d', markeredgewidth=1.5)
+ax.plot(16, 0, 'o', color='#15803d', markersize=18, zorder=10,
+        markeredgecolor='#14532d', markeredgewidth=1.5, clip_on=False)
 ax.annotate('16 Avocados', xy=(16, 0), xytext=(14.4, 0.45),
             fontsize=13, weight='bold', color='#15803d')
 

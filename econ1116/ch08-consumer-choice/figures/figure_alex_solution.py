@@ -16,17 +16,17 @@ ax.plot(x_line, y_line, color='#6d28d9', linewidth=4, zorder=7,
 # Affordable region — green tint below the line
 ax.fill([0, 5, 0], [0, 0, 1.875], color='#dcfce7', alpha=0.7, zorder=1)
 
-# Endpoint markers
-ax.plot(0, 1.875, 'o', color='#dc2626', markersize=18, zorder=6,
-        markeredgecolor='#7f1d1d', markeredgewidth=1.5)
+# Endpoint markers (clip_on=False so axis-sitting markers aren't half-cut)
+ax.plot(0, 1.875, 'o', color='#dc2626', markersize=18, zorder=10,
+        markeredgecolor='#7f1d1d', markeredgewidth=1.5, clip_on=False)
 ax.annotate('All games:\n1.875 games\n(can buy 1)', xy=(0, 1.875),
-            xytext=(0.2, 1.9), fontsize=12, weight='bold',
+            xytext=(0.25, 2.4), fontsize=12, weight='bold',
             color='#dc2626', ha='left', va='top')
 
-ax.plot(5, 0, 'o', color='#15803d', markersize=18, zorder=6,
-        markeredgecolor='#14532d', markeredgewidth=1.5)
-ax.annotate('All meals:\n5 Uber Eats', xy=(5, 0), xytext=(4.0, 0.45),
-            fontsize=12, weight='bold', color='#15803d', ha='right')
+ax.plot(5, 0, 'o', color='#15803d', markersize=18, zorder=10,
+        markeredgecolor='#14532d', markeredgewidth=1.5, clip_on=False)
+ax.annotate('All meals:\n5 Uber Eats', xy=(5, 0), xytext=(5, 0.35),
+            fontsize=12, weight='bold', color='#15803d', ha='center')
 
 # Midpoint-ish marker: 1 game + (150-80)/30 = 1 game + 2.33 meals
 # Pure midpoint by spending half on each: $75 → 0.94 games, $75 → 2.5 meals
