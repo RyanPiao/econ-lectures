@@ -429,13 +429,25 @@
   <aside class="notes">Auto-plays on slide enter, pauses on exit. Two everyday goods that students have strong, idiosyncratic feelings about. Sets up the live survey on the next slide: how many "utils" does each give YOU? The video is the priming stimulus; the survey is the elicitation.</aside>
 </section>
 
+<!-- ===== Vertical group: survey (main) + per-student results (down arrow) ===== -->
+<section>
+
 <!-- ===== Live numeric survey: rate utility 1-100 for steak & avocado toast ===== -->
 <section id="utility-survey">
   <h2><i class="fa-solid fa-sliders" style="color: var(--accent-color);"></i> How Much Utility Do <em>You</em> Get? <span style="font-size: 13pt; color: var(--muted-color); font-weight: 400; font-style: italic;">(live class survey)</span></h2>
 
-  <p style="font-size: 14pt; color: var(--text-color); margin: 0 0 14px;">
-    Drag each slider to your &ldquo;utils&rdquo; rating <strong>right now</strong> &mdash; <strong>1 = hate it, 100 = love it</strong>. We&rsquo;ll see the class distribution in real time.
+  <p style="font-size: 14pt; color: var(--text-color); margin: 0 0 10px;">
+    Type your <strong>initials</strong>, drag each slider to your &ldquo;utils&rdquo; rating <strong>right now</strong> &mdash; <strong>1 = hate it, 100 = love it</strong>.
   </p>
+
+  <!-- Initials field -->
+  <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0 0 14px;">
+    <label for="num-initials-utility" style="font-size: 14pt; color: var(--primary-color); font-weight: 700;">Your initials:</label>
+    <input id="num-initials-utility" type="text" maxlength="3" pattern="[A-Za-z]{1,3}" placeholder="AB" autocomplete="off"
+           class="num-initials" data-poll-base="ch08-survey-utility"
+           style="font-size: 18pt; font-weight: 700; text-transform: uppercase; text-align: center; padding: 6px 12px; width: 90px; border: 2px solid var(--secondary-color); border-radius: 8px; font-family: 'SF Mono', Menlo, monospace; letter-spacing: 2px;">
+    <span style="font-size: 11pt; color: var(--muted-color); font-style: italic;">(1&ndash;3 letters)</span>
+  </div>
 
   <!-- Two-good slider survey, scoped by ch08-survey-utility -->
   <div class="num-survey" data-poll-base="ch08-survey-utility" style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: stretch;">
@@ -492,8 +504,82 @@
     <span class="num-status" data-poll-base="ch08-survey-utility" style="font-size: 12pt; color: var(--muted-color); font-style: italic;"></span>
   </div>
 
-  <aside class="notes">Live elicitation of utility. Each student drags two sliders and submits. The slide stores the numeric value in the existing `poll_votes` Supabase table — `choice` field holds the number as a string. Two poll ids are used: `ch08-survey-utility-steak` and `ch08-survey-utility-avocado`. After submit, histograms render with 10 bins (1-10, 11-20, ..., 91-100) plus class mean + median per item. Pedagogical payoff: utility is ordinal AND personal. Two students can give wildly different numbers to the SAME food. That's the &sect;8.2 point made concrete with their own data. Lead in to the bundles slide: "now imagine each of you has a $150 entertainment budget — based on YOUR utils, which bundle would you pick?"</aside>
+  <p style="text-align: center; font-size: 12pt; color: var(--muted-color); margin-top: 14px; font-style: italic;">
+    Press <strong>&darr;</strong> to see each student&rsquo;s rating on a 2-D map &middot; Press <strong>R</strong> to force-show class distribution
+  </p>
+
+  <aside class="notes">Live elicitation of utility. Each student types their initials, drags two sliders, and submits. Initials go into voter_id as `INIT_NNNN`; numeric value goes in `choice` field. Two poll ids used: `ch08-survey-utility-steak` and `ch08-survey-utility-avocado`. After submit, inline histograms render with 10 bins + class mean/median per item. **Press DOWN arrow to navigate to the vertical sub-slide** that shows every student as a labeled dot on a 2-D (steak, avocado) plane — preference-space visualization. Pedagogical payoff: utility is ordinal AND personal, AND each student's bundle preference is now a literal point in 2-D utility space.</aside>
 </section>
+
+<!-- ===== Vertical sub-slide: per-student scatter plot of (steak, avocado) ratings ===== -->
+<section id="utility-survey-results">
+  <h2><i class="fa-solid fa-chart-scatter" style="color: var(--accent-color);"></i> How Much Satisfaction Are You Getting <em>Right Now</em> From These Foods?</h2>
+  <p style="font-size: 13pt; color: var(--muted-color); margin: 0 0 8px;">Each dot is one student. <strong>Right</strong> = loves steak. <strong>Up</strong> = loves avocado toast.</p>
+
+  <div class="num-scatter-wrap" data-poll-base="ch08-survey-utility" style="display: grid; grid-template-columns: 1fr 280px; gap: 18px; align-items: start;">
+    <!-- Scatter plot SVG -->
+    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px;">
+      <svg class="num-scatter" viewBox="0 0 800 540" style="width: 100%; height: auto; max-height: 480px;" preserveAspectRatio="xMidYMid meet">
+        <!-- Background quadrants (Q1 top-right loves both, Q2 top-left avocado, Q3 bottom-right steak, Q4 bottom-left neither) -->
+        <rect x="80" y="40"  width="340" height="220" fill="#f0fdf4"/>
+        <rect x="420" y="40" width="320" height="220" fill="#dcfce7"/>
+        <rect x="80" y="260" width="340" height="240" fill="#f3f4f6"/>
+        <rect x="420" y="260" width="320" height="240" fill="#fee2e2"/>
+
+        <!-- Quadrant labels -->
+        <text x="250" y="155" font-size="13" fill="#15803d" font-style="italic" text-anchor="middle">Loves avocado, hates steak</text>
+        <text x="580" y="155" font-size="14" fill="#0a8c4f" font-weight="700" text-anchor="middle">Loves both</text>
+        <text x="250" y="385" font-size="13" fill="#6b7280" font-style="italic" text-anchor="middle">Picky / hates both</text>
+        <text x="580" y="385" font-size="14" fill="#b91c1c" font-weight="700" text-anchor="middle">Pure carnivore</text>
+
+        <!-- Axes (centered at 50,50) -->
+        <line x1="80" y1="260" x2="740" y2="260" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="420" y1="40" x2="420" y2="500" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+        <!-- Axis lines (frame) -->
+        <line x1="80"  y1="40"  x2="80"  y2="500" stroke="#374151" stroke-width="2"/>
+        <line x1="80"  y1="500" x2="740" y2="500" stroke="#374151" stroke-width="2"/>
+
+        <!-- X-axis (steak) labels -->
+        <text x="80"  y="525" font-size="12" fill="#374151" text-anchor="middle">1</text>
+        <text x="250" y="525" font-size="12" fill="#374151" text-anchor="middle">25</text>
+        <text x="420" y="525" font-size="12" fill="#374151" text-anchor="middle">50</text>
+        <text x="580" y="525" font-size="12" fill="#374151" text-anchor="middle">75</text>
+        <text x="740" y="525" font-size="12" fill="#374151" text-anchor="middle">100</text>
+        <text x="410" y="540" font-size="15" font-weight="700" fill="#b91c1c" text-anchor="middle">&#129385; Steak rating &rarr;</text>
+
+        <!-- Y-axis (avocado) labels -->
+        <text x="68" y="500" font-size="12" fill="#374151" text-anchor="end">1</text>
+        <text x="68" y="385" font-size="12" fill="#374151" text-anchor="end">25</text>
+        <text x="68" y="265" font-size="12" fill="#374151" text-anchor="end">50</text>
+        <text x="68" y="155" font-size="12" fill="#374151" text-anchor="end">75</text>
+        <text x="68" y="45"  font-size="12" fill="#374151" text-anchor="end">100</text>
+        <text x="25" y="270" font-size="15" font-weight="700" fill="#15803d" text-anchor="middle" transform="rotate(-90 25 270)">&#129361; Avocado rating &rarr;</text>
+
+        <!-- Dots get rendered dynamically by JS into this group -->
+        <g class="num-scatter-dots"></g>
+      </svg>
+    </div>
+
+    <!-- Per-student list + summary -->
+    <div>
+      <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 14px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 11pt; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 4px;">Class summary</p>
+        <p class="num-scatter-summary" style="font-size: 13pt; margin: 0; line-height: 1.6; color: var(--primary-color);">Waiting for votes&hellip;</p>
+      </div>
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 12px; margin-top: 10px; max-height: 360px; overflow-y: auto;">
+        <p style="font-size: 11pt; font-weight: 700; color: var(--muted-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px;">Per student</p>
+        <div class="num-scatter-list" style="font-size: 11pt; font-family: 'SF Mono', Menlo, monospace; line-height: 1.7;"></div>
+      </div>
+      <p style="font-size: 11pt; color: var(--muted-color); margin-top: 8px; font-style: italic; line-height: 1.5;">Press <strong>&uarr;</strong> to go back to the survey. Press <strong>R</strong> to refresh.</p>
+    </div>
+  </div>
+
+  <aside class="notes">Each student's two ratings become a single point in 2-D "preference space." Cluster patterns are pedagogically powerful: are most students in the "carnivore" quadrant? Bimodal? Tight cluster around the center (suggesting weak preferences)? This is the same logic that produces individual demand curves &mdash; bundle preferences are revealed by what people pick when both items are available. **Implementation:** the scatter pulls both poll_ids (steak + avocado) and joins them by voter_id prefix (initials_NNNN → initials before underscore). Students who only submitted one good aren't plotted (we'd need both ratings). Auto-refreshes every 2s while this slide is on screen.</aside>
+</section>
+
+</section>
+<!-- ===== END vertical group (utility-survey + utility-survey-results) ===== -->
 
 <!-- ===== Bridge slide — Reality: we buy bundles, not single items ===== -->
 <section id="bundles-reality">
@@ -1580,7 +1666,7 @@
   var SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
   var VID = "v_" + Math.random().toString(36).slice(2,10);
   var isLocal = window.location.protocol === "file:";
-  var localRows = {};       // pollId -> [numeric values]
+  var localRows = {};       // pollId -> [{value, voter_id}]
   var submitted = {};       // pollBase -> bool
   var BIN_COUNT = 10;
 
@@ -1601,7 +1687,8 @@
     return arr.reduce(function(a,b){return a+b;},0) / arr.length;
   }
 
-  function renderHist(card, vals, accent){
+  function renderHist(card, rows, accent){
+    var vals = rows.map(function(r){ return r.value; });
     var hist = card.querySelector(".num-hist");
     var stats = card.querySelector(".num-stats");
     if (!hist || !stats) return;
@@ -1629,22 +1716,117 @@
     }
   }
 
+  // Extract initials from voter_id of the form "AB_NNNN" (or raw initials if no underscore)
+  function initialsOf(vid){
+    if (!vid) return "?";
+    var i = vid.indexOf("_");
+    return (i > 0 ? vid.slice(0, i) : vid).toUpperCase();
+  }
+
   function fetchResults(card, pid, accent){
     if (isLocal) {
       renderHist(card, (localRows[pid] || []), accent);
       return;
     }
-    sf("GET", "poll_votes?poll_id=eq." + pid + "&select=choice")
+    sf("GET", "poll_votes?poll_id=eq." + pid + "&select=choice,voter_id")
       .then(function(r){ return r.json(); })
       .then(function(rows){
-        var vals = rows.map(function(r){ return parseInt(r.choice, 10); })
-                       .filter(function(v){ return !isNaN(v); });
-        localRows[pid] = vals;
-        renderHist(card, vals, accent);
+        var parsed = rows
+          .map(function(r){ return { value: parseInt(r.choice, 10), voter_id: r.voter_id }; })
+          .filter(function(r){ return !isNaN(r.value); });
+        localRows[pid] = parsed;
+        renderHist(card, parsed, accent);
       })
       .catch(function(){
         renderHist(card, (localRows[pid] || []), accent);
       });
+  }
+
+  // ===== Scatter plot (vertical sub-slide) =====
+  function joinByVoter(steakRows, avocadoRows){
+    var map = {};
+    steakRows.forEach(function(r){
+      if (!map[r.voter_id]) map[r.voter_id] = {};
+      map[r.voter_id].steak = r.value;
+    });
+    avocadoRows.forEach(function(r){
+      if (!map[r.voter_id]) map[r.voter_id] = {};
+      map[r.voter_id].avocado = r.value;
+    });
+    return Object.keys(map)
+      .map(function(vid){
+        return {
+          initials: initialsOf(vid),
+          steak: map[vid].steak,
+          avocado: map[vid].avocado
+        };
+      });
+  }
+
+  function renderScatter(wrap, pollBase){
+    function actuallyRender(steakRows, avocadoRows){
+      var students = joinByVoter(steakRows, avocadoRows);
+      var paired = students.filter(function(s){ return !isNaN(s.steak) && !isNaN(s.avocado); });
+      var svg = wrap.querySelector(".num-scatter");
+      var dotsG = svg.querySelector(".num-scatter-dots");
+      var summary = wrap.querySelector(".num-scatter-summary");
+      var list = wrap.querySelector(".num-scatter-list");
+
+      // Plot area: x in [80,740] for steak [1,100], y in [40,500] for avocado [100,1] (flip)
+      function px(v){ return 80 + ((v - 1) / 99) * (740 - 80); }
+      function py(v){ return 500 - ((v - 1) / 99) * (500 - 40); }
+
+      // Render dots
+      dotsG.innerHTML = paired.map(function(s, i){
+        var cx = px(s.steak), cy = py(s.avocado);
+        return '<g>' +
+               '<circle cx="' + cx + '" cy="' + cy + '" r="13" fill="#1e3a8a" fill-opacity="0.78" stroke="#fff" stroke-width="2"/>' +
+               '<text x="' + cx + '" y="' + (cy + 4) + '" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">' + s.initials + '</text>' +
+               '</g>';
+      }).join("");
+
+      // Summary
+      if (paired.length === 0) {
+        summary.textContent = "Waiting for votes…";
+      } else {
+        var avgSteak = paired.reduce(function(a,b){return a+b.steak;}, 0) / paired.length;
+        var avgAvo = paired.reduce(function(a,b){return a+b.avocado;}, 0) / paired.length;
+        summary.innerHTML = '<strong>' + paired.length + '</strong> student' + (paired.length === 1 ? '' : 's') +
+                            '<br>mean &#129385; <strong>' + avgSteak.toFixed(1) + '</strong>' +
+                            ' &middot; mean &#129361; <strong>' + avgAvo.toFixed(1) + '</strong>';
+      }
+
+      // Per-student list (sorted by initials)
+      var sorted = paired.slice().sort(function(a,b){ return a.initials.localeCompare(b.initials); });
+      list.innerHTML = sorted.map(function(s){
+        return '<div style="display:flex; justify-content:space-between; padding:2px 4px; border-bottom:1px dotted #e5e7eb;">' +
+               '<strong style="color:#1e3a8a;">' + s.initials + '</strong>' +
+               '<span><span style="color:#b91c1c;">&#129385; ' + s.steak + '</span> &nbsp;<span style="color:#15803d;">&#129361; ' + s.avocado + '</span></span>' +
+               '</div>';
+      }).join("") || '<div style="color:#9ca3af; font-style:italic;">(no paired votes yet)</div>';
+    }
+
+    if (isLocal) {
+      actuallyRender(localRows[pollBase + "-steak"] || [], localRows[pollBase + "-avocado"] || []);
+      return;
+    }
+    Promise.all([
+      sf("GET", "poll_votes?poll_id=eq." + pollBase + "-steak&select=choice,voter_id"),
+      sf("GET", "poll_votes?poll_id=eq." + pollBase + "-avocado&select=choice,voter_id")
+    ])
+    .then(function(rs){ return Promise.all(rs.map(function(r){ return r.json(); })); })
+    .then(function(both){
+      var parse = function(rows){ return rows
+        .map(function(r){ return { value: parseInt(r.choice, 10), voter_id: r.voter_id }; })
+        .filter(function(r){ return !isNaN(r.value); }); };
+      var s = parse(both[0]), a = parse(both[1]);
+      localRows[pollBase + "-steak"] = s;
+      localRows[pollBase + "-avocado"] = a;
+      actuallyRender(s, a);
+    })
+    .catch(function(){
+      actuallyRender(localRows[pollBase + "-steak"] || [], localRows[pollBase + "-avocado"] || []);
+    });
   }
 
   document.querySelectorAll(".num-survey").forEach(function(survey){
@@ -1676,10 +1858,23 @@
     if (btn) {
       btn.addEventListener("click", function(){
         if (submitted[pollBase]) return;
+
+        // Read + validate initials
+        var initInput = document.querySelector('.num-initials[data-poll-base="' + pollBase + '"]');
+        var initials = (initInput && initInput.value ? initInput.value : "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
+        if (initials.length < 1) {
+          if (status) status.textContent = "Please enter your initials (1–3 letters) first.";
+          if (initInput) { initInput.focus(); initInput.style.borderColor = "#dc2626"; }
+          return;
+        }
+        // Build voter_id: INIT_NNNN (random 4-char suffix to avoid initials collisions)
+        var voterId = initials + "_" + Math.random().toString(36).slice(2, 6).toUpperCase();
+
         submitted[pollBase] = true;
         btn.disabled = true;
         btn.style.opacity = "0.55";
         btn.style.cursor = "default";
+        if (initInput) { initInput.disabled = true; initInput.style.borderColor = "var(--success-color)"; }
 
         var payloads = [];
         survey.querySelectorAll(".num-slider").forEach(function(slider){
@@ -1689,22 +1884,22 @@
           payloads.push({ pid: pid, val: val });
           // Local fallback
           if (!localRows[pid]) localRows[pid] = [];
-          localRows[pid].push(val);
+          localRows[pid].push({ value: val, voter_id: voterId });
         });
 
-        if (status) status.textContent = "Submitting…";
+        if (status) status.textContent = "Submitting as " + initials + "…";
 
         if (isLocal) {
-          if (status) status.textContent = "Recorded locally (no live server).";
+          if (status) status.textContent = "Recorded locally as " + initials + " (no live server).";
           showResults();
           return;
         }
 
         Promise.all(payloads.map(function(p){
-          return sf("POST", "poll_votes", { poll_id: p.pid, choice: String(p.val), voter_id: VID });
+          return sf("POST", "poll_votes", { poll_id: p.pid, choice: String(p.val), voter_id: voterId });
         }))
         .then(function(){
-          if (status) status.textContent = "Submitted — thanks!";
+          if (status) status.innerHTML = "Submitted as <strong>" + initials + "</strong> &mdash; thanks! Press <strong>&darr;</strong> to see the class map.";
           showResults();
         })
         .catch(function(){
@@ -1721,24 +1916,55 @@
     }, 2000);
   });
 
-  // Show-results-without-voting hotkey: press R on the survey slide (instructor)
+  // Show-results-without-voting hotkey: press R on the survey or results slide (instructor)
   document.addEventListener("keydown", function(e){
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-    if (e.key === "r" || e.key === "R") {
-      document.querySelectorAll(".num-survey").forEach(function(survey){
-        if (!survey.closest("section")?.classList.contains("present")) return;
-        var pollBase = survey.dataset.pollBase;
-        if (!pollBase) return;
-        survey.querySelectorAll(".num-results").forEach(function(r){
-          r.style.display = "block";
-          var item = r.dataset.item;
-          var card = r.closest(".num-survey-card");
-          var accent = (item === "steak") ? "#b91c1c" : "#15803d";
-          fetchResults(card, pollBase + "-" + item, accent);
-        });
+    if (e.key !== "r" && e.key !== "R") return;
+    // On the survey slide: reveal inline histograms
+    document.querySelectorAll(".num-survey").forEach(function(survey){
+      if (!survey.closest("section")?.classList.contains("present")) return;
+      var pollBase = survey.dataset.pollBase;
+      if (!pollBase) return;
+      survey.querySelectorAll(".num-results").forEach(function(r){
+        r.style.display = "block";
+        var item = r.dataset.item;
+        var card = r.closest(".num-survey-card");
+        var accent = (item === "steak") ? "#b91c1c" : "#15803d";
+        fetchResults(card, pollBase + "-" + item, accent);
       });
-    }
+    });
+    // On the results sub-slide: force-refresh the scatter
+    document.querySelectorAll(".num-scatter-wrap").forEach(function(wrap){
+      if (!wrap.closest("section")?.classList.contains("present")) return;
+      var pollBase = wrap.dataset.pollBase;
+      if (pollBase) renderScatter(wrap, pollBase);
+    });
   });
+
+  // Auto-refresh the scatter plot every 2 s while its sub-slide is on screen
+  if (window.Reveal) {
+    var scatterTimer = null;
+    function startScatterRefresh(){
+      var wrap = document.querySelector("section.present .num-scatter-wrap, section.present.num-scatter-wrap");
+      if (!wrap) return;
+      var pollBase = wrap.dataset.pollBase;
+      if (!pollBase) return;
+      renderScatter(wrap, pollBase);
+      if (scatterTimer) clearInterval(scatterTimer);
+      scatterTimer = setInterval(function(){ renderScatter(wrap, pollBase); }, 2000);
+    }
+    function stopScatterRefresh(){
+      if (scatterTimer) { clearInterval(scatterTimer); scatterTimer = null; }
+    }
+    Reveal.on("ready", function(){
+      if (document.querySelector("section.present .num-scatter-wrap")) startScatterRefresh();
+    });
+    Reveal.on("slidechanged", function(e){
+      stopScatterRefresh();
+      var wrap = e.currentSlide.querySelector(".num-scatter-wrap");
+      if (wrap) startScatterRefresh();
+    });
+  }
 })();
 </script>
 </body>
