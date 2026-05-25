@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Production Functions &mdash; ECON 2316 Ch 7</title>
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+      startup: { ready: () => { MathJax.startup.defaultReady(); } }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    .timer-badge { display: inline-block; background: #f0f5f8; color: var(--secondary-color); padding: 6px 14px; border-radius: 16px; font-size: 12pt; font-weight: 600; }
+    .timer-badge i { margin-right: 6px; }
+    .stat-card { background: #f8f6f3; border-radius: 10px; padding: 16px 14px; text-align: center; border-left: 4px solid var(--secondary-color); }
+    .stat-card .num { font-size: 30pt; font-weight: 800; color: var(--secondary-color); margin: 0; line-height: 1; }
+    .stat-card .lbl { font-size: 12pt; color: var(--muted-color); margin-top: 6px; }
+    .stat-card.accent { border-left-color: var(--accent-color); }
+    .stat-card.accent .num { color: var(--accent-color); }
+    .stat-card.sage { border-left-color: var(--success-color); }
+    .stat-card.sage .num { color: var(--success-color); }
+    .stat-card.rose { border-left-color: var(--danger-color); }
+    .stat-card.rose .num { color: var(--danger-color); }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ===== Slide 1 — Cover ===== -->
+<section class="section-divider" data-state="is-section-divider" id="title" style="padding: 0;">
+  <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+    <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+      <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">
+        ECON 2316 &bull; Microeconomic Theory &bull; Chapter 7
+      </p>
+      <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">
+        Production Functions
+      </h1>
+      <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; max-width: 520px; margin-top: 20px;">
+        From Wozniak's garage to Tesla's gigafactory &mdash; how engineers turn capital and labor into output.
+      </p>
+      <div style="margin-top: auto; padding-bottom: 15px;">
+        <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; margin-bottom: 8px;">
+          Dr. Richeng Piao
+        </p>
+        <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; line-height: 1.8;">
+          Department of Economics<br>
+          Northeastern University &mdash; 100 min
+        </p>
+      </div>
+    </div>
+    <div style="overflow: hidden;">
+      <img alt="Cobb-Douglas isoquant family for the gigafactory thread, with the (K=4, L=4) anchor highlighted" src="figures/ch07-cover.png" style="width: 100%; height: 100%; object-fit: cover;">
+    </div>
+  </div>
+</section>
+
+<!-- ===== Slide 2 — Learning Objectives ===== -->
+<section id="learning-objectives" style="padding: 40px 50px;">
+  <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+  <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 14px;">
+    By the end of class today, you will be able to&hellip;
+  </p>
+  <div style="display: flex; flex-direction: column; gap: 9px;">
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">7.1</p>
+      <p style="font-size: 14pt;"><strong>Define</strong> a production function \(f(K, L)\) and its level sets (isoquants); state the free-disposal and convexity assumptions and explain what each one rules out. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L2)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">7.2</p>
+      <p style="font-size: 14pt;"><strong>Compute</strong> marginal products \(MP_K, MP_L\) and the marginal rate of technical substitution \(\text{MRTS}_{LK} = MP_L / MP_K\) for a Cobb-Douglas technology. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L3)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">7.3</p>
+      <p style="font-size: 14pt;"><strong>Classify</strong> a production function as exhibiting constant, increasing, or decreasing returns to scale using the Cobb-Douglas shortcut \(\alpha + \beta \lessgtr 1\). <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">7.4</p>
+      <p style="font-size: 14pt;"><strong>Distinguish</strong> the three canonical families &mdash; Cobb-Douglas, Leontief, perfect substitutes &mdash; by isoquant curvature and substitution elasticity \(\sigma\). <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">7.5</p>
+      <p style="font-size: 14pt;"><strong>Diagnose</strong> total factor productivity growth and Hicks-neutral technological change as a shift of the isoquant toward the origin, and read empirical evidence on the US labor-share decline. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L5)</span></p>
+    </div>
+  </div>
+  <aside class="notes">Five LOs map roughly to the four sections of today (§7.2 isoquants, §7.3 MRTS, §7.4 returns to scale, §7.5 three families) plus §7.7 empirical reading practice. §7.6 (TP/AP/MP diagram) is taught in passing alongside MRTS. The headline figure is the IsoquantBuilder concept — slide 14 uses a static three-panel rendering. Recurring example: EV battery gigafactory anchored at K=4B$, L=4K workers, A=8, α=0.4, β=0.6, Q=32 GWh — these numbers will be locked through Chs 8 and 9.</aside>
+</section>
+
+<!-- ===== Slide 3 — Ch 6 refresher / Part III opener ===== -->
+<section id="part-iii-opener">
+  <h2><i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--secondary-color);"></i> From Consumer Theory to Producer Theory</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Part II &mdash; Consumer side (Ch 4&ndash;6)</p>
+      <ul style="font-size: 13pt; line-height: 1.6; margin-top: 8px;">
+        <li>Utility function \(u(x_1, x_2)\)</li>
+        <li>Marginal utility \(MU_i = \partial u/\partial x_i\)</li>
+        <li>Marginal rate of substitution \(\text{MRS} = MU_1/MU_2\)</li>
+        <li>Slutsky: substitution + income effects</li>
+      </ul>
+    </div>
+    <div style="background: #fef9f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Part III &mdash; Producer side (Ch 7&ndash;9)</p>
+      <ul style="font-size: 13pt; line-height: 1.6; margin-top: 8px;">
+        <li>Production function \(f(K, L)\)</li>
+        <li>Marginal product \(MP_K, MP_L\)</li>
+        <li>Marginal rate of <em>technical</em> substitution \(\text{MRTS}\)</li>
+        <li>(Ch 8) Cost minimization + (Ch 9) Profit max</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 14px;">
+    <p style="margin: 0;"><strong>The mathematical machinery is identical.</strong> Same Lagrangian, same envelope theorem, same comparative statics &mdash; just dual interpretations. Consumer maximizes utility subject to a budget; firm minimizes cost subject to an output target.</p>
+  </div>
+  <aside class="notes">Bridge slide. Students just finished Slutsky (Ch 6). Part III takes the SAME toolkit — Lagrangian, partial derivatives, comparative statics — and applies it to a firm choosing inputs. The big payoff: by Ch 8 we'll do "expenditure-minimization on the firm side" and the math is identical to what they already know. Today is the geometry / definitions chapter that sets up Chs 8–9.</aside>
+</section>
+
+<!-- ===== Slide 4 — Opening vignette: Apple Garage 1976 ===== -->
+<section id="apple-garage-vignette">
+  <h2><i class="fa-solid fa-microchip" style="color: var(--accent-color);"></i> July 1976 &mdash; The Los Altos Garage</h2>
+  <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start;">
+    <div>
+      <p style="font-size: 14pt; line-height: 1.55;">
+        Two college dropouts in their twenties are trying to build a personal computer they can afford to sell.
+      </p>
+      <ul style="font-size: 13pt; line-height: 1.65; margin: 10px 0;">
+        <li><strong>Steve Wozniak</strong> &mdash; engineering. Designed the Apple I motherboard, hand-soldered the chips, debugged the firmware.</li>
+        <li><strong>Steve Jobs</strong> &mdash; everything else. Sourced components, negotiated with Paul Terrell at The Byte Shop, set the price at $666.66.</li>
+      </ul>
+      <div class="key-result" style="margin-top: 10px;">
+        <p style="margin: 0; font-size: 13pt;">By summer they were shipping ~50 units. By 1980, Apple was public.</p>
+      </div>
+      <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin-top: 10px;">
+        Every recipe-and-input combination yields some maximum feasible quantity of finished boards per week. That mapping is the <strong>production function</strong>.
+      </p>
+    </div>
+    <div style="text-align: center;">
+      <img alt="The Jobs family's home in Los Altos, California — the garage where Apple I production began" src="figures/photo-apple-garage.png" style="border-radius: 8px; width: 100%; max-height: 200px; object-fit: contain; background: #fff;">
+      <p style="font-size: 10pt; color: var(--muted-color); margin-top: 4px; font-style: italic;">2066 Crist Drive, Los Altos &mdash; the Apple I garage</p>
+      <img alt="Steve Jobs (left) and Steve Wozniak (right) at their workbench during the early Apple years" src="figures/photo-jobs-wozniak.png" style="border-radius: 8px; width: 100%; max-height: 200px; object-fit: contain; background: #fff; margin-top: 8px;">
+      <p style="font-size: 10pt; color: var(--muted-color); margin-top: 4px; font-style: italic;">Jobs &amp; Wozniak at the workbench</p>
+    </div>
+  </div>
+  <aside class="notes">Open with the Apple Garage as a concrete production-function story. The pedagogical move: motherboard = recipe; recipe = a specific (K, L) bundle; production function maps (K, L) → max Q. Wozniak's hours + IC tester + PCB substrate → 50 boards/week. Mention the $666.66 price — Wozniak liked repeating digits. The wholesale deal with Paul Terrell was cash on delivery, $500/board for 50 boards. The two photos: 2066 Crist Drive (the actual Jobs family home where the garage was) and the iconic Jobs+Wozniak workbench shot from the Apple I era. From here we'll jump to inputs and outputs concretely, then to Tesla's gigafactory.</aside>
+</section>
+
+<!-- ===== Slide 4.5 — Production video (full-bleed, autoplay) ===== -->
+<section class="bg-video" data-background-color="#000000" id="production-video">
+  <video autoplay controls data-autoplay="true" data-src="video/Production.mp4" playsinline preload="auto" title="Production — opening lead-in for the chapter">
+  </video>
+  <aside class="notes">Auto-plays on slide enter, pauses on exit. Local H.264 (video/Production.mp4). Controls are on so you can replay or scrub in class. Use this 90 seconds to anchor the "inputs → process → output" intuition before we formalize \(Q = f(K, L)\) on the next slide. Same wiring pattern as ch04 (the "What to Buy?" lead-in) and ch06.</aside>
+</section>
+
+<!-- ===== Slide 6 — Basics of Production: Final Goods ===== -->
+<section id="basics-final-goods">
+  <h2><i class="fa-solid fa-box-archive" style="color: var(--secondary-color);"></i> The Basics of Production &mdash; Final Goods</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;">
+    <div>
+      <p style="font-size: 14pt; line-height: 1.55;">
+        <strong>Production</strong> describes the process by which a person, company, government, or non-profit agency uses <strong>inputs</strong> to create a good or service for which others are willing to pay.
+      </p>
+      <div class="key-result" style="margin-top: 14px;">
+        <p style="margin: 0; font-size: 14pt;"><strong>Final good</strong> &mdash; a good that is bought by a consumer.</p>
+        <p style="margin: 6px 0 0; color: var(--muted-color); font-style: italic; font-size: 12pt;">Example: the Apple I, sold at $666.66 in July 1976.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <img alt="Apple I in its custom wood case with monitor — the final good as displayed at a computer-history museum" src="figures/photo-apple-i-display.png" class="figure" style="max-height: 360px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
+      <p style="font-size: 11pt; color: var(--muted-color); margin-top: 6px; font-style: italic; font-weight: 600;">THE APPLE I WENT ON SALE IN JULY 1976 AT A PRICE OF US$666.66</p>
+    </div>
+  </div>
+  <aside class="notes">Open the "Basics of Production" mini-section right after the Production video lead-in. Definition slide focused on the final-good concept. The Apple I is the canonical example for the chapter — students should walk away knowing that a "final good" is whatever the consumer ultimately buys (the working computer), not the components that went into it. Forward-pointer to next slide: we contrast with intermediate goods, then identify the three factor inputs.</aside>
+</section>
+
+<!-- ===== Slide 7 — Basics of Production: Intermediate Goods ===== -->
+<section id="basics-intermediate-goods">
+  <h2><i class="fa-solid fa-microchip" style="color: var(--accent-color);"></i> The Basics of Production &mdash; Intermediate Goods</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;">
+    <div>
+      <p style="font-size: 14pt; line-height: 1.55;">
+        <strong>Production</strong> describes the process by which a person, company, government, or non-profit agency uses <strong>inputs</strong> to create a good or service for which others are willing to pay.
+      </p>
+      <div class="key-result" style="margin-top: 14px; background: #fef9f3; border-left-color: var(--accent-color);">
+        <p style="margin: 0; font-size: 14pt;"><strong>Intermediate good</strong> &mdash; a good that is used to produce another good.</p>
+        <p style="margin: 6px 0 0; color: var(--muted-color); font-style: italic; font-size: 12pt;">Example: the bare PCB and the MOS 6502 chip are intermediate goods used to produce the Apple I.</p>
+      </div>
+    </div>
+    <div style="text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center;">
+      <img alt="Bare Apple I motherboard — the printed circuit board, an intermediate good in the production of the finished computer" src="figures/photo-apple-i-pcb.png" style="max-height: 200px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <img alt="MOS Technology 6502 microprocessor — the CPU chip used inside every Apple I, sourced from MOS Technology" src="figures/photo-mos-6502.png" style="max-height: 110px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    </div>
+  </div>
+  <aside class="notes">The intermediate/final distinction matters because it determines what gets counted in firm output. We measure \(Q\) as final goods; intermediate goods are inputs absorbed by the production process. The 6502 chip was sourced from MOS Technology in Pennsylvania at ~$25 each; the bare PCB was designed by Wozniak and fabricated by an outside contractor. Both feed into the Apple I (the final good). For the rest of the chapter \(K\) and \(L\) will be the two inputs we track explicitly — capital and labor — but intermediate goods are implicitly absorbed into \(K\) when we cost them as purchased inputs.</aside>
+</section>
+
+<!-- ===== Slide 8 — Three factors of production: Land / Labor / Capital ===== -->
+<section id="basics-three-factors">
+  <h2><i class="fa-solid fa-cubes" style="color: var(--secondary-color);"></i> The Basics of Production &mdash; Three Factors</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 4px;">
+    <div style="text-align: center;">
+      <div style="background: #f4f1ed; border-radius: 8px; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 160px; display: flex; align-items: center; justify-content: center;">
+        <img alt="The early Apple workshop in Cupertino with founders and first employees — labor as a factor of production" src="figures/photo-apple-employees.png" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;">
+      </div>
+      <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color); margin-top: 8px; letter-spacing: 1px;">LABOR</p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 2px 0 0;">All human resources used in production</p>
+    </div>
+    <div style="text-align: center;">
+      <div style="background: #f4f1ed; border-radius: 8px; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 160px; display: flex; align-items: center; justify-content: center;">
+        <img alt="Apple's first Cupertino headquarters with the rainbow Apple sign — land as a factor of production" src="figures/photo-apple-first-hq.png" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;">
+      </div>
+      <p style="font-size: 15pt; font-weight: 700; color: var(--success-color); margin-top: 8px; letter-spacing: 1px;">LAND</p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 2px 0 0;">Physical site &amp; natural resources</p>
+    </div>
+    <div style="text-align: center;">
+      <div style="background: #f4f1ed; border-radius: 8px; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 160px; display: flex; align-items: center; justify-content: center;">
+        <img alt="Steve Jobs (left) and Mike Markkula (right) with an early Apple stock certificate — Markkula's investment capital launched the firm" src="figures/photo-jobs-markkula.png" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;">
+      </div>
+      <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color); margin-top: 8px; letter-spacing: 1px;">CAPITAL</p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 2px 0 0;">Buildings, equipment, financial investment</p>
+    </div>
+  </div>
+
+  <p style="margin: 16px 0 8px; font-weight: 700; font-size: 14pt; color: var(--primary-color); text-align: center; letter-spacing: 0.5px;">
+    <i class="fa-solid fa-circle-question" style="color: var(--accent-color); margin-right: 6px;"></i>
+    Questions Faced by Producers &mdash; the Part III Roadmap
+  </p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px;">
+    <div style="display: grid; grid-template-columns: 32px 1fr 70px; align-items: center; background: #f0f5f8; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--secondary-color);">
+      <span style="font-size: 16pt; font-weight: 800; color: var(--secondary-color); line-height: 1;">1</span>
+      <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;">Whether &amp; <strong>how much</strong> to produce?</p>
+      <span style="font-size: 9pt; font-weight: 700; color: var(--muted-color); letter-spacing: 0.5px; text-align: right;">CH 9</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 32px 1fr 70px; align-items: center; background: #fef9f3; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-color);">
+      <span style="font-size: 16pt; font-weight: 800; color: var(--accent-color); line-height: 1;">2</span>
+      <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;">How to choose between <strong>capital and labor</strong>?</p>
+      <span style="font-size: 9pt; font-weight: 700; color: var(--muted-color); letter-spacing: 0.5px; text-align: right;">CH 8</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 32px 1fr 70px; align-items: center; background: #fef9f3; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-color);">
+      <span style="font-size: 16pt; font-weight: 800; color: var(--accent-color); line-height: 1;">3</span>
+      <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;">What will it <strong>cost</strong> to produce?</p>
+      <span style="font-size: 9pt; font-weight: 700; color: var(--muted-color); letter-spacing: 0.5px; text-align: right;">CH 8</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 32px 1fr 70px; align-items: center; background: #ecfdf5; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--success-color);">
+      <span style="font-size: 16pt; font-weight: 800; color: var(--success-color); line-height: 1;">4</span>
+      <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;">How does the <strong>timeframe</strong> (SR vs LR) shape decisions?</p>
+      <span style="font-size: 9pt; font-weight: 700; color: var(--muted-color); letter-spacing: 0.5px; text-align: right;">CH 8</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 32px 1fr 70px; align-items: center; background: #ecfdf5; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--success-color); grid-column: span 2;">
+      <span style="font-size: 16pt; font-weight: 800; color: var(--success-color); line-height: 1;">5</span>
+      <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;">How does <strong>factory size</strong> limit the ability to scale up &mdash; and at what cost?</p>
+      <span style="font-size: 9pt; font-weight: 700; color: var(--muted-color); letter-spacing: 0.5px; text-align: right;">CH 8 &amp; 10</span>
+    </div>
+  </div>
+
+  <aside class="notes">The classic three-factor decomposition: labor, land, capital. For most of the chapter (and Chs 8–9) we collapse land into capital and track only \(K\) and \(L\) — a two-factor simplification that captures the substitution decision cleanly. But it's worth a slide to acknowledge land as a separate input (especially for industries where it's binding: agriculture, real estate, mining; Ch 19 brings land back as Ricardian rent). The five "Questions Faced by Producers" are now color-coded to which chapter answers each: Q1 → Ch 9 profit max; Q2-Q3 → Ch 8 cost min + cost function; Q4-Q5 → Ch 8 SR/LR + Ch 10 entry/exit. Tell students: "this is your roadmap for the next three chapters."</aside>
+</section>
+
+<!-- ===== Slide 8.5 — Basics of Production: Production Functions (4th in mini-series) ===== -->
+<section id="basics-production-functions">
+  <h2><i class="fa-solid fa-function" style="color: var(--secondary-color);"></i> The Basics of Production &mdash; Production Functions</h2>
+  <p style="font-size: 13pt; line-height: 1.5; margin: 0 0 12px 0;">
+    A <strong>production function</strong> describes how output is made from different combinations of inputs.
+  </p>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
+
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 16px 20px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 6px 0;">General form</p>
+      <p style="font-size: 22pt; text-align: center; margin: 8px 0 12px;">
+        \[ Q \;=\; f(K, L) \]
+      </p>
+      <ul style="font-size: 12.5pt; line-height: 1.55; margin: 0; padding-left: 20px;">
+        <li>\(Q\) &mdash; quantity of <strong>output</strong></li>
+        <li>\(K\) &mdash; quantity of <strong>capital</strong></li>
+        <li>\(L\) &mdash; quantity of <strong>labor</strong></li>
+      </ul>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        \(f\) is the firm's <em>recipe</em> &mdash; the technology that maps inputs to maximum-feasible output.
+      </p>
+    </div>
+
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 16px 20px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 6px 0;">Cobb-Douglas (the workhorse)</p>
+      <p style="font-size: 22pt; text-align: center; margin: 8px 0 12px;">
+        \[ Q \;=\; A\, K^{\alpha}\, L^{\beta} \]
+      </p>
+      <ul style="font-size: 12.5pt; line-height: 1.55; margin: 0; padding-left: 20px;">
+        <li>\(\alpha, \beta\) &mdash; each input raised to a <strong>power</strong> (typically \( < 1 \))</li>
+        <li>\(A\) &mdash; total factor productivity (technology level)</li>
+        <li>Inputs are <strong>multiplied</strong> together &mdash; both are required</li>
+      </ul>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        Gigafactory anchor: \( Q = 8\, K^{0.4}\, L^{0.6} \). We'll lock these exponents for Chs 7-9.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;">
+      <strong>Why Cobb-Douglas?</strong> It's smooth (well-defined marginal products everywhere), it has clean algebra (\(MP_K = \alpha \cdot Q/K\), \(MP_L = \beta \cdot Q/L\)), and it fits US manufacturing data remarkably well &mdash; the original Cobb &amp; Douglas (1928) estimated \(\alpha \approx 0.25, \beta \approx 0.75\) for the US economy 1899&ndash;1922. We'll meet two other families &mdash; Leontief and perfect substitutes &mdash; in §7.5.
+    </p>
+  </div>
+
+  <aside class="notes">Fourth slide in the "Basics of Production" mini-series, matching the Canva original. Brief overview of the production-function concept before the deeper §7.2 deep-dive later. Two equations side-by-side: the general form Q = f(K,L) (left, blue) and the Cobb-Douglas specialization (right, terracotta). Locks the gigafactory calibration (A=8, α=0.4, β=0.6) so it's familiar by the time we hit Walkthrough 7.1 in the MP/MRTS section. The Cobb-Douglas 1928 historical anchor (α ≈ 0.25, β ≈ 0.75 for US 1899-1922) sets up the §7.7 labor-share decline discussion later. Don't dwell — this is a preview, not the full treatment.</aside>
+</section>
+
+<!-- ===== Slide 9 — Same Product, Different Recipes: Ford (from 1116 ch03) ===== -->
+<section id="ford-recipes">
+  <h2><i class="fa-solid fa-car-side" style="color: #7C3A5F;"></i> Same Product, Different Recipes: Ford</h2>
+  <div class="content">
+    <p style="font-size: 14pt; line-height: 1.5; margin: 0 0 12px 0;">
+      The <strong>same Ford Focus</strong> rolls out of three Ford plants on three continents &mdash; built with three different recipes. Each plant matches its mix of labor and capital to <strong>local input prices</strong>.
+    </p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; flex: 1; min-height: 0;">
+      <div class="fragment fade-up" style="display: flex; flex-direction: column; background: rgba(107, 139, 164, 0.06); border-left: 4px solid var(--secondary-color); border-radius: 8px; overflow: hidden;">
+        <img alt="Ford Detroit assembly plant interior with welding robots on the line" src="figures/ch03-detroit-ford.avif" style="width: 100%; height: 200px; object-fit: cover;">
+        <div style="padding: 12px 14px; flex: 1;">
+          <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 2px 0;">&#x1F1FA;&#x1F1F8; Detroit, USA</p>
+          <p style="font-size: 14pt; font-weight: 700; color: var(--primary-color); margin: 0 0 6px 0;">Capital &gt;&gt; Labor</p>
+          <p style="font-size: 12pt; line-height: 1.45; margin: 0;">
+            Heavy automation. ~700 industrial robots welding, painting, lifting frames. ~$30/hr labor cost makes machines cheap by comparison.
+          </p>
+        </div>
+      </div>
+      <div class="fragment fade-up" style="display: flex; flex-direction: column; background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 8px; overflow: hidden;">
+        <img alt="Ford Cuautitlán Mexico assembly plant exterior" src="figures/ch03-mexico-ford.jpg" style="width: 100%; height: 200px; object-fit: cover;">
+        <div style="padding: 12px 14px; flex: 1;">
+          <p style="font-size: 12pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 2px 0;">&#x1F1F2;&#x1F1FD; Cuautitl&aacute;n, Mexico</p>
+          <p style="font-size: 14pt; font-weight: 700; color: var(--primary-color); margin: 0 0 6px 0;">Capital &asymp; Labor</p>
+          <p style="font-size: 12pt; line-height: 1.45; margin: 0;">
+            Skilled-labor assembly with selective automation. Lower wages tilt the recipe back toward humans for tasks that would be robotic in Detroit.
+          </p>
+        </div>
+      </div>
+      <div class="fragment fade-up" style="display: flex; flex-direction: column; background: rgba(168, 92, 92, 0.10); border-left: 4px solid var(--danger-color); border-radius: 8px; overflow: hidden;">
+        <img alt="Ford Chennai India assembly plant" src="figures/ch03-India-ford.jpg" style="width: 100%; height: 200px; object-fit: cover;">
+        <div style="padding: 12px 14px; flex: 1;">
+          <p style="font-size: 12pt; color: var(--danger-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 2px 0;">&#x1F1EE;&#x1F1F3; Chennai, India</p>
+          <p style="font-size: 14pt; font-weight: 700; color: var(--primary-color); margin: 0 0 6px 0;">Labor &gt;&gt; Capital</p>
+          <p style="font-size: 12pt; line-height: 1.45; margin: 0;">
+            Labor-intensive. Imported capital is expensive; local labor is abundant and cheap. Same blueprints, different ratios on the line.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="fragment fade-up" style="background: #f8f6f3; padding: 10px 16px; border-radius: 8px; border-left: 4px solid #7C3A5F; margin-top: 12px;">
+      <p style="font-size: 13pt; line-height: 1.5; margin: 0;">
+        <strong>The takeaway:</strong> same product, three recipes &mdash; each chosen because it's the <em>cheapest</em> recipe given that location's prices for labor vs. capital. Production methods are <strong>responses to prices.</strong>
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Brought from 1116 ch03. Ford produces the SAME Focus / Fiesta / EcoSport at all three plants — blueprints identical. What varies is the K/L ratio, driven by local wage rates. Detroit ~$30/hr → robotize. Chennai ~$4/hr → staff the line. No "best" answer — only the cheapest answer for THAT location's input prices. This sets up the Ch 8 cost-minimization framing where the firm picks the K/L mix to satisfy MRTS = w/r.</aside>
+</section>
+
+<!-- ===== Slide 10 — Tesla gigafactory at scale (moved to follow Ford recipes) ===== -->
+<section id="gigafactory-scale">
+  <h2><i class="fa-solid fa-industry" style="color: var(--secondary-color);"></i> Five Decades Later &mdash; Tesla's Gigafactory Nevada</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+    <div>
+      <p style="font-size: 14pt; line-height: 1.55;">
+        The scale changed; the question didn't. To turn capital and labor into battery capacity, engineers still pick a <strong>specific configuration</strong>.
+      </p>
+      <ul style="font-size: 13pt; line-height: 1.65; margin: 10px 0;">
+        <li>How many cell-stacking machines?</li>
+        <li>How many drying rooms?</li>
+        <li>How many QA technicians per shift?</li>
+      </ul>
+      <p style="font-size: 13pt; line-height: 1.55;">
+        Each combination of capital and labor delivers some maximum feasible <span style="white-space: nowrap;">battery output \(Q\).</span>
+      </p>
+      <div class="key-result" style="margin-top: 12px;">
+        <p style="margin: 0; font-size: 12.5pt;">Our anchor for Part III: a representative US gigafactory with \(K = 4\) B$ of capital, \(L = 4{,}000\) workers, producing \(Q = 32\) GWh/yr under \(Q = 8 K^{0.4} L^{0.6}\). These numbers are <strong>locked</strong> through Chs 8 and 9.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <img alt="Aerial photo of Tesla Gigafactory Nevada (Planet Labs, August 2017)" src="figures/photo-gigafactory.jpg" class="figure-sm" style="border-radius: 8px;">
+      <p style="font-size: 10pt; color: var(--muted-color); margin-top: 4px; font-style: italic;">Tesla Gigafactory Nevada &mdash; Planet Labs / Wikimedia</p>
+    </div>
+  </div>
+  <p class="footnote" style="position: static; margin: 14px 0 0; padding: 8px 14px; background: #f4f1ed; border-left: 3px solid var(--muted-color); border-radius: 4px; font-size: 10.5pt; color: var(--text-color); line-height: 1.45;">
+    <strong style="color: var(--primary-color);"><i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i> Note on the 0.4 / 0.6 calibration.</strong>
+    \(\alpha\) and \(\beta\) are <em>technology exponents</em> &mdash; they measure how output responds to changes in \(K\) and \(L\) (output's elasticity w.r.t. each input), <strong>not</strong> the physical quantities of \(K\) or \(L\) themselves. BLS NAICS 3359 (Batteries) puts real US plants closer to \(\alpha \approx 0.55, \beta \approx 0.45\) within the \(K+L\) portion of value added &mdash; modestly more capital-intensive than our 0.4 / 0.6 anchor. We round to 0.4 / 0.6 to keep Walkthrough arithmetic clean and to match the historical US-economy aggregate labor share.
+  </p>
+  <aside class="notes">Tesla 2024 10-K: $11.34B capex. Gigafactory Nevada complex: 7,000+ workers, $6B+ cumulative investment, ~38 GWh/year. CATL Debrecen: €7.34B, 9,000 workers, 100 GWh target. We round to our calibration (K=4B$, L=4K, Q=32 GWh, A=8) to keep arithmetic clean for the chapter. These numbers are inherited by Chs 8 and 9 verbatim. **The footnote explains the α/β choice:** real US battery plants are more capital-intensive than 0.4/0.6 suggests (BLS data ~55/45 within K+L). The chapter uses 0.4/0.6 for two reasons: (1) round numbers make every Walkthrough arithmetic-friendly, (2) 0.6 labor share matches the historical US-economy aggregate so students see a familiar number.</aside>
+</section>
+
+<!-- ===== Slide 11 — Two Efficiencies (from 1116 ch03) ===== -->
+<section id="two-efficiencies">
+  <h2>It's Not Enough to Do Things Right; We Must Do the <em>Right Things</em></h2>
+  <div class="content">
+    <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 10px; font-style: italic;">
+      &mdash; Peter Drucker. Two distinct kinds of efficiency, easy to confuse.
+    </p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); padding: 16px 20px; border-radius: 8px;">
+        <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px 0;">
+          <i class="fa-solid fa-gauge-high" style="margin-right: 4px;"></i> Production Efficiency
+        </p>
+        <p style="font-size: 18pt; font-weight: 700; color: var(--primary-color); margin: 0 0 6px 0;">Doing things right</p>
+        <p style="font-size: 14pt; line-height: 1.5; margin: 0;">
+          Same output, <strong>fewer inputs.</strong> No waste &mdash; you couldn't remove an input without losing output.
+        </p>
+        <div style="background: rgba(107, 139, 164, 0.10); padding: 10px 14px; border-radius: 6px; margin-top: 10px;">
+          <p style="font-size: 13pt; line-height: 1.45; margin: 0;">
+            <strong>Example:</strong> A bridge engineering team that delivers the same load capacity using <strong>10% less steel.</strong> Same output. Less waste.
+          </p>
+        </div>
+        <p style="font-size: 12pt; color: var(--muted-color); margin: 8px 0 0 0; font-style: italic;">
+          Geometrically: any point <strong>on</strong> the production frontier (isoquant).
+        </p>
+      </div>
+      <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--accent-color); padding: 16px 20px; border-radius: 8px;">
+        <p style="font-size: 12pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px 0;">
+          <i class="fa-solid fa-bullseye" style="margin-right: 4px;"></i> Allocative Efficiency
+        </p>
+        <p style="font-size: 18pt; font-weight: 700; color: var(--primary-color); margin: 0 0 6px 0;">Doing the right things</p>
+        <p style="font-size: 14pt; line-height: 1.5; margin: 0;">
+          Resources flow to the <strong>mix of goods</strong> people actually want, in the quantities they want. <em>Relevance.</em>
+        </p>
+        <div style="background: rgba(196, 123, 90, 0.10); padding: 10px 14px; border-radius: 6px; margin-top: 10px;">
+          <p style="font-size: 13pt; line-height: 1.45; margin: 0;">
+            <strong>Cautionary tale:</strong> a 2026 typewriter factory could be production-efficient &mdash; <em>and still</em> allocatively wasteful, because <strong>no one wants typewriters</strong>.
+          </p>
+        </div>
+        <p style="font-size: 12pt; color: var(--muted-color); margin: 8px 0 0 0; font-style: italic;">
+          Driven by <strong>price signals</strong> &mdash; revisits in Ch 9&ndash;10.
+        </p>
+      </div>
+    </div>
+    <div class="fragment fade-up" style="background: #f4f1ed; padding: 12px 18px; border-radius: 8px; border-left: 4px solid #7C3A5F; margin-top: 12px;">
+      <p style="font-size: 14pt; line-height: 1.5; margin: 0;">
+        <strong>The two ideas are independent.</strong> You can have either one without the other. A market economy needs <strong>both</strong>: minimize waste <em>and</em> maximize relevance.
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Drucker quote drives the contrast: production efficiency = doing things right (on the isoquant; no waste). Allocative efficiency = doing the right things (price signals push resources to high-WTP goods). They are INDEPENDENT. A perfectly run typewriter factory in 2026 is production-efficient AND allocatively dead. Today's chapter formalizes production efficiency (Ch 7 isoquants). Ch 9 will add price signals via profit max; Ch 10 ties efficiency to competitive equilibrium.</aside>
+</section>
+
+<!-- ===== Slide 11 — Production Methods (from 1116 ch03 / Capital-intensive vs Labor-intensive) ===== -->
+<section id="production-methods">
+  <h2><i class="fa-solid fa-gears" style="color: var(--secondary-color);"></i> Production Methods (a.k.a. Production Technology)</h2>
+  <div class="content">
+    <p style="font-size: 14pt; line-height: 1.55; margin-bottom: 12px;">
+      Same four ingredients, <strong>different recipes.</strong> The recipe &mdash; how much of each input you use &mdash; is what economists call <strong>technology</strong>. There is rarely <em>one</em> right answer.
+    </p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; min-height: 0;">
+      <div class="fragment fade-up" style="background: rgba(107, 139, 164, 0.08); border-left: 4px solid var(--secondary-color); padding: 12px 14px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; min-height: 0;">
+        <div>
+          <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 2px 0;">Capital-Intensive</p>
+          <p style="font-size: 14pt; font-weight: 700; color: var(--primary-color); margin: 0 0 4px 0;">&#x1F69C; Industrial Farming</p>
+          <p style="font-size: 12pt; line-height: 1.4; margin: 0;">
+            $$ machines + very few workers per acre. Iowa corn: 2 people farm 2,000 acres &mdash; tractors, GPS, drones replace labor.
+          </p>
+        </div>
+        <div class="video-frame">
+          <video autoplay data-autoplay="true" data-src="https://pub-fa3318ef831f4dbaa4ee4bef1dc209b6.r2.dev/lectures/ch03/ch03-farm.mp4" muted playsinline preload="auto" title="ch03-farming">
+          </video>
+        </div>
+      </div>
+      <div class="fragment fade-up" style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); padding: 12px 14px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; min-height: 0;">
+        <div>
+          <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 2px 0;">Labor-Intensive</p>
+          <p style="font-size: 14pt; font-weight: 700; color: var(--primary-color); margin: 0 0 4px 0;">&#x1F4BB; SaaS Companies</p>
+          <p style="font-size: 12pt; line-height: 1.4; margin: 0;">
+            Highly trained workers + cheap capital (laptops, cloud). A 50-person team at a software firm builds a $1B product.
+          </p>
+        </div>
+        <div class="video-frame">
+          <video autoplay data-autoplay="true" data-src="https://pub-fa3318ef831f4dbaa4ee4bef1dc209b6.r2.dev/lectures/ch03/ch03-saas.mp4" muted playsinline preload="auto" title="ch03-saas">
+          </video>
+        </div>
+      </div>
+    </div>
+    <div class="fragment fade-up" style="background: #f4f1ed; border-left: 4px solid #7C3A5F; border-radius: 6px; padding: 8px 14px; margin-top: 10px;">
+      <p style="font-size: 11pt; color: #7C3A5F; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 6px 0; text-align: center;">
+        <i class="fa-solid fa-square-root-variable" style="margin-right: 4px;"></i> Cobb-Douglas: same form \( Q = A K^{\alpha} L^{\beta} \), different exponents
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+        <div style="background: rgba(107, 139, 164, 0.10); padding: 6px 10px; border-radius: 4px; text-align: center;">
+          <p style="font-size: 10.5pt; color: var(--secondary-color); font-weight: 700; margin: 0;">Capital-intensive</p>
+          <p style="font-size: 13pt; margin: 2px 0;">\( K^{0.7}\, L^{0.3} \)</p>
+        </div>
+        <div style="background: rgba(124, 58, 95, 0.10); padding: 6px 10px; border-radius: 4px; text-align: center;">
+          <p style="font-size: 10.5pt; color: #7C3A5F; font-weight: 700; margin: 0;">Gigafactory</p>
+          <p style="font-size: 13pt; margin: 2px 0;">\( 8\, K^{0.4}\, L^{0.6} \)</p>
+        </div>
+        <div style="background: rgba(196, 123, 90, 0.10); padding: 6px 10px; border-radius: 4px; text-align: center;">
+          <p style="font-size: 10.5pt; color: var(--accent-color); font-weight: 700; margin: 0;">Labor-intensive</p>
+          <p style="font-size: 13pt; margin: 2px 0;">\( K^{0.2}\, L^{0.8} \)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Borrowed from ECON 1116 ch03 — same content, same videos (Cloudflare R2-hosted). Pedagogical point: no universally "correct" production method. SaaS firms throw expensive humans at the bottleneck (creativity); Iowa farms throw expensive machines at the bottleneck (scale + land). Same INPUT logic (labor + capital + land), wildly different RECIPES. The Cobb-Douglas box at the bottom formalizes the recipe idea: same Q = A K^α L^β functional form, what changes is the exponent vector (α, β). High-α technologies are capital-intensive (industrial farming, semiconductor fabs); high-β technologies are labor-intensive (SaaS, consulting). The gigafactory sits in the middle of the spectrum.</aside>
+</section>
+
+<!-- ===== Slide 12 — The Long Arc of Production (from 1116 ch03) ===== -->
+<section id="long-arc-production">
+  <h2><i class="fa-solid fa-arrow-trend-up" style="color: #7C3A5F;"></i> The Long Arc of Production</h2>
+  <div class="content">
+    <p style="font-size: 14pt; line-height: 1.55; margin: 0 0 8px 0;">
+      For nearly all of human history, production grew slowly. A medieval English peasant had roughly the same yearly output as her great-grandmother &mdash; for centuries on end. Generations passed; the typical person's standard of living barely moved. Then, around <strong>1800</strong>, the <strong>Industrial Revolution</strong> (Arkwright's water frame, 1769; Watt's steam engine, 1776) multiplied what a single hour of labor could produce.
+    </p>
+    <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 0 0 4px 0; text-align: center;">
+      Figure 7.X &mdash; World Average GDP per Capita, 1500&ndash;2000 (log scale, 1990 international $)
+    </p>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0;">
+      <svg aria-label="World average real GDP per capita on a log scale, 1500 to 2000. Nearly flat for three centuries before 1800, then bends sharply upward by roughly an order of magnitude as the Industrial Revolution begins." role="img" style="width: 100%; max-width: 920px; height: auto; max-height: 360px;" viewbox="0 0 800 360">
+        <defs>
+          <pattern height="40" id="gdpGrid" patternunits="userSpaceOnUse" width="40">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(156,163,175,0.18)" stroke-width="0.6"></path>
+          </pattern>
+        </defs>
+        <rect fill="url(#gdpGrid)" height="260" width="700" x="60" y="30"></rect>
+        <g fill="#374151" font-size="10" text-anchor="end">
+          <text x="55" y="293">$500</text>
+          <text x="55" y="234">$1,000</text>
+          <text x="55" y="174">$2,000</text>
+          <text x="55" y="94">$5,000</text>
+          <text x="55" y="34">$10,000</text>
+        </g>
+        <g stroke="rgba(156,163,175,0.25)" stroke-dasharray="2,3">
+          <line x1="60" x2="760" y1="230" y2="230"></line>
+          <line x1="60" x2="760" y1="170" y2="170"></line>
+          <line x1="60" x2="760" y1="90" y2="90"></line>
+        </g>
+        <g fill="#374151" font-size="10" text-anchor="middle">
+          <text x="60" y="305">1500</text>
+          <text x="200" y="305">1600</text>
+          <text x="340" y="305">1700</text>
+          <text x="480" y="305">1800</text>
+          <text x="620" y="305">1900</text>
+          <text x="760" y="305">2000</text>
+        </g>
+        <line stroke="#7C3A5F" stroke-dasharray="6,4" stroke-width="1.5" x1="480" x2="480" y1="20" y2="290"></line>
+        <g transform="translate(484, 38)">
+          <rect fill="#ffffff" fill-opacity="0.94" height="34" rx="3" stroke="#7C3A5F" stroke-opacity="0.35" stroke-width="0.6" width="124" x="0" y="-12"></rect>
+          <text fill="#7C3A5F" font-size="10.5" font-weight="700" x="6" y="2">Industrial Revolution</text>
+          <text fill="#7C3A5F" font-size="9" x="6" y="14">~1800: production shifts begin</text>
+        </g>
+        <path d="M 60 279 L 200 275 L 340 272 L 480 259 L 550 240 L 620 195 L 690 166 L 730 116 L 760 67" fill="none" stroke="#3b82f6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8"></path>
+        <rect fill="rgba(168, 92, 92, 0.06)" height="260" width="420" x="60" y="30"></rect>
+        <text fill="#a85c5c" font-size="11" font-style="italic" font-weight="600" text-anchor="middle" x="270" y="56">3 centuries: ~25% growth</text>
+        <text fill="#a85c5c" font-size="9" font-style="italic" text-anchor="middle" x="270" y="70">(subsistence ceiling)</text>
+        <rect fill="rgba(16, 185, 129, 0.06)" height="260" width="280" x="480" y="30"></rect>
+        <text fill="#0a8754" font-size="11" font-style="italic" font-weight="600" text-anchor="middle" x="620" y="92">200 years: ~9&#215; rise</text>
+        <circle cx="60" cy="279" fill="#3b82f6" r="4" stroke="#fff" stroke-width="1.2"></circle>
+        <text fill="#3b82f6" font-size="10" font-weight="700" x="68" y="276">$566 (1500)</text>
+        <circle cx="480" cy="259" fill="#7C3A5F" r="4" stroke="#fff" stroke-width="1.2"></circle>
+        <circle cx="760" cy="67" fill="#3b82f6" r="4" stroke="#fff" stroke-width="1.2"></circle>
+        <text fill="#3b82f6" font-size="10" font-weight="700" text-anchor="end" x="755" y="58">$6,500 (2000)</text>
+        <g fill="#374151" font-size="9" font-style="italic">
+          <text text-anchor="middle" x="540" y="222">&#9881; steam</text>
+          <text text-anchor="middle" x="630" y="174">&#128161; electricity</text>
+          <text text-anchor="middle" x="700" y="138">&#128663; internal combustion</text>
+          <text text-anchor="end" x="755" y="84">&#128187; computing</text>
+        </g>
+        <line stroke="#374151" stroke-width="1.5" x1="60" x2="760" y1="290" y2="290"></line>
+        <line stroke="#374151" stroke-width="1.5" x1="60" x2="60" y1="20" y2="290"></line>
+        <text fill="#374151" font-size="11" font-weight="600" text-anchor="middle" x="410" y="338">Year</text>
+        <text fill="#374151" font-size="11" font-weight="600" text-anchor="middle" transform="rotate(-90 22 160)" x="22" y="160">GDP per capita (log)</text>
+      </svg>
+    </div>
+    <p style="font-size: 10.5pt; color: var(--muted-color); line-height: 1.4; margin: 6px 0 0 0;">
+      <strong style="color: var(--primary-color);">Caption:</strong> World average real GDP per capita on a log scale. For three centuries before 1800, output per person barely moved &mdash; humanity lived close to subsistence. The vertical guide marks the onset of the Industrial Revolution; the line bends upward and rises by roughly an order of magnitude in two centuries. Each technology leap (steam, electricity, internal combustion, computing) shifts the production function outward, and the same hours of labor produce far more output. <span style="font-style: italic;">Source: Maddison Project Database (Bolt &amp; van Zanden 2024); DeLong (1998) for early-period estimates. Values in 1990 international dollars.</span>
+    </p>
+  </div>
+  <aside class="notes">The log-scale chart is essential — equal vertical distances correspond to equal MULTIPLICATIVE changes. From 1500 to 1800: world GDP per capita went $566 → $712. That's 25% across THREE CENTURIES. After 1800: $700 → $6,500 in two centuries — a 9-fold increase. The four factors of production didn't change. The TECHNOLOGY linking them did — this is Hicks-neutral TFP growth at civilizational scale. Forward-pointer: §7.7 of this chapter formalizes \(Q = A \cdot f(K, L)\) where A captures exactly the technology component that bent this chart upward.</aside>
+</section>
+
+<!-- ===== Slide 6 — Section Divider: The Production Function ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-prod-function">
+  <h1>§7.2 The Production Function</h1>
+  <p class="subtitle">isoquants &middot; free disposal &middot; convexity</p>
+</section>
+
+<!-- ===== Slide 7 — Definition ===== -->
+<!-- ===== NEW Slide 15 — Simplifying Assumptions about Firms ===== -->
+<section id="simplifying-assumptions">
+  <h2><i class="fa-solid fa-clipboard-list" style="color: var(--secondary-color);"></i> Simplifying Assumptions about Firms</h2>
+  <p style="font-size: 12pt; color: var(--muted-color); margin: 0 0 8px 0; font-style: italic;">
+    Nine working assumptions, grouped four ways &mdash; each buys algebraic transparency at the cost of some empirical bandwidth.
+  </p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+
+    <!-- Card 1: The firm's product -->
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 8px 12px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px 0;">
+        <i class="fa-solid fa-box" style="margin-right: 4px;"></i> The firm's product
+      </p>
+      <ul style="font-size: 11.5pt; line-height: 1.4; margin: 0; padding-left: 18px;">
+        <li>The firm produces a <strong>single</strong> good.</li>
+        <li>The firm has <strong>already chosen</strong> which product to produce.</li>
+      </ul>
+      <p style="font-size: 9.5pt; color: var(--muted-color); margin: 4px 0 0; font-style: italic;">
+        &rarr; \(Q\) is a scalar. Multi-product firms wait for grad IO.
+      </p>
+    </div>
+
+    <!-- Card 2: Firm behavior -->
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 12px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px 0;">
+        <i class="fa-solid fa-bullseye" style="margin-right: 4px;"></i> Firm behavior
+      </p>
+      <ul style="font-size: 11.5pt; line-height: 1.4; margin: 0; padding-left: 18px;">
+        <li>Firms <strong>minimize cost</strong> at every level of production.</li>
+      </ul>
+      <p style="font-size: 9.5pt; color: var(--muted-color); margin: 4px 0 0; font-style: italic;">
+        &rarr; Necessary condition for profit max. Ch 8 turns this into the Lagrangian.
+      </p>
+    </div>
+
+    <!-- Card 3: Inputs and technology -->
+    <div style="background: #ecfdf5; border-left: 4px solid var(--success-color); border-radius: 6px; padding: 8px 12px;">
+      <p style="font-size: 11pt; color: var(--success-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px 0;">
+        <i class="fa-solid fa-gears" style="margin-right: 4px;"></i> Inputs &amp; technology
+      </p>
+      <ul style="font-size: 11.5pt; line-height: 1.4; margin: 0; padding-left: 18px;">
+        <li>Two inputs only: <strong>capital \(K\)</strong> &amp; <strong>labor \(L\)</strong>.</li>
+        <li>More inputs &rarr; <strong>more output</strong>.</li>
+        <li>Inputs show <strong>diminishing returns</strong>.</li>
+      </ul>
+      <p style="font-size: 9.5pt; color: var(--muted-color); margin: 4px 0 0; font-style: italic;">
+        &rarr; The pillars of MP, MRTS, isoquants.
+      </p>
+    </div>
+
+    <!-- Card 4: Time and markets -->
+    <div style="background: #f4f1ed; border-left: 4px solid #7C3A5F; border-radius: 6px; padding: 8px 12px;">
+      <p style="font-size: 11pt; color: #7C3A5F; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px 0;">
+        <i class="fa-solid fa-clock" style="margin-right: 4px;"></i> Time &amp; markets
+      </p>
+      <ul style="font-size: 11.5pt; line-height: 1.4; margin: 0; padding-left: 18px;">
+        <li><strong>SR:</strong> \(K\) fixed; <strong>LR:</strong> both adjust.</li>
+        <li>Unlimited \(K, L\) at fixed input prices.</li>
+        <li>Capital markets work &mdash; no budget constraint.</li>
+      </ul>
+      <p style="font-size: 9.5pt; color: var(--muted-color); margin: 4px 0 0; font-style: italic;">
+        &rarr; Firm = pure tech + price-taker.
+      </p>
+    </div>
+
+  </div>
+
+  <aside class="notes">Consolidated from the original Canva 3-slide assumptions deck (9 numbered bullets) into a single 2×2 grid organized by category. The four categories — Product / Behavior / Inputs &amp; Tech / Time &amp; Markets — also map directly to the next four sections of the chapter and the next two chapters. Tell students: "these aren't just textbook assumptions, they're the contract — every result in Part III rests on this list." **Why simplifying?** Real firms operate inefficiently, face budget constraints, sell multiple goods, pay markups. The list strips frictions to derive the producer-side frontier. Relaxation roadmap: multi-product firms (Ch 12 pricing), monopsony / wage markdowns (Ch 19), capital-market frictions (graduate IO), Hsieh-Klenow misallocation (§7.7).</aside>
+</section>
+
+<section id="production-function-def">
+  <h2><i class="fa-solid fa-function" style="color: var(--secondary-color);"></i> The Production Function</h2>
+  <div class="key-result">
+    <p style="margin: 0; font-size: 16pt; text-align: center;">
+      \[ Q = f(K, L) \]
+    </p>
+    <p style="margin: 8px 0 0; text-align: center; font-size: 12pt; color: var(--muted-color);">
+      Maps inputs \(K\) (capital) and \(L\) (labor) to <em>maximum feasible</em> output \(Q\).
+    </p>
+  </div>
+  <p style="font-size: 13pt; margin-top: 12px;">Three properties we'll assume throughout the chapter:</p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 8px;">
+    <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Free disposal</p>
+      <p style="font-size: 13pt; margin: 6px 0 0;">\(\partial f/\partial K \geq 0, \;\; \partial f/\partial L \geq 0\)</p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 6px 0 0; font-style: italic;">More of any input never reduces output.</p>
+    </div>
+    <div style="background: #fef9f3; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Diminishing MP</p>
+      <p style="font-size: 13pt; margin: 6px 0 0;">\(\partial^2 f/\partial K^2 < 0\),  \(\partial^2 f/\partial L^2 < 0\)</p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 6px 0 0; font-style: italic;">Each extra unit of an input adds less than the last.</p>
+    </div>
+    <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+      <p style="font-size: 11pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Convexity</p>
+      <p style="font-size: 13pt; margin: 6px 0 0;">Upper-contour set is convex.</p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 6px 0 0; font-style: italic;">Mixing recipes is at least as productive as extremes.</p>
+    </div>
+  </div>
+  <div class="misconception" style="margin-top: 14px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Heads up:</strong> the function returns the <em>maximum</em> output, not the typical or average output. Real firms underperform — that's a measurement problem, not a property of the technology frontier.</p>
+  </div>
+  <aside class="notes">Free disposal rules out the "too many baristas in a small coffee shop" case from 1116 ch 9 where the sixth worker actively hurt output. We treat that as an inefficient operating region the firm wouldn't choose. Diminishing MP is the calculus version of the Campus Coffee story. Convexity is the producer-side analog of convex preferences from Ch 4 — it gives us interior optima in Ch 8. The "maximum feasible" framing matters: production function = frontier; actual = frontier minus managerial slack. Hsieh-Klenow (§7.7) studies the slack.</aside>
+</section>
+
+<!-- ===== Slide — SR abbreviation section divider ===== -->
+<section class="section-divider abbreviation-divider" data-state="is-section-divider" id="div-sr">
+  <h1>SR</h1>
+  <p class="subtitle">What can you produce<br>when only labor is flexible?</p>
+  <aside class="notes">Opens the SR mini-section that runs through pages 19-26: SR overview → Average Product → §7.3 divider → MP definition with worker+tools=board visual → K=4 plug-in → Table 7.1 → diminishing-MP graph → calculus derivation. Anchor question: with capital bolted to the floor (Wozniak's Apple Garage with 4 workstations, or Tesla's gigafactory with $4B in installed equipment), how much more can you produce by adding labor alone? The next-couple-of-weeks framing pins the time horizon to "what's flexible right now" — labor, shift schedules, overtime. Pairs with the LR divider that follows.</aside>
+</section>
+
+<!-- ===== NEW Slide — Short Run overview ===== -->
+<section id="sr-overview">
+  <h2><i class="fa-solid fa-clock" style="color: var(--secondary-color);"></i> Production in the Short Run</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    <div>
+      <p style="font-size: 13pt; line-height: 1.55;">
+        With <strong>capital bolted to the floor</strong>, the firm can adjust only labor. The short-run production function collapses to one variable:
+      </p>
+      <div class="key-result" style="margin-top: 8px;">
+        <p style="margin: 0; text-align: center; font-size: 15pt;">
+          \( Q \;=\; TP(L) \;=\; f(\bar K, L) \)
+        </p>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); padding: 10px 14px; border-radius: 6px;">
+          <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Fixed input</p>
+          <p style="font-size: 12.5pt; margin: 4px 0 0;">Cannot change in SR. (Capital: factory, ovens, robots.)</p>
+        </div>
+        <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); padding: 10px 14px; border-radius: 6px;">
+          <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Variable input</p>
+          <p style="font-size: 12.5pt; margin: 4px 0 0;">Can change in SR. (Labor: shifts, overtime, hiring.)</p>
+        </div>
+      </div>
+      <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin: 10px 0 0;">
+        <strong>Long run forward-pointer:</strong> when \(K\) becomes adjustable too, every input is a choice variable &mdash; the full \(f(K, L)\) is back, and we get the cost-min Lagrangian of Ch 8.
+      </p>
+    </div>
+    <div>
+      <div class="misconception" style="margin: 0;">
+        <p style="margin: 0 0 6px; font-weight: 700; color: var(--danger-color);">
+          <i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i> Heads up: SR is NOT a clock-time concept
+        </p>
+        <p style="font-size: 12pt; line-height: 1.5; margin: 0;">
+          "Short run" and "long run" are defined by <strong>which inputs are flexible</strong>, not how much time has passed.
+        </p>
+      </div>
+      <table class="tab" style="margin: 10px 0 0; font-size: 12pt;">
+        <tr><th>Industry</th><th>Short-run window</th></tr>
+        <tr><td>Semiconductor fab</td><td>5+ years (clean-room construction is glacial)</td></tr>
+        <tr><td>Restaurant</td><td>The lunch shift (tables fixed within an hour)</td></tr>
+        <tr><td>Battery plant</td><td>~1 quarter (capital sunk, workforce re-allocatable)</td></tr>
+        <tr><td>Tutoring service</td><td>1 day (one tutor + one whiteboard is K; sessions are L)</td></tr>
+      </table>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0; text-align: center;">
+        Institutional content = "what's flexible," not "how long has it been."
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Opens the SR mini-section after the production function definition. Two pedagogical anchors: (1) the SR collapses f(K, L) into a one-variable function TP(L), which is what enables the TP/AP/MP geometry coming up next; (2) the "SR isn't clock time" Heads Up is the most-stolen concept on the exam — students will misapply it. The industry table is the manuscript's §7.6 motivation. Tell students: "the SR for THIS firm is whatever time horizon over which capital is sunk — for Tesla's gigafactory it's ~a quarter, for TSMC's fab it's 5+ years." Next slide builds the TP/AP/MP curves; then we hit MRTS once we return to the LR framing.</aside>
+</section>
+
+<!-- ===== Slide — Average Product of Labor ===== -->
+<section id="average-product">
+  <h2><i class="fa-solid fa-calculator" style="color: var(--secondary-color);"></i> Average Product &mdash; A Key Short-Run Metric</h2>
+  <p style="font-size: 13pt; line-height: 1.5; margin: 0 0 10px 0;">
+    With \(K = \bar K\) fixed, total output \(Q\) depends only on labor: \(Q = f(\bar K, L)\). The natural productivity metric is <strong>output per worker</strong> &mdash; the <em>average product of labor</em>.
+  </p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: stretch;">
+
+    <!-- Left: Definition card -->
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 6px 0;">Definition</p>
+      <p style="font-size: 13pt; line-height: 1.5; margin: 0;">
+        <strong>Average product of an input</strong> = total output divided by the quantity of that input used.
+      </p>
+      <p style="font-size: 22pt; text-align: center; margin: 14px 0;">
+        \[ AP_L \;=\; \dfrac{Q}{L} \]
+      </p>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 0;">
+        Units: <strong>output per worker</strong> (or per worker-hour, depending on how \(L\) is measured).
+      </p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 6px 0 0;">
+        Same idea as a batting average &mdash; <em>per-unit</em> performance, not total.
+      </p>
+    </div>
+
+    <!-- Right: Numerical example -->
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 8px 0;">Example &mdash; Apple I production line</p>
+      <div style="display: grid; grid-template-columns: 80px 1fr 80px; gap: 10px; align-items: center; margin-bottom: 8px;">
+        <div style="text-align: center;">
+          <img alt="Apple I motherboard with its operation manual" src="figures/photo-apple-i-with-manual.png" style="max-width: 100%; max-height: 70px; border-radius: 4px;">
+          <p style="font-size: 11pt; font-weight: 700; margin: 4px 0 0;">\(Q = 100\)</p>
+          <p style="font-size: 10pt; color: var(--muted-color); font-style: italic; margin: 0;">boards/week</p>
+        </div>
+        <div style="text-align: center; font-size: 28pt; color: var(--muted-color);">&divide;</div>
+        <div style="text-align: center;">
+          <img alt="Worker assembling a circuit board" src="figures/illus-worker-labor.png" style="max-width: 100%; max-height: 70px;">
+          <p style="font-size: 11pt; font-weight: 700; margin: 4px 0 0;">\(L = 5\)</p>
+          <p style="font-size: 10pt; color: var(--muted-color); font-style: italic; margin: 0;">workers</p>
+        </div>
+      </div>
+      <div style="background: white; border-radius: 6px; padding: 8px 12px; text-align: center;">
+        <p style="font-size: 15pt; margin: 0;">
+          \( AP_L = \dfrac{100}{5} = \mathbf{20} \) <span style="font-size: 12pt; color: var(--muted-color);">boards per worker / week</span>
+        </p>
+      </div>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        Each worker produces an average of 20 motherboards per week at this scale.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="key-result" style="margin-top: 12px; padding: 10px 16px;">
+    <p style="margin: 0; font-size: 12.5pt;">
+      <strong>Why average product matters.</strong> \(AP_L\) is the natural single-number summary of how productive labor is on this particular plant. <em>Gigafactory check:</em> with \(Q = 32\) GWh/yr and \(L = 4{,}000\) workers, \(AP_L = 8\) GWh per thousand workers (or 8,000 kWh per worker per year). We'll see how AP and MP fit together in the §7.6 three-stage diagram.
+    </p>
+  </div>
+
+  <aside class="notes">First quantitative slide of the SR mini-section. Two pedagogical halves: (1) abstract definition AP_L = Q/L on the left, with the batting-average analogy to make it intuitive; (2) concrete numerical example on the right with the Apple I production setup (Q = 100 boards/week ÷ L = 5 workers → AP_L = 20 per person). The gigafactory check at the bottom anchors students for the rest of Ch 7-9: AP_L for the Tesla plant is 8 GWh per thousand workers per year.</aside>
+</section>
+
+<!-- ===== Slide 9 — Section Divider: MP and MRTS ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-mp-mrts">
+  <h1>§7.3 Marginal Products &amp; MRTS</h1>
+  <p class="subtitle">two slopes &middot; their ratio &middot; the engine of the chapter</p>
+</section>
+
+<!-- ===== NEW Slide A — Marginal Product: Definition + visual ===== -->
+<section id="mp-definition-visual">
+  <h2><i class="fa-solid fa-plus-minus" style="color: var(--secondary-color);"></i> Marginal Product &mdash; What One More Worker Adds</h2>
+  <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: center;">
+    <div>
+      <div class="key-result" style="margin-top: 0;">
+        <p style="margin: 0; font-size: 13pt; line-height: 1.5;">
+          <strong>Marginal product</strong> is the additional output a firm produces from <em>one more unit of an input</em>, holding all other inputs constant.
+        </p>
+      </div>
+      <p style="font-size: 18pt; text-align: center; margin: 16px 0 8px;">
+        \[ MP_L \;=\; \dfrac{\Delta Q}{\Delta L} \]
+      </p>
+      <div class="misconception" style="margin: 8px 0 0; padding: 8px 14px;">
+        <p style="margin: 0; font-size: 12pt;">
+          <i class="fa-solid fa-arrow-down" style="color: var(--danger-color); margin-right: 4px;"></i>
+          <strong>Diminishing marginal product:</strong> as more of a variable input is hired against a fixed input, each additional unit eventually adds less than the one before it.
+        </p>
+      </div>
+    </div>
+    <div style="background: #f4f1ed; border-radius: 8px; padding: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 18px 1fr 18px 1.1fr; gap: 6px; align-items: center; text-align: center;">
+        <div>
+          <img alt="Worker — labor input" src="figures/illus-worker-labor.png" style="max-width: 100%; max-height: 110px;">
+          <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; margin: 4px 0 0;">Labor</p>
+        </div>
+        <div style="font-size: 22pt; font-weight: 700; color: var(--muted-color);">+</div>
+        <div>
+          <img alt="Tools — capital input" src="figures/illus-tools-capital.png" style="max-width: 100%; max-height: 110px;">
+          <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; margin: 4px 0 0;">Capital</p>
+          <p style="font-size: 9.5pt; color: var(--danger-color); font-style: italic; margin: 2px 0 0;">only 4 sets</p>
+        </div>
+        <div style="font-size: 22pt; font-weight: 700; color: var(--muted-color);">=</div>
+        <div>
+          <img alt="Finished Apple I motherboard" src="figures/photo-apple-i-with-manual.png" style="max-width: 100%; max-height: 110px; border-radius: 4px;">
+          <p style="font-size: 11pt; color: var(--primary-color); font-weight: 700; margin: 4px 0 0;">Output Q</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Sets up the next four slides — the SR machinery built around the Apple Garage with K=4 workstations. Marginal product definition stated plainly + diminishing-MP warning. The visual on the right shows the production recipe pictorially (labor + capital → output) and previews the K=4 constraint with the "only 4 sets" annotation, which becomes the binding constraint in the K=4 plug-in slide next.</aside>
+</section>
+
+<!-- ===== NEW Slide B — Plug K=4 into Q = K^0.5 L^0.5 ===== -->
+<section id="mp-K4-plugin">
+  <h2><i class="fa-solid fa-equals" style="color: var(--secondary-color);"></i> Numerical SR Example &mdash; Plug \(\bar K = 4\) into Cobb-Douglas</h2>
+  <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; align-items: center;">
+    <div>
+      <p style="font-size: 13pt; line-height: 1.55; margin: 0 0 10px;">
+        Take the simplest Cobb-Douglas form and fix capital at the Apple Garage's <strong>4 workstations</strong>:
+      </p>
+      <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 12px 16px;">
+        <p style="margin: 0; font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Step 1 &mdash; General</p>
+        <p style="font-size: 17pt; text-align: center; margin: 6px 0 0;">\( Q \;=\; K^{0.5}\, L^{0.5} \)</p>
+      </div>
+      <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 12px 16px; margin-top: 10px;">
+        <p style="margin: 0; font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Step 2 &mdash; Substitute \(\bar K = 4\)</p>
+        <p style="font-size: 17pt; text-align: center; margin: 6px 0 0;">\( Q \;=\; 4^{0.5}\, L^{0.5} \;=\; 2\, L^{0.5} \;=\; 2\sqrt{L} \)</p>
+      </div>
+      <p style="font-size: 11.5pt; color: var(--muted-color); font-style: italic; margin: 10px 0 0;">
+        Output now depends on labor alone &mdash; a one-variable function we can tabulate, plot, and differentiate.
+      </p>
+    </div>
+    <div style="background: #f4f1ed; border-radius: 8px; padding: 12px; text-align: center;">
+      <p style="font-size: 11pt; color: var(--primary-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 8px;">The Apple Garage &mdash; 4 workstations</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <img src="figures/illus-tools-capital.png" alt="Workstation 1" style="max-width: 100%; max-height: 75px;">
+        <img src="figures/illus-tools-capital.png" alt="Workstation 2" style="max-width: 100%; max-height: 75px;">
+        <img src="figures/illus-tools-capital.png" alt="Workstation 3" style="max-width: 100%; max-height: 75px;">
+        <img src="figures/illus-tools-capital.png" alt="Workstation 4" style="max-width: 100%; max-height: 75px;">
+      </div>
+      <p style="font-size: 10pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        \( \bar K = 4 \) sets of soldering iron + multimeter (fixed)
+      </p>
+    </div>
+  </div>
+  <aside class="notes">The K=0.5, β=0.5 Cobb-Douglas is the textbook-cleanest specification for SR work — symmetric exponents, square-root output. Fixing K=4 collapses it to Q = 2√L, a single-variable function. The Apple Garage with 4 workstations grounds K=4 visually. Note: this is a simpler Cobb-Douglas than our running gigafactory anchor (Q = 8 K^0.4 L^0.6) — used here because Q = 2√L is the cleanest possible numerical example for the table and the calculus derivation in the next 3 slides.</aside>
+</section>
+
+<!-- ===== NEW Slide C — Table 7.1 ===== -->
+<section id="mp-table-7-1">
+  <h2><i class="fa-solid fa-table" style="color: var(--secondary-color);"></i> Table 7.1 &mdash; Short-Run Production at the Apple Garage</h2>
+  <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin: 0 0 10px;">
+    Holding \(\bar K = 4\), step \(L\) from 0 to 5 and read off \(Q\), \(MP_L\), \(AP_L\) for \( Q = 2\sqrt{L} \).
+  </p>
+  <table class="tab" style="margin: 0 auto; font-size: 14pt; max-width: 720px;">
+    <tr>
+      <th style="text-align: center;">Capital, \(\bar K\)</th>
+      <th style="text-align: center;">Labor, \(L\)</th>
+      <th style="text-align: center;">Output, \(Q\)</th>
+      <th style="text-align: center;">\(MP_L = \dfrac{\Delta Q}{\Delta L}\)</th>
+      <th style="text-align: center;">\(AP_L = \dfrac{Q}{L}\)</th>
+    </tr>
+    <tr><td>4</td><td>0</td><td>0.00</td><td>&mdash;</td><td>&mdash;</td></tr>
+    <tr><td>4</td><td>1</td><td>2.00</td><td><strong>2.00</strong></td><td>2.00</td></tr>
+    <tr><td>4</td><td>2</td><td>2.83</td><td><strong>0.83</strong></td><td>1.42</td></tr>
+    <tr><td>4</td><td>3</td><td>3.46</td><td><strong>0.63</strong></td><td>1.15</td></tr>
+    <tr><td>4</td><td>4</td><td>4.00</td><td><strong>0.54</strong></td><td>1.00</td></tr>
+    <tr><td>4</td><td>5</td><td>4.47</td><td><strong>0.47</strong></td><td>0.89</td></tr>
+  </table>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;">
+      <strong>Diminishing marginal product in action.</strong> The 1st worker adds 2.00 to output; the 5th adds only 0.47. Each new worker has less of the fixed capital to work with &mdash; \(MP_L\) shrinks monotonically as \(L\) rises. Note also: \(AP_L > MP_L\) for every \(L \geq 1\), so \(AP_L\) is also falling (the manuscript §7.6 identity \( dAP_L/dL = (MP_L - AP_L)/L \) at work).
+    </p>
+  </div>
+  <aside class="notes">Workhorse table. Verify with students: at L=2, Q = 2√2 = 2.828 ≈ 2.83 ✓. MP_L is the row-to-row difference in Q (2.83 - 2 = 0.83); AP_L is Q/L. Make the diminishing-MP pattern explicit by reading down the MP_L column: 2.00 → 0.83 → 0.63 → 0.54 → 0.47. The AP > MP point connects to the §7.6 three-stage diagram — under Cobb-Douglas, AP and MP both decline monotonically and AP stays above MP everywhere.</aside>
+</section>
+
+<!-- ===== NEW Slide D — Deriving the Marginal Product of Labor (2-panel) ===== -->
+<section id="mp-K4-graph">
+  <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Deriving the Marginal Product of Labor</h2>
+  <div style="text-align: center; margin-bottom: 10px;">
+    <img alt="Two-panel figure. Left: Q = 2 sqrt(L) with tangent-line slopes at L=1..5 (1.00, 0.71, 0.58, 0.50, 0.45) and the general formula Slope = 1/L^0.5. Right: MP_L = L^-0.5 curve with marked points at L=1..5." src="figures/fig-diminishing-mp-K4.png" class="figure" style="max-height: 420px;">
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 10px 14px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 4px 0;">Left panel &mdash; \(TP(L)\) and its slope</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.45;">
+        The slope of the \(Q = 2\sqrt{L}\) curve at any \(L\) is the <em>instantaneous</em> \(MP_L\). It falls from 1.00 at \(L=1\) to 0.45 at \(L=5\) &mdash; visibly diminishing.
+      </p>
+    </div>
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 10px 14px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 4px 0;">Right panel &mdash; \(MP_L\) plotted directly</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.45;">
+        Lifting the slope values off the left panel and plotting them against \(L\) gives the \(MP_L\) curve: \(MP_L = L^{-0.5} = 1/\sqrt{L}\), monotonically decreasing.
+      </p>
+    </div>
+  </div>
+  <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 10px 0 0; text-align: center;">
+    <i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i>
+    <strong style="color: var(--primary-color);">Recall from 1116 §9.2 &mdash; Campus Coffee:</strong> adding the 2nd barista doubled drinks/hour, but by the 5th the espresso machine was the bottleneck. Same intuition; we've just written it in calculus.
+  </p>
+  <aside class="notes">Two-panel companion to Table 7.1, matching the manuscript's Figure 7.X derivation pattern. Left panel: TP(L) = 2√L with tangent line segments at L=1,2,3,4,5 showing the instantaneous slopes (1.00, 0.71, 0.58, 0.50, 0.45) — these are derivative values, NOT discrete table values. Right panel: those same slope values lifted off the left panel and re-plotted as the MP_L curve itself, which obeys MP_L = L^-0.5. The key teaching point: the right-panel curve IS the left-panel slope function. Each point on MP_L corresponds to a tangent line on TP. Note the discrete table values (2.00, 0.83, 0.63, 0.54, 0.47) are SECANT slopes averaging over ΔL=1; these new tangent slopes (1.00, 0.71, 0.58, 0.50, 0.45) are the instantaneous calculus values. As ΔL → 0 the secant approaches the tangent — this is the gap that the next slide closes with calculus. Campus Coffee callback ties back to 1116 §9.2 — the diminishing-MP table students saw in Principles, now written in calculus.</aside>
+</section>
+
+<!-- ===== Slide §7.6 — TP/AP/MP three-stage diagram (moved here, after MP K=4 graph) ===== -->
+<section id="tp-ap-mp-stages">
+  <h2><i class="fa-solid fa-chart-area" style="color: var(--secondary-color);"></i> §7.6 &mdash; Total, Average, and Marginal Product</h2>
+  <p style="font-size: 13pt; line-height: 1.5; margin: 0 0 8px 0;">
+    Fix \(K = \bar K\) (short run). The short-run production function \(TP(L) = f(\bar K, L)\) has three derivative curves &mdash; the classical three-stage diagram.
+  </p>
+  <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; align-items: center;">
+    <div style="text-align: center;">
+      <img alt="Two-panel chart: TP(L) on top, AP and MP on bottom, with three production stages shaded" src="figures/fig-tp-ap-mp.png" class="figure" style="max-height: 460px;">
+    </div>
+    <div>
+      <p style="font-size: 12pt; margin: 0 0 6px;"><strong>Definitions.</strong></p>
+      <ul style="font-size: 12pt; line-height: 1.5; margin: 0 0 10px; padding-left: 20px;">
+        <li>\(TP(L) = f(\bar K, L)\)</li>
+        <li>\(AP(L) = TP(L)/L\)</li>
+        <li>\(MP(L) = dTP/dL\)</li>
+      </ul>
+      <div class="key-result" style="background: #f8f6f3; border-left-color: var(--secondary-color); padding: 8px 12px;">
+        <p style="margin: 0; font-size: 11.5pt;"><strong>AP &harr; MP identity.</strong></p>
+        <p style="margin: 4px 0; font-size: 11.5pt; text-align: center;">\( \dfrac{dAP}{dL} = \dfrac{MP - AP}{L} \)</p>
+        <p style="margin: 4px 0 0; font-size: 11pt; line-height: 1.4;">
+          \(MP > AP \Rightarrow AP\) rising; \(MP < AP \Rightarrow AP\) falling; \(MP = AP\) at AP's peak.
+        </p>
+      </div>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        Cubic spec from W7.8: \(TP = 60L + 12L^2 - L^3\). MP peaks at \(L=4\); AP peaks at \(L=6\) where MP crosses AP; MP=0 at \(L=10\).
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Moved to right after the K=4 MP graph (page 25) — extends the SR / single-input narrative before pivoting to LR. The cubic spec TP = 60L + 12L² - L³ is the textbook-canonical short-run case where the three-stage diagram emerges. Stage I (L &lt; 6): AP rising, hire more labor — the fixed capital is underutilized. Stage II (6 &lt; L &lt; 10): AP falling but MP &gt; 0 — this is where a profit-maxing firm actually operates. Stage III (L &gt; 10): MP &lt; 0, adding more workers reduces output. A rational firm never enters Stage III. Note the contrast with Cobb-Douglas: AP and MP are both monotone decreasing and proportional (MP = β·AP) — they never cross. The cubic is a teaching specification chosen to deliver the textbook geometry.</aside>
+</section>
+
+<!-- ===== NEW Slide E — MP_L from discrete to continuous (calculus) ===== -->
+<section id="mp-discrete-to-derivative">
+  <h2><i class="fa-solid fa-infinity" style="color: var(--accent-color);"></i> \( MP_L \) &mdash; From Discrete Difference to Derivative</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
+
+    <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">Discrete form</p>
+      <p style="font-size: 14pt; text-align: center; margin: 10px 0;">
+        \( MP_L = \dfrac{\Delta Q}{\Delta L} = \dfrac{f(\bar K, L + \Delta L) - f(\bar K, L)}{\Delta L} \)
+      </p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 8px 0 0;">
+        Plug in \( Q = 2\sqrt{L} \):
+      </p>
+      <p style="font-size: 14pt; text-align: center; margin: 6px 0 0;">
+        \( MP_L = \dfrac{2\sqrt{L + \Delta L} - 2\sqrt{L}}{\Delta L} \)
+      </p>
+    </div>
+
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">Continuous form (\( \Delta L \to 0 \))</p>
+      <p style="font-size: 14pt; text-align: center; margin: 10px 0;">
+        \( MP_L = \dfrac{d\, f(\bar K, L)}{dL} \)
+      </p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 8px 0 0;">
+        Differentiate \( Q = 2 L^{0.5} \):
+      </p>
+      <p style="font-size: 16pt; text-align: center; margin: 6px 0 0;">
+        \( MP_L = L^{-0.5} = \dfrac{1}{\sqrt{L}} \)
+      </p>
+    </div>
+
+  </div>
+
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;">
+      <strong>Quick check at \(L = 4\):</strong> the calculus says \(MP_L = 1/\sqrt{4} = 0.50\). The discrete table says \(MP_L = 0.54\) (the row-to-row jump from \(L=3\) to \(L=4\)). The two agree to about 8% &mdash; the discrete value is slightly larger because it averages the slope across a finite \(\Delta L = 1\) interval. As \(\Delta L \to 0\), they coincide.
+    </p>
+  </div>
+
+  <aside class="notes">Bridges the discrete ΔQ/ΔL of Table 7.1 to the calculus dQ/dL that we'll use for the rest of Part III. Key teaching point: at L=4, discrete MP = 0.54 vs continuous MP = 1/√4 = 0.5 — close but not identical because the discrete value is a SECANT slope (averaging over ΔL=1) while the derivative is the TANGENT slope at the point. As ΔL shrinks, secant → tangent. From here forward (Walkthroughs 7.1, the MRTS slide, Ch 8 cost-min) we use derivatives exclusively.</aside>
+</section>
+
+<!-- ===== NEW Slide — LR abbreviation section divider ===== -->
+<section class="section-divider abbreviation-divider" data-state="is-section-divider" id="div-lr">
+  <h1>LR</h1>
+  <p class="subtitle">What can you produce<br>when every input is flexible?</p>
+  <aside class="notes">Companion to the SR divider on page 18. The LR time horizon flips the assumption that K is fixed — now both K and L are choice variables. Pedagogically: SR is "what can the Apple Garage do with 4 workstations this week?"; LR is "should we buy more workstations next year?" Sets up the 5x5 production table on the next slide, where the K=4 row we already tabulated (Table 7.1) is now visible as one row inside a full LR grid.</aside>
+</section>
+
+<!-- ===== NEW Slide — Production in the Long Run (5x5 table) ===== -->
+<section id="lr-production-table">
+  <h2><i class="fa-solid fa-table-cells" style="color: var(--secondary-color);"></i> Production in the Long Run &mdash; The Full \(K \times L\) Grid</h2>
+  <p style="font-size: 13pt; line-height: 1.5; margin: 0 0 6px;">
+    In the <strong>long run</strong>, both \(K\) and \(L\) are choice variables. The table below shows \(Q = \sqrt{K \cdot L}\) for every \((K, L)\) combination from 1 to 5. The K=4 row (highlighted) is the SR slice we tabulated on page 24.
+  </p>
+  <table class="tab" style="margin: 6px auto 0; font-size: 12.5pt; max-width: 880px; text-align: center;">
+    <tr>
+      <th style="background: #2D2D2D; text-align: center;">K \ L</th>
+      <th style="text-align: center;">L = 1</th>
+      <th style="text-align: center;">L = 2</th>
+      <th style="text-align: center;">L = 3</th>
+      <th style="text-align: center;">L = 4</th>
+      <th style="text-align: center;">L = 5</th>
+    </tr>
+    <tr>
+      <th style="background: #2D2D2D; text-align: center;">K = 1</th>
+      <td>1.00</td><td>1.41</td><td>1.73</td><td>2.00</td><td>2.24</td>
+    </tr>
+    <tr>
+      <th style="background: #2D2D2D; text-align: center;">K = 2</th>
+      <td>1.41</td><td>2.00</td><td>2.45</td><td>2.83</td><td>3.16</td>
+    </tr>
+    <tr>
+      <th style="background: #2D2D2D; text-align: center;">K = 3</th>
+      <td>1.73</td><td>2.45</td><td>3.00</td><td>3.46</td><td>3.87</td>
+    </tr>
+    <tr style="background: rgba(106, 142, 107, 0.16);">
+      <th style="background: #6A8E6B; text-align: center; color: white;">K = 4 &nbsp;(SR)</th>
+      <td>2.00</td><td>2.83</td><td>3.46</td><td>4.00</td><td><strong>4.47</strong></td>
+    </tr>
+    <tr>
+      <th style="background: #2D2D2D; text-align: center;">K = 5</th>
+      <td>2.24</td><td>3.16</td><td>3.87</td><td><strong>4.47</strong></td><td>5.00</td>
+    </tr>
+  </table>
+  <div class="key-result" style="margin-top: 10px; padding: 10px 16px;">
+    <p style="margin: 0; font-size: 12.5pt;">
+      <strong>The LR substitution insight.</strong> The same output \(Q = 4.47\) shows up in two cells: \((K=4, L=5)\) and \((K=5, L=4)\). In the SR, only the K=4 row is available &mdash; you'd need 5 workers. In the LR, you can buy a 5th workstation and run it with 4 workers. Same output, different recipe. <em>Every isoquant is the set of cells in this table that share a Q value.</em>
+    </p>
+  </div>
+  <aside class="notes">The bridge from SR to LR thinking, and the lead-in to isoquants two slides later. The K=4 highlighted row exactly matches Table 7.1 (page 24) — students see immediately that what they already learned is one slice of a richer story. Highlight the two cells with Q=4.47: in the SR you must hire 5 workers at K=4; in the LR you can substitute one more workstation for one fewer worker. The closing line plants the isoquant seed: an isoquant is just the set of cells in this table sharing a Q value. Next slide develops that idea formally. Note: the table uses Q = √(K·L) = K^0.5 L^0.5, the simpler Cobb-Douglas we adopted for the SR pages 23-26 — keeps the arithmetic clean. The gigafactory's Q = 8 K^0.4 L^0.6 returns when we get to the actual MRTS slide and Walkthrough 7.1.</aside>
+</section>
+
+<!-- ===== NEW Slide — Isoquants intro (after LR table, before §7.3 MP/MRTS material) ===== -->
+<section id="isoquants-intro">
+  <h2><i class="fa-solid fa-mountain-sun" style="color: var(--secondary-color);"></i> Isoquants &mdash; Curves of Equal Output</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 22px; align-items: center;">
+    <div>
+      <div class="key-result" style="margin-top: 0;">
+        <p style="margin: 0; font-size: 13pt; line-height: 1.5;">
+          An <strong>isoquant</strong> is the set of input combinations \((K, L)\) that produce a <em>given</em> level of output \(\bar Q\).
+        </p>
+        <p style="margin: 8px 0 0; text-align: center; font-size: 14pt;">
+          \[ \{(K, L) : f(K, L) = \bar Q\} \]
+        </p>
+      </div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 12px 0 0;">
+        From the LR grid on page 28: trace the cells with the same \(Q\) value. They form a smooth curve in \((L, K)\) space.
+      </p>
+      <ul style="font-size: 12pt; line-height: 1.55; margin: 8px 0; padding-left: 22px;">
+        <li>\(Q = 1\): pass through \((K, L) = (1, 1)\)</li>
+        <li>\(Q = 2\): pass through \((1, 4)\), \((2, 2)\), \((4, 1)\)</li>
+        <li>\(Q = 4\): pass through \((4, 4)\) and many others</li>
+      </ul>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        Higher \(Q\) &rarr; isoquant farther from the origin. They never cross.
+      </p>
+    </div>
+    <div style="text-align: center;">
+      <img alt="Three isoquants at Q=1, Q=2, Q=4 for the production function Q = sqrt(K*L), showing bowed-in curves with marked points" src="figures/fig-isoquants-intro.png" class="figure" style="max-height: 420px;">
+    </div>
+  </div>
+  <aside class="notes">The natural payoff slide right after the LR 5x5 grid. Each isoquant is just the SET OF CELLS in that grid sharing a Q value, joined into a smooth curve. The three curves (Q=1, Q=2, Q=4) are computed from the same Q = √(KL) we've been using since page 23. Pedagogically: this slide is what the Q=4.47 arrow on page 28 was previewing — the LR substitution insight becomes a curve. Properties to note: convex shape (bowed in toward origin), monotonic ordering (higher Q farther from origin), never cross. Forward-pointer: the slope of an isoquant is MRTS, which we hit two slides later. Note: the simple Q = √(KL) is used here for consistency with pages 23-28; when we re-derive MRTS for the gigafactory (Walkthrough 7.1), we'll switch back to Q = 8 K^0.4 L^0.6.</aside>
+</section>
+
+<!-- ===== Slide 10 — Marginal Products (with LR-transition background) ===== -->
+<section id="marginal-products">
+  <h2><i class="fa-solid fa-arrow-up-right-dots" style="color: var(--secondary-color);"></i> Marginal Products &mdash; The LR Cost-Min Setup</h2>
+  <div style="background: #f4f1ed; border-left: 4px solid #7C3A5F; border-radius: 6px; padding: 10px 16px; margin: 0 0 12px 0;">
+    <p style="margin: 0; font-size: 12pt; line-height: 1.5;">
+      In the long run, <strong>all inputs are flexible</strong> &mdash; the firm can pick any \((K, L)\) combination. The goal is to <strong>minimize cost</strong> for a given output. That choice depends on two things:
+    </p>
+    <ul style="margin: 6px 0 0; padding-left: 24px; font-size: 12pt; line-height: 1.5;">
+      <li><strong>Input prices</strong> (\(w\) for labor, \(r\) for capital) &mdash; set by the labor and capital <em>markets</em>.</li>
+      <li><strong>Marginal products</strong> (\(MP_L, MP_K\)) &mdash; how much extra output each input adds, set by the <em>firm's technology</em>.</li>
+    </ul>
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch;">
+    <div style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Marginal Product of Capital</p>
+      <p style="font-size: 15pt; margin: 12px 0; text-align: center;">\(\displaystyle MP_K = \frac{\partial f(K, L)}{\partial K}\)</p>
+      <p style="font-size: 12pt; color: var(--muted-color);">Output gained per additional unit of \(K\), holding \(L\) fixed.</p>
+    </div>
+    <div style="background: #fef9f3; padding: 14px 18px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Marginal Product of Labor</p>
+      <p style="font-size: 15pt; margin: 12px 0; text-align: center;">\(\displaystyle MP_L = \frac{\partial f(K, L)}{\partial L}\)</p>
+      <p style="font-size: 12pt; color: var(--muted-color);">Output gained per additional unit of \(L\), holding \(K\) fixed.</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 14px;">
+    <p style="margin: 0;"><strong>Cobb-Douglas shortcut.</strong> For \(Q = A K^\alpha L^\beta\):</p>
+    <p style="text-align: center; font-size: 14pt; margin: 8px 0 0;">
+      \( MP_K = \alpha A K^{\alpha-1} L^\beta = \alpha \cdot \dfrac{Q}{K}, \qquad MP_L = \beta A K^\alpha L^{\beta-1} = \beta \cdot \dfrac{Q}{L} \)
+    </p>
+  </div>
+  <p style="font-size: 12pt; color: var(--muted-color); margin-top: 10px; font-style: italic; text-align: center;">
+    Marginal product of an input = factor share &times; average product. We'll use this constantly.
+  </p>
+  <aside class="notes">The "× Q/K" form is the workhorse identity. Students will derive it once and then quote it for the rest of Chs 7–9. The factor-share-times-average-product framing is also key for the labor-share decomposition we hit in §7.7. Make sure students understand these are partials — one input held fixed. That's why they're called "short-run" concepts, even though the math doesn't care.</aside>
+</section>
+
+<!-- ===== Slide — You Try! Which combos are on the same isoquant? ===== -->
+<section id="isoquants">
+  <h2><i class="fa-solid fa-mountain" style="color: var(--secondary-color);"></i> You Try! &mdash; Which Combos Are on the Same Isoquant?</h2>
+  <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 10px 16px; margin: 0 0 10px;">
+    <p style="margin: 0; font-size: 13pt; line-height: 1.5;">
+      The gigafactory's production function is \( Q = 8\sqrt{K L} \). The chapter's anchor produces \( Q = 32 \) GWh/yr. <strong>Which of the candidate \((K, L)\) combinations below lie on the <em>same</em> isoquant?</strong>
+      &nbsp;<span style="font-size: 11pt; color: var(--muted-color); font-style: italic;">Hint: same Q means same \( K \cdot L \).</span>
+    </p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: stretch;">
+
+    <!-- Candidate table — K and L visible; K·L, Q, answer hidden as row-grouped fragments -->
+    <div>
+      <table class="tab" style="margin: 0; font-size: 12.5pt; width: 100%;">
+        <tr>
+          <th style="text-align: center;">Candidate</th>
+          <th style="text-align: center;">\(K\)</th>
+          <th style="text-align: center;">\(L\)</th>
+          <th style="text-align: center;">\(K \cdot L\)</th>
+          <th style="text-align: center;">\(Q = 8\sqrt{K L}\)</th>
+          <th style="text-align: center;">On \(Q=32\)?</th>
+        </tr>
+        <tr>
+          <td><strong>(a)</strong></td><td>4</td><td>4</td>
+          <td class="fragment fade-up" data-fragment-index="1">16</td>
+          <td class="fragment fade-up" data-fragment-index="1">32</td>
+          <td class="fragment fade-up" data-fragment-index="1" style="color: var(--success-color); font-weight: 700;">YES ✓</td>
+        </tr>
+        <tr>
+          <td><strong>(b)</strong></td><td>8</td><td>2</td>
+          <td class="fragment fade-up" data-fragment-index="2">16</td>
+          <td class="fragment fade-up" data-fragment-index="2">32</td>
+          <td class="fragment fade-up" data-fragment-index="2" style="color: var(--success-color); font-weight: 700;">YES ✓</td>
+        </tr>
+        <tr>
+          <td><strong>(c)</strong></td><td>2</td><td>8</td>
+          <td class="fragment fade-up" data-fragment-index="3">16</td>
+          <td class="fragment fade-up" data-fragment-index="3">32</td>
+          <td class="fragment fade-up" data-fragment-index="3" style="color: var(--success-color); font-weight: 700;">YES ✓</td>
+        </tr>
+        <tr>
+          <td><strong>(d)</strong></td><td>5</td><td>5</td>
+          <td class="fragment fade-up" data-fragment-index="4">25</td>
+          <td class="fragment fade-up" data-fragment-index="4">40</td>
+          <td class="fragment fade-up" data-fragment-index="4" style="color: var(--danger-color); font-weight: 700;">no ✗</td>
+        </tr>
+        <tr>
+          <td><strong>(e)</strong></td><td>3</td><td>6</td>
+          <td class="fragment fade-up" data-fragment-index="5">18</td>
+          <td class="fragment fade-up" data-fragment-index="5">33.9</td>
+          <td class="fragment fade-up" data-fragment-index="5" style="color: var(--danger-color); font-weight: 700;">no ✗</td>
+        </tr>
+      </table>
+      <p class="fragment fade-up" data-fragment-index="6" style="font-size: 11.5pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        <i class="fa-solid fa-arrow-right" style="color: var(--accent-color); margin-right: 4px;"></i>
+        The isoquant for \( Q = 32 \) is the hyperbola \( K = 16/L \). Any \((K, L)\) with \( K \cdot L = 16 \) sits on it.
+      </p>
+    </div>
+
+    <!-- Figure — also revealed at the end so students aren't tipped off visually -->
+    <div class="fragment fade-up" data-fragment-index="6" style="text-align: center;">
+      <img alt="Q=32 isoquant for the gigafactory production function Q = 8 sqrt(KL), with candidates (a), (b), (c) marked as on-curve green dots and (d), (e) as off-curve red crosses" src="figures/fig-isoquants-you-try.png" class="figure" style="max-height: 380px;">
+    </div>
+
+  </div>
+
+  <div class="key-result fragment fade-up" data-fragment-index="7" style="margin-top: 10px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;">
+      <strong>Takeaway.</strong> All bundles with \( K \cdot L = 16 \) produce the same 32 GWh. Three very different recipes &mdash; (a) balanced (4, 4), (b) capital-heavy (8, 2), (c) labor-heavy (2, 8) &mdash; share the isoquant. Which one minimizes cost depends on input prices, the Ch 8 question.
+    </p>
+  </div>
+
+  <aside class="notes">"You Try!" exercise. Step-by-step reveal: open the slide showing only the (K, L) values for each candidate — give students 60–90 seconds to compute K·L mentally and decide YES/NO. Then press → five times to reveal each row's answer (K·L, Q, verdict) in order (a)→(e). Press again to reveal the hint + figure together. Final → reveals the takeaway. The pedagogical payoff: same Q ↔ same K·L for Q = 8√(KL), so three different K/L ratios produce the same output. (d) (5,5) and (e) (3,6) are "near misses" — close to but NOT on Q=32 — useful so students see they have to compute, not eyeball.</aside>
+</section>
+
+<!-- ===== Slide 12 — MRTS (combined: definition + math derivation + interpretation + figure) ===== -->
+<section id="mrts">
+  <h2><i class="fa-solid fa-exchange-alt" style="color: var(--secondary-color);"></i> The Marginal Rate of Technical Substitution</h2>
+  <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; align-items: stretch;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">
+        The <strong>slope of an isoquant</strong> describes how inputs may be substituted to keep output fixed. We call it the <strong>marginal rate of technical substitution</strong> &mdash; \(\text{MRTS}_{LK}\) is the rate at which the firm trades labor for capital, holding \(\bar Q\) constant.
+      </p>
+
+      <!-- Math derivation -->
+      <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 10px 14px;">
+        <p style="margin: 0; font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Derivation along an isoquant</p>
+        <p style="font-size: 12pt; margin: 4px 0; line-height: 1.45;">
+          Along an isoquant, total output is constant, so the change in \(Q\) from any small move \((\Delta K, \Delta L)\) is zero:
+        </p>
+        <p style="font-size: 13pt; text-align: center; margin: 4px 0;">
+          \( \Delta Q \;=\; MP_L \cdot \Delta L \;+\; MP_K \cdot \Delta K \;=\; 0 \)
+        </p>
+        <p style="font-size: 12pt; margin: 4px 0; line-height: 1.45;">
+          Rearrange to find the slope of the isoquant:
+        </p>
+        <p style="font-size: 13pt; text-align: center; margin: 4px 0;">
+          \( MP_K \cdot \Delta K \;=\; -MP_L \cdot \Delta L \;\Longrightarrow\; -\dfrac{\Delta K}{\Delta L} \;=\; \dfrac{MP_L}{MP_K} \)
+        </p>
+      </div>
+
+      <!-- Final formula -->
+      <div class="key-result" style="margin-top: 10px;">
+        <p style="margin: 0; font-size: 14pt; text-align: center;">
+          \(\displaystyle \boxed{\;\text{MRTS}_{LK} \;=\; -\frac{dK}{dL}\bigg|_{f = \bar Q} \;=\; \frac{MP_L}{MP_K}\;} \)
+        </p>
+        <p style="margin: 6px 0 0; font-size: 11pt; color: var(--muted-color); text-align: center;">
+          <strong>Cobb-Douglas shortcut:</strong> \(\text{MRTS}_{LK} = \dfrac{\beta}{\alpha} \cdot \dfrac{K}{L}\)
+        </p>
+      </div>
+    </div>
+
+    <!-- Right column: figure + interpretation -->
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="text-align: center;">
+        <img alt="Isoquant with two tangent lines at different K/L ratios showing how MRTS shrinks as L rises" src="figures/fig-mrts.png" class="figure" style="max-height: 300px;">
+      </div>
+      <div class="misconception" style="margin: 0; padding: 8px 12px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;">
+          <strong>Moving down an isoquant:</strong> \(K\) declines, the slope gets smaller. The firm has less capital, so each remaining unit of \(K\) is <em>relatively more productive</em>.
+        </p>
+      </div>
+      <p style="font-size: 10.5pt; color: var(--muted-color); font-style: italic; margin: 0;">
+        Sign convention: the isoquant slopes downward (\(dK/dL < 0\)). MRTS is reported as the <em>positive</em> magnitude — we add the minus sign.
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Combined MRTS slide: definition (slope of isoquant) + math derivation along isoquant (ΔQ = 0 → MRTS = MP_L/MP_K) + interpretation + Cobb-Douglas shortcut + figure — all in one place. The derivation is the manuscript §7.3.2 content: along an isoquant, Q is constant so dQ = 0 = MP_L·dL + MP_K·dK. Solving gives -dK/dL = MP_L/MP_K. Connect to Ch 8: this MRTS will be paired with the input-price ratio w/r in Ch 8's cost-min tangency condition — MRTS = w/r is the producer's equimarginal principle.</aside>
+</section>
+
+<!-- ===== Slide 13 — Walkthrough 7.1 ===== -->
+<section id="walkthrough-7-1">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 7.1 &mdash; Priya's MRTS at Tesla Nevada</h2>
+
+  <!-- Background story scenario (named character, real decision driving the math) -->
+  <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 9px 16px; margin: 0 0 10px;">
+    <p style="margin: 0; font-size: 12pt; line-height: 1.5;">
+      <strong>Meet Priya</strong>, the operations planner at Tesla's Nevada gigafactory. The Q4 production target is locked at \(Q = 32\) GWh from the installed bundle \((K, L) = (4, 4)\) &mdash; $4B of capital, 4,000 workers. Finance asks her: <em>"If we delay one billion of capital expansion, how many extra workers do we need to hold output at 32 GWh?"</em> Her answer is the <strong>\(\text{MRTS}_{LK}\)</strong> at the current production point. She also wants to know how that trade-off changes if Tesla shifts toward a more labor-intensive recipe like \((K, L) = (2, 11.31)\).
+    </p>
+  </div>
+
+  <!-- Problem + Set up merged into one slim card -->
+  <div style="background: #f8f6f3; border-radius: 8px; padding: 9px 16px; margin: 0 0 10px;">
+    <p style="margin: 0; font-size: 12pt; line-height: 1.45;">
+      <strong style="color: var(--accent-color); letter-spacing: 0.05em; text-transform: uppercase;">Problem &amp; Set up.</strong>
+      Production technology: \( Q = 8 K^{0.4} L^{0.6} \). Compute \(MP_K\), \(MP_L\), and \(\text{MRTS}_{LK}\) at <strong>(a)</strong> the current point \((4, 4)\) and <strong>(b)</strong> the labor-intensive alternative \((2, 11.31)\). Use the Cobb-Douglas shortcut: \(MP_K = \alpha\,\dfrac{Q}{K},\; MP_L = \beta\,\dfrac{Q}{L},\; \text{MRTS}_{LK} = \dfrac{\beta}{\alpha}\cdot\dfrac{K}{L}\).
+    </p>
+  </div>
+
+  <!-- Solve: two columns. Header visible from start; bullets + interpretation reveal as fragments. -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+    <!-- (a) Current point — header visible; math + Priya's quote reveal as separate clicks -->
+    <div style="background: #f0f5f8; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">(a) Current point \((K, L) = (4, 4)\)</p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 4px 0 0; font-style: italic;">Try it first &mdash; then click to reveal.</p>
+      <ul style="font-size: 12pt; line-height: 1.55; margin: 6px 0 0; padding-left: 22px; list-style: none;">
+        <li class="fragment fade-up" data-fragment-index="1"><strong style="color: var(--secondary-color);">Step 1.</strong> \(MP_K = \alpha \cdot Q/K = 0.4 \times 32/4 = \mathbf{3.2}\) GWh per B$</li>
+        <li class="fragment fade-up" data-fragment-index="2"><strong style="color: var(--secondary-color);">Step 2.</strong> \(MP_L = \beta \cdot Q/L = 0.6 \times 32/4 = \mathbf{4.8}\) GWh per K-worker</li>
+        <li class="fragment fade-up" data-fragment-index="3"><strong style="color: var(--secondary-color);">Step 3.</strong> \(\text{MRTS}_{LK} = (\beta/\alpha)(K/L) = (0.6/0.4)(4/4) = \mathbf{1.5}\)</li>
+      </ul>
+      <p class="fragment fade-up" data-fragment-index="4" style="font-size: 11pt; color: var(--muted-color); margin: 8px 0 0; font-style: italic;">
+        <i class="fa-solid fa-comment-dots" style="color: var(--accent-color); margin-right: 4px;"></i>
+        Priya tells finance: "We can give up <strong>$1.5B</strong> of capital for every <strong>1,000</strong> extra workers, output unchanged."
+      </p>
+    </div>
+
+    <!-- (b) Labor-intensive — same step-by-step reveal -->
+    <div style="background: #fef9f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">(b) Labor-intensive \((K, L) = (2, 11.31)\)</p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 4px 0 0; font-style: italic;">Try it first &mdash; then click to reveal.</p>
+      <ul style="font-size: 12pt; line-height: 1.55; margin: 6px 0 0; padding-left: 22px; list-style: none;">
+        <li class="fragment fade-up" data-fragment-index="5"><strong style="color: var(--accent-color);">Step 1.</strong> \(MP_K = 0.4 \times 32/2 = \mathbf{6.4}\) GWh per B$</li>
+        <li class="fragment fade-up" data-fragment-index="6"><strong style="color: var(--accent-color);">Step 2.</strong> \(MP_L = 0.6 \times 32/11.31 \approx \mathbf{1.70}\) GWh per K-worker</li>
+        <li class="fragment fade-up" data-fragment-index="7"><strong style="color: var(--accent-color);">Step 3.</strong> \(\text{MRTS}_{LK} = (0.6/0.4)(2/11.31) \approx \mathbf{0.265}\)</li>
+      </ul>
+      <p class="fragment fade-up" data-fragment-index="8" style="font-size: 11pt; color: var(--muted-color); margin: 8px 0 0; font-style: italic;">
+        <i class="fa-solid fa-comment-dots" style="color: var(--accent-color); margin-right: 4px;"></i>
+        Labor is already abundant &mdash; the next worker is barely worth a quarter-billion in capital.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Check + Takeaway — final reveal -->
+  <div class="key-result fragment fade-up" data-fragment-index="9" style="margin-top: 10px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;">
+      <strong>Check.</strong> Both points sit on the \(Q = 32\) isoquant: \(8 \cdot 4^{0.4} \cdot 4^{0.6} = 32\) ✓ and \(8 \cdot 2^{0.4} \cdot 11.31^{0.6} \approx 32\) ✓.
+      &nbsp;<strong>Takeaway.</strong> Slide down the isoquant (more \(L\), less \(K\)) &rarr; \(K/L\) falls &rarr; MRTS falls from <strong>1.5 to 0.265</strong>. The isoquant flattens: when labor is abundant, you need many more workers to substitute for one unit of capital. <em>Diminishing MRTS.</em>
+    </p>
+  </div>
+
+  <aside class="notes">Step-by-step walkthrough with 9 fragment reveals:
+    (1) MP_K at (a); (2) MP_L at (a); (3) MRTS at (a); (4) Priya's finance answer at (a);
+    (5)–(7) repeat MP_K, MP_L, MRTS at (b); (8) interpretation at (b); (9) Check + Takeaway.
+    Pedagogical pacing: open the slide with just the problem + setup + the "Try it first" prompts under each column header. Give students 90 seconds to compute (a) on their own. Then press → three times to reveal Step 1/2/3 at (a), pausing after each step to take questions. Press → once more for Priya's finance quote — the real-world interpretation. Repeat for (b). The final → reveals the Check + Takeaway side-by-side comparison: MRTS fell from 1.5 to 0.265 as we moved down the isoquant — diminishing MRTS in action. Goolsbee Figure-It-Out style with Priya as the named character (same pattern as ch06 Sam / Ana / Carlos / Chen / Maya / Riley). Numerical verification: at (2, 11.31), Q = 8 × 2^0.4 × 11.31^0.6 = 8 × 1.320 × 4.292 ≈ 32 ✓.</aside>
+</section>
+
+<!-- ===== NEW Slide — Curvature of Isoquants (concept text) ===== -->
+<section id="curvature-substitutes-complements">
+  <h2><i class="fa-solid fa-wave-square" style="color: var(--secondary-color);"></i> The Curvature of Isoquants &mdash; Substitutes &amp; Complements</h2>
+  <p style="font-size: 13pt; line-height: 1.55; margin: 0 0 12px;">
+    The <strong>shape</strong> of an isoquant reveals how easily the firm can swap one input for another at a given output level.
+  </p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">Relatively straight isoquants</p>
+      <p style="font-size: 13pt; line-height: 1.5; margin: 8px 0 0;">
+        Inputs are <strong>relatively substitutable</strong> &mdash; the firm can trade \(K\) for \(L\) at nearly a fixed rate.
+      </p>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 8px 0 0; color: var(--muted-color); font-style: italic;">
+        \(\text{MRTS}_{LK}\) does <em>not</em> vary much as you move along the curve.
+      </p>
+    </div>
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">Sharply curved (bowed-in) isoquants</p>
+      <p style="font-size: 13pt; line-height: 1.5; margin: 8px 0 0;">
+        Inputs are <strong>relatively complementary</strong> &mdash; you need both, in roughly fixed proportions.
+      </p>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 8px 0 0; color: var(--muted-color); font-style: italic;">
+        \(\text{MRTS}_{LK}\) varies <em>sharply</em> &mdash; the slope swings from very steep to very shallow over a small range.
+      </p>
+    </div>
+  </div>
+  <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin: 12px 0 0; text-align: center;">
+    The next slide shows both shapes side-by-side. Then the extreme cases &mdash; perfectly straight (perfect substitutes) and L-shaped (perfect complements) &mdash; on the slide after.
+  </p>
+  <aside class="notes">The curvature → substitutability concept. Pedagogical point: students should be able to LOOK at an isoquant and read the substitutability off the curvature without doing any math. Straight ⇔ easy to swap; sharply bowed ⇔ hard to swap. The MRTS varies along the curve in proportion to how curved the curve is. Extreme cases on the slide after next: perfect substitutes (straight lines) and perfect complements (L-shaped corners) bracket the full range.</aside>
+</section>
+
+<!-- ===== NEW Slide — Substitutability figure (close vs not-close substitutes) ===== -->
+<section id="substitutability-figure">
+  <h2><i class="fa-solid fa-arrows-left-right" style="color: var(--secondary-color);"></i> Shape of Isoquants Reveals Substitutability</h2>
+  <div style="text-align: center;">
+    <img alt="Two-panel figure comparing close substitutes (gentle isoquant curves at Q1, Q2, Q3) versus not close substitutes (sharply curved L-shaped isoquants at Q1, Q2, Q3)" src="figures/fig-isoquant-substitutability.png" class="figure" style="max-height: 380px;">
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 12px;">
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 10px 16px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">(a) Close substitutes</p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 4px 0 0;">
+        Gentle, near-linear curves. Capital and labor are <em>relatively</em> interchangeable &mdash; e.g., human cashiers and self-checkout kiosks in retail.
+      </p>
+    </div>
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 10px 16px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">(b) Not close substitutes</p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 4px 0 0;">
+        Sharply bowed, near-L-shape. \(K\) and \(L\) need each other &mdash; e.g., commercial aircraft and certified pilots; you can't fly a 737 with extra mechanics.
+      </p>
+    </div>
+  </div>
+  <aside class="notes">The visual companion to the previous concept slide. The left panel uses CES with ρ ≈ 0.7 (high σ) for gentle curves; right panel uses ρ ≈ −3 (low σ) for near-Leontief sharpness. Pedagogically: substitutability is a SPECTRUM, not binary. Most real production functions sit somewhere in the middle (Cobb-Douglas at σ = 1 is the canonical "moderate" case). Next slide takes the limits.</aside>
+</section>
+
+<!-- ===== NEW Slide — Extreme cases (perfect substitutes / perfect complements) ===== -->
+<section id="extreme-cases-text">
+  <h2><i class="fa-solid fa-diagram-project" style="color: var(--secondary-color);"></i> Two Extreme Cases</h2>
+  <p style="font-size: 13pt; line-height: 1.55; margin: 0 0 12px;">
+    Push the substitutability spectrum to its boundaries:
+  </p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">Perfect substitutes</p>
+      <p style="font-size: 13pt; line-height: 1.5; margin: 8px 0 0;">
+        Inputs trade off at a <strong>constant ratio</strong>. One robot does the work of \(b/a\) workers, period.
+      </p>
+      <p style="font-size: 14pt; text-align: center; margin: 10px 0 6px;">
+        \( Q \;=\; a K + b L \)
+      </p>
+      <ul style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0; padding-left: 20px;">
+        <li>\(\text{MRTS}_{LK} = b/a\) is <strong>constant</strong> everywhere on the isoquant.</li>
+        <li>Isoquants are <strong>straight lines</strong>.</li>
+        <li>Example: labor + robots in highly automated tasks (warehouse pick-and-pack).</li>
+      </ul>
+    </div>
+
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 18px;">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0;">Perfect complements (Leontief)</p>
+      <p style="font-size: 13pt; line-height: 1.5; margin: 8px 0 0;">
+        Inputs must be used in a <strong>fixed proportion</strong>. Extra of one without the other adds nothing.
+      </p>
+      <p style="font-size: 14pt; text-align: center; margin: 10px 0 6px;">
+        \( Q \;=\; \min\!\left(\dfrac{K}{a},\; \dfrac{L}{b}\right) \)
+      </p>
+      <ul style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0; padding-left: 20px;">
+        <li>Isoquants are <strong>L-shaped</strong> with a corner at the fixed ratio.</li>
+        <li>\(\text{MRTS}_{LK}\) is 0, \(\infty\), or undefined &mdash; never a finite intermediate value.</li>
+        <li>Example: a taxi needs one cab + one driver. Two cabs and one driver still gives you one taxi ride.</li>
+      </ul>
+    </div>
+
+  </div>
+  <aside class="notes">Two extreme cases that bookend the substitutability spectrum. Perfect substitutes: trade-off rate is fixed (one robot replaces b/a workers no matter how many you already have). Perfect complements / Leontief: rigid recipe (one cab + one driver). The CES production function unifies both as limiting cases (ρ → 1 gives perfect substitutes; ρ → −∞ gives Leontief), with Cobb-Douglas at ρ → 0. Real production functions sit somewhere on this spectrum; the two extremes are useful teaching anchors.</aside>
+</section>
+
+<!-- ===== NEW Slide — Perfect substitutes / complements figure ===== -->
+<section id="perfect-sub-comp-figure">
+  <h2><i class="fa-solid fa-shapes" style="color: var(--secondary-color);"></i> Perfect Substitutes &amp; Perfect Complements &mdash; Side by Side</h2>
+  <div style="text-align: center;">
+    <img alt="Two-panel figure. Left: perfect substitutes with two parallel linear isoquants for Robots vs Labor at Q=10 and Q=20. Right: perfect complements with two L-shaped isoquants for Cabs vs Drivers at Q=1 and Q=2." src="figures/fig-perfect-sub-comp.png" class="figure" style="max-height: 380px;">
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 10px;">
+    <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 10px 16px;">
+      <p style="font-size: 11.5pt; line-height: 1.45; margin: 0;">
+        <strong>(a) Perfect substitutes</strong> &mdash; e.g., a warehouse where one robot replaces two workers. Trading 1 \(K\) for 2 \(L\) keeps output constant <em>anywhere</em> on the line.
+      </p>
+    </div>
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 10px 16px;">
+      <p style="font-size: 11.5pt; line-height: 1.45; margin: 0;">
+        <strong>(b) Perfect complements</strong> &mdash; e.g., taxis. To run one more cab you need one more driver. Surplus on either arm of the L is wasted.
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Visual closer for the curvature section. Linear isoquants (left) ↔ perfect substitutes. L-shaped isoquants (right) ↔ perfect complements / Leontief. Robots-vs-labor and cabs-vs-drivers are the canonical examples in the manuscript §7.5. Note: Cobb-Douglas (the chapter's workhorse for the gigafactory) sits in between these two extremes — bowed in but smoothly, MRTS varying continuously along the curve.</aside>
+</section>
+
+<!-- ===== NEW Slide — Wage and rental as input prices ===== -->
+<section id="wage-rental-input-prices">
+  <h2><i class="fa-solid fa-dollar-sign" style="color: var(--secondary-color);"></i> Where Input Prices Come From</h2>
+  <p style="font-size: 13pt; line-height: 1.5; margin: 0 0 10px;">
+    To pick the cost-minimizing recipe (Ch 8), the firm needs two market-set prices: the <strong>wage</strong> (\(w\)) for labor and the <strong>rental rate</strong> (\(r\)) for capital.
+  </p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+
+    <div>
+      <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 6px; text-align: center;">
+        <i class="fa-solid fa-briefcase" style="margin-right: 4px;"></i> Labor cost = wage
+      </p>
+      <div style="text-align: center;">
+        <img alt="Boston-area construction job listings showing wages ranging from $28-32/hr up to $150K/year" src="figures/wage.png" class="figure" style="max-height: 320px; border: 1px solid #ddd; border-radius: 4px;">
+      </div>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 6px 0 0; text-align: center;">
+        Construction-laborer market in Boston, MA: \(w \approx \$28\text{–}32\)/hour for entry-level; \(\$31.95\)/hour at Pioneer Mgmt.
+      </p>
+    </div>
+
+    <div>
+      <p style="font-size: 12pt; color: var(--accent-color); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 6px; text-align: center;">
+        <i class="fa-solid fa-truck-pickup" style="margin-right: 4px;"></i> Capital cost = rental rate
+      </p>
+      <div style="text-align: center;">
+        <img alt="Equipment rental listings — 19' scissor lift at $106/day or $266/week; warehouse forklift; telehandler" src="figures/rent.png" class="figure" style="max-height: 320px; border: 1px solid #ddd; border-radius: 4px;">
+      </div>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 6px 0 0; text-align: center;">
+        Equipment-rental market: \(r \approx \$106\)/day for a 19&prime; scissor lift; \(\$1{,}207\)/week for a 9K telehandler.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="key-result" style="margin-top: 12px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;">
+      <strong>The point.</strong> The firm doesn't choose \(w\) or \(r\) &mdash; <em>markets</em> do. The firm chooses how much \(K\) and \(L\) to use given those prices. In Ch 8 we'll combine these market-set input prices with the technology-set marginal products to find the cost-minimizing recipe (\(\text{MRTS}_{LK} = w/r\)).
+    </p>
+  </div>
+
+  <aside class="notes">Practical capstone for the §7.3 MP/MRTS section. Wage screenshot shows real Boston construction-labor listings — concrete grounding for w; rental screenshot shows scissor lifts, forklifts, telehandlers — concrete grounding for r. Tell students: notice this is a REAL search you can do — Google "construction jobs Boston" or visit a construction-equipment rental site. The numbers are not abstract. Forward-pointer to Ch 8: w and r are the firm's price signals; combined with the production-side MRTS, they pin down the tangency condition MRTS = w/r. Then we'll solve the cost-min Lagrangian properly.</aside>
+</section>
+
+<!-- ===== Slide 14 — Section Divider: Returns to Scale ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-returns">
+  <h1>§7.4 Returns to Scale</h1>
+  <p class="subtitle">double all inputs &middot; what happens to output?</p>
+</section>
+
+<!-- ===== Slide 15 — Returns to scale definitions ===== -->
+<section id="returns-to-scale-defs">
+  <h2><i class="fa-solid fa-arrows-up-down-left-right" style="color: var(--secondary-color);"></i> Three Scenarios &mdash; Doubling Both Inputs</h2>
+  <p style="font-size: 13pt;">Increase all inputs by a factor \(t > 1\). Compare the output change to the input change:</p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 10px;">
+    <div class="stat-card sage">
+      <p class="num">CRS</p>
+      <p style="font-size: 12pt; color: var(--text-color); margin-top: 8px;">\(f(tK, tL) = t \cdot f(K, L)\)</p>
+      <p class="lbl">Constant returns. Output scales 1-for-1 with inputs.</p>
+    </div>
+    <div class="stat-card">
+      <p class="num">IRS</p>
+      <p style="font-size: 12pt; color: var(--text-color); margin-top: 8px;">\(f(tK, tL) > t \cdot f(K, L)\)</p>
+      <p class="lbl">Increasing returns. Output more than doubles.</p>
+    </div>
+    <div class="stat-card rose">
+      <p class="num">DRS</p>
+      <p style="font-size: 12pt; color: var(--text-color); margin-top: 8px;">\(f(tK, tL) < t \cdot f(K, L)\)</p>
+      <p class="lbl">Decreasing returns. Output less than doubles.</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 14px;">
+    <p style="margin: 0;"><strong>Cobb-Douglas shortcut.</strong> For \(Q = A K^\alpha L^\beta\):</p>
+    <p style="text-align: center; font-size: 13pt; margin: 6px 0 0;">
+      \(\alpha + \beta = 1 \Rightarrow \text{CRS} \quad\bullet\quad \alpha + \beta > 1 \Rightarrow \text{IRS} \quad\bullet\quad \alpha + \beta < 1 \Rightarrow \text{DRS}\)
+    </p>
+  </div>
+  <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin-top: 10px;">
+    Returns to scale is a long-run / global concept &mdash; it scales <em>all</em> inputs together. Distinct from diminishing <em>marginal</em> product, which holds one input fixed.
+  </p>
+  <aside class="notes">Common student trap: confusing diminishing MP with DRS. Different things! Diminishing MP holds one input fixed, scales the other. DRS scales BOTH inputs together. Cobb-Douglas with α + β = 1 (CRS!) still has diminishing MP_L when β < 1, because MP_L = β A K^α L^(β-1) is decreasing in L. Walk through this distinction explicitly. Then verify the shortcut: f(tK, tL) = A (tK)^α (tL)^β = t^(α+β) · f(K,L). The exponent t^(α+β) is the key.</aside>
+</section>
+
+<!-- ===== Slide 16 — Returns to scale figure ===== -->
+<section id="returns-to-scale-figure">
+  <h2><i class="fa-solid fa-chart-area" style="color: var(--secondary-color);"></i> Spacing of Isoquants Reveals Returns to Scale</h2>
+  <div style="text-align: center;">
+    <img alt="Three side-by-side panels: CRS (equally-spaced isoquants doubling Q), IRS (isoquants get closer), DRS (isoquants spread out)" src="figures/fig-returns-to-scale.png" class="figure" style="max-height: 380px;">
+  </div>
+  <div class="key-result" style="margin-top: 8px;">
+    <p style="margin: 0; font-size: 13pt;"><strong>Reading isoquant spacing.</strong> Double both inputs (along the 45&deg; ray from the origin) and read off the output multiplier from the isoquant labels. <em>Equally spaced</em> = CRS. <em>Closing in</em> = IRS. <em>Spreading out</em> = DRS.</p>
+  </div>
+  <aside class="notes">The visual diagnostic — in (a) CRS, doubling inputs lands you on an isoquant labelled twice the output, so the curves at Q=10, 20, 40 are equally spaced along the 45° ray. In (b) IRS, the gap shrinks (Q jumps faster). In (c) DRS, the gap grows (Q rises more slowly). This is a great slide for visual learners to test their understanding of the algebraic definition. Optional: ask students to predict the empirical CRS verdict for US manufacturing (close to CRS — α + β ≈ 1 in Cobb 1928).</aside>
+</section>
+
+<!-- ===== Slide 17 — Poll #1 Returns to Scale ===== -->
+<section>
+  <section id="poll-1">
+    <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #1 &mdash; What kind of returns to scale?</h2>
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+      <p style="font-size: 14pt; line-height: 1.6;">
+        A software firm has the production function \(Q = 5 K^{0.7} L^{0.5}\) (think: cloud server capacity + engineers writing code). When the firm doubles both \(K\) and \(L\), what happens to output?
+      </p>
+    </div>
+    <div class="poll-grid" data-poll-id="ch07-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 13.5pt;">
+      <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Output exactly doubles (CRS)</div>
+      <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Output more than doubles (IRS)</div>
+      <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Output less than doubles (DRS)</div>
+      <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Can't tell without more information</div>
+    </div>
+    <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 45 sec to vote</span></p>
+    <aside class="notes">α + β = 0.7 + 0.5 = 1.2 &gt; 1, so IRS (answer B). The pedagogical trap: students who memorize "Cobb-Douglas is CRS" without checking. Reinforce: CRS holds only when α + β = 1 EXACTLY. Software firms commonly do exhibit increasing returns — fixed development cost spread over more users + network effects. After voting, derive: 2^1.2 = 2.297, so output rises by ~130%, not 100%.</aside>
+  </section>
+  <section data-poll-results="ch07-poll-1" id="poll-1-reveal">
+    <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Poll #1 &mdash; Answer: B) IRS</h2>
+    <div style="background: #f8f6f3; padding: 16px 22px; border-radius: 8px;">
+      <p style="font-size: 13.5pt; line-height: 1.6;">\(\alpha + \beta = 0.7 + 0.5 = 1.2 > 1 \Rightarrow\) <strong>increasing returns to scale.</strong></p>
+      <p style="font-size: 13.5pt; line-height: 1.6; margin-top: 6px;">Doubling inputs multiplies output by \(2^{1.2} = 2.297\) &mdash; about 130% more, not 100% more.</p>
+    </div>
+    <div class="key-result" style="margin-top: 12px;">
+      <p style="margin: 0; font-size: 13pt;">Software firms commonly do exhibit IRS &mdash; fixed development cost spread over more users, plus network effects in distribution. CRS is the <em>knife-edge</em> case; firms often sit on one side or the other.</p>
+    </div>
+  </section>
+</section>
+
+<!-- ===== NEW Slide 17.5 — Walkthrough 7.2 / Returns-to-Scale numerical check ===== -->
+<section id="walkthrough-rts">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 7.2 &mdash; Returns to Scale Numerical Check</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 18px;">
+      <p style="font-size: 12pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Problem</p>
+      <p style="font-size: 13pt; margin-top: 6px;">For each Cobb-Douglas technology below, double both inputs from \((K, L) = (1, 1)\) to \((2, 2)\). Compute \(Q(1,1)\) and \(Q(2,2)\), and classify returns to scale.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 18px;">
+      <p style="font-size: 12pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Set up</p>
+      <p style="font-size: 13pt; margin-top: 6px;">For \(Q = K^\alpha L^\beta\), doubling inputs gives \(Q(2,2) = 2^{\alpha+\beta}\). Compare the multiplier to 2.</p>
+    </div>
+  </div>
+  <table class="tab" style="margin: 12px 0 0;">
+    <tr><th>Technology</th><th>\(\alpha+\beta\)</th><th>\(Q(1,1)\)</th><th>\(Q(2,2)\)</th><th>Multiplier</th><th>Verdict</th></tr>
+    <tr><td>\(Q = K^{0.5} L^{0.5}\)</td><td>1.0</td><td>1.00</td><td>2.00</td><td>2.000 &times;</td><td><strong style="color: var(--success-color);">CRS</strong></td></tr>
+    <tr><td>\(Q = K^{0.7} L^{0.5}\)</td><td>1.2</td><td>1.00</td><td>2.30</td><td>2.297 &times;</td><td><strong style="color: var(--secondary-color);">IRS</strong></td></tr>
+    <tr><td>\(Q = K^{0.3} L^{0.4}\)</td><td>0.7</td><td>1.00</td><td>1.62</td><td>1.625 &times;</td><td><strong style="color: var(--danger-color);">DRS</strong></td></tr>
+    <tr><td>\(Q = K^{0.4} L^{0.6}\) (gigafactory)</td><td>1.0</td><td>1.00</td><td>2.00</td><td>2.000 &times;</td><td><strong style="color: var(--success-color);">CRS</strong></td></tr>
+  </table>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;"><strong>Takeaway.</strong> For Cobb-Douglas, the doubling multiplier is exactly \(2^{\alpha+\beta}\). The gigafactory's \(\alpha+\beta = 1\) calibration locks in CRS — doubling capital and labor exactly doubles battery capacity. Software firms with \(\alpha + \beta > 1\) (fixed dev cost spread over more users) get IRS; resource extraction with \(\alpha + \beta < 1\) (binding land or rare earth) gets DRS.</p>
+  </div>
+  <aside class="notes">From manuscript §7.4 — the shortcut version of the returns-to-scale check. Verify with students: 2^1.2 = e^(1.2·ln 2) = e^0.832 = 2.297; 2^0.7 = e^0.485 = 1.625. Connect to last slide's poll — the software-firm case (α=0.7, β=0.5) was the poll's answer. The gigafactory CRS row anchors students for Ch 8 where the constant cost shares (β=0.6 labor, α=0.4 capital) become the cost-function exponents verbatim. Tell students: "this row is the contract for Chs 8–9: CRS Cobb-Douglas with α=0.4, β=0.6 — every numerical exercise will use these exponents."</aside>
+</section>
+
+<!-- ===== Slide 18 — Calculus Corner: Euler's theorem ===== -->
+<section id="euler-theorem">
+  <h2><i class="fa-solid fa-square-root-variable" style="color: var(--accent-color);"></i> Calculus Corner 7.1 &mdash; Euler's Theorem on Homogeneous Functions</h2>
+  <p style="font-size: 13pt;">A function \(f(K, L)\) is <strong>homogeneous of degree</strong> \(r\) if scaling both inputs by \(t\) scales output by \(t^r\):</p>
+  <p style="text-align: center; font-size: 14pt;">
+    \( f(tK, tL) = t^r \cdot f(K, L). \)
+  </p>
+  <p style="font-size: 13pt;"><strong>Euler's theorem.</strong> If \(f\) is differentiable and homogeneous of degree \(r\), then:</p>
+  <div class="key-result">
+    <p style="margin: 0; text-align: center; font-size: 15pt;">
+      \( K \cdot MP_K + L \cdot MP_L = r \cdot f(K, L) \)
+    </p>
+  </div>
+  <p style="font-size: 13pt; margin-top: 12px;"><strong>Under CRS (\(r = 1\)):</strong></p>
+  <p style="text-align: center; font-size: 14pt;">
+    \( K \cdot MP_K + L \cdot MP_L = Q \)
+  </p>
+  <div class="key-result" style="background: #ecfdf5; border-left-color: var(--success-color); margin-top: 8px;">
+    <p style="margin: 0;"><strong>Economic content.</strong> Under CRS, if each input is paid its marginal product, the firm's total output is <em>exactly exhausted</em> &mdash; no economic profit, no shortfall. This is the basis of the neoclassical theory of factor distribution (Wicksteed, Clark, J.B. Clark's "product exhaustion" theorem).</p>
+  </div>
+  <aside class="notes">Euler's theorem is the deep result that links the per-unit factor payment to the total output. The proof is one line: differentiate f(tK, tL) = t^r f(K, L) with respect to t and set t = 1. We get K·MP_K + L·MP_L = r·f. The CRS case (r = 1) is the famous "product exhaustion" or "adding-up" theorem — competitive payments to factors exactly exhaust total revenue. It's why CRS is the natural assumption for perfect-competition models. Skip the proof in lecture if pressed for time; emphasize the economic content. This re-appears in Ch 19 (Factor Markets) when we revisit factor income shares.</aside>
+</section>
+
+<!-- ===== Slide 19 — Section Divider: Three families ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-families">
+  <h1>§7.5 Three Production-Function Families</h1>
+  <p class="subtitle">Cobb-Douglas &middot; Leontief &middot; perfect substitutes</p>
+</section>
+
+<!-- ===== Slide 20 — Three-family panel ===== -->
+<section id="three-families">
+  <h2><i class="fa-solid fa-shapes" style="color: var(--secondary-color);"></i> The Three Canonical Families</h2>
+  <div style="text-align: center;">
+    <img alt="Three side-by-side panels: Cobb-Douglas smooth convex isoquants; Leontief L-shaped; perfect substitutes linear" src="figures/fig-three-families.png" class="figure" style="max-height: 320px;">
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 10px;">
+    <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700;">Cobb-Douglas</p>
+      <p style="font-size: 12pt; margin: 6px 0 0;">\(Q = A K^\alpha L^\beta\)</p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic;">Smooth substitution. Empirical workhorse.</p>
+    </div>
+    <div style="background: #fef9f3; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 12pt; color: var(--accent-color); font-weight: 700;">Leontief</p>
+      <p style="font-size: 12pt; margin: 6px 0 0;">\(Q = \min(K/a, L/b)\)</p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic;">Fixed proportions. Excess of either input is wasted.</p>
+    </div>
+    <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+      <p style="font-size: 12pt; color: var(--success-color); font-weight: 700;">Perfect substitutes</p>
+      <p style="font-size: 12pt; margin: 6px 0 0;">\(Q = aK + bL\)</p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic;">Linear trade-off. \(b/a\) is the substitution rate.</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0;"><strong>CES nests all three.</strong> \( Q = A[\alpha K^\rho + \beta L^\rho]^{1/\rho} \), with substitution elasticity \(\sigma = 1/(1-\rho)\). As \(\rho \to 1\): perfect substitutes; as \(\rho \to 0\): Cobb-Douglas; as \(\rho \to -\infty\): Leontief.</p>
+  </div>
+  <aside class="notes">Three families = three "shapes" students should be able to recognize at a glance. The CES nesting is a structural payoff — one parameter ρ encodes "how easily inputs trade off". Skip CES algebra if pressed for time. Real-world taxonomy: Cobb-Douglas = most empirical work; Leontief = recipes with strict requirements (one driver per cab, one chip per phone, three sandwich artists per topping rail); Perfect substitutes = labor-vs-robot in highly automatable tasks. The σ → 0 limit (Leontief) is THE most common production technology for an individual recipe; the σ ≈ 1 case (Cobb-Douglas) emerges in aggregation across many tasks.</aside>
+</section>
+
+<!-- ===== Slide 21 — Application: Subway as Leontief ===== -->
+<section id="application-subway">
+  <h2><i class="fa-solid fa-bread-slice" style="color: var(--accent-color);"></i> Application &mdash; A Subway Franchise as Leontief</h2>
+  <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start;">
+    <div>
+      <p style="font-size: 13pt; line-height: 1.55;">
+        A peak-hour Subway shop targets <strong>150 sandwiches/hour</strong>. The recipe is essentially fixed: <strong>3 Sandwich Artists + 1 workstation + 1 topping rail</strong>.
+      </p>
+      <ul style="font-size: 13pt; line-height: 1.65; margin: 10px 0;">
+        <li>A 4th worker adds nothing &mdash; no extra topping rail to use.</li>
+        <li>A 2nd topping rail without a 4th worker also adds nothing.</li>
+        <li>Inputs must be added <strong>in fixed ratio</strong>: 1 station for every 3 workers.</li>
+      </ul>
+      <div class="key-result" style="margin-top: 10px;">
+        <p style="margin: 0; font-size: 13pt;">
+          \( Q = \min\!\left(\dfrac{K_{\text{station}}}{1},\, \dfrac{L_{\text{worker}}}{3}\right) \times 150 \text{ sandwiches/hr} \)
+        </p>
+      </div>
+      <p style="font-size: 13pt; line-height: 1.55; margin-top: 10px;">
+        At the corner of the L-shaped isoquant: zero substitutability. The slope is <strong>vertical</strong> above, <strong>horizontal</strong> to the right &mdash; MRTS is either zero or infinity.
+      </p>
+    </div>
+    <div style="background: #fef9f3; padding: 16px 18px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Real-world variants</p>
+      <ul style="font-size: 12pt; line-height: 1.6; margin: 6px 0;">
+        <li><strong>Taxi:</strong> 1 driver + 1 cab</li>
+        <li><strong>Surgery:</strong> 1 anesthesiologist + 1 OR + 1 surgeon team</li>
+        <li><strong>Airline gate:</strong> 1 aircraft + 1 jetway + 1 ground crew</li>
+        <li><strong>Chip fab:</strong> 1 EUV scanner + N support engineers, in a rigid ratio</li>
+      </ul>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin-top: 6px;">
+        Leontief is rare at the firm level but common at the <em>process</em> level. Aggregating many Leontief processes generates Cobb-Douglas-like smooth substitution at the firm.
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Concrete illustration of Leontief. Subway pedagogically clean — students know the workflow. The deeper point: Leontief is the natural model for an INDIVIDUAL process or recipe; Cobb-Douglas tends to emerge once you AGGREGATE many small Leontief processes (because choosing which process to run is itself a substitution decision). This is the "aggregation result" that motivates why Cobb-Douglas is the empirical workhorse despite no individual process actually being smooth.</aside>
+</section>
+
+<!-- ===== Slide 22 — Section Divider: Empirical ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-empirical">
+  <h1>§7.7 What the Data Says</h1>
+  <p class="subtitle">cost shares &middot; labor share decline &middot; automation</p>
+</section>
+
+<!-- ===== Slide 23 — US labor share decline ===== -->
+<section id="labor-share-decline">
+  <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> The Long-Run Decline in the US Labor Share</h2>
+  <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: center;">
+    <div style="text-align: center;">
+      <img alt="Time series of US nonfarm business labor share 1980-2024, declining from ~63% to ~57%" src="figures/fig-labor-share.png" class="figure" style="max-height: 360px;">
+    </div>
+    <div>
+      <p style="font-size: 13pt; line-height: 1.55;">
+        For decades, the US labor share of nonfarm business income was thought to be a <strong>structural constant near 65%</strong>.
+      </p>
+      <p style="font-size: 13pt; line-height: 1.55; margin-top: 8px;">
+        Since the early 1980s it has fallen by <strong>~8 percentage points</strong>:
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+        <div class="stat-card"><p class="num">63%</p><p class="lbl">1980 peak</p></div>
+        <div class="stat-card rose"><p class="num">55%</p><p class="lbl">2010s trough</p></div>
+      </div>
+      <div class="misconception" style="margin-top: 12px;">
+        <p style="margin: 0; font-size: 12pt;"><strong>Heads up:</strong> a falling labor share under Cobb-Douglas would require \(\beta\) itself to be falling. Empirically, it's the rising markup (Ch 11–12) that drives the trend &mdash; not a change in the production technology.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">The labor-share decline is one of the most-debated empirical facts in modern macro. Karabarbounis-Neiman 2014 QJE documented the global trend. Three leading explanations: (1) capital-augmenting technical change (σ > 1, capital cheaper, more capital), (2) rising markups (De Loecker, Eeckhout, Unger 2020 QJE; covered in Ch 11), (3) globalization (offshoring labor-intensive tasks). The chapter notes that under CRS Cobb-Douglas, labor share = β is constant, so the decline must come from elsewhere. We'll revisit this in Ch 19. For Ch 7 the lesson is "the production function alone doesn't explain everything in the data."</aside>
+</section>
+
+<!-- ===== Slide 24 — Technological change figure ===== -->
+<section id="tech-change">
+  <h2><i class="fa-solid fa-rocket" style="color: var(--accent-color);"></i> Total Factor Productivity Growth</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;">
+    <div>
+      <p style="font-size: 13pt; line-height: 1.55;">
+        Even with inputs held constant, firm output grows over time. The only way to explain this is a shift in the production function itself:
+      </p>
+      <div class="key-result">
+        <p style="margin: 0; text-align: center; font-size: 14pt;">
+          \( Q = A \cdot f(K, L) \)
+        </p>
+        <p style="margin: 6px 0 0; text-align: center; font-size: 11pt; color: var(--muted-color);">
+          \(A\) is the level of <strong>total factor productivity (TFP)</strong>.
+        </p>
+      </div>
+      <p style="font-size: 13pt; line-height: 1.55; margin-top: 10px;">
+        A rise in \(A\) is <strong>Hicks-neutral technological change</strong>: more output from the same inputs. Geometrically, every isoquant shifts <em>inward</em>.
+      </p>
+      <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin-top: 6px;">
+        Example: same gigafactory recipe \((K=3, L=3)\) produces 32 GWh under \(A=10\) instead of \(A=8\) &mdash; a 25% TFP gain.
+      </p>
+    </div>
+    <div style="text-align: center;">
+      <img alt="Isoquant at Q=32 shifts inward when productivity rises from A=8 to A=10" src="figures/fig-tech-change.png" class="figure" style="max-height: 360px;">
+    </div>
+  </div>
+  <aside class="notes">TFP is the residual after accounting for K and L growth — what Solow famously called the "measure of our ignorance" in 1957. It captures technological improvement, organizational learning, intangible capital, managerial skill. Hicks-neutral = A multiplies the whole production function; the isoquant just shifts inward without rotating. Other patterns: Harrod-neutral (labor-augmenting, A multiplies L), Solow-neutral (capital-augmenting, A multiplies K). The empirical fact: US manufacturing TFP grew 24% over 1997-2021 (BLS Multifactor Productivity), 38% for durable goods. We'll revisit in Ch 19's automation discussion.</aside>
+</section>
+
+<!-- ===== Slide 25 — Application: US manufacturing paradox ===== -->
+<!-- ===== NEW Slide 24.5 — TheoryAndData 7.4 — Kerala fishers (Jensen 2007) ===== -->
+<section id="kerala-fishers">
+  <h2><i class="fa-solid fa-fish" style="color: var(--secondary-color);"></i> Theory &amp; Data 7.4 &mdash; Kerala Fishers and Mobile Phones</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 18px; align-items: center;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5;">
+        Jensen (2007 <em>QJE</em>) studied <strong>15 fish markets along the Kerala coast, 1997&ndash;2001</strong>. The technology of fishing didn't change. The phones did.
+      </p>
+      <div style="background: rgba(168, 92, 92, 0.10); border-left: 4px solid var(--danger-color); padding: 10px 14px; border-radius: 6px; margin-top: 10px;">
+        <p style="font-size: 11pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Before mobile phones</p>
+        <ul style="font-size: 11.5pt; line-height: 1.45; margin: 4px 0 0; padding-left: 20px;">
+          <li><strong>5&ndash;8% of catch wasted</strong> daily &mdash; fishers couldn't find buyers in time</li>
+          <li>Price dispersion <strong>0&ndash;14 rupees/kg</strong> across markets on the <em>same day</em></li>
+        </ul>
+      </div>
+      <div style="background: rgba(106, 142, 107, 0.10); border-left: 4px solid var(--success-color); padding: 10px 14px; border-radius: 6px; margin-top: 8px;">
+        <p style="font-size: 11pt; color: var(--success-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0;">After mobile phones</p>
+        <ul style="font-size: 11.5pt; line-height: 1.45; margin: 4px 0 0; padding-left: 20px;">
+          <li>Waste &asymp; <strong>0</strong> &mdash; fishers route boats to buyers in real time</li>
+          <li>Price dispersion <strong>collapses</strong> to one law of one price</li>
+        </ul>
+      </div>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin: 8px 0 0;">
+        Jensen, "The Digital Provide," <em>QJE</em> 2007, DOI 10.1162/qjec.122.3.879.
+      </p>
+    </div>
+    <div style="text-align: center;">
+      <img alt="Stylized time-series of fish prices across 3 Kerala markets, showing wide dispersion before mobile phones (week 50) and convergence after" src="figures/fig-kerala-fishers.png" class="figure" style="max-height: 380px;">
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 12px; background: #f4f1ed; border-left-color: #7C3A5F;">
+    <p style="margin: 0; font-size: 12.5pt;"><strong>The economic content.</strong> Same boats, same nets, same fishers, same fish &mdash; same \(K\) and \(L\). What rose is \(A\), the productivity multiplier. Mobile phones are a <strong>Hicks-neutral upward shift</strong> in the production function: \(Q = A \cdot f(K, L)\) with \(A\) rising. Every isoquant shifts inward; the same inputs now produce more saleable fish.</p>
+  </div>
+  <aside class="notes">From manuscript §7.7.3 / TheoryAndData 7.4. Robert Jensen's paper is one of the cleanest natural experiments for productivity growth ever published — the staggered rollout of mobile-phone towers along the Kerala coast gave him a credible difference-in-differences. The headline finding: a SIMPLE technological change (real-time information) raised value-added per boat by ~8%, with consumer prices falling 4% and waste falling to essentially zero. Pedagogically: this is the cleanest possible illustration of "A rises" — no robots, no factory automation, no AI. Just a phone. Forward-pointer to Ch 8: even with this productivity gain, the firm's cost-min input bundle still depends on input prices — the productivity gain is captured in the cost function as a multiplicative shift downward.</aside>
+</section>
+
+<section id="us-mfg-paradox">
+  <h2><i class="fa-solid fa-industry" style="color: var(--accent-color);"></i> Application &mdash; The US Manufacturing Paradox</h2>
+  <p style="font-size: 13pt; line-height: 1.55;">Over the last 25 years, US manufacturing shed workers <em>while</em> output grew. How?</p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 10px;">
+    <div class="stat-card rose">
+      <p class="num">&minus;26%</p>
+      <p class="lbl">Manufacturing employment, 1997 &rarr; 2022<br>(17.3M &rarr; 12.8M workers)</p>
+    </div>
+    <div class="stat-card sage">
+      <p class="num">+10%</p>
+      <p class="lbl">Inflation-adjusted manufacturing output</p>
+    </div>
+    <div class="stat-card">
+      <p class="num">+24%</p>
+      <p class="lbl">Total factor productivity, BLS NAICS 31&ndash;33</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 14px;">
+    <p style="margin: 0;"><strong>Explanation.</strong> The production function itself shifted &mdash; \(A\) rose &mdash; so the same output came from less labor. <strong>Durable goods</strong> output grew 24% on +38% TFP, with even sharper employment declines. Acemoglu &amp; Restrepo (2022 <em>Econometrica</em>): roughly half of the 1980&ndash;2016 US wage-inequality rise traces to task automation.</p>
+  </div>
+  <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin-top: 8px; text-align: center;">
+    FRED series: <code>MANEMP</code> (employment), <code>IPMAN</code> (output), <code>IPDMAN</code> (durables) &middot; BLS Multifactor Productivity, NAICS 31&ndash;33.
+  </p>
+  <aside class="notes">A great teaching set of facts: the same chart that political commentators use to argue "American manufacturing is dying" is also the chart that shows the highest productivity gains. The reconciliation is TFP. Acemoglu-Restrepo's task-based view: each individual task becomes automatable (a robot, a software routine), shrinking the labor share of value added in that task to zero. The displaced workers reallocate to non-automated tasks. The aggregate looks like a labor-saving production-function shift. This sets up Ch 19's automation/AI discussion.</aside>
+</section>
+
+<!-- ===== Slide 26 — Application: Apple 1976 vs 2024 ===== -->
+<section id="apple-bracket">
+  <h2><i class="fa-brands fa-apple" style="color: var(--accent-color);"></i> Application &mdash; Apple, 1976 &rarr; 2024</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 18px;">
+      <p style="font-size: 12pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Apple Garage, July 1976</p>
+      <ul style="font-size: 12.5pt; line-height: 1.55; margin: 6px 0;">
+        <li>~5 motherboards/week</li>
+        <li>2 workers (Wozniak + Jobs)</li>
+        <li>~$5,000 of equipment</li>
+        <li>$666.66 retail price</li>
+      </ul>
+      <img alt="Steve Jobs (left) and Mike Markkula (right) holding an early Apple check — A.C. Markkula was Apple's first major investor and second CEO" src="figures/photo-jobs-markkula.png" style="width: 100%; max-height: 130px; object-fit: cover; border-radius: 6px; margin-top: 6px;">
+      <p style="font-size: 10pt; color: var(--muted-color); margin-top: 4px; font-style: italic; text-align: center;">Jobs + Mike Markkula &mdash; Apple's first major investor (1977)</p>
+    </div>
+    <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 18px;">
+      <p style="font-size: 12pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Apple Cupertino, FY 2024</p>
+      <ul style="font-size: 12.5pt; line-height: 1.55; margin: 6px 0;">
+        <li>~220M iPhones/year</li>
+        <li>164,000 direct employees</li>
+        <li>1.4M contract manufacturing workers</li>
+        <li>$391B revenue</li>
+      </ul>
+      <img alt="Apple's first proper headquarters in Cupertino with the rainbow Apple sign — the inflection point from garage to corporation" src="figures/photo-apple-first-hq.png" style="width: 100%; max-height: 130px; object-fit: cover; border-radius: 6px; margin-top: 6px;">
+      <p style="font-size: 10pt; color: var(--muted-color); margin-top: 4px; font-style: italic; text-align: center;">Apple's first Cupertino HQ &mdash; rainbow-logo era</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;"><strong>Two distinct economic motions.</strong> Apple's 48-year arc combines (a) <em>movement along the function</em> — scaling \(K, L\) up the same isoquant family — and (b) <em>shifting the function</em> — the frontier moves outward as \(A\) rises (silicon process nodes, software platforms, distribution networks).</p>
+  </div>
+  <aside class="notes">Closing the Apple Garage bracket from slide 4. Two distinct economic motions to make sure students separate: (1) movement along the production function = scaling K and L on a fixed technology; (2) shifting the production function = improvement in A. Apple's 48-year story has both. The Walt Disney "build a $25k garage workshop into a $391B firm" framing also lands well — emphasize that the production-function framework lets us decompose how much of Apple's growth was scaling (movement) vs technology (shifting). Empirically: Bloom et al. 2020 AER ("Are Ideas Getting Harder to Find?") documents that the rate of TFP growth has slowed dramatically as the input base has grown — a sobering counter to Silicon Valley optimism.</aside>
+</section>
+
+<!-- ===== Slide 27 — Historical note: Cobb + Douglas ===== -->
+<section id="cobb-douglas-history">
+  <h2><i class="fa-solid fa-landmark" style="color: var(--muted-color);"></i> Historical Note &mdash; Cobb and Douglas (1928)</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div>
+      <p style="font-size: 13pt; line-height: 1.55;">
+        <strong>Paul H. Douglas</strong>, a Chicago labor economist (and later three-term US Senator from Illinois), wondered whether US manufacturing data could be fit by a simple two-input function with constant exponents.
+      </p>
+      <p style="font-size: 13pt; line-height: 1.55; margin-top: 8px;">
+        He didn't know how to fit it. He took the problem to <strong>Charles W. Cobb</strong>, a mathematician at Amherst.
+      </p>
+      <p style="font-size: 13pt; line-height: 1.55; margin-top: 8px;">
+        Cobb suggested the multiplicative form \(Q = A K^\alpha L^{1-\alpha}\) (CRS by construction). Douglas estimated \(\alpha\) from US manufacturing 1899&ndash;1922 and got <strong>\(\alpha \approx 0.25\), \(\beta \approx 0.75\)</strong>.
+      </p>
+    </div>
+    <div style="background: #f8f6f3; padding: 16px 20px; border-radius: 10px;">
+      <p style="font-size: 11pt; color: var(--muted-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">The original paper</p>
+      <p style="font-size: 12pt; line-height: 1.55; margin-top: 6px;">
+        Charles W. Cobb &amp; Paul H. Douglas, <em>"A Theory of Production,"</em>
+        <em>American Economic Review</em> 18, no. 1 (March 1928), 139&ndash;165.
+      </p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin-top: 8px;">
+        The original empirical labor share (\(\beta \approx 0.75\)) is reasonably close to the 1980 US labor share (\(\sim 0.63\)) &mdash; remarkable for a 50-year-old structural estimate.
+      </p>
+      <p style="font-size: 11pt; color: var(--muted-color); font-style: italic; margin-top: 6px;">
+        Douglas later served in the US Senate (1949&ndash;1967), chairing the Joint Economic Committee.
+      </p>
+    </div>
+  </div>
+  <aside class="notes">The historical bracket — production-function thinking is less than 100 years old as an applied empirical tool. Douglas became a 3-term US Senator from Illinois (1949-1967), where he chaired the Joint Economic Committee. He's the rare academic economist who built a major political career — analog to Larry Summers but a generation earlier. His original 0.25/0.75 estimate held up reasonably well as the labor-share-near-65% stylized fact for the next 50 years. The recent decline (slide 23) is what's broken from Douglas's world. Mention: Cobb-Douglas was independently anticipated by Wicksell (1900) and Wicksteed (1894) — the credit-assignment in economics history is messy.</aside>
+</section>
+
+<!-- ===== Slide 28 — Chapter Summary ===== -->
+<section id="chapter-summary">
+  <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> Chapter Summary</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div>
+      <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--secondary-color); margin-bottom: 10px;">
+        <p style="font-size: 12pt; font-weight: 700; color: var(--secondary-color);">Production function</p>
+        <p style="font-size: 12pt; margin: 4px 0 0;">\(Q = f(K, L)\) maps inputs to <em>maximum feasible</em> output. Free disposal + convex isoquants are the standard assumptions.</p>
+      </div>
+      <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--secondary-color); margin-bottom: 10px;">
+        <p style="font-size: 12pt; font-weight: 700; color: var(--secondary-color);">Marginal products</p>
+        <p style="font-size: 12pt; margin: 4px 0 0;">\(MP_K = \partial f/\partial K\), \(MP_L = \partial f/\partial L\). Cobb-Douglas: \(MP_i = \text{share}_i \times Q/i\). Diminishing in own input when other is fixed.</p>
+      </div>
+      <div style="background: #fef9f3; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+        <p style="font-size: 12pt; font-weight: 700; color: var(--accent-color);">MRTS</p>
+        <p style="font-size: 12pt; margin: 4px 0 0;">\(\text{MRTS}_{LK} = MP_L/MP_K\). Slope of isoquant. Cobb-Douglas: \((\beta/\alpha)(K/L)\) — diminishing as you slide down the curve.</p>
+      </div>
+    </div>
+    <div>
+      <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--success-color); margin-bottom: 10px;">
+        <p style="font-size: 12pt; font-weight: 700; color: var(--success-color);">Returns to scale</p>
+        <p style="font-size: 12pt; margin: 4px 0 0;">Cobb-Douglas shortcut: \(\alpha + \beta\) vs 1. Euler's theorem under CRS: \(K \cdot MP_K + L \cdot MP_L = Q\).</p>
+      </div>
+      <div style="background: #fef9f3; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-bottom: 10px;">
+        <p style="font-size: 12pt; font-weight: 700; color: var(--accent-color);">Three families</p>
+        <p style="font-size: 12pt; margin: 4px 0 0;">Cobb-Douglas (smooth), Leontief (fixed proportions), perfect substitutes (linear). All nested by CES with \(\sigma = 1/(1-\rho)\).</p>
+      </div>
+      <div style="background: #f9f0ee; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+        <p style="font-size: 12pt; font-weight: 700; color: var(--danger-color);">Technology shifts</p>
+        <p style="font-size: 12pt; margin: 4px 0 0;">TFP growth \(Q = A f(K,L)\) shifts isoquants inward. Explains the US manufacturing paradox &mdash; fewer workers, more output.</p>
+      </div>
+    </div>
+  </div>
+  <p style="text-align: center; font-size: 12pt; color: var(--muted-color); margin-top: 14px; font-style: italic;">
+    <strong>Gigafactory locks:</strong> \(K=4\) B$,  \(L=4{,}000\),  \(A=8\),  \(\alpha=0.4\),  \(\beta=0.6\),  \(Q=32\) GWh/yr &mdash; inherited by Chs 8 &amp; 9.
+  </p>
+  <aside class="notes">Six-box summary mirrors the chapter's six big concepts. Reinforce the locked gigafactory numbers — these are the SAME numbers Ch 8 (cost-min) and Ch 9 (profit-max) will use, so students don't have to relearn the calibration each chapter. Ask: "Which Cobb-Douglas parameter do we estimate from labor's empirical share of value added?" → β (under CRS). "Which one determines returns to scale?" → α + β. "What property makes the cost-min unique in Ch 8?" → diminishing MRTS = convex isoquants. These three are the conceptual hinges to next week.</aside>
+</section>
+
+<!-- ===== Slide 29 — Looking ahead to Ch 8 ===== -->
+<section id="looking-ahead">
+  <h2><i class="fa-solid fa-forward" style="color: var(--secondary-color);"></i> Coming Up &mdash; Chapter 8: Costs of Production</h2>
+  <p style="font-size: 13pt; line-height: 1.55;">Today we set up the technology &mdash; the function \(f(K, L)\) that says <em>what's feasible</em>.</p>
+  <p style="font-size: 13pt; line-height: 1.55; margin-top: 6px;">Chapter 8 asks: <em>which feasible recipe minimizes cost?</em></p>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 14pt; text-align: center;">
+      \(\displaystyle \min_{K,L \geq 0} \; wL + rK \quad \text{subject to} \quad f(K, L) \geq q\)
+    </p>
+  </div>
+  <p style="font-size: 13pt; line-height: 1.55; margin-top: 10px;">The answer is the producer-side analog of expenditure minimization (Ch 6):</p>
+  <ul style="font-size: 13pt; line-height: 1.7;">
+    <li><strong>Tangency:</strong> \(\text{MRTS}_{LK} = w/r\) &mdash; today's MRTS meets a market price ratio.</li>
+    <li><strong>Equimarginal:</strong> \(MP_L/w = MP_K/r\) &mdash; marginal product per dollar equalized.</li>
+    <li><strong>Cost function:</strong> \(c(w, r, q)\) &mdash; the engine of Ch 9 profit max.</li>
+    <li><strong>Tesla wage shock:</strong> if \(w\) rises 20%, how should the gigafactory re-mix \(K\) and \(L\)?</li>
+  </ul>
+  <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; margin-top: 12px; text-align: center;">
+    Before next class: read manuscript §8.1&ndash;§8.4 and try Walkthrough 8.1 on your own. The locked gigafactory numbers from today carry over verbatim.
+  </p>
+  <aside class="notes">Forward pointer. Ch 8's first numerical exercise is literally Walkthrough 8.1, which finds the cost-min bundle for the gigafactory at the locked calibration we set today. Students should attempt it before class — it's pure application of today's tangency intuition plus a market input-price ratio. Reading: §8.1-§8.4 (problem setup, Lagrangian, Cobb-Douglas closed form). HW: P8.1-P8.4 will be due. The wage-shock comparative statics (§8.4.3) is the most viscerally satisfying part of the chapter — connects directly to UAW and Tesla.</aside>
+</section>
+
+<!-- ===== Slide 30 — Q&A closing ===== -->
+<section class="section-divider" data-state="is-section-divider" id="qa-close">
+  <h1>Questions?</h1>
+  <p class="subtitle">Dr. Richeng Piao &middot; ECON 2316 &middot; Chapter 7</p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 2.0
+  });
+  // Mark section-divider slides so the CSS hook in styles.css can swap the bg
+  Reveal.on('slidechanged', e => {
+    const v = document.querySelector('.reveal-viewport') || document.body;
+    if (e.currentSlide.classList.contains('section-divider')) v.classList.add('is-section-divider');
+    else v.classList.remove('is-section-divider');
+  });
+</script>
+</body>
+</html>
