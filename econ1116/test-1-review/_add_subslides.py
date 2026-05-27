@@ -31,6 +31,11 @@ BANKS_DIR = Path(
 DECK_SEED = 20260601
 EXAM_SEED = 20260528  # exam's seed, for exclusion
 
+# Bank questions reference figures with paths like /images/quiz/ch04/foo.png.
+# Those images are hosted on the ebook's Vercel deployment, so we just
+# prefix the path to get a working URL inside the slide.
+EBOOK_BASE = "https://econ-1116-microeconomics-lac.vercel.app"
+
 
 # ---------- 1. Bank loading + sampling ----------
 def load_bank(ch: int) -> list[dict]:
@@ -308,6 +313,24 @@ def render_mc_subslide(ch: int, num: int, q: dict, chapter_title: str) -> str:
     choices = variant["choices"]
     letters = ["A", "B", "C", "D", "E"]
 
+    # If the question carries an image reference, build an <img> tag with
+    # the Vercel-hosted URL. The slide will show the figure between the
+    # stem and the choices.
+    image = variant.get("image") or {}
+    image_html = ""
+    if image.get("src"):
+        src = image["src"]
+        if src.startswith("/"):
+            src = f"{EBOOK_BASE}{src}"
+        alt = (image.get("alt") or "").replace('"', "&quot;")
+        image_html = (
+            f'<div style="text-align: center; margin: 8px 0 16px 0;">\n'
+            f'  <img src="{src}" alt="{alt}" '
+            f'style="max-width: 90%; max-height: 320px; border-radius: 4px; '
+            f'border: 1px solid var(--line-color); background: white;">\n'
+            f'</div>'
+        )
+
     choice_cards = []
     correct_letter = "?"
     for i, c in enumerate(choices):
@@ -330,20 +353,24 @@ def render_mc_subslide(ch: int, num: int, q: dict, chapter_title: str) -> str:
             f'margin-top: 6px; line-height: 1.4;">{md_inline(expl)}</p>'
         )
 
+    # When there's a figure, shrink the stem box a bit so the layout fits
+    stem_margin = "10px" if image_html else "16px"
+
     return f"""
     <!-- Ch{ch:02d} · MC #{num} -->
     <section id="ch{ch:02d}-mc{num}">
-     <div class="chapter-header" style="margin-bottom: 14px; padding-bottom: 8px;">
+     <div class="chapter-header" style="margin-bottom: 12px; padding-bottom: 8px;">
       <div class="chapter-num" style="font-size: 16pt; padding: 4px 10px;">{ch:02d}</div>
       <div class="chapter-title-pill" style="font-size: 14pt; padding: 6px 0;">{chapter_title} &middot; Practice MC #{num}</div>
      </div>
-     <div class="detail-card" style="font-size: 13pt; padding: 12px 16px; margin-bottom: 16px; border-left-color: var(--primary-color);">
-      <p style="font-size: 13pt;"><strong>Q{num}.</strong> {md_inline(stem)}</p>
+     <div class="detail-card" style="font-size: 12pt; padding: 10px 14px; margin-bottom: {stem_margin}; border-left-color: var(--primary-color);">
+      <p style="font-size: 12pt;"><strong>Q{num}.</strong> {md_inline(stem)}</p>
      </div>
+     {image_html}
      <div class="detail-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
          {choices_html}
      </div>
-     <div class="tip-box fragment fade-up" style="margin-top: 18px;">
+     <div class="tip-box fragment fade-up" style="margin-top: 14px;">
       <span class="label">Answer</span>
       <p style="font-size: 14pt;"><strong>{correct_letter}</strong></p>
       {explanation_html}
