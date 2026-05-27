@@ -248,41 +248,59 @@ HANDOUT_PROBLEMS = {
         ),
     },
     7: {
-        "title": "Rent Control Welfare Analysis",
+        "title": "Read the Rent Ceiling Diagram",
+        "image": "figures/ch7-handout-rent-ceiling.png",
         "intro": (
-            "NYC apartment market: <strong>Demand: P = 5000 − 2Q</strong>, <strong>Supply: P = 1000 + 2Q</strong> "
-            "(P in $/month, Q in thousands of apartments). The city imposes a <strong>rent ceiling at $2,000/month</strong>."
+            "The diagram shows the NYC apartment market with a binding <strong>$2,000/month rent ceiling</strong>. "
+            "The orange bar marks the shortage; the pink triangle marks the deadweight loss. "
+            "Read every value off the figure — no algebra required."
         ),
         "parts": [
-            ("a", "Find the <strong>free-market P* and Q*</strong>."),
-            ("b", "At the $2,000 ceiling, how many apartments are <strong>supplied</strong>? How many are <strong>demanded</strong>? Identify the shortage."),
-            ("c", "Calculate the <strong>deadweight loss</strong> from the ceiling. Show the triangle base and height."),
-            ("d", "Name <strong>two unintended consequences</strong> that economists have documented from rent ceilings."),
+            ("a", "From the diagram, identify the <strong>free-market equilibrium</strong> P* and Q*."),
+            ("b", "Read Q_s and Q_d at the $2,000 ceiling. What is the <strong>shortage</strong>?"),
+            ("c", "Read the dimensions of the <strong>DWL triangle</strong> (base = Q* − Q_s; height = vertical wedge between D and S at Q_s). Calculate its area."),
+            ("d", "In one sentence, name <strong>two unintended consequences</strong> economists have documented from rent ceilings."),
         ],
         "answer": (
-            "<strong>(a)</strong> 5000 − 2Q = 1000 + 2Q → 4000 = 4Q → <strong>Q* = 1,000, P* = $3,000</strong>. "
-            "<strong>(b)</strong> Supply at $2,000: 2000 = 1000 + 2Q → Q<sub>s</sub> = <strong>500</strong>. Demand at $2,000: 2000 = 5000 − 2Q → Q<sub>d</sub> = <strong>1,500</strong>. <strong>Shortage = 1,000</strong>. "
-            "<strong>(c)</strong> DWL triangle: base = Q* − Q<sub>s</sub> = 500. Height = D<sub>500</sub> − S<sub>500</sub> = ($5000 − 2·500) − ($1000 + 2·500) = $4000 − $2000 = $2,000. <strong>DWL = ½ × 500 × $2,000 = $500,000</strong> (per month). "
-            "<strong>(d)</strong> Acceptable answers include: (i) reduced new construction (long-run supply shrinks); (ii) deferred maintenance / quality decline; (iii) black-market subletting / key fees; (iv) misallocation (apartments go to people who got there first, not who values most)."
+            "<strong>(a)</strong> Read directly: <strong>P* = $3,000/month, Q* = 1,000 (thousand apts)</strong>. "
+            "<strong>(b)</strong> Q_s = 500 (where supply meets the ceiling), Q_d = 1,500 (where demand meets the ceiling). <strong>Shortage = 1,500 − 500 = 1,000 thousand apartments</strong>. "
+            "<strong>(c)</strong> Base = 1,000 − 500 = 500. Height at Q = 500: D = $4,000 and S = $2,000, so wedge = <strong>$2,000</strong>. <strong>DWL = ½ × 500 × $2,000 = $500,000/month</strong>. "
+            "<strong>(d)</strong> Acceptable: reduced new construction; deferred maintenance / quality decline; black-market subletting / key fees; misallocation (apartments go to who got there first, not who values them most)."
         ),
     },
     8: {
-        "title": "Budget Constraint Shift",
+        "title": "Budget Constraint + Equimarginal Principle",
+        # MU table shown inline in the set-up (HTML)
         "intro": (
-            "Jordan has <strong>$40/week</strong> to spend on Netflix (<strong>$4/week</strong>) and concerts (<strong>$20/ticket</strong>). "
-            "Marginal utility is shown for each."
+            "Jordan has <strong>$40/week</strong> to spend on Netflix (<strong>$4/week</strong>) and concerts "
+            "(<strong>$20/ticket</strong>). Their marginal utility for each is shown in the table.<br><br>"
+            "<table style=\"border-collapse: collapse; margin: 6px auto 4px auto; font-size: 10.5pt;\">\n"
+            "  <thead><tr style=\"background: var(--surface-color);\">\n"
+            "    <th style=\"padding: 4px 12px; border: 1px solid var(--line-color); text-align: right;\">Quantity</th>\n"
+            "    <th style=\"padding: 4px 12px; border: 1px solid var(--line-color); text-align: right;\">MU Netflix</th>\n"
+            "    <th style=\"padding: 4px 12px; border: 1px solid var(--line-color); text-align: right;\">MU Concert</th>\n"
+            "  </tr></thead>\n"
+            "  <tbody>\n"
+            "    <tr><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">1</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">30</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">80</td></tr>\n"
+            "    <tr><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">2</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">24</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">60</td></tr>\n"
+            "    <tr><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">3</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">18</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">40</td></tr>\n"
+            "    <tr><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">4</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">12</td><td style=\"padding: 3px 12px; border: 1px solid var(--line-color); text-align: right;\">20</td></tr>\n"
+            "  </tbody>\n"
+            "</table>"
         ),
         "parts": [
             ("a", "Write Jordan's <strong>budget constraint</strong>. What are the X- and Y-intercepts?"),
-            ("b", "Using the table — Netflix MUs: <strong>30, 24, 18, 12</strong>; Concert MUs: <strong>80, 60, 40, 20</strong> — calculate MU/$ for each quantity (1-4) of both goods."),
-            ("c", "Find Jordan's <strong>optimal bundle</strong>. Show you spent the entire budget and applied the equimarginal principle."),
-            ("d", "Netflix raises its price to <strong>$10/week</strong>. Describe (in words) how the budget line and the optimum change."),
+            ("b", "Calculate <strong>MU per dollar</strong> for each row of the table (both goods)."),
+            ("c", "Find Jordan's <strong>optimal bundle</strong> using the equimarginal principle. Show that (i) the entire budget is spent and (ii) MU/$ is equalized across goods."),
+            ("d", "Netflix raises its price to <strong>$10/week</strong>. Describe (in words) how Jordan's budget line and optimum change."),
         ],
         "answer": (
-            "<strong>(a)</strong> 4N + 20C = 40. Intercepts: 10 Netflix-weeks (all on Netflix); 2 concerts (all on concerts). "
-            "<strong>(b)</strong> Netflix MU/$: 7.5, 6, 4.5, 3. Concert MU/$: 4, 3, 2, 1. "
-            "<strong>(c)</strong> Buy until MU/$ ≈ MU/$. Try 5N + 1C = $20 + $20 = $40 (Netflix MU/$ at 5th unit would be very low — but we only have 4 in the table). With the table, best feasible bundle is <strong>4N + 1C = $16 + $20 = $36</strong> (Netflix MU/$ = 3, Concert MU/$ = 4 at 1st concert — concerts slightly higher). Add 5N for $4 = $40 (Netflix 5th MU not given, assume &lt;3). Heuristic answer: <strong>5 Netflix + 1 concert = $40</strong> approximately optimal given the table. "
-            "<strong>(d)</strong> Budget line <strong>rotates inward on the Netflix axis</strong> (slope steeper, new intercept = 40/10 = 4 Netflix). Jordan will substitute toward concerts and away from Netflix at the new optimum."
+            "<strong>(a)</strong> 4N + 20C = 40. X-intercept (all on Netflix): 10 Netflix-weeks. Y-intercept (all on concerts): 2 concerts. "
+            "<strong>(b)</strong> Netflix MU/$ (÷$4): 7.5, 6, 4.5, 3. Concert MU/$ (÷$20): 4, 3, 2, 1. "
+            "<strong>(c)</strong> Best feasible bundle: <strong>5 Netflix + 1 concert = $20 + $20 = $40</strong>. "
+            "MU/$ for 5th Netflix unit is extrapolated lower than 3; MU/$ for 1st concert is 4. So Jordan is approximately indifferent at the margin. "
+            "(Strict equimarginal can't be hit exactly because the goods don't align cleanly — pick the bundle that uses the whole budget and gets MU/$ as close to equal as possible.) "
+            "<strong>(d)</strong> Budget line <strong>rotates inward on the Netflix axis</strong> (steeper slope, new X-intercept = 40/10 = 4 Netflix-weeks). Y-intercept (concerts) unchanged. Jordan substitutes <strong>toward concerts and away from Netflix</strong> at the new optimum."
         ),
     },
 }
@@ -429,13 +447,16 @@ def render_handout_subslide(ch: int, chapter_title: str) -> str:
     if image_html:
         parts_rows = []
         for label, ptext in h["parts"]:
+            # Run parts text through md_inline so P_max / Q_s / Q_d
+            # get proper <sub> tags (and any **bold** is rendered)
+            ptext_html = md_inline(ptext)
             parts_rows.append(
                 f'<div style="display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; '
                 f'background: #FAFAFA; border: 1px solid var(--line-color); border-radius: 4px; padding: 6px 10px;">\n'
                 f'  <div style="background: var(--primary-color); color: white; border-radius: 4px; '
                 f'width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; '
                 f'font-weight: 700; font-size: 11pt;">{label}</div>\n'
-                f'  <p style="font-size: 10.5pt; line-height: 1.4; margin: 2px 0 0 0;">{ptext}</p>\n'
+                f'  <p style="font-size: 10.5pt; line-height: 1.4; margin: 2px 0 0 0;">{ptext_html}</p>\n'
                 f'</div>'
             )
         parts_html = "\n         ".join(parts_rows)
@@ -454,13 +475,14 @@ def render_handout_subslide(ch: int, chapter_title: str) -> str:
     else:
         parts_rows = []
         for label, ptext in h["parts"]:
+            ptext_html = md_inline(ptext)
             parts_rows.append(
                 f'<div style="display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; '
                 f'background: #FAFAFA; border: 1px solid var(--line-color); border-radius: 4px; padding: 8px 12px;">\n'
                 f'  <div style="background: var(--primary-color); color: white; border-radius: 4px; '
                 f'width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; '
                 f'font-weight: 700; font-size: 12pt;">{label}</div>\n'
-                f'  <p style="font-size: 11pt; line-height: 1.4; margin: 4px 0 0 0;">{ptext}</p>\n'
+                f'  <p style="font-size: 11pt; line-height: 1.4; margin: 4px 0 0 0;">{ptext_html}</p>\n'
                 f'</div>'
             )
         parts_html = "\n         ".join(parts_rows)
