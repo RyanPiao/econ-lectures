@@ -273,16 +273,31 @@ HANDOUT_PROBLEMS = {
 
 # ---------- 3. HTML helpers ----------
 def md_inline(text: str) -> str:
-    """Minimal markdown → HTML inline transforms."""
+    """Convert markdown stem/choice text to HTML for the deck.
+
+    Bank YAML stems are AUTHORED content and may legitimately contain
+    HTML (<p>, <strong>, <sub>, etc.) — preserve those. Only escape & when
+    it's not already starting a named/numeric entity.
+    """
+    # Strip image markdown
     text = re.sub(r"!\[([^\]]*)\]\([^)]+\)", "", text)
+    # Strip link markdown → keep link text
     text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    # Protect markdown-escaped asterisks (P\*, Q\*)
     text = text.replace(r"\*", "\x01")
-    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    text = text.replace("&amp;mdash;", "&mdash;").replace("&amp;ndash;", "&ndash;")
+    # Smart & escape: only when not already an entity ref
+    text = re.sub(r"&(?![a-zA-Z]+;|#\d+;)", "&amp;", text)
+    # Markdown → HTML transforms
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"(?<!\*)\*(?=[^*\s])([^\n*]+?)\*(?!\*)", r"<em>\1</em>", text)
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
+    # Strip top-level <p>…</p> wrappers — the deck slide already wraps
+    # stems in its own paragraph styling, so an inner <p> just adds an
+    # extra empty line.
+    text = re.sub(r"^\s*<p>(.*?)</p>\s*$", r"\1", text, flags=re.DOTALL)
+    # Restore literal asterisks
     text = text.replace("\x01", "*")
+    # Collapse whitespace
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
