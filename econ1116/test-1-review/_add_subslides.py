@@ -36,6 +36,13 @@ EXAM_SEED = 20260528  # exam's seed, for exclusion
 # prefix the path to get a working URL inside the slide.
 EBOOK_BASE = "https://econ-1116-microeconomics-lac.vercel.app"
 
+# Bank IDs to explicitly exclude from deck picks (e.g. questions whose
+# subject overlaps another deck question or instructor preference). Keyed
+# by chapter for quick scanning.
+DECK_EXCLUDE: dict[int, set[str]] = {
+    5: {"q075-carbon-tax-welfare-graph"},  # instructor pref — swap for another Ch 5 Q
+}
+
 
 # ---------- 1. Bank loading + sampling ----------
 def load_bank(ch: int) -> list[dict]:
@@ -72,11 +79,12 @@ def exam_picks_for_chapter(ch: int) -> set[str]:
 
 
 def pick_deck_mc(ch: int, target: int = 5) -> list[dict]:
-    """Pick `target` MC for the deck — different from the exam picks.
-    Same 2 easy / 2 medium / 1 hard mix."""
+    """Pick `target` MC for the deck — different from the exam picks AND
+    from the per-chapter DECK_EXCLUDE set. Same 2 easy / 2 medium / 1 hard mix."""
     mc = load_bank(ch)
     exam_ids = exam_picks_for_chapter(ch)
-    available = [q for q in mc if q["id"] not in exam_ids]
+    excluded = exam_ids | DECK_EXCLUDE.get(ch, set())
+    available = [q for q in mc if q["id"] not in excluded]
 
     rng = random.Random(DECK_SEED + ch)
     by_diff = {"easy": [], "medium": [], "hard": []}
@@ -198,22 +206,26 @@ HANDOUT_PROBLEMS = {
         ),
     },
     5: {
-        "title": "Welfare After a Cocoa Shock",
+        "title": "Read CS, PS, and Total Surplus from the Diagram",
+        "image": "figures/ch5-handout-donuts.png",
         "intro": (
-            "Original cocoa market: <strong>Demand: P = 30 − 0.05Q</strong> and <strong>Supply: P = 5 + 0.05Q</strong> "
-            "(P in $/ton, Q in thousand tons)."
+            "The diagram shows the Cambridge artisanal-donut market. The shaded yellow region is "
+            "<strong>consumer surplus</strong>; the shaded green region is <strong>producer surplus</strong>. "
+            "Read all values directly from the figure — no algebra needed."
         ),
         "parts": [
-            ("a", "Find <strong>equilibrium P* and Q*</strong>."),
-            ("b", "Calculate <strong>consumer surplus, producer surplus, and total surplus</strong>."),
-            ("c", "A fungal disease destroys half the harvest, shifting supply to <strong>P = 15 + 0.10Q</strong>. Find the new equilibrium."),
-            ("d", "Calculate the <strong>change in total surplus</strong> caused by the shock."),
+            ("a", "From the diagram, identify <strong>P*</strong> and <strong>Q*</strong>."),
+            ("b", "Read the <strong>demand intercept</strong> (the highest price any buyer is willing to pay). Then calculate <strong>consumer surplus</strong> using the triangle area formula."),
+            ("c", "Read the <strong>supply intercept</strong> (the lowest price any seller will accept). Then calculate <strong>producer surplus</strong>."),
+            ("d", "Calculate <strong>total surplus</strong>."),
+            ("e", "Suppose a $4 per-dozen tax is imposed. On the diagram (in your head), where would the <strong>deadweight loss triangle</strong> appear? Describe it in one sentence — no math required."),
         ],
         "answer": (
-            "<strong>(a)</strong> 30 − 0.05Q = 5 + 0.05Q → 25 = 0.10Q → <strong>Q* = 250, P* = $17.50</strong>. "
-            "<strong>(b)</strong> CS = ½ × 250 × ($30 − $17.50) = <strong>$1,562.50</strong>; PS = ½ × 250 × ($17.50 − $5) = <strong>$1,562.50</strong>; TS = <strong>$3,125</strong>. "
-            "<strong>(c)</strong> 30 − 0.05Q = 15 + 0.10Q → 15 = 0.15Q → <strong>Q' = 100, P' = $25</strong>. "
-            "<strong>(d)</strong> New CS = ½ × 100 × ($30 − $25) = $250; new PS = ½ × 100 × ($25 − $15) = $500; new TS = <strong>$750</strong>. <strong>Loss = $3,125 − $750 = $2,375</strong>."
+            "<strong>(a)</strong> Read directly: <strong>P* = $8, Q* = 40 dozen</strong>. "
+            "<strong>(b)</strong> Demand intercept = <strong>$12</strong>. CS triangle = ½ × 40 × ($12 − $8) = ½ × 40 × $4 = <strong>$80</strong>. "
+            "<strong>(c)</strong> Supply intercept = <strong>$4</strong>. PS triangle = ½ × 40 × ($8 − $4) = ½ × 40 × $4 = <strong>$80</strong>. "
+            "<strong>(d)</strong> TS = CS + PS = $80 + $80 = <strong>$160</strong>. "
+            "<strong>(e)</strong> The $4 tax would create a wedge between the buyer's price and the seller's price; the DWL triangle sits between Q at the new (lower) equilibrium and Q* = 40, bounded above by D and below by S. Its area depends on the new quantity, but conceptually it's the lost surplus from trades that no longer happen."
         ),
     },
     6: {
@@ -277,6 +289,20 @@ HANDOUT_PROBLEMS = {
 
 
 # ---------- 3. HTML helpers ----------
+SUBSCRIPT_BASES = (
+    "MU", "PED", "PES", "P", "Q", "E", "MC", "MB", "TR", "TC",
+    "ATC", "AVC", "AFC", "MRP", "VMP", "WTP", "MSC", "MSB", "MPB", "MPC",
+)
+
+
+def _convert_ascii_subscripts(text: str) -> str:
+    """Turn P_B / Q_d / MU_x / Q_new etc. into P<sub>B</sub> style.
+    Only fires when the base is a known econ identifier."""
+    bases = "|".join(sorted(SUBSCRIPT_BASES, key=len, reverse=True))
+    pattern = rf"\b({bases})_([A-Za-z]+|\d+)\b"
+    return re.sub(pattern, r"\1<sub>\2</sub>", text)
+
+
 def md_inline(text: str) -> str:
     """Convert markdown stem/choice text to HTML for the deck.
 
@@ -292,6 +318,8 @@ def md_inline(text: str) -> str:
     text = text.replace(r"\*", "\x01")
     # Smart & escape: only when not already an entity ref
     text = re.sub(r"&(?![a-zA-Z]+;|#\d+;)", "&amp;", text)
+    # Convert ASCII subscripts on known econ identifiers (P_B → P<sub>B</sub>)
+    text = _convert_ascii_subscripts(text)
     # Markdown → HTML transforms
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"(?<!\*)\*(?=[^*\s])([^\n*]+?)\*(?!\*)", r"<em>\1</em>", text)
@@ -383,21 +411,66 @@ def render_handout_subslide(ch: int, chapter_title: str) -> str:
     if not h:
         return ""
 
-    # Stacked worksheet layout — each part is a full-width row with a
-    # circled part letter (a)(b)(c) and a "Show your work" cue below.
-    # Visually distinct from MC slides (which use a 2×2 grid of choices).
-    parts_rows = []
-    for label, ptext in h["parts"]:
-        parts_rows.append(
-            f'<div style="display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; '
-            f'background: #FAFAFA; border: 1px solid var(--line-color); border-radius: 4px; padding: 8px 12px;">\n'
-            f'  <div style="background: var(--primary-color); color: white; border-radius: 4px; '
-            f'width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; '
-            f'font-weight: 700; font-size: 12pt;">{label}</div>\n'
-            f'  <p style="font-size: 11pt; line-height: 1.4; margin: 4px 0 0 0;">{ptext}</p>\n'
+    # Optional image embed — local files in figures/ are referenced by
+    # relative path; the slide deck and figures sit in the same folder
+    # so the relative path resolves correctly on GitHub Pages too.
+    image_html = ""
+    if h.get("image"):
+        image_html = (
+            f'<div style="text-align: center; margin: 10px 0 8px 0;">\n'
+            f'  <img src="{h["image"]}" alt="{h["title"]}" '
+            f'style="max-width: 70%; max-height: 280px; border-radius: 4px; '
+            f'border: 1px solid var(--line-color); background: white;">\n'
             f'</div>'
         )
-    parts_html = "\n         ".join(parts_rows)
+
+    # Two-column layout when a figure is present (figure left, questions
+    # right); stacked otherwise.
+    if image_html:
+        parts_rows = []
+        for label, ptext in h["parts"]:
+            parts_rows.append(
+                f'<div style="display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; '
+                f'background: #FAFAFA; border: 1px solid var(--line-color); border-radius: 4px; padding: 6px 10px;">\n'
+                f'  <div style="background: var(--primary-color); color: white; border-radius: 4px; '
+                f'width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; '
+                f'font-weight: 700; font-size: 11pt;">{label}</div>\n'
+                f'  <p style="font-size: 10.5pt; line-height: 1.4; margin: 2px 0 0 0;">{ptext}</p>\n'
+                f'</div>'
+            )
+        parts_html = "\n         ".join(parts_rows)
+        body = (
+            f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">\n'
+            f'  <div>{image_html}</div>\n'
+            f'  <div>\n'
+            f'    <p style="font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: var(--muted-color); '
+            f'text-transform: uppercase; margin: 0 0 6px 0;">Read the diagram and answer:</p>\n'
+            f'    <div style="display: flex; flex-direction: column; gap: 5px;">\n'
+            f'      {parts_html}\n'
+            f'    </div>\n'
+            f'  </div>\n'
+            f'</div>'
+        )
+    else:
+        parts_rows = []
+        for label, ptext in h["parts"]:
+            parts_rows.append(
+                f'<div style="display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; '
+                f'background: #FAFAFA; border: 1px solid var(--line-color); border-radius: 4px; padding: 8px 12px;">\n'
+                f'  <div style="background: var(--primary-color); color: white; border-radius: 4px; '
+                f'width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; '
+                f'font-weight: 700; font-size: 12pt;">{label}</div>\n'
+                f'  <p style="font-size: 11pt; line-height: 1.4; margin: 4px 0 0 0;">{ptext}</p>\n'
+                f'</div>'
+            )
+        parts_html = "\n         ".join(parts_rows)
+        body = (
+            f'<p style="font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: var(--muted-color); '
+            f'text-transform: uppercase; margin: 0 0 6px 0;">Show your work for each part:</p>\n'
+            f'     <div style="display: flex; flex-direction: column; gap: 6px;">\n'
+            f'         {parts_html}\n'
+            f'     </div>'
+        )
 
     return f"""
     <!-- Ch{ch:02d} · Handout-style problem (stacked worksheet) -->
@@ -406,16 +479,13 @@ def render_handout_subslide(ch: int, chapter_title: str) -> str:
       <div class="chapter-num" style="font-size: 16pt; padding: 4px 10px;">{ch:02d}</div>
       <div class="chapter-title-pill" style="font-size: 13pt; padding: 6px 0;">{chapter_title} &middot; Handout Practice: {h['title']}</div>
      </div>
-     <div style="background: #FFF8E7; border-left: 4px solid var(--accent-color); border-radius: 4px; padding: 10px 14px; margin-bottom: 12px;">
-      <p style="font-size: 11.5pt; line-height: 1.5; margin: 0;"><span style="font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: var(--accent-color); text-transform: uppercase; margin-right: 8px;">Set-up</span> {h['intro']}</p>
+     <div style="background: #FFF8E7; border-left: 4px solid var(--accent-color); border-radius: 4px; padding: 8px 14px; margin-bottom: 10px;">
+      <p style="font-size: 11pt; line-height: 1.45; margin: 0;"><span style="font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: var(--accent-color); text-transform: uppercase; margin-right: 8px;">Set-up</span> {h['intro']}</p>
      </div>
-     <p style="font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: var(--muted-color); text-transform: uppercase; margin: 0 0 6px 0;">Show your work for each part:</p>
-     <div style="display: flex; flex-direction: column; gap: 6px;">
-         {parts_html}
-     </div>
-     <div class="tip-box fragment fade-up" style="margin-top: 12px;">
+     {body}
+     <div class="tip-box fragment fade-up" style="margin-top: 10px;">
       <span class="label">Answer Sketch</span>
-      <p style="font-size: 10.5pt; line-height: 1.45;">{h['answer']}</p>
+      <p style="font-size: 10pt; line-height: 1.45;">{h['answer']}</p>
      </div>
     </section>"""
 
