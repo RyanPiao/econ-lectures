@@ -355,25 +355,35 @@ def render_handout_subslide(ch: int, chapter_title: str) -> str:
     h = HANDOUT_PROBLEMS.get(ch)
     if not h:
         return ""
-    parts_cards = []
+
+    # Stacked worksheet layout — each part is a full-width row with a
+    # circled part letter (a)(b)(c) and a "Show your work" cue below.
+    # Visually distinct from MC slides (which use a 2×2 grid of choices).
+    parts_rows = []
     for label, ptext in h["parts"]:
-        parts_cards.append(
-            f'<div class="detail-card" style="font-size: 11pt;">\n'
-            f'  <p style="font-size: 11pt;"><strong>({label})</strong> {ptext}</p>\n'
+        parts_rows.append(
+            f'<div style="display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; '
+            f'background: #FAFAFA; border: 1px solid var(--line-color); border-radius: 4px; padding: 8px 12px;">\n'
+            f'  <div style="background: var(--primary-color); color: white; border-radius: 4px; '
+            f'width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; '
+            f'font-weight: 700; font-size: 12pt;">{label}</div>\n'
+            f'  <p style="font-size: 11pt; line-height: 1.4; margin: 4px 0 0 0;">{ptext}</p>\n'
             f'</div>'
         )
-    parts_html = "\n         ".join(parts_cards)
-    grid_cols = "1fr 1fr" if len(h["parts"]) >= 4 else "1fr"
+    parts_html = "\n         ".join(parts_rows)
 
     return f"""
-    <!-- Ch{ch:02d} · Handout-style problem -->
+    <!-- Ch{ch:02d} · Handout-style problem (stacked worksheet) -->
     <section id="ch{ch:02d}-handout">
      <div class="chapter-header" style="margin-bottom: 10px; padding-bottom: 8px;">
       <div class="chapter-num" style="font-size: 16pt; padding: 4px 10px;">{ch:02d}</div>
       <div class="chapter-title-pill" style="font-size: 13pt; padding: 6px 0;">{chapter_title} &middot; Handout Practice: {h['title']}</div>
      </div>
-     <p style="font-size: 11.5pt; margin-bottom: 10px; line-height: 1.4;">{h['intro']}</p>
-     <div class="detail-row" style="display: grid; grid-template-columns: {grid_cols}; gap: 8px;">
+     <div style="background: #FFF8E7; border-left: 4px solid var(--accent-color); border-radius: 4px; padding: 10px 14px; margin-bottom: 12px;">
+      <p style="font-size: 11.5pt; line-height: 1.5; margin: 0;"><span style="font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: var(--accent-color); text-transform: uppercase; margin-right: 8px;">Set-up</span> {h['intro']}</p>
+     </div>
+     <p style="font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: var(--muted-color); text-transform: uppercase; margin: 0 0 6px 0;">Show your work for each part:</p>
+     <div style="display: flex; flex-direction: column; gap: 6px;">
          {parts_html}
      </div>
      <div class="tip-box fragment fade-up" style="margin-top: 12px;">
