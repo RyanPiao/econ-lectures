@@ -43,6 +43,17 @@ DECK_EXCLUDE: dict[int, set[str]] = {
     5: {"q075-carbon-tax-welfare-graph"},  # instructor pref — swap for another Ch 5 Q
 }
 
+# Manual image overrides for bank questions that reference a "diagram" or
+# "figure" in the stem but don't have an image field of their own. Keyed by
+# question id; value is the figure path (absolute Vercel path, joined with
+# EBOOK_BASE at render time).
+IMAGE_OVERRIDES: dict[str, str] = {
+    # Q5.2 — "Government tax revenue from a per-unit tax appears on a
+    # supply-and-demand diagram as a:" — show the tax wedge chart so the
+    # rectangle answer is grounded in the picture students are reading.
+    "q028-tax-revenue-rectangle": "/images/quiz/ch05/tax-wedge.png",
+}
+
 
 # ---------- 1. Bank loading + sampling ----------
 def load_bank(ch: int) -> list[dict]:
@@ -359,13 +370,19 @@ def render_mc_subslide(ch: int, num: int, q: dict, chapter_title: str) -> str:
     choices = variant["choices"]
     letters = ["A", "B", "C", "D", "E"]
 
-    # If the question carries an image reference, build an <img> tag with
-    # the Vercel-hosted URL. The slide will show the figure between the
-    # stem and the choices.
+    # Image source resolution order:
+    #   1. variant.image (per-question bank field)
+    #   2. IMAGE_OVERRIDES[q.id]  (deck-script override for questions that
+    #      reference a figure but don't have an image in the bank)
     image = variant.get("image") or {}
+    src_path = image.get("src")
+    if not src_path and q.get("id") in IMAGE_OVERRIDES:
+        src_path = IMAGE_OVERRIDES[q["id"]]
+        image = {"src": src_path, "alt": image.get("alt") or stem[:80]}
+
     image_html = ""
-    if image.get("src"):
-        src = image["src"]
+    if src_path:
+        src = src_path
         if src.startswith("/"):
             src = f"{EBOOK_BASE}{src}"
         alt = (image.get("alt") or "").replace('"', "&quot;")
@@ -392,7 +409,12 @@ def render_mc_subslide(ch: int, num: int, q: dict, chapter_title: str) -> str:
     choices_html = "\n         ".join(choice_cards)
 
     explanation_html = ""
-    expl = q.get("explanation", "").strip()
+    # Prefer the variant-specific explanation (canvas: override) if it
+    # exists, otherwise fall back to the top-level question explanation.
+    # The bank schema allows canvas.explanation to differ from base when
+    # the canvas variant uses a different scenario (e.g., Canada/Brazil
+    # vs U.S./Mexico in q018-us-mexico-abs-adv).
+    expl = (variant.get("explanation") or q.get("explanation") or "").strip()
     if expl:
         explanation_html = (
             f'<p style="font-size: 11pt; color: var(--muted-color); '
