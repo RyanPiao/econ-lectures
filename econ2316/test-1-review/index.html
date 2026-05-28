@@ -2273,7 +2273,11 @@
     options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
    };
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <!-- MathJax SVG output: faster + no per-slide font reflow.
+       Loaded synchronously so it runs ONCE on initial DOM, before reveal.js
+       starts switching slide visibility. No slidechanged re-typeset — slides
+       are static. -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
   <script>
@@ -2289,15 +2293,13 @@
     maxScale: 2.0,
     controls: true,
     center: false,
-    transition: 'fade',
-    transitionSpeed: 'default',
-    backgroundTransition: 'fade',
+    transition: 'none',         // disable cross-fade animations (cheaper with heavy slides)
+    backgroundTransition: 'none',
+    viewDistance: 1,            // only render 1 slide ahead/behind (key perf win for 62-slide deck)
+    mobileViewDistance: 1,
     pdfSeparateFragments: false,
     pdfMaxPagesPerSlide: 1
    });
-   // Re-typeset MathJax after each slide change (covers any dynamic content)
-   Reveal.on('ready', () => { if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise(); });
-   Reveal.on('slidechanged', () => { if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise(); });
   </script>
  </body>
 </html>
