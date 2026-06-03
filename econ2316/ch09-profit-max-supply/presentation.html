@@ -804,6 +804,7 @@
 <!-- Images copied to figures/; video relative-ref'd; profit-bridge chapter numbers removed. -->
 <!-- ============================================================ -->
 <!-- flat demand + MR=P -->
+<section>
 <section id="flat-demand">
  <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> The Firm&rsquo;s Demand Curve Is Flat</h2>
  <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; align-items: center;">
@@ -821,6 +822,32 @@
  </div>
  <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 8px; text-align: center; font-style: italic;">The single most important equation in the chapter. Everything builds on it.</p>
  <aside class="notes">Figure 10.1. The flat firm demand = the firm&rsquo;s MR line. Drive home P = MR for the price-taker: sell the 41st slice at $3.95 and the 42nd at $3.95, TR rises by exactly $3.95 each time, so MR = price. This is what makes the next section&rsquo;s MR=MC collapse to P=MC.</aside>
+</section>
+
+<!-- vertical sub-slide under flat-demand: interactive Figure 10.1 (industry vs firm) -->
+<section id="fig-10-1-industry-firm">
+  <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Figure 10.1 &mdash; The Industry Sets the Price; the Firm Takes It</h2>
+  <div class="iv-card" style="padding: 8px 18px 10px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+      <div>
+        <p style="text-align:center; font-weight:700; color:var(--primary-color); font-size:12.5pt; margin:0 0 2px;">Panel A &mdash; Industry (Market)</p>
+        <svg id="f101-panelA" viewBox="0 0 430 320" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; max-height:340px; display:block;"></svg>
+      </div>
+      <div>
+        <p style="text-align:center; font-weight:700; color:var(--primary-color); font-size:12.5pt; margin:0 0 2px;">Panel B &mdash; Firm (price-taker)</p>
+        <svg id="f101-panelB" viewBox="0 0 430 320" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; max-height:340px; display:block;"></svg>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 4px;">
+      <div><label class="iv-label">Market demand shift <span class="iv-readout" id="f101-dRead">15.0</span></label><input type="range" class="iv-slider" id="f101-dShift" min="11" max="19" step="0.5" value="15"></div>
+      <div><label class="iv-label">Market supply shift <span class="iv-readout" id="f101-sRead">5.0</span></label><input type="range" class="iv-slider" id="f101-sShift" min="1" max="9" step="0.5" value="5"></div>
+    </div>
+    <p id="f101-caption" style="text-align:center; font-size:12.5pt; color:var(--secondary-color); margin:7px 0 0;"></p>
+    <div style="text-align:center; margin-top:5px;"><button id="f101-reset" style="background:#f0f5f8; border:1px solid var(--line-color); border-radius:16px; padding:4px 16px; font-size:11pt; color:var(--secondary-color); font-weight:600; cursor:pointer;"><i class="fa-solid fa-rotate-left"></i> Reset</button></div>
+  </div>
+  <aside class="notes">Interactive recreation of Figure 10.1 from the 1116 ebook. Drag "Market demand shift" / "Market supply shift" to move the industry curves in Panel A; the equilibrium price P* instantly becomes the height of the firm's flat demand line d = MR = P in Panel B. That is the whole content of price-taking: the single firm is so small relative to the industry that it reads P* off the market and faces a horizontal demand at that price — so for the firm, marginal revenue equals price. Defaults (demand 15, supply 5): Q* = 10, P* = $10. Q* = demand-shift − supply-shift; P* = (demand-shift + supply-shift)/2. Raise either shift and watch P* (and the firm's flat line) move together.</aside>
+</section>
+<!-- end stack: flat-demand + Figure 10.1 -->
 </section>
 
 <!-- ============================================================ -->
@@ -1874,5 +1901,54 @@
  })();
 </script>
 
+<!-- Interactive Figure 10.1 (industry vs firm) -->
+<script>
+(function(){
+  var A=document.getElementById('f101-panelA'), B=document.getElementById('f101-panelB');
+  if(!A||!B) return;
+  var dS=document.getElementById('f101-dShift'), sS=document.getElementById('f101-sShift');
+  var dR=document.getElementById('f101-dRead'), sR=document.getElementById('f101-sRead');
+  var cap=document.getElementById('f101-caption'), rst=document.getElementById('f101-reset');
+  function yS(p){return 286 - p*12.6;}
+  function xS(q,xm){return 56 + q*(352/xm);}
+  function axes(xm,xlabel){
+    var s='',p,q,x,y;
+    for(p=0;p<=20;p+=5){ y=yS(p); s+='<line x1="56" y1="'+y+'" x2="408" y2="'+y+'" stroke="#e8eaed" stroke-width="1"/>'; }
+    var step=(xm<=12)?2:5;
+    for(q=0;q<=xm;q+=step){ x=xS(q,xm); s+='<line x1="'+x+'" y1="30" x2="'+x+'" y2="286" stroke="#e8eaed" stroke-width="1"/><text x="'+x+'" y="302" text-anchor="middle" font-size="11" fill="#6b7280">'+q+'</text>'; }
+    s+='<line x1="56" y1="30" x2="56" y2="286" stroke="#374151" stroke-width="1.5"/><line x1="56" y1="286" x2="408" y2="286" stroke="#374151" stroke-width="1.5"/>';
+    for(p=0;p<=20;p+=5){ y=yS(p); s+='<text x="50" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+p+'</text>'; }
+    s+='<text x="15" y="158" text-anchor="middle" font-size="12" fill="#374151" transform="rotate(-90 15 158)">Price ($)</text>';
+    s+='<text x="232" y="318" text-anchor="middle" font-size="12" fill="#374151">'+xlabel+'</text>';
+    return s;
+  }
+  function draw(){
+    var ad=parseFloat(dS.value), as=parseFloat(sS.value);
+    var Q=ad-as, P=(ad+as)/2;
+    dR.textContent=ad.toFixed(1); sR.textContent=as.toFixed(1);
+    var a=axes(20,'Industry output');
+    a+='<line x1="'+xS(0,20)+'" y1="'+yS(ad)+'" x2="'+xS(20,20)+'" y2="'+yS(ad-10)+'" stroke="#3b82f6" stroke-width="2.6"/>';
+    a+='<line x1="'+xS(0,20)+'" y1="'+yS(as)+'" x2="'+xS(20,20)+'" y2="'+yS(as+10)+'" stroke="#ef4444" stroke-width="2.6"/>';
+    a+='<text x="402" y="'+(yS(ad-10)+5)+'" text-anchor="end" font-size="13.5" font-weight="700" fill="#3b82f6">D</text>';
+    a+='<text x="402" y="'+(yS(as+10)-4)+'" text-anchor="end" font-size="13.5" font-weight="700" fill="#ef4444">S</text>';
+    a+='<line x1="56" y1="'+yS(P)+'" x2="'+xS(Q,20)+'" y2="'+yS(P)+'" stroke="#9ca3af" stroke-dasharray="4 3" stroke-width="1"/>';
+    a+='<line x1="'+xS(Q,20)+'" y1="286" x2="'+xS(Q,20)+'" y2="'+yS(P)+'" stroke="#9ca3af" stroke-dasharray="4 3" stroke-width="1"/>';
+    a+='<circle cx="'+xS(Q,20)+'" cy="'+yS(P)+'" r="5.5" fill="#10b981" stroke="#ffffff" stroke-width="1.5"/>';
+    a+='<rect x="2" y="'+(yS(P)-9)+'" width="52" height="18" rx="4" fill="#ecfdf5" stroke="#10b981"/><text x="28" y="'+(yS(P)+4)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#059669">$'+P.toFixed(2)+'</text>';
+    a+='<rect x="'+(xS(Q,20)-34)+'" y="265" width="68" height="17" rx="4" fill="#ecfdf5" stroke="#10b981"/><text x="'+xS(Q,20)+'" y="277" text-anchor="middle" font-size="10" font-weight="700" fill="#059669">Q* = '+Q.toFixed(1)+'</text>';
+    A.innerHTML=a;
+    var b=axes(12,"Typical firm's output");
+    b+='<line x1="56" y1="'+yS(P)+'" x2="408" y2="'+yS(P)+'" stroke="#ef4444" stroke-width="2.6"/>';
+    b+='<circle cx="'+xS(4,12)+'" cy="'+yS(P)+'" r="4.6" fill="#ffffff" stroke="#ef4444" stroke-width="2"/>';
+    b+='<circle cx="'+xS(8,12)+'" cy="'+yS(P)+'" r="4.6" fill="#ffffff" stroke="#ef4444" stroke-width="2"/>';
+    b+='<rect x="'+(xS(5.2,12))+'" y="'+(yS(P)-28)+'" width="178" height="19" rx="4" fill="#fef2f2" stroke="#ef4444"/><text x="'+(xS(5.2,12)+89)+'" y="'+(yS(P)-15)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#dc2626">d = MR = P = $'+P.toFixed(2)+'</text>';
+    B.innerHTML=b;
+    cap.innerHTML='Market equilibrium: <strong>P* = $'+P.toFixed(2)+' &middot; Q* = '+Q.toFixed(1)+'</strong> &rarr; <em>firm faces flat d at P = $'+P.toFixed(2)+'</em>';
+  }
+  dS.addEventListener('input',draw); sS.addEventListener('input',draw);
+  rst.addEventListener('click',function(){dS.value=15; sS.value=5; draw();});
+  draw();
+})();
+</script>
 </body>
 </html>
