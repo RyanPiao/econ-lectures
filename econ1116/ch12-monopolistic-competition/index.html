@@ -604,11 +604,11 @@
   <div style="text-align: center; margin-bottom: 2px;"><span id="f121-banner" style="display:inline-block; font-size:12pt; font-weight:700; padding:3px 16px; border-radius:6px;"></span></div>
   <div id="f121-score" style="text-align:center; font-size:12pt; font-weight:700; display:flex; flex-wrap:wrap; justify-content:center; gap:3px 18px; margin:0 0 2px; min-height:16px;"></div>
   <svg id="f121-svg" viewBox="0 0 700 380" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; max-height:318px; display:block;"></svg>
-  <div style="max-width: 540px; margin: 4px auto 0;"><label class="iv-label">Demand position &mdash; entry shifts it left, exit shifts it right</label><input type="range" class="iv-slider" id="f121-a" min="5.2" max="7.8" step="0.02" value="7.4"></div>
+  <div style="max-width: 540px; margin: 4px auto 0;"><label class="iv-label">Demand position &mdash; entry shifts it left, exit shifts it right</label><input type="range" class="iv-slider" id="f121-a" min="12.0" max="15.0" step="0.05" value="14.5"></div>
   <div style="text-align:center; margin-top:6px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-   <button class="iv-btn" data-a="7.4" data-grp="f121">Short-Run Profit</button>
-   <button class="iv-btn" data-a="6.42" data-grp="f121">Long-Run (P = ATC)</button>
-   <button class="iv-btn" data-a="5.5" data-grp="f121">Short-Run Loss</button>
+   <button class="iv-btn" data-a="14.5" data-grp="f121">Short-Run Profit</button>
+   <button class="iv-btn" data-a="13.5" data-grp="f121">Long-Run (P = ATC)</button>
+   <button class="iv-btn" data-a="12.5" data-grp="f121">Short-Run Loss</button>
   </div>
   <p class="iv-cap">Figure 12.1 &mdash; drag demand or pick a scenario. Q* is where MR = MC; the rectangle is profit (green) or loss (red).</p>
  </div>
@@ -697,7 +697,7 @@
    <div style="text-align:center; margin-bottom:2px;"><span id="f122-banner" style="display:inline-block; font-size:11pt; font-weight:700; padding:2px 12px; border-radius:6px;"></span></div>
    <div id="f122-score" style="text-align:center; font-size:10.5pt; font-weight:700; display:flex; flex-wrap:wrap; justify-content:center; gap:2px 12px; margin:0 0 2px; min-height:14px;"></div>
    <svg id="f122-svg" viewBox="0 0 700 380" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; max-height:288px; display:block;"></svg>
-   <div style="max-width:420px; margin:4px auto 0;"><label class="iv-label">Drag demand &mdash; up = profit, down = loss</label><input type="range" class="iv-slider" id="f122-a" min="5.2" max="7.8" step="0.02" value="6.42"></div>
+   <div style="max-width:420px; margin:4px auto 0;"><label class="iv-label">Drag demand &mdash; up = profit, down = loss</label><input type="range" class="iv-slider" id="f122-a" min="12.0" max="15.0" step="0.05" value="13.5"></div>
    <div style="text-align:center; margin-top:6px;"><button class="iv-btn" id="f122-release"><i class="fa-solid fa-arrows-rotate"></i> Release &rarr; entry/exit eases to tangency</button></div>
    <p class="iv-cap">Figure 12.2 &mdash; the tangency is an <strong>attractor</strong>: perturb demand, release, and entry/exit pulls it back to P = ATC.</p>
   </div>
@@ -1324,12 +1324,13 @@
 <!-- ===== Native interactive monopolistic-competition charts (Figures 12.1 & 12.2), fig-airline-interactive house style ===== -->
 <script>
 (function(){
- function makeMC(prefix, defA, attractor){
+ function makeMC(prefix, defA, attractor, atcLabel){
+  atcLabel = atcLabel || 'ATC';
   var svg=document.getElementById(prefix+'-svg'); if(!svg) return;
   var aS=document.getElementById(prefix+'-a');
   var bn=document.getElementById(prefix+'-banner'), sc=document.getElementById(prefix+'-score');
-  var FC=200, V=2, W=0.012, B=0.0124, TAN=6.42;
-  var QMAX=160, PMAX=10, L=56, R=678, T=20, Bm=330;
+  var FC=90, V=7.5, W=0.05, B=0.05, TAN=13.5;
+  var QMAX=60, PMAX=20, L=56, R=678, T=20, Bm=330;
   function xx(q){return L+q*((R-L)/QMAX);}
   function yy(p){return Bm-p*((Bm-T)/PMAX);}
   function ATC(q){return FC/q+V+W*q;}
@@ -1340,11 +1341,11 @@
   function pathfn(fn,q0,q1){var d='',f=true,q,vv;for(q=q0;q<=q1+1e-6;q+=2){vv=fn(q);if(vv>PMAX+0.4||vv<-0.4){f=true;continue;}d+=(f?'M':'L')+xx(q).toFixed(1)+' '+yy(vv).toFixed(1)+' ';f=false;}return d;}
   function axes(){
    var s='',p,q,x,y;
-   for(p=0;p<=PMAX;p+=2){y=yy(p);s+='<line x1="'+L+'" y1="'+y+'" x2="'+R+'" y2="'+y+'" stroke="rgba(150,150,150,0.20)" stroke-width="1"/><text x="'+(L-7)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#8C8580">$'+p+'</text>';}
-   for(q=0;q<=QMAX;q+=40){x=xx(q);s+='<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+Bm+'" stroke="rgba(150,150,150,0.12)" stroke-width="1"/><text x="'+x+'" y="'+(Bm+17)+'" text-anchor="middle" font-size="11" fill="#8C8580">'+q+'</text>';}
+   for(p=0;p<=PMAX;p+=4){y=yy(p);s+='<line x1="'+L+'" y1="'+y+'" x2="'+R+'" y2="'+y+'" stroke="rgba(150,150,150,0.20)" stroke-width="1"/><text x="'+(L-7)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#8C8580">$'+p+'</text>';}
+   for(q=0;q<=QMAX;q+=15){x=xx(q);s+='<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+Bm+'" stroke="rgba(150,150,150,0.12)" stroke-width="1"/><text x="'+x+'" y="'+(Bm+17)+'" text-anchor="middle" font-size="11" fill="#8C8580">'+q+'</text>';}
    s+='<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+Bm+'" stroke="#3A3632" stroke-width="1.4"/><line x1="'+L+'" y1="'+Bm+'" x2="'+R+'" y2="'+Bm+'" stroke="#3A3632" stroke-width="1.4"/>';
    s+='<text x="15" y="175" text-anchor="middle" font-size="11" fill="#3A3632" transform="rotate(-90 15 175)">Price, cost ($)</text>';
-   s+='<text x="367" y="'+(Bm+34)+'" text-anchor="middle" font-size="11.5" fill="#3A3632">Quantity (drinks / day)</text>';
+   s+='<text x="367" y="'+(Bm+34)+'" text-anchor="middle" font-size="11.5" fill="#3A3632">Quantity (pizzas / day)</text>';
    return s;
   }
   function draw(){
@@ -1358,8 +1359,8 @@
    s+='<path d="'+pathfn(MC,2,QMAX)+'" fill="none" stroke="#C47B5A" stroke-width="2.4"/>';
    s+='<path d="'+pathfn(function(q){return Df(a,q);},0,QMAX)+'" fill="none" stroke="#2563eb" stroke-width="2.8"/>';
    s+='<path d="'+pathfn(function(q){return MRf(a,q);},0,QMAX)+'" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-dasharray="7 4"/>';
-   s+='<text x="'+(R-4)+'" y="'+(yy(MC(157))-6).toFixed(1)+'" text-anchor="end" font-size="12" font-weight="700" fill="#C47B5A">MC</text>';
-   s+='<text x="'+(R-4)+'" y="'+(yy(ATC(157))+15).toFixed(1)+'" text-anchor="end" font-size="12" font-weight="700" fill="#6B8BA4">ATC</text>';
+   s+='<text x="'+(R-4)+'" y="'+(yy(MC(57))-6).toFixed(1)+'" text-anchor="end" font-size="12" font-weight="700" fill="#C47B5A">MC</text>';
+   s+='<text x="'+(R-4)+'" y="'+(yy(ATC(57))+15).toFixed(1)+'" text-anchor="end" font-size="12" font-weight="700" fill="#6B8BA4">'+atcLabel+'</text>';
    s+='<text x="'+(xx(QMAX)-4)+'" y="'+(yy(Df(a,QMAX))-7).toFixed(1)+'" text-anchor="end" font-size="12.5" font-weight="700" font-style="italic" fill="#2563eb">D</text>';
    s+='<text x="'+xx(Math.min(QMAX-12,qs+26)).toFixed(1)+'" y="'+(yy(MRf(a,Math.min(QMAX-12,qs+26)))+14).toFixed(1)+'" font-size="11.5" font-weight="700" font-style="italic" fill="#8b5cf6">MR</text>';
    s+='<line x1="'+xx(qs).toFixed(1)+'" y1="'+yy(P).toFixed(1)+'" x2="'+xx(qs).toFixed(1)+'" y2="'+Bm+'" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 3"/>';
@@ -1368,12 +1369,12 @@
    s+='<circle cx="'+xx(qs).toFixed(1)+'" cy="'+yy(P).toFixed(1)+'" r="6.5" fill="#2563eb" stroke="#fff" stroke-width="2"/>';
    svg.innerHTML=s;
    var z=prof>0.5?'profit':(prof<-0.5?'loss':'zero');
-   var bt=z==='profit'?'P &gt; ATC &rarr; economic profit &mdash; new firms enter':(z==='loss'?'P &lt; ATC &rarr; economic loss &mdash; firms exit':'P = ATC &rarr; zero economic profit (long-run rest)');
+   var bt=z==='profit'?'P &gt; '+atcLabel+' &rarr; economic profit &mdash; new firms enter':(z==='loss'?'P &lt; '+atcLabel+' &rarr; economic loss &mdash; firms exit':'P = '+atcLabel+' &rarr; zero economic profit (long-run rest)');
    var bc=z==='profit'?'#4d7a4e':(z==='loss'?'#A85C5C':'#3A5A8A');
    var bg=z==='profit'?'rgba(106,142,107,0.16)':(z==='loss'?'rgba(168,92,92,0.14)':'rgba(107,139,164,0.16)');
    bn.innerHTML=bt; bn.style.color=bc; bn.style.background=bg;
    var pc=prof>=0?'#4d7a4e':'#A85C5C';
-   sc.innerHTML='<span style="color:#2563eb;">P* = $'+P.toFixed(2)+'</span><span style="color:#6B8BA4;">ATC = $'+atc.toFixed(2)+'</span><span style="color:#3A3632;">Q* = '+qs.toFixed(0)+'</span><span style="color:'+pc+';">Profit = $'+prof.toFixed(0)+'</span>';
+   sc.innerHTML='<span style="color:#2563eb;">P* = $'+P.toFixed(2)+'</span><span style="color:#6B8BA4;">'+atcLabel+' = $'+atc.toFixed(2)+'</span><span style="color:#3A3632;">Q* = '+qs.toFixed(0)+'</span><span style="color:'+pc+';">Profit = $'+prof.toFixed(0)+'</span>';
    document.querySelectorAll('[data-a][data-grp="'+prefix+'"]').forEach(function(btn){btn.classList.toggle('active',Math.abs(parseFloat(btn.dataset.a)-a)<0.03);});
   }
   aS.addEventListener('input',draw);
@@ -1388,8 +1389,8 @@
   }
   aS.value=defA; draw();
  }
- makeMC('f121', 7.4, false);
- makeMC('f122', 6.42, true);
+ makeMC('f121', 14.5, false, 'ATC');
+ makeMC('f122', 13.5, true, 'LRATC');
 })();
 </script>
 </body>
