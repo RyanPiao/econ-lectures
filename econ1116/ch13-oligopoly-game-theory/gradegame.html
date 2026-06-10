@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Grade Game — Place Your Bid</title>
+<style>
+  :root{ --pink:#ff2e88; --teal:#37e6c8; --ink:#0b1020; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; min-height:100vh; background:radial-gradient(circle at 50% 0%, #1b2440 0%, var(--ink) 70%); color:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; display:flex; align-items:center; justify-content:center; padding:22px;}
+  .card{width:100%; max-width:440px; text-align:center;}
+  h1{font-size:30px; margin:0 0 4px; letter-spacing:1px;}
+  h1 .a{color:var(--pink);} h1 .b{color:var(--teal);}
+  .sub{font-size:14.5px; color:#c7cde0; line-height:1.5; margin:0 0 20px;}
+  .lbl{display:block; text-align:left; font-size:13px; color:#9aa3c0; margin:0 0 6px; text-transform:uppercase; letter-spacing:1px;}
+  input{width:100%; font-size:22px; text-align:center; letter-spacing:3px; text-transform:uppercase; padding:14px; border-radius:14px; border:2px solid #2c3658; background:#11182e; color:#fff; outline:none; margin-bottom:22px;}
+  input:focus{border-color:var(--teal);}
+  .btns{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  button{font-size:24px; font-weight:800; padding:26px 10px; border-radius:18px; border:none; cursor:pointer; color:#fff; letter-spacing:1px; transition:transform .08s, opacity .2s;}
+  button:active{transform:scale(.96);}
+  .alpha{background:linear-gradient(160deg,#ff5fa2,#d1106a);}
+  .beta{background:linear-gradient(160deg,#52f0d6,#11a890);}
+  button .shape{display:block; font-size:30px; margin-bottom:4px;}
+  .note{font-size:12px; color:#7e87a6; margin-top:20px; line-height:1.5;}
+  .done{display:none;}
+  .done.show{display:block; animation:pop .35s ease;}
+  .form.hide{display:none;}
+  .badge{font-size:64px; margin:10px 0 6px;}
+  .doneTitle{font-size:26px; font-weight:800; margin:0 0 6px;}
+  .doneTitle.alpha{color:var(--pink);} .doneTitle.beta{color:var(--teal);}
+  .doneSub{font-size:15px; color:#c7cde0; line-height:1.5;}
+  .lock{font-size:13px; color:#7e87a6; margin-top:16px;}
+  @keyframes pop{from{transform:scale(.8); opacity:0;} to{transform:scale(1); opacity:1;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="form" id="form">
+    <h1>The <span class="a">Grade</span> <span class="b">Game</span></h1>
+    <p class="sub">Without showing your neighbors, place your <b>grade bid</b>. You'll be randomly paired with one other student — no one ever learns who.</p>
+    <label class="lbl" for="ini">Your initials</label>
+    <input id="ini" maxlength="4" placeholder="e.g. JD" autocomplete="off" autocapitalize="characters">
+    <div class="btns">
+      <button class="alpha" onclick="bid('alpha')"><span class="shape">&#9651;</span>ALPHA</button>
+      <button class="beta" onclick="bid('beta')"><span class="shape">&#9633;</span>BETA</button>
+    </div>
+    <p class="note">Pick one and tap. Your choice is hidden from everyone but the random draw.</p>
+  </div>
+  <div class="done" id="done">
+    <div class="badge" id="doneBadge">&#9651;</div>
+    <p class="doneTitle" id="doneTitle">Bid locked in!</p>
+    <p class="doneSub" id="doneSub"></p>
+    <p class="lock">You can close this page. Watch the screen for the draw. &#128274;</p>
+  </div>
+</div>
+<script>
+  var SU="https://dpntbrsorgbivmntwmod.supabase.co",
+      SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI",
+      POLL="ch13-gradegame";
+  function rid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+  window.bid=function(letter){
+    var ini=(document.getElementById('ini').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+    if(!ini){var i=document.getElementById('ini'); i.style.borderColor='#ff5f5f'; i.focus(); return;}
+    var payload={poll_id:POLL, choice:letter+'|'+ini, voter_id:rid()};
+    fetch(SU+"/rest/v1/poll_votes",{method:"POST",headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json"},body:JSON.stringify(payload)})
+      .then(function(){show(letter,ini);}).catch(function(){show(letter,ini);});
+  };
+  function show(letter,ini){
+    document.getElementById('form').classList.add('hide');
+    var d=document.getElementById('done'); d.classList.add('show');
+    var isA=letter==='alpha';
+    document.getElementById('doneBadge').innerHTML=isA?'&#9651;':'&#9633;';
+    var t=document.getElementById('doneTitle'); t.textContent=ini+' — '+(isA?'ALPHA':'BETA')+' is in!';
+    t.className='doneTitle '+(isA?'alpha':'beta');
+    document.getElementById('doneSub').textContent='Your bid is locked. Now we wait for the random pairing.';
+  }
+</script>
+</body>
+</html>
