@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Game Theory &mdash; ECON 2316 Ch 14</title>
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+      startup: { ready: () => { MathJax.startup.defaultReady(); } }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    .timer-badge { display: inline-block; background: #f0f5f8; color: var(--secondary-color); padding: 6px 14px; border-radius: 16px; font-size: 12pt; font-weight: 600; }
+    .timer-badge i { margin-right: 6px; }
+    .stat-card { background: #f8f6f3; border-radius: 10px; padding: 16px 14px; text-align: center; border-left: 4px solid var(--secondary-color); }
+    .stat-card .num { font-size: 28pt; font-weight: 800; color: var(--secondary-color); margin: 0; line-height: 1; }
+    .stat-card .lbl { font-size: 11.5pt; color: var(--muted-color); margin-top: 6px; }
+    .stat-card.accent { border-left-color: var(--accent-color); }
+    .stat-card.accent .num { color: var(--accent-color); }
+    .stat-card.sage { border-left-color: var(--success-color); }
+    .stat-card.sage .num { color: var(--success-color); }
+    .stat-card.rose { border-left-color: var(--danger-color); }
+    .stat-card.rose .num { color: var(--danger-color); }
+    .reveal table.table-standard { font-size: 14pt; }
+    .reveal table.table-standard th { padding: 9px 11px; font-size: 12.5pt; }
+    .reveal table.table-standard td { padding: 8px 11px; font-size: 12pt; vertical-align: middle; }
+    .conj-card { background: #f8f6f3; border-radius: 8px; padding: 11px 16px; }
+    .conj-card .nm { font-size: 11pt; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 3px; }
+    /* Payoff-matrix mini grid */
+    .pm { border-collapse: collapse; margin: 0 auto; font-size: 13pt; }
+    .pm td, .pm th { border: 1.5px solid var(--line-color); padding: 9px 16px; text-align: center; }
+    .pm th { background: #f0f5f8; font-weight: 700; font-size: 11.5pt; color: var(--secondary-color); }
+    .pm td.ne { background: #d9f2e6; font-weight: 700; }
+    .pm td.par { background: #fbeec8; }
+    /* RepeatedPDExplorer preset toggles */
+    .rpd-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 2px 0 4px; }
+    .rpd-preset { font-family: var(--body-font); font-size: 11.5pt; font-weight: 600; padding: 5px 15px; border-radius: 16px; border: 1.5px solid var(--line-color); background: #f8f6f3; color: var(--text-color); cursor: pointer; transition: all .15s; }
+    .rpd-preset:hover { border-color: var(--secondary-color); }
+    .rpd-preset.active { background: var(--secondary-color); color: #fff; border-color: var(--secondary-color); }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ===== Slide 1 — Cover ===== -->
+<section class="section-divider" data-state="is-section-divider" id="title" style="padding: 0;">
+  <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+    <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+      <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">
+        ECON 2316 &bull; Microeconomic Theory &bull; Chapter 14
+      </p>
+      <h1 style="font-size: 38pt; line-height: 1.18; color: var(--primary-color); margin-bottom: 22px;">
+        Game Theory
+      </h1>
+      <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; max-width: 520px; margin-top: 4px;">
+        Chapter 13 <em>solved</em> oligopoly games &mdash; Cournot, Bertrand, Stackelberg &mdash; but never asked what an <strong style="color: var(--text-color);">equilibrium</strong> really is. Game theory is the machinery underneath: players, strategies, payoffs, and the one profile from which no one wants to deviate.
+      </p>
+      <div style="margin-top: auto; padding-bottom: 15px;">
+        <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; margin-bottom: 8px;">
+          Dr. Richeng Piao
+        </p>
+        <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; line-height: 1.8;">
+          Department of Economics<br>
+          Northeastern University &mdash; 100 min
+        </p>
+      </div>
+    </div>
+    <div style="overflow: hidden;">
+      <img alt="A late-night desk: a laptop showing the DOJ's antitrust complaint against an algorithmic-pricing firm, beside a printed stack of pages — the modern face of strategic interaction" src="figures/ch14-cover.png" style="width: 100%; height: 100%; object-fit: cover;">
+    </div>
+  </div>
+</section>
+
+<!-- ===== Slide 2 — Learning Objectives ===== -->
+<section id="learning-objectives" style="padding: 40px 50px;">
+  <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+  <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 14px;">
+    By the end of class today, you will be able to&hellip;
+  </p>
+  <div style="display: flex; flex-direction: column; gap: 9px;">
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">1</p>
+      <p style="font-size: 14pt;"><strong>Define</strong> a normal-form game and find Nash equilibria in pure strategies; apply dominance and iterated elimination. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L3)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">2</p>
+      <p style="font-size: 14pt;"><strong>Solve</strong> for mixed-strategy Nash equilibria using the indifference condition. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">3</p>
+      <p style="font-size: 14pt;"><strong>Solve</strong> sequential games by backward induction and identify the subgame-perfect equilibrium. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">4</p>
+      <p style="font-size: 14pt;"><strong>Derive</strong> the grim-trigger discount-factor threshold and explain when repetition sustains cooperation. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L5 &mdash; central result)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">5</p>
+      <p style="font-size: 14pt;"><strong>Apply</strong> the framework to real strategy &mdash; entry deterrence, OPEC+, algorithmic collusion, and auctions. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L3)</span></p>
+    </div>
+  </div>
+  <aside class="notes">Five LOs trace the chapter's escalating equilibrium concepts: pure-strategy Nash + dominance (&sect;14.1&ndash;14.2), mixed-strategy Nash (&sect;14.3), subgame-perfect equilibrium in sequential games (&sect;14.4), the repeated-game grim-trigger threshold (&sect;14.5), and applications (&sect;14.6). The unifying spine: an equilibrium is a strategy profile from which no player wants to deviate unilaterally &mdash; everything else is finding that profile in richer and richer settings. This chapter formalizes the machinery Ch 13 used informally; the streaming four-firm constellation is the running laboratory and retires here.</aside>
+</section>
+
+<!-- ===== Slide 3 — Ch 13 → Ch 14 Bridge ===== -->
+<section id="bridge">
+  <h2><i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--secondary-color);"></i> Ch 13 Solved the Games. Ch 14 Asks Why.</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Ch 13 &mdash; the answers</p>
+      <ul style="font-size: 13pt; line-height: 1.6; margin-top: 8px;">
+        <li>Cournot: symmetric output \(q^{\ast} = \frac{a-c}{(N+1)b}\)</li>
+        <li>Bertrand: \(P = MC\) with two firms</li>
+        <li>Stackelberg: leader rides the reaction curve</li>
+        <li>We wrote FOCs and solved &mdash; but never asked <em>why</em> these are the right solutions</li>
+      </ul>
+    </div>
+    <div style="background: #fef9f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Ch 14 &mdash; the machinery</p>
+      <ul style="font-size: 13pt; line-height: 1.6; margin-top: 8px;">
+        <li>What <em>is</em> an equilibrium? &rarr; <strong>Nash equilibrium</strong></li>
+        <li>Cournot = Nash of the quantity game</li>
+        <li>Stackelberg = <strong>subgame-perfect</strong> equilibrium of the sequential game</li>
+        <li>And: when can rivals sustain the cartel they all want?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 14px;">
+    <p style="margin: 0;"><strong>One backbone, made explicit.</strong> A <strong>game</strong> is players, strategies, and payoffs that depend on the entire profile of choices. An <strong>equilibrium</strong> is a profile from which no player wants to deviate unilaterally &mdash; the <strong>Nash equilibrium</strong> (Nash 1950; Nobel 1994). Ch 13's solutions were all Nash equilibria; we just hadn't named the concept.</p>
+  </div>
+  <aside class="notes">Bridge slide. Students just spent Ch 13 solving oligopoly models mechanically. The pivot today: name and justify the solution concept they were already using. Cournot's symmetric solution is the Nash equilibrium of the simultaneous quantity game; Stackelberg's is the subgame-perfect equilibrium of the sequential game. Frame Ch 14 as the foundations chapter that closes Part IV by formalizing strategic interaction &mdash; and then extends it (mixed strategies, repeated games) past anything Ch 13 needed.</aside>
+</section>
+
+<!-- ===== Slide 4 — Opening vignette: gas stations + FuelTrack ===== -->
+<section id="opener">
+  <h2><i class="fa-solid fa-gas-pump" style="color: var(--accent-color);"></i> Two Gas Stations and One App</h2>
+  <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">Two stations across a four-lane road sell identical unleaded, prices on tall signs. For decades they held an uneasy truce near <strong>\$3.30</strong>/gal &mdash; each watching the other, rarely cutting.</p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">Late 2024: a price-comparison app (&ldquo;FuelTrack&rdquo;) let drivers see every station's price in one tap. Within six weeks both were undercutting each morning and rebuilding by evening &mdash; margins collapsed to cost plus card fees.</p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0;">Same owners, same costs, same market size. <strong>One technology changed the speed information traveled</strong> &mdash; and the equilibrium flipped from coordination to undercutting.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start;">
+      <div class="stat-card accent"><p class="num">\$3.30</p><p class="lbl">old truce price</p></div>
+      <div class="stat-card rose"><p class="num">\$3.27</p><p class="lbl">undercut, post-app</p></div>
+      <div class="stat-card sage"><p class="num">6 wk</p><p class="lbl">to flip the equilibrium</p></div>
+      <div class="stat-card"><p class="num">1 tap</p><p class="lbl">what changed</p></div>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;">Game theory is the apparatus that tells us <em>why</em> the equilibrium moved. A <strong>game</strong> = players (the two stations), strategies (prices), payoffs (daily revenue, depending on <em>both</em> choices). The app didn't change the players or the costs &mdash; it changed the <em>game</em>, and the equilibrium followed. By the end of class you'll be able to write down the game behind any oligopoly story and predict how a parameter shift moves it.</p>
+  </div>
+  <aside class="notes">Opening vignette &mdash; the chapter's hook. The point: equilibrium is a property of the game's structure, not of the firms' personalities. The FuelTrack app raised the speed/observability of rival pricing, which is exactly the kind of parameter the repeated-game model in &sect;14.5 captures (faster detection shortens the punishment lag, but here transparency makes one-shot undercutting irresistible). Tee up the chapter: we build four equilibrium concepts of escalating strength, then read real markets through them.</aside>
+</section>
+
+<!-- ===== Slide 5 — Section divider §14.1 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-normal-form">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;14.1</p>
+  <h1>Normal-Form Games &amp; Dominance</h1>
+  <p class="subtitle">Players, strategies, payoffs &mdash; and the simplest prediction: never play a strictly dominated strategy</p>
+</section>
+
+<!-- ===== Slide 6 — §14.1 normal-form game definition + payoff matrix ===== -->
+<section id="normal-form-def">
+  <h2><i class="fa-solid fa-table-cells" style="color: var(--accent-color);"></i> A Game Is Three Things</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">A <strong>normal-form game</strong> specifies:</p>
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 12.5pt; margin: 0;"><strong>Players</strong> \(\{1, 2, \ldots, n\}\)</p></div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--accent-color);"><p style="font-size: 12.5pt; margin: 0;"><strong>Strategy sets</strong> \(S_i\) &mdash; the choices available to each player \(i\)</p></div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--success-color);"><p style="font-size: 12.5pt; margin: 0;"><strong>Payoffs</strong> \(u_i(s_1, \ldots, s_n)\) &mdash; depend on the <em>whole</em> profile</p></div>
+      </div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 9px 0 0; color: var(--muted-color);">Choices are <strong>simultaneous</strong> in the formal sense: no player observes another's choice before making her own.</p>
+    </div>
+    <div class="key-result" style="margin: 0;">
+      <p style="margin: 0 0 6px; font-size: 12.5pt;">The simplest game: two players, two strategies each. The <strong>payoff matrix</strong> is a \(2\times2\) grid &mdash; player 1 picks the row, player 2 the column, and each cell holds \((u_1, u_2)\).</p>
+      <p style="margin: 0; font-size: 12.5pt;">A strategy \(s_i\) <strong>strictly dominates</strong> \(s_i'\) if it pays more <em>for every</em> rival choice: \(u_i(s_i, s_{-i}) &gt; u_i(s_i', s_{-i})\) for all \(s_{-i}\). No rational player ever plays a strictly dominated strategy.</p>
+    </div>
+  </div>
+  <div style="background: rgba(107,139,164,0.10); border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 9px 16px; margin-top: 12px;">
+    <p style="margin: 0; font-size: 12pt; line-height: 1.45;">The notation \(s_{-i}\) means &ldquo;everyone except \(i\).&rdquo; Most games &mdash; including Cournot &mdash; have <em>no</em> dominant strategy, because each firm's best output depends on the rival's. The exception is the most famous game in social science.</p>
+  </div>
+  <aside class="notes">Set the vocabulary cleanly: players, strategy sets, payoff functions. Stress &ldquo;simultaneous&rdquo; = unobserved, not literally same-instant. The payoff matrix is the workhorse for 2&times;2 games. Define strict dominance precisely (strictly better against EVERY rival choice) &mdash; it gives the sharpest possible prediction when it applies. Flag that Cournot has no dominant strategy (best response depends on rival q), which is exactly why we'll need Nash equilibrium next. But first, the one game where dominance solves everything: the PD.</aside>
+</section>
+
+<!-- ===== Slide 7 — §14.1 Walkthrough 14.1 PD + figure-14-2 ===== -->
+<section id="walkthrough-14-1">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 14.1 &mdash; The Prisoner's Dilemma</h2>
+  <div style="display: grid; grid-template-columns: 1fr 0.95fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> Two firms choose Cooperate (high price) or Defect (low price). Payoffs satisfy \(T &gt; R &gt; P &gt; S\) with canonical values \((T,R,P,S) = (5,3,1,0)\). Find each firm's dominant strategy and the equilibrium.</p>
+      </div>
+      <table class="pm">
+        <tr><th></th><th>Cooperate</th><th>Defect</th></tr>
+        <tr><th>Cooperate</th><td class="par">3, 3</td><td>0, 5</td></tr>
+        <tr><th>Defect</th><td>5, 0</td><td class="ne">1, 1</td></tr>
+      </table>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 11.5pt; line-height: 1.45; margin: 9px 0 0;"><strong>P1:</strong> vs C, Defect pays \(5&gt;3\); vs D, Defect pays \(1&gt;0\). <strong>Defect strictly dominates.</strong> By symmetry, so does P2's.</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 11.5pt; line-height: 1.45; margin: 7px 0 0;">Equilibrium: \((\text{Defect}, \text{Defect}) = (1,1)\) &mdash; <span style="color:var(--success-color);font-weight:700;">green cell</span>.</p>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Prisoner's Dilemma payoff matrix: the Nash equilibrium at (Defect, Defect) = (1,1) is highlighted green, while the Pareto-dominant (Cooperate, Cooperate) = (3,3) is highlighted amber" src="figures/figure-14-2-pd-payoff-matrix.png" style="max-height: 290px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Individual rationality (green) is Pareto-dominated by mutual cooperation (amber).</p>
+    </div>
+  </div>
+  <div class="key-result fragment fade-up" data-fragment-index="3" style="margin-top: 10px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> Both would earn \((3,3)\) under mutual cooperation, but each gains \(T - R = 2\) by defecting on a cooperator. Individual and collective rationality <em>conflict</em>. No rational one-shot player can reach cooperation &mdash; the temptation gap is too large. &sect;14.5 asks when repetition closes it.</p>
+  </div>
+  <aside class="notes">Three reveals. The defining structure: \(T&gt;R&gt;P&gt;S\). Defect strictly dominates for both, so the unique equilibrium is (D,D) = (1,1) &mdash; yet (C,C) = (3,3) Pareto-dominates it. This is THE example that kills the intuition &ldquo;rational play = best joint outcome.&rdquo; The wedge is the temptation \(T-R = 2\): each player would unilaterally gain by defecting against a cooperator, so cooperation is not a Nash equilibrium of the one-shot game. Hold the (3,3)-vs-(1,1) gap &mdash; the whole repeated-games section is about recovering the amber cell.</aside>
+</section>
+
+<!-- ===== Slide 8 — §14.1 Recall 1116 §13.2 + strict/weak dominance ===== -->
+<section id="dominance-recall">
+  <h2><i class="fa-solid fa-rotate-left" style="color: var(--secondary-color);"></i> Strict vs Weak Dominance &mdash; and the Cigarette-Ad Ban</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.05fr; gap: 20px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">\(s_i\) <strong>weakly dominates</strong> \(s_i'\) if \(u_i(s_i, s_{-i}) \geq u_i(s_i', s_{-i})\) for all \(s_{-i}\), with strict inequality somewhere. Ties allowed.</p>
+      <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 12pt; margin: 0;">We mostly use <strong>strict</strong> dominance &mdash; it gives sharp predictions. Weak dominance can be ambiguous about which equilibrium players coordinate on.</p></div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 9px 0 0;">The PD's bite: even knowing cooperation pays more, a rational player defects. The only escapes are <em>institutional</em> &mdash; force cooperation from outside.</p>
+    </div>
+    <div style="background: #eef2f0; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-rotate-left"></i> Recall from Principles &mdash; 1116 &sect;13.2</p>
+      <p style="margin: 0; font-size: 12.5pt; line-height: 1.5;">The 1116 PD used two gas stations, <strong>EZ Gas</strong> and <strong>QuikFill</strong>, setting High or Low. Low Price was each one's dominant strategy; both earned \(\$500\)/wk under (Low, Low) when (High, High) would have given \(\$800\).</p>
+      <p style="margin: 8px 0 0; font-size: 12.5pt; line-height: 1.5;">The <strong>1971 cigarette TV/radio ad ban</strong> was the real-world resolution: Congress eliminated advertising for <em>all</em> firms at once, ad spending fell \(\sim 25\%\), and tobacco profits <em>rose</em> &mdash; a forced cooperation none could reach alone.</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 11px;">
+    <p style="margin: 0; font-size: 12pt;">Same logic, now formalized. 1116 named the trap; Ch 14 supplies the strategy sets, payoff functions, dominance, and equilibrium &mdash; so we can analyze games richer than the canonical \(2\times2\).</p>
+  </div>
+  <aside class="notes">Two jobs. First, distinguish strict from weak dominance &mdash; we use strict because a strictly dominated strategy is unambiguously never played; weak dominance leaves coordination ambiguity. Second, the RecallFromPrinciples anchor: 1116 &sect;13.2 used EZ Gas / QuikFill and the cigarette ad ban. The ad-ban story is the cleanest real PD resolution &mdash; an external mandate that forces the cooperative (low-ad) outcome the firms privately wanted but couldn't reach. It previews &sect;14.5's question: absent a regulator, can the firms sustain cooperation themselves?</aside>
+</section>
+
+<!-- ===== Slide 9 — Poll #1 (vertical: question + reveal) ===== -->
+<section>
+  <section id="poll-1-question">
+    <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #1 &mdash; What Do Rational Firms Do?</h2>
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px;">
+      <p style="font-size: 15pt; line-height: 1.7;">
+        Two firms play the <strong>one-shot</strong> Prisoner's Dilemma. Mutual cooperation pays each \(3\); mutual defection pays each \(1\); defecting on a cooperator pays \(5\) (the cooperator gets \(0\)). Both players are perfectly rational and know all of this. What happens?
+      </p>
+    </div>
+    <div class="poll-grid" data-poll-id="ch14-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+      <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Both cooperate &mdash; \((3,3)\) beats \((1,1)\)</div>
+      <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Both defect &mdash; \((1,1)\)</div>
+      <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) One cooperates, one defects</div>
+      <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Impossible to predict</div>
+    </div>
+    <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 45 sec to vote</span></p>
+    <aside class="notes">Press 1 for a 60-sec timer. Down arrow reveals. Answer is B: Defect strictly dominates, so the unique Nash equilibrium is (D,D) = (1,1) &mdash; even though both KNOW (3,3) is better. A is the seductive trap: students reason &ldquo;cooperation is collectively better, so rational players cooperate&rdquo; &mdash; conflating individual and collective rationality, the exact mistake the PD is built to expose. D misses that the game has a unique, sharp prediction. The lesson sets up the central tension of the chapter: how do real firms (and OPEC, and streaming platforms) ever escape (1,1)?</aside>
+  </section>
+  <section data-poll-results="ch14-poll-1" id="poll-1-reveal" style="display: flex; flex-direction: column;">
+    <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Both Defect, \((1,1)\)</h2>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+      <div class="poll-results-chart" data-poll-id="ch14-poll-1" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+      <div style="padding: 14px 50px 0;">
+        <p style="font-size: 15pt; line-height: 1.7;">Defect strictly dominates for both, so the unique Nash equilibrium is \((1,1)\) &mdash; even though both players <em>know</em> \((3,3)\) is available and better.</p>
+        <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); padding: 14px 22px; border-radius: 8px; margin: 14px 0;">
+          <p style="font-size: 14pt; margin: 0;"><strong>Trap A:</strong> &ldquo;collectively better&rdquo; \(\neq\) &ldquo;individually chosen.&rdquo; The whole point of the PD is that individual rationality and collective rationality <em>conflict</em>. Knowing the better outcome exists is not enough to reach it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===== Slide 10 — Section divider §14.2 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-pure-nash">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;14.2</p>
+  <h1>Pure-Strategy Nash Equilibrium</h1>
+  <p class="subtitle">When no one has a dominant strategy &mdash; mutual best responses, and iterated elimination</p>
+</section>
+
+<!-- ===== Slide 11 — §14.2 Nash definition + Battle of the Sexes + figure-14-3 ===== -->
+<section id="nash-def">
+  <h2><i class="fa-solid fa-handshake-angle" style="color: var(--accent-color);"></i> Nash Equilibrium: Mutual Best Responses</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 7px;">A profile \((s_1^{\ast}, \ldots, s_n^{\ast})\) is a <strong>Nash equilibrium</strong> if every \(s_i^{\ast}\) is a best response to the others:</p>
+      <p style="font-size: 12.5pt; text-align: center; margin: 6px 0;">\(u_i(s_i^{\ast}, s_{-i}^{\ast}) \geq u_i(s_i, s_{-i}^{\ast}) \quad \forall\, s_i\)</p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 7px;">Given what everyone else does, no one wants to switch. The PD's \((D,D)\) is Nash &mdash; but Nash applies even with <em>no</em> dominant strategy. Take <strong>Battle of the Sexes</strong>: P1 prefers Opera, P2 prefers Football, both prefer being together.</p>
+      <div class="key-result" style="margin: 0;">
+        <p style="margin: 0; font-size: 12pt;">No dominant strategy: P1's best response is Opera if P2 picks Opera, Football if P2 picks Football. Best responses <em>depend on</em> the rival &mdash; the general case.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Battle of the Sexes payoff matrix: two pure Nash equilibria on the diagonal, (Opera, Opera) = (2,1) and (Football, Football) = (1,2), both highlighted green" src="figures/figure-14-3-battle-of-sexes.png" style="max-height: 300px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Two pure NE on the diagonal &mdash; coordination, but disagreement over which.</p>
+    </div>
+  </div>
+  <aside class="notes">Define Nash equilibrium as the generalization of dominant-strategy equilibrium: a profile of mutual best responses. The PD's (D,D) qualifies, but the concept's power is that it works without dominance. Battle of the Sexes is the canonical coordination game: neither player has a dominant strategy, and there are TWO pure NE on the diagonal. That multiplicity is the new phenomenon &mdash; the model alone does not say which equilibrium gets played (focal points, Heads Up 14.1). The off-diagonal cells are not NE because someone always wants to deviate to join the other.</aside>
+</section>
+
+<!-- ===== Slide 12 — §14.2 Walkthrough 14.2 BoS + IESDS ===== -->
+<section id="walkthrough-14-2">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 14.2 &mdash; Pure NE and Iterated Elimination</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px; align-items: start;">
+    <div style="background: #f0f5f8; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Part 1 &mdash; BoS pure NE</p>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0;">Check each cell for a profitable deviation. At \((O,O)=(2,1)\): P1&rarr;F gives \(0&lt;2\); P2&rarr;F gives \(0&lt;1\). <strong>Nash.</strong> ✓</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">By symmetry \((F,F)=(1,2)\) is also Nash. Off-diagonal cells are not &mdash; someone always gains by switching to join.</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 11.5pt; line-height: 1.45; margin: 7px 0 0; color: var(--muted-color);"><strong>Two</strong> pure NE &mdash; uniqueness is the exception, not the rule.</p>
+    </div>
+    <div style="background: #fef9f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Part 2 &mdash; IESDS on a \(3\times3\)</p>
+      <table class="pm" style="font-size: 11pt; margin: 6px 0 0;">
+        <tr><th></th><th>\(X\)</th><th>\(Y\)</th><th>\(Z\)</th></tr>
+        <tr><th>\(A\)</th><td>4,3</td><td>2,7</td><td>0,4</td></tr>
+        <tr><th>\(B\)</th><td class="ne">5,5</td><td>5,1</td><td>2,0</td></tr>
+        <tr><th>\(C\)</th><td>3,4</td><td>1,6</td><td>1,2</td></tr>
+      </table>
+      <p class="fragment fade-up" data-fragment-index="4" style="font-size: 11pt; line-height: 1.4; margin: 6px 0 0;"><strong>R1:</strong> for P2, \(Y\) beats \(Z\) at every row &rarr; drop \(Z\). <strong>R2:</strong> for P1, \(B\) beats \(A\) and \(C\) &rarr; drop both. <strong>R3:</strong> P2 picks \(X\) (\(5&gt;1\)).</p>
+      <p class="fragment fade-up" data-fragment-index="5" style="font-size: 11.5pt; line-height: 1.45; margin: 6px 0 0;">Unique survivor: \((B,X) = (5,5)\).</p>
+    </div>
+  </div>
+  <div class="key-result fragment fade-up" data-fragment-index="6" style="margin-top: 11px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> <strong>IESDS</strong> (iterated elimination of strictly dominated strategies) is sound: every Nash equilibrium survives it. When one profile survives (as here), it is the unique NE. When more than one survives (as in BoS), multiple NE coexist.</p>
+  </div>
+  <aside class="notes">Six reveals. Part 1: check cells one at a time for deviations &mdash; the exam technique. BoS has two pure NE; flag that multiplicity. Part 2: IESDS is the systematic search. Round 1 eliminate P2's Z (Y dominates: 7&gt;4, 1&gt;0, 6&gt;2); round 2 eliminate P1's A and C (B dominates in the reduced game: 5&gt;4&gt;3 at X, 5&gt;2&gt;1 at Y); round 3 P2 chooses X. Unique survivor (B,X) = (5,5), which is the unique Nash equilibrium. Key property: IESDS never deletes a Nash equilibrium, so surviving profiles contain all NE. Verify (B,X): no profitable deviation for either player.</aside>
+</section>
+
+<!-- ===== Slide 13 — §14.2 HeadsUp 14.1 + Recall 1116 §13.3 ===== -->
+<section id="nash-headsup">
+  <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Nash \(\neq\) Efficient, and Nash \(\neq\) Unique</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div class="misconception" style="margin: 0;">
+      <p style="margin: 0; font-size: 11pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-triangle-exclamation"></i> Heads Up 14.1 &mdash; two traps</p>
+      <p style="margin: 6px 0 0; font-size: 12.5pt; line-height: 1.5;"><strong>Trap 1:</strong> &ldquo;Nash is rational play, so it must be the best joint outcome.&rdquo; The PD refutes this: \((D,D)\) is the unique NE <em>and</em> Pareto-dominated by \((C,C)\). Nash is about individual rationality, not group welfare.</p>
+      <p style="margin: 8px 0 0; font-size: 12.5pt; line-height: 1.5;"><strong>Trap 2:</strong> &ldquo;A game has one equilibrium.&rdquo; BoS has two pure NE. The model alone doesn't pick one &mdash; selecting requires a <strong>focal point</strong> (Schelling 1960): custom, communication, or a salient feature of the payoffs.</p>
+    </div>
+    <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-rotate-left"></i> Recall from Principles &mdash; 1116 &sect;13.3</p>
+      <p style="margin: 0; font-size: 12.5pt; line-height: 1.5;">1116 defined Nash equilibrium informally: &ldquo;each player is choosing the best response to the others &mdash; no one wants to deviate unilaterally,&rdquo; after John Forbes Nash Jr. (Nobel 1994).</p>
+      <p style="margin: 8px 0 0; font-size: 12.5pt; line-height: 1.5;">The 1116 example was the gas-station price war: \((\text{Low}, \text{Low})\) is Nash because neither station gains by going High while the rival stays Low. Same definition &mdash; we now write best response as a formal correspondence and use IESDS to search.</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 11px;">
+    <p style="margin: 0; font-size: 12pt;">Empirical IO often uses the <em>symmetric</em> equilibrium as the focal point for homogeneous industries; otherwise the model must stay agnostic and map the whole equilibrium set.</p>
+  </div>
+  <aside class="notes">The conceptual guardrails for the rest of the chapter. Trap 1 (efficiency): the PD is the standing counterexample &mdash; unique NE, Pareto-dominated. Trap 2 (uniqueness): BoS has two pure NE plus a mixed one (next section), and selecting among them needs a focal point (Schelling). RecallFromPrinciples 1116 &sect;13.3: same Nash definition students already met, now formalized with best-response correspondences and IESDS. The Cournot/Bertrand-homogeneous equilibria were unique because reaction curves crossed once; BoS shows uniqueness is special. Next: a game with NO pure NE at all.</aside>
+</section>
+
+<!-- ===== Slide 14 — Section divider §14.3 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-mixed-nash">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;14.3</p>
+  <h1>Mixed-Strategy Nash Equilibrium</h1>
+  <p class="subtitle">When no pure profile is stable &mdash; randomize, and make your rival indifferent</p>
+</section>
+
+<!-- ===== Slide 15 — §14.3 matching pennies + mixed strategy def ===== -->
+<section id="matching-pennies">
+  <h2><i class="fa-solid fa-coins" style="color: var(--accent-color);"></i> Matching Pennies: No Pure Equilibrium Exists</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 18px; align-items: start;">
+    <div style="text-align: center;">
+      <table class="pm" style="font-size: 13pt;">
+        <tr><th></th><th>Heads</th><th>Tails</th></tr>
+        <tr><th>Heads</th><td>1, &minus;1</td><td>&minus;1, 1</td></tr>
+        <tr><th>Tails</th><td>&minus;1, 1</td><td>1, &minus;1</td></tr>
+      </table>
+      <p style="font-size: 11pt; color: var(--muted-color); margin-top: 8px; max-width: 320px; margin-left:auto; margin-right:auto;">Match &rarr; P1 wins \$1; mismatch &rarr; P2 wins \$1. A zero-sum game.</p>
+    </div>
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 7px;">Check every cell: in each one, <em>someone</em> wants to deviate. No pure profile is a mutual best response &mdash; there is <strong>no pure-strategy Nash equilibrium.</strong></p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 7px;">A <strong>mixed strategy</strong> \(\sigma_i\) is a probability distribution over \(S_i\): &ldquo;play H with prob \(p\), T with prob \(1-p\).&rdquo; Expected payoff:</p>
+      <p style="font-size: 12pt; text-align: center; margin: 6px 0;">\(u_i(\sigma_1,\sigma_2) = \sum_{s_1}\sum_{s_2} \sigma_1(s_1)\,\sigma_2(s_2)\,u_i(s_1,s_2)\)</p>
+      <div class="key-result" style="margin: 6px 0 0;">
+        <p style="margin: 0; font-size: 12pt;">A <strong>mixed-strategy NE</strong> is a profile where no player can raise her expected payoff by re-randomizing. Equivalently &mdash; the <strong>indifference condition</strong> &mdash; each player is indifferent across every pure strategy she uses with positive probability.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Matching pennies is the canonical no-pure-NE game: at every cell one player wants to flip, so the chase never settles on a pure profile. Define mixed strategy (a distribution over pure strategies) and expected payoff (bilinear in the mixing probabilities). The key concept is the indifference condition: if a player puts positive weight on two pure strategies, their expected payoffs must be equal &mdash; otherwise she'd shift all weight to the better one. That condition is the equation we solve. Nash 1950 guarantees a mixed NE always exists in finite games (Heads Up 14.2).</aside>
+</section>
+
+<!-- ===== Slide 16 — §14.3 CalculusCorner 14.1 + figure-14-4 ===== -->
+<section id="cc-14-1">
+  <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> Calculus Corner 14.1 &mdash; The Indifference Condition</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 0 0 6px;">Suppose \(\sigma_1^{\ast}\) puts positive weight on both \(s_1\) and \(s_1'\). The payoff under \(\sigma_1^{\ast}\) is a weighted average of their expected payoffs against \(\sigma_{-1}^{\ast}\). If those differed, P1 would shift <em>all</em> weight to the higher one. So in equilibrium:</p>
+      <div class="key-result" style="margin: 6px 0;">
+        <p style="margin: 0; font-size: 12pt; text-align: center;">\(u_1(s_1, \sigma_{-1}^{\ast}) = u_1(s_1', \sigma_{-1}^{\ast})\)</p>
+      </div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 6px 0 0;"><strong>The trick:</strong> P1's indifference solves for <em>P2's</em> mixing probability; P2's indifference solves for <em>P1's</em>. Each player's mix is pinned by making the <em>other</em> indifferent.</p>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 7px 0 0; color: var(--muted-color);">Geometrically: best responses are step functions of the rival's probability. Pure NE are corner intersections; the mixed NE is the interior crossing where both are simultaneously indifferent.</p>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Matching pennies: P1's expected payoff from Heads (rising line) and Tails (falling line) as functions of P2's probability q; they cross at q* = 1/2, the mixed Nash equilibrium" src="figures/figure-14-4-mixed-ne-indifference.png" style="max-height: 300px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">P1 is indifferent exactly where the two payoff lines cross: \(q^{\ast} = 1/2\).</p>
+    </div>
+  </div>
+  <aside class="notes">The single idea that solves every mixed-NE problem: a player only randomizes if indifferent, so the OTHER player's mix must equate her pure-strategy payoffs. This inverts the usual logic &mdash; you solve P1's indifference to get P2's probability, and vice versa. The figure makes it visual: P1's payoff from H rises in q, from T falls in q; below the crossing she'd play pure T, above it pure H, and only at q* = 1/2 is she willing to mix. The mixed NE is where both step-function best responses cross in the interior. Now apply it twice.</aside>
+</section>
+
+<!-- ===== Slide 17 — §14.3 Walkthrough 14.3 + 14.4 ===== -->
+<section id="walkthrough-14-3-4">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthroughs 14.3 &amp; 14.4 &mdash; Solving the Mix</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+    <div style="background: #f0f5f8; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">W14.3 &mdash; Matching pennies</p>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0;">P2 indifferent: \(u_2(H) = 1-2p\), \(u_2(T) = 2p-1\). Set equal &rarr; \(p^{\ast} = 1/2\).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">By symmetry \(q^{\ast} = 1/2\). Each flips a fair coin; expected payoff \(0\) for both.</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 11.5pt; line-height: 1.45; margin: 7px 0 0; color: var(--muted-color);">Uniform mixing is the signature of symmetric zero-sum games &mdash; be unpredictable.</p>
+    </div>
+    <div style="background: #fef9f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">W14.4 &mdash; Battle of the Sexes</p>
+      <p class="fragment fade-up" data-fragment-index="4" style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0;">P1 indifferent: \(2q = 1-q \Rightarrow q^{\ast} = 1/3\) (P2's prob of Opera).</p>
+      <p class="fragment fade-up" data-fragment-index="5" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">P2 indifferent: \(p = 2(1-p) \Rightarrow p^{\ast} = 2/3\) (P1's prob of Opera).</p>
+      <p class="fragment fade-up" data-fragment-index="6" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">Expected payoff \(= 2/3\) each &mdash; <strong>worse</strong> than either pure NE (where the loser gets \(1\)).</p>
+    </div>
+  </div>
+  <div class="key-result fragment fade-up" data-fragment-index="7" style="margin-top: 11px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> BoS has <strong>three</strong> equilibria: two pure (\((O,O)\), \((F,F)\)) and one mixed (\(p^{\ast}=2/3, q^{\ast}=1/3\)). The mixed one is the <em>worst</em> for both &mdash; randomizing hedges against miscoordination but throws away surplus. This is why focal points, contracts, and communication matter so much in real coordination problems.</p>
+  </div>
+  <aside class="notes">Seven reveals across two walkthroughs. W14.3: symmetric, uniform mixing, value 0 &mdash; the matching-pennies signature. W14.4: asymmetric mix (note P1 plays her PREFERRED Opera with prob 2/3, but P2 plays Opera only 1/3 &mdash; each player's mix makes the OTHER indifferent, so it tracks the rival's preferences). Expected payoff 2/3 &lt; the pure-NE payoffs, so the mixed equilibrium is the worst of the three. Punchline: in coordination games, randomizing is a bad outcome &mdash; better to coordinate on a pure NE even one favoring the rival. Hence the value of coordination devices.</aside>
+</section>
+
+<!-- ===== Slide 18 — §14.3 TheoryAndData 14.1 penalty kicks + HeadsUp 14.2 ===== -->
+<section id="td-penalty-kicks">
+  <h2><i class="fa-solid fa-futbol" style="color: var(--secondary-color);"></i> Does Anyone Actually Mix? &mdash; Penalty Kicks</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-database"></i> Theory and Data 14.1 &mdash; Chiappori-Levitt-Groseclose (2002, <em>AER</em>)</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;">A penalty kick is stylized matching pennies: kicker picks a corner, goalie picks a corner; same corner favors the goalie. The mixed-NE prediction: <strong>scoring probability is equal across the kicker's choices</strong> (else shift weight).</p>
+      <p style="margin: 8px 0 0; font-size: 12pt; line-height: 1.5;">French + Italian top divisions, 1995&ndash;2000: Left and Right scoring rates were <strong>76% vs 76%</strong> &mdash; statistically indistinguishable, exactly the indifference condition. Replicated in tennis serves (Walker-Wooders 2001) and Spanish soccer (Palacios-Huerta 2003).</p>
+    </div>
+    <div>
+      <div class="misconception" style="margin: 0 0 10px;">
+        <p style="margin: 0; font-size: 11pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-triangle-exclamation"></i> Heads Up 14.2 &mdash; a pure NE may not exist, but a mixed one always does</p>
+        <p style="margin: 6px 0 0; font-size: 12pt; line-height: 1.45;">Nash's 1950 theorem: <em>every</em> finite game has at least one Nash equilibrium (possibly mixed). Can't find a pure NE? Solve the indifference condition for the mixed one.</p>
+      </div>
+      <p style="font-size: 11.5pt; line-height: 1.45; margin: 0; color: var(--muted-color);"><strong>The counterpoint:</strong> Kovash-Levitt (2009) find MLB pitchers and NFL play-callers <em>deviate</em> from minimax &mdash; too many fastballs, too few passes. When the action space is large and cognitive load high, players fall into predictable patterns. Mixed-NE holds for penalty kicks and tennis, not for baseball.</p>
+    </div>
+  </div>
+  <aside class="notes">The empirical test of mixed strategies. The prediction is subtle but sharp: at the mixed NE, the kicker's success rate must be EQUAL across directions (otherwise reallocate). Chiappori-Levitt-Groseclose find 76% vs 76% &mdash; striking confirmation. Heads Up 14.2: Nash existence guarantees a mixed NE in any finite game, so the indifference condition always has a solution. But Kovash-Levitt is the honest counterpoint: in complex action spaces (pitch type/location, play-calling) pros regress to predictability. The differentiator is action-space complexity, not strategic sophistication. Use mixed-NE as a benchmark, not a law.</aside>
+</section>
+
+<!-- ===== Slide 19 — Section divider §14.4 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-sequential">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;14.4</p>
+  <h1>Sequential Games &amp; Backward Induction</h1>
+  <p class="subtitle">When one player moves first &mdash; credible commitment, non-credible threats, and SPNE</p>
+</section>
+
+<!-- ===== Slide 20 — §14.4 extensive form + SPNE + backward induction ===== -->
+<section id="spne-def">
+  <h2><i class="fa-solid fa-diagram-project" style="color: var(--accent-color);"></i> Trees, Subgames, and Credible Threats</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 7px;">Many interactions are <strong>sequential</strong>: one firm moves, others observe, then respond (Stackelberg was one). The <strong>extensive form</strong> is a tree &mdash; decision nodes labeled by player, branches for actions, payoffs at the leaves.</p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 7px;">A <strong>strategy</strong> specifies an action at <em>every</em> node where it's your turn &mdash; even off-path nodes, because we must evaluate counterfactuals.</p>
+      <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 12pt; margin: 0;">A <strong>subgame</strong> starts at any node and includes everything below it.</p></div>
+    </div>
+    <div>
+      <div class="key-result" style="margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 12.5pt;">A <strong>subgame-perfect Nash equilibrium (SPNE)</strong> induces a Nash equilibrium in <em>every</em> subgame &mdash; including off-path ones. It rules out <strong>non-credible threats</strong>: actions that wouldn't actually be optimal if that node were reached.</p>
+      </div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0;"><strong>Backward induction</strong> finds it: start at the deepest nodes, pick each player's optimal action, fold those payoffs up into the parent, and repeat to the top.</p>
+    </div>
+  </div>
+  <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 9px 16px; margin-top: 12px;">
+    <p style="margin: 0; font-size: 12pt; line-height: 1.45;"><strong>Why SPNE, not just Nash?</strong> A plain Nash equilibrium can rest on a threat the threatener would never carry out. SPNE demands the threat be optimal <em>at the node where it would be executed</em> &mdash; credibility, built in.</p>
+  </div>
+  <aside class="notes">The extensive-form vocabulary: tree, decision nodes, strategies that prescribe actions everywhere (not just on path). Subgame = any node and its descendants. SPNE = Nash in every subgame, which is exactly the requirement that eliminates non-credible threats. Backward induction is the algorithm: solve the last movers first, fold up. The credibility point is the heart of &sect;14.4 &mdash; &ldquo;I'll fight you if you enter&rdquo; is only believable if fighting is actually optimal post-entry. The next slide makes this concrete with entry deterrence, where a sunk investment is what makes the threat credible.</aside>
+</section>
+
+<!-- ===== Slide 21 — §14.4 Walkthrough 14.5 entry deterrence + figure-14-6 ===== -->
+<section id="walkthrough-14-5">
+  <h2><i class="fa-solid fa-chess-rook" style="color: var(--accent-color);"></i> Walkthrough 14.5 &mdash; Entry Deterrence (Dixit 1980)</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.05fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> Incumbent I chooses Invest (sink \$10M, lowering its MC) or Don't. Then entrant E chooses Enter or Stay Out. Find the SPNE by backward induction.</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>After Don't Invest:</strong> E earns \(8\) (Enter) vs \(0\) (Out) &rarr; <strong>Enter</strong>. Outcome \((20, 8)\).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>After Invest:</strong> E earns \(-3\) (Enter) vs \(0\) (Out) &rarr; <strong>Stay Out</strong>. Outcome \((40, 0)\).</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>Stage 1:</strong> I compares \(20\) (Don't) vs \(40\) (Invest) &rarr; <strong>Invest.</strong></p>
+      <div class="key-result fragment fade-up" data-fragment-index="4" style="margin: 6px 0 0;">
+        <p style="margin: 0; font-size: 12pt;"><strong>SPNE:</strong> I invests; E plays &ldquo;Stay Out if I invested, Enter if not.&rdquo; On path: \((40, 0)\) &mdash; entry deterred.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Entry-deterrence game tree solved by backward induction: incumbent invests, entrant stays out, SPNE outcome (40, 0)" src="figures/figure-14-6-sequential-game-tree.png" style="max-height: 320px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Backward induction: solve E's nodes first, then I's choice.</p>
+    </div>
+  </div>
+  <div class="key-result fragment fade-up" data-fragment-index="5" style="margin-top: 10px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> The threat &ldquo;I'll fight with low MC&rdquo; is credible <em>only after</em> the \$10M is sunk. Without the investment, E enters anyway. The sunk cost is the <strong>commitment device</strong> &mdash; an action that's inefficient on its own but changes the post-entry game. Overcapacity, R&D, exclusive contracts all work this way.</p>
+  </div>
+  <aside class="notes">Five reveals tracing backward induction on the tree. Solve E's two subgames first: after Don't Invest, E enters (8&gt;0); after Invest, E stays out (0&gt;-3). Then I picks Invest (40&gt;20). The SPNE strategy for E is conditional &mdash; it specifies behavior at BOTH nodes, including the off-path one. The economic punchline (Dixit 1980): the investment is what makes the &ldquo;I'll fight&rdquo; threat credible. Without sinking the cost, the threat is empty and entry happens. Sunk-cost commitment beats cheap talk. This is the formal engine behind the Google application next.</aside>
+</section>
+
+<!-- ===== Slide 22 — §14.4 Application Google + Visa/MC ===== -->
+<section id="app-google">
+  <h2><i class="fa-solid fa-magnifying-glass-dollar" style="color: var(--secondary-color);"></i> Application: Google's \$26B Default Deals as Commitment</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 9px;">
+        <div class="stat-card accent"><p class="num">\$26B</p><p class="lbl">/yr to Apple, Samsung, Mozilla for default search</p></div>
+        <div class="stat-card rose"><p class="num">Aug 2024</p><p class="lbl">Judge Mehta: Sherman &sect;2 violation</p></div>
+      </div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0;">The DOJ argued the payments are a Dixit-style entry barrier: Google's <em>commitment</em> to keep paying for default placement deters Bing and DuckDuckGo, who can't match the payments &mdash; they have less monopoly rent to share with the platforms.</p>
+    </div>
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">The remedy phase (concluded Sept 2 2025) <strong>rejected</strong> the DOJ's request to divest Chrome and Android. Mehta chose a <em>behavioral</em> remedy: no exclusive default contracts going forward; share some user-interaction data with rivals.</p>
+      <div class="key-result" style="margin: 0;">
+        <p style="margin: 0; font-size: 12pt;">Whether banning the contract unwinds the commitment is now the open empirical question &mdash; watch Bing's share and default placements on new phones over 2025&ndash;2027.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">The contemporary Dixit case. Google's default-placement payments function exactly as the sunk-cost commitment in W14.5: a costly, ongoing action that changes rivals' entry calculus &mdash; competitors can't profitably match because they lack the rent to share. Mehta found liability (Aug 5 2024) but the Sept 2 2025 remedy split the difference: no structural breakup (no Chrome divestiture), a behavioral injunction instead (no exclusive defaults + data sharing). The economics question the remedy raises: does removing the contract remove the commitment, or has the default already entrenched? The parallel Visa/Mastercard interchange-fee saga (the \$30B settlement rejected June 2024) shows how durable these fee-structure commitments are.</aside>
+</section>
+
+<!-- ===== Slide 23 — §14.4 Walkthrough 14.6 Stackelberg as SPNE ===== -->
+<section id="walkthrough-14-6">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 14.6 &mdash; Stackelberg <em>Is</em> an SPNE</h2>
+  <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 9px 16px; margin: 0 0 10px;">
+    <p style="margin: 0; font-size: 12pt; line-height: 1.5;"><strong>Problem.</strong> Recall Ch 13's Stackelberg: \(P = 100 - Q\), both \(MC = 20\). Leader picks \(q_1\); follower observes and picks \(q_2\). Solve by backward induction &mdash; and recognize the result.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div style="background: #f0f5f8; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Solve</p>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0;"><strong>Stage 2 (follower):</strong> \(q_2 = (80 - q_1)/2\).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;"><strong>Stage 1 (leader):</strong> substitute &rarr; \(\pi_1 = (40 - q_1/2)q_1\); FOC \(\Rightarrow q_1^{\ast} = 40\).</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">\(q_2^{\ast} = 20\), \(Q = 60\), \(P = \$40\), \(\pi_1 = \$800\), \(\pi_2 = \$400\).</p>
+    </div>
+    <div style="background: #fef9f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Check vs Cournot</p>
+      <p class="fragment fade-up" data-fragment-index="4" style="font-size: 11.5pt; line-height: 1.5; margin: 6px 0 0;">Cournot: \(Q = 53.33\), \(P = \$46.67\), each \(\pi = \$711\), total \(\$1,422\).</p>
+      <p class="fragment fade-up" data-fragment-index="5" style="font-size: 11.5pt; line-height: 1.5; margin: 7px 0 0;">Stackelberg total \(60 &gt; 53.33\) &rarr; lower price (\(\$40 &lt; \$46.67\)). Leader earns <strong>more</strong> (\$800), follower <strong>less</strong> (\$400); industry \$1,200.</p>
+      <p class="fragment fade-up" data-fragment-index="6" style="font-size: 11.5pt; line-height: 1.5; margin: 7px 0 0;">It's the SPNE of the 2-stage game &mdash; exactly Ch 13's W13.6 numbers.</p>
+    </div>
+  </div>
+  <div class="key-result fragment fade-up" data-fragment-index="7" style="margin-top: 11px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> Ch 13's Stackelberg solution <em>is</em> the subgame-perfect equilibrium of the sequential quantity game. The <strong>first-mover advantage</strong> is the formal content of &ldquo;leader commits to high output, follower best-responds with less&rdquo; &mdash; and the commitment is credible because produced output is irreversible.</p>
+  </div>
+  <aside class="notes">Seven reveals &mdash; the slide that ties &sect;14.4 back to Ch 13. Same backward induction as entry deterrence, now on continuous quantities: solve the follower's reaction function, substitute into the leader's profit, optimize. Out come the exact W13.6 numbers (q1=40, q2=20, P=$40, &pi;1=$800, &pi;2=$400). The conceptual payoff: Stackelberg isn't a separate model &mdash; it's the SPNE of the sequential game, and the first-mover advantage is just credible commitment (output, once produced, can't be unmade). Same role as the $10M sunk cost in W14.5. This is the unification Ch 13 promised.</aside>
+</section>
+
+<!-- ===== Slide 24 — Section divider §14.5 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-repeated">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;14.5</p>
+  <h1>Repeated Games &amp; the Discount Factor</h1>
+  <p class="subtitle">The one-shot PD says defect. But gas stations price every day &mdash; does repetition rescue cooperation?</p>
+</section>
+
+<!-- ===== Slide 25 — §14.5 finite horizon W14.7 unraveling ===== -->
+<section id="walkthrough-14-7">
+  <h2><i class="fa-solid fa-link-slash" style="color: var(--accent-color);"></i> Walkthrough 14.7 &mdash; Finite Repetition Unravels</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> Two firms play the canonical PD \((5,3,1,0)\) for <em>exactly</em> \(T=2\) rounds. Both know there are two rounds. What is the SPNE?</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 0 0 6px;"><strong>Round 2</strong> is the last round &mdash; no future, so it's a one-shot PD. Unique NE: \((D,D)\).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 0 0 6px;"><strong>Round 1:</strong> whatever you do, round 2 is already locked at \((D,D)\). No future reward for cooperating now &rarr; round 1 is also one-shot &rarr; \((D,D)\).</p>
+      <div class="key-result fragment fade-up" data-fragment-index="3" style="margin: 6px 0 0;">
+        <p style="margin: 0; font-size: 12pt;"><strong>SPNE:</strong> defect in both rounds. Total \(1+1 = 2\) each &mdash; vs \(3+3 = 6\) under full cooperation. Unraveling cost: \(4\).</p>
+      </div>
+    </div>
+    <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-triangle-exclamation"></i> The chain-store paradox (Selten 1978)</p>
+      <p style="margin: 0; font-size: 12.5pt; line-height: 1.5;">Backward induction unravels <em>any</em> finite horizon: the last round reverts to one-shot, so the second-to-last does too, all the way back to round 1.</p>
+      <p style="margin: 8px 0 0; font-size: 12.5pt; line-height: 1.5;">An incumbent who plans to fight \(T\) entrants can't credibly threaten the first &mdash; the last-market threat is empty (no future entrants), which unwinds the whole chain backwards.</p>
+      <p style="margin: 8px 0 0; font-size: 12pt; line-height: 1.5;"><strong>Real cooperation needs an infinite (or uncertain) horizon, not a finite one.</strong></p>
+    </div>
+  </div>
+  <aside class="notes">Three reveals. The brutal logic of finite repetition: the last round has no future, so it's a one-shot PD &rarr; (D,D). Knowing round 2 is locked, round 1 has no continuation reward &rarr; (D,D). Induction kills cooperation in EVERY round, for any finite T. Selten's chain-store paradox is the same structure with entry deterrence. The lesson reframes the whole section: repetition per se doesn't save cooperation &mdash; it's the ABSENCE of a known last round (infinite or uncertain horizon) that does. This directly sets up Poll #2 (students will want to believe a 10-round game sustains cooperation) and the infinite-horizon grim-trigger machinery.</aside>
+</section>
+
+<!-- ===== Slide 26 — Poll #2 (vertical: question + reveal) ===== -->
+<section>
+  <section id="poll-2-question">
+    <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #2 &mdash; Ten Rounds, Known End</h2>
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px;">
+      <p style="font-size: 15pt; line-height: 1.7;">
+        The same two firms now agree to cooperate and play the PD for <strong>exactly 10 rounds</strong> &mdash; and both know round 10 is the last. Can they sustain cooperation?
+      </p>
+    </div>
+    <div class="poll-grid" data-poll-id="ch14-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+      <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Yes &mdash; the long future protects cooperation</div>
+      <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Cooperate early, defect near the end</div>
+      <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) No &mdash; it unravels to defect from round 1</div>
+      <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Only if the discount factor is high enough</div>
+    </div>
+    <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 45 sec to vote</span></p>
+    <aside class="notes">Down arrow reveals. Answer is C: with a KNOWN last round, backward induction unravels cooperation all the way to round 1 &mdash; (D,D) every period, regardless of T. B is the intuitive trap (&ldquo;defect near the end&rdquo;) &mdash; but once round 10 is locked at (D,D), round 9 has no future reward and also defects, cascading back; there is no &ldquo;early cooperation&rdquo; phase in the SPNE. D is the subtle trap: the discount factor only rescues cooperation in an INFINITE (or uncertain) horizon; for a finite known horizon, no &delta; &lt; 1 helps. A confuses &ldquo;long&rdquo; with &ldquo;infinite.&rdquo; This is the most counterintuitive result in the chapter &mdash; spend time on it.</aside>
+  </section>
+  <section data-poll-results="ch14-poll-2" id="poll-2-reveal" style="display: flex; flex-direction: column;">
+    <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; It Unravels to Round 1</h2>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+      <div class="poll-results-chart" data-poll-id="ch14-poll-2" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+      <div style="padding: 14px 50px 0;">
+        <p style="font-size: 15pt; line-height: 1.7;">Round 10 is one-shot &rarr; \((D,D)\). Then round 9 has no future to protect &rarr; \((D,D)\). The cascade runs all the way back to round 1.</p>
+        <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); padding: 14px 22px; border-radius: 8px; margin: 14px 0;">
+          <p style="font-size: 14pt; margin: 0;"><strong>Trap D:</strong> a high \(\delta\) sustains cooperation only with an <em>infinite</em> (or uncertain) horizon. A <em>finite, known</em> end-date unravels for <strong>any</strong> \(\delta &lt; 1\). The fix that makes real cooperation work is removing the known last round &mdash; next.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===== Slide 27 — §14.5 CalculusCorner 14.2 + figure-14-5 ===== -->
+<section id="cc-14-2">
+  <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> Calculus Corner 14.2 &mdash; The Grim-Trigger Threshold</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 5px;"><strong>Grim trigger:</strong> cooperate until someone defects, then defect forever. Discount factor \(\delta \in [0,1)\). Compare two streams:</p>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 0 0 4px;">Cooperate forever: \(\text{PV}^{\text{coop}} = \dfrac{R}{1-\delta}\).</p>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 0 0 5px;">Defect once, then punished: \(\text{PV}^{\text{def}} = T + \dfrac{\delta P}{1-\delta}\).</p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 5px;">Cooperation is an SPNE iff \(\text{PV}^{\text{coop}} \geq \text{PV}^{\text{def}}\). Solving:</p>
+      <div class="key-result" style="margin: 6px 0;">
+        <p style="margin: 0; font-size: 13pt; text-align: center;">\(\delta \geq \delta^{\ast} = \dfrac{T - R}{T - P}\)</p>
+      </div>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 5px 0 0; color: var(--muted-color);">Canonical PD \((5,3,1,0)\): \(\delta^{\ast} = 2/4 = 0.5\). Patient enough (\(\delta \geq 0.5\)) &rarr; cooperate. Two ways to make it easier: shrink temptation \(T-R\), or sharpen punishment \(T-P\).</p>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Grim trigger: PV of cooperating forever (rising convex curve) versus deviating today (flatter curve), as functions of the discount factor; they cross at delta-star = 0.5, beyond which cooperation is sustainable" src="figures/figure-14-5-repeated-pd-discount-factor.png" style="max-height: 300px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Right of \(\delta^{\ast}\): cooperating forever beats defecting once.</p>
+    </div>
+  </div>
+  <aside class="notes">The chapter's central derivation. Grim trigger threatens permanent reversion to one-shot (D,D). Compare PV of cooperating forever, R/(1-&delta;), against the one-time temptation plus eternal punishment, T + &delta;P/(1-&delta;). The inequality solves to the clean threshold &delta;* = (T-R)/(T-P) &mdash; depends ONLY on stage-game payoffs. Intuition: temptation gap T-R is today's gain from cheating; punishment gap T-P is the per-period future loss. Cooperation holds when the discounted future punishment outweighs the present temptation. The figure: the two PV curves cross at &delta;*, and cooperation is sustainable in the shaded region to the right. Now apply it to the Cournot cartel &mdash; and let students drive it.</aside>
+</section>
+
+<!-- ===== Slide 28 — INTERACTIVE RepeatedPDExplorer ===== -->
+<section id="rpd-explorer">
+  <h2><i class="fa-solid fa-sliders" style="color: var(--accent-color);"></i> Drive the Threshold: When Does Cooperation Survive?</h2>
+  <div class="iv-card" style="padding: 8px 18px 10px;">
+    <div class="rpd-row">
+      <button class="rpd-preset" data-pre="pd"><i class="fa-solid fa-handcuffs"></i> Canonical PD (5,3,1,0)</button>
+      <button class="rpd-preset" data-pre="cournot"><i class="fa-solid fa-industry"></i> Cournot cartel (W14.8)</button>
+    </div>
+    <div style="text-align:center; margin-bottom:4px;"><span id="rpd-banner" style="display:inline-block; font-size:11.5pt; font-weight:700; padding:3px 16px; border-radius:6px;"></span></div>
+    <div id="rpd-score" style="text-align:center; font-size:12.5pt; font-weight:700; display:flex; flex-wrap:wrap; justify-content:center; gap:3px 16px; margin:0 0 4px; min-height:18px;"></div>
+    <svg id="rpd-svg" viewBox="0 0 700 360" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; max-height:300px; display:block;"></svg>
+    <div style="max-width:560px; margin:8px auto 0;"><label class="iv-label">Discount factor \(\delta\) <span class="iv-readout" id="rpd-deltaRead">0.60</span></label><input type="range" class="iv-slider" id="rpd-delta" min="0" max="0.95" step="0.01" value="0.60"></div>
+    <p style="text-align:center; font-size:11pt; color:var(--muted-color); margin:7px 0 0;">Grim trigger: <span style="color:#2563eb;font-weight:700;">blue = PV of cooperating forever</span>, <span style="color:#ef4444;font-weight:700;">red = PV of defecting once</span>. The <span style="color:#10b981;font-weight:700;">green region</span> (\(\delta \geq \delta^{\ast}\)) is where cooperation is sustainable. Drag \(\delta\) to move the marker.</p>
+  </div>
+  <aside class="notes">Headline interactive (RepeatedPDExplorer). Two presets on the grim-trigger machinery of CC 14.2 / W14.8. Canonical PD: T,R,P=5,3,1, &delta;*=0.5. Cournot cartel: &pi;_dev=900, &pi;_M=800, &pi;_C=711.11 (W14.8 numbers), &delta;*=9/17&asymp;0.5294. Drag &delta;: below &delta;* the red &ldquo;defect&rdquo; curve sits above blue &ldquo;cooperate&rdquo; (cooperation collapses); at &delta;* they cross; above it blue wins and the banner flips to sustainable. Read the live PVs and the gap. The point: the SAME formula governs the abstract PD and the concrete Cournot cartel &mdash; only the payoffs change. Toggle to Cournot and note the threshold barely moves (0.50 &rarr; 0.53), so realistic corporate patience easily sustains the duopoly cartel.</aside>
+</section>
+
+<!-- ===== Slide 29 — §14.5 Walkthrough 14.8 Cournot grim trigger ===== -->
+<section id="walkthrough-14-8">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 14.8 &mdash; The Cournot Cartel by Grim Trigger</h2>
+  <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 9px 16px; margin: 0 0 10px;">
+    <p style="margin: 0; font-size: 12pt; line-height: 1.5;"><strong>Problem.</strong> Two firms, \(P = 100 - Q\), \(MC = 20\), infinite horizon. Grim trigger: produce the cartel quantity; if anyone deviates, revert to Cournot-Nash forever. Find \(\delta^{\ast}\).</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div style="background: #f0f5f8; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Three per-period payoffs</p>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0;"><strong>Cartel:</strong> \(q^M = 20\), \(P^M = \$60\), \(\pi^M = \$800\).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;"><strong>Deviate</strong> (best-respond to rival's \(20\)): \(q = 30\), \(P = \$50\), \(\pi^{\text{dev}} = \$900\).</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;"><strong>Punishment</strong> (Cournot-Nash): \(\pi^{C} = \$711.11\).</p>
+    </div>
+    <div style="background: #fef9f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Apply the threshold</p>
+      <p class="fragment fade-up" data-fragment-index="4" style="font-size: 12pt; line-height: 1.5; margin: 6px 0 0;">\(\delta^{\ast} = \dfrac{\pi^{\text{dev}} - \pi^{M}}{\pi^{\text{dev}} - \pi^{C}} = \dfrac{900 - 800}{900 - 711.11} = \dfrac{9}{17} \approx 0.529\).</p>
+      <p class="fragment fade-up" data-fragment-index="5" style="font-size: 11.5pt; line-height: 1.5; margin: 7px 0 0;"><strong>Check at \(\delta = 9/17\):</strong> \(\text{PV}^{\text{coop}} = 800/(8/17) = \$1,700\); \(\text{PV}^{\text{def}} = 900 + (9/17)(711.11)/(8/17) = \$1,700\). Equal at the threshold. ✓</p>
+    </div>
+  </div>
+  <div class="key-result fragment fade-up" data-fragment-index="6" style="margin-top: 11px; padding: 9px 16px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> \(\delta^{\ast} \approx 0.53\) is well within realistic corporate patience, so a <em>duopoly</em> cartel is easy to sustain. Adding firms raises \(\delta^{\ast}\) (three firms \(\approx 0.57\)) &mdash; each firm's cartel share shrinks while the deviation gain grows. That's why OPEC+ (many members) needs active monitoring, while textbook duopolies cooperate effortlessly.</p>
+  </div>
+  <aside class="notes">Six reveals. The chapter's capstone calculation, on Ch 13's locked Cournot calibration. Three payoffs: cartel &pi;^M=800 (each produces 20 at P=$60), deviation &pi;^dev=900 (best-respond q=30 to rival's 20, P=$50), punishment &pi;^C=711.11 (Cournot-Nash). Plug into &delta;*=(&pi;^dev-&pi;^M)/(&pi;^dev-&pi;^C)=100/188.89=9/17. The PV check confirms both streams equal $1,700 at the threshold. Comparative static: more firms &rarr; higher &delta;* (the cartel share 1/N shrinks, deviation gain grows relative to punishment). This is the formal reason cartel stability falls with membership &mdash; the bridge to the OPEC+ application and the algorithmic-collusion frontier.</aside>
+</section>
+
+<!-- ===== Slide 30 — §14.5 Application OPEC+ + figure-14-8 (wide, full-width) ===== -->
+<section id="app-opec">
+  <h2><i class="fa-solid fa-oil-well" style="color: var(--secondary-color);"></i> Application: OPEC+ as a Repeated Cartel Game</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.35fr; gap: 18px; align-items: center;">
+    <div>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 0 0 8px;">OPEC+ is the largest functioning real-world repeated-game cartel. Two structural features keep it alive:</p>
+      <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--secondary-color); margin-bottom: 7px;"><p style="font-size: 11.5pt; margin: 0;"><strong>Monitoring.</strong> The Joint Ministerial Monitoring Committee tracks compliance and makes overproducers compensate with deeper later cuts &mdash; a multi-period punishment, exactly the grim-trigger threat.</p></div>
+      <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--accent-color);"><p style="font-size: 11.5pt; margin: 0;"><strong>Flexibility.</strong> Quotas are revised at quarterly meetings (Dec 2024 extension; Apr 5 2026 unwinding), preventing breakdown under demand shocks.</p></div>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Stylized OPEC quota-compliance time series 1985-2025: compliance hovers near the target but collapses below 0.5 at major demand shocks (2008, 2014-15, 2020) — the folk-theorem prediction that cooperation breaks at shocks" src="figures/figure-14-8-cartel-breakdown-data.png" style="max-width: 100%; max-height: 300px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Cooperation collapses at demand shocks (2008, 2014&ndash;15, 2020) &mdash; then re-forms.</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 11px;">
+    <p style="margin: 0; font-size: 12pt;">The compliance series is the grim-trigger model in the wild: cooperation holds in normal times, breaks when a shock makes defection's short-run gain spike past the punishment value, then re-forms (Green-Porter 1984 imperfect-monitoring dynamics). Monitoring + flexibility are how a many-member cartel keeps \(\delta^{\ast}\) attainable.</p>
+  </div>
+  <aside class="notes">The live repeated-game case. OPEC+ maps cleanly onto &sect;14.5: the JMMC monitoring + compensation rule IS the grim-trigger punishment (overproduce now, cut deeper later), and quarterly quota revisions are the flexibility that prevents permanent breakdown under shocks. The figure (stylized compliance) shows the signature pattern: near-target cooperation punctuated by collapses at 2008, 2014-15, 2020 demand shocks, then recovery &mdash; exactly Green-Porter imperfect-monitoring dynamics, where firms can't tell a demand shock from a cheat and rotate through cooperation/breakdown. Connect to W14.8's comparative static: with many members &delta;* is high, so OPEC+ needs the institutional monitoring a duopoly wouldn't.</aside>
+</section>
+
+<!-- ===== Slide 31 — §14.5 TheoryAndData 14.2 algorithmic collusion + HeadsUp 14.4 folk theorem + figure-14-7 ===== -->
+<section id="td-algo-folk">
+  <h2><i class="fa-solid fa-robot" style="color: var(--secondary-color);"></i> Algorithmic Collusion &amp; the Folk Theorem</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+    <div>
+      <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 11px 15px; margin: 0 0 9px;">
+        <p style="margin: 0 0 4px; font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-database"></i> Theory and Data 14.2 &mdash; Calvano et al. (2020, <em>AER</em>)</p>
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;">Naive <strong>Q-learning</strong> pricing agents &mdash; no instruction to collude, no communication &mdash; independently learn supracompetitive prices <em>with grim-trigger-style punishment phases</em>. Cartel outcomes emerge from learning alone.</p>
+      </div>
+      <div class="misconception" style="margin: 0;">
+        <p style="margin: 0; font-size: 10.5pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-triangle-exclamation"></i> Two 2024 actions &mdash; do NOT conflate</p>
+        <p style="margin: 5px 0 0; font-size: 11pt; line-height: 1.4;"><strong>DOJ + 8 state AGs v. RealPage</strong> (Aug 23 2024): Sherman &sect;1 horizontal price coordination via a hub. <strong>FTC 6(b) inquiry</strong> (Jul 23 2024): a market <em>study</em> of surveillance pricing &mdash; not enforcement, different statute, different theory of harm.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <div class="misconception" style="margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 10.5pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-triangle-exclamation"></i> Heads Up 14.4 &mdash; the folk theorem</p>
+        <p style="margin: 5px 0 0; font-size: 11pt; line-height: 1.4;">Grim trigger is one case of a vast result (Friedman 1971; Fudenberg-Maskin 1986): for \(\delta\) near \(1\), <em>any</em> individually rational payoff is an SPNE. The sustainable set is huge &mdash; the theorem doesn't say which point gets played. Q-learning is one <em>selection</em> mechanism.</p>
+      </div>
+      <img class="figure" alt="Folk theorem: the feasible payoff set with the individually-rational region shaded; for delta near 1, any point in it is sustainable as an SPNE" src="figures/figure-14-7-folk-theorem-region.png" style="max-height: 220px;">
+    </div>
+  </div>
+  <aside class="notes">The frontier and the caveat. TheoryAndData 14.2: Calvano et al. show autonomous reinforcement-learning agents reach cartel prices with punishment phases &mdash; no communication, no instruction. That bridges abstract repeated-game theory to real algorithmic pricing. The legal disambiguation is critical and commonly botched in the press: DOJ RealPage (Aug 23 2024, Sherman &sect;1, hub-and-spoke horizontal coordination) is ENFORCEMENT; the FTC 6(b) surveillance-pricing inquiry (Jul 23 2024) is a market STUDY about vertical algorithmic discrimination &mdash; different companies, statutes, theories of harm. Heads Up 14.4: the folk theorem says grim trigger is just one of infinitely many sustainable equilibria when &delta;&rarr;1; the question shifts from &ldquo;is cooperation possible&rdquo; to &ldquo;which equilibrium gets selected&rdquo; &mdash; and Q-learning is one empirical answer.</aside>
+</section>
+
+<!-- ===== Slide 32 — Section divider §14.6 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-applications">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;14.6</p>
+  <h1>The Framework's Reach</h1>
+  <p class="subtitle">Auctions, R&amp;D races, and where real players deviate from Nash</p>
+</section>
+
+<!-- ===== Slide 33 — §14.6 FCC auctions ===== -->
+<section id="app-auctions">
+  <h2><i class="fa-solid fa-gavel" style="color: var(--secondary-color);"></i> Application: FCC Spectrum Auctions</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 9px;">
+        <div class="stat-card accent"><p class="num">\$22.5B</p><p class="lbl">Auction 110 (3.45 GHz), Jan 2022</p></div>
+        <div class="stat-card sage"><p class="num">Jun 2 2026</p><p class="lbl">Auction 113 (AWS-3) begins</p></div>
+      </div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0;">Spectrum is sold with heavy game-theoretic design &mdash; a clock phase (ascending prices, demand signaled each round) then an assignment phase. Auction 113 is the first since auction authority lapsed in 2023, restored by the 2024 Spectrum Act.</p>
+    </div>
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 7px;"><strong>The theory backbone:</strong></p>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 7px 14px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 11.5pt; margin: 0;"><strong>Vickrey (1961):</strong> in a second-price sealed-bid auction with private values, truthful bidding is weakly dominant.</p></div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 7px 14px; border-left: 4px solid var(--accent-color);"><p style="font-size: 11.5pt; margin: 0;"><strong>Milgrom-Weber (1982):</strong> the <em>linkage principle</em> &mdash; open ascending auctions raise more revenue by reducing winner's-curse exposure.</p></div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 7px 14px; border-left: 4px solid var(--success-color);"><p style="font-size: 11.5pt; margin: 0;"><strong>Klemperer (2002):</strong> good design prioritizes <em>attracting entry</em> and <em>deterring collusion</em> over marginal revenue.</p></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Auctions are applied game theory at national scale. The FCC's clock-then-assignment format is a deliberate mechanism design. Vickrey 1961: second-price sealed-bid makes truth-telling weakly dominant (you never want to misreport your value). Milgrom-Weber 1982 linkage principle: ascending formats affiliate bidder information, shrinking the winner's curse and raising revenue &mdash; why the FCC moved away from the older SMRA whose transparency enabled tacit collusion. Klemperer 2002: the practical lesson is that entry and collusion-deterrence dominate theoretical revenue optimization. All of this is the equilibrium machinery of this chapter applied to bidding games.</aside>
+</section>
+
+<!-- ===== Slide 34 — §14.6 GLP-1 race + behavioral game theory ===== -->
+<section id="app-glp1-behavioral">
+  <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> R&amp;D Races and Where Players Deviate from Nash</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="margin: 0 0 5px; font-size: 11.5pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-syringe"></i> The GLP-1 race</p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 7px;">Novo's <strong>Wegovy</strong> (2021) vs Lilly's <strong>Zepbound</strong> (2023): R&amp;D-timing competition that matured into pricing competition. Lilly cut LillyDirect vials to \$299&ndash;399 (Feb 2026); Novo announced a 50% Wegovy list cut to \$675 (effective Jan 2027). Approximately Stackelberg with Novo as leader, repeated-pricing dynamics layered on top.</p>
+    </div>
+    <div>
+      <p style="margin: 0 0 5px; font-size: 11.5pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-people-group"></i> Behavioral game theory</p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 7px;">Real one-shot play often deviates from Nash. <strong>Nagel's beauty contest</strong> (guess \(\tfrac{2}{3}\) of the average): Nash is \(0\), but guesses cluster at \(33\) and \(22\) &mdash; one or two rounds of reasoning.</p>
+      <div style="background: #f8f6f3; border-radius: 8px; padding: 7px 14px; border-left: 4px solid var(--success-color);"><p style="font-size: 11pt; margin: 0;"><strong>Level-\(k\) / cognitive hierarchy</strong> (Camerer-Ho-Chong 2004): mean reasoning depth \(\approx 1.5\). <strong>QRE</strong> (McKelvey-Palfrey 1995): smoothed best response, often fits lab data better than Nash.</p></div>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12pt;"><strong>Nash is the central benchmark &mdash; not the only one.</strong> Use Nash for experienced players in well-defined games; use level-\(k\) or QRE to forecast deviations among inexperienced players in novel ones. The framework reaches far past Ch 13's markets.</p>
+  </div>
+  <aside class="notes">Two reaches of the framework. The GLP-1 race is a real R&amp;D-then-pricing game &mdash; roughly Stackelberg (Novo leads) with repeated-pricing dynamics, a richer state space than the canonical PD but the same logic. Behavioral game theory is the honest epilogue: Nagel's beauty contest shows real players don't iterate to the Nash (0); they stop at depth 1-2 (guesses ~33, ~22). Level-k / cognitive hierarchy (Camerer-Ho-Chong, mean depth ~1.5) and QRE (McKelvey-Palfrey, smoothed response) model these deviations and often beat Nash on lab data. The takeaway calibrates expectations: Nash for experienced players in clear games; bounded-rationality models for novel, complex ones. Closes Part IV.</aside>
+</section>
+
+<!-- ===== Slide 35 — Chapter Summary ===== -->
+<section id="summary">
+  <h2><i class="fa-solid fa-list-check" style="color: var(--accent-color);"></i> Chapter 14 &mdash; The Equilibrium Ladder</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="margin: 0; font-size: 12pt;"><strong>Nash equilibrium (&sect;14.1&ndash;14.2).</strong> A profile where no one deviates unilaterally. The PD shows it need not be efficient; BoS shows it need not be unique. IESDS is a sound search.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="margin: 0; font-size: 12pt;"><strong>Mixed-strategy NE (&sect;14.3).</strong> When no pure NE exists, randomize so the rival is indifferent. Nash (1950): every finite game has one.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="margin: 0; font-size: 12pt;"><strong>SPNE (&sect;14.4).</strong> Backward induction on the tree rules out non-credible threats. Stackelberg <em>is</em> the SPNE of the sequential quantity game.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="margin: 0; font-size: 12pt;"><strong>Repeated games (&sect;14.5).</strong> Finite horizons unravel; infinite ones sustain cooperation iff \(\delta \geq \frac{T-R}{T-P}\). Cournot cartel: \(\delta^{\ast} = 9/17\).</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="margin: 0; font-size: 12pt;"><strong>Folk theorem.</strong> For \(\delta\) near \(1\), almost any individually rational payoff is sustainable &mdash; selection (focal points, Q-learning) decides which.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="margin: 0; font-size: 12pt;"><strong>Reach (&sect;14.6).</strong> Entry deterrence, OPEC+, algorithmic collusion, spectrum auctions, R&amp;D races &mdash; with level-\(k\)/QRE for real deviations.</p>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;"><strong>One idea, escalating.</strong> Every concept is &ldquo;no player wants to deviate&rdquo; applied to a richer setting &mdash; pure, then mixed, then sequential, then repeated. The streaming four-firm constellation sat <em>at</em> static Nash, not above it: differentiation, not active collusion, explains the cluster. The thread retires here.</p>
+  </div>
+  <aside class="notes">The ladder, one rung per section, plus the unifying idea: every equilibrium concept is &ldquo;no unilateral deviation&rdquo; applied to a richer game &mdash; pure NE, mixed NE, SPNE, repeated-game SPNE. If students keep one result: cooperation in the PD is impossible one-shot and finite, possible infinitely-repeated iff &delta; clears the threshold (T-R)/(T-P). The streaming thread's resolution: the four-firm cluster sits AT static differentiated-Bertrand Nash (P=$11.99), not above it &mdash; so the markup is differentiation (Ch 13), not active tacit collusion. Thread retires; Ch 15 opens uncertainty.</aside>
+</section>
+
+<!-- ===== Slide 36 — Forward pointer / Q&A ===== -->
+<section class="section-divider" data-state="is-section-divider" id="qa">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">Part IV &mdash; complete</p>
+  <h1>Questions?</h1>
+  <p class="subtitle">Next: Chapter 15 &mdash; Decisions Under Uncertainty. We close strategic interaction and open Part V (Market Failures) with risk, expected utility, and insurance.</p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 2.0
+  });
+  // Mark section-divider slides so the CSS hook in styles.css can swap the bg
+  Reveal.on('slidechanged', e => {
+    const v = document.querySelector('.reveal-viewport') || document.body;
+    if (e.currentSlide.classList.contains('section-divider')) v.classList.add('is-section-divider');
+    else v.classList.remove('is-section-divider');
+  });
+</script>
+
+<!-- Countdown Timer (press 1-9 to start an N-minute countdown) -->
+<style>
+ .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+ .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+ .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+ .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+ .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+ .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+ .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+ .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+ .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+ .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+ .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+ @keyframes cdF{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+<div class="cd-wrap" id="cd-wrap">
+ <div class="cd-pill" id="cd-pill">
+  <div>
+   <div class="cd-label">Activity Timer</div>
+   <div class="cd-time" id="cd-time">0:00</div>
+  </div>
+  <div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div>
+ </div>
+</div>
+<script>
+ (function(){
+  var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+  var iv=null,rem=0,total=0;
+  function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=((rem/total)*100)+'%';}
+  function hide(){w.classList.remove('visible');w.classList.add('hiding');setTimeout(function(){w.classList.remove('hiding');p.classList.remove('cd-done','cd-warn','cd-danger');},500);}
+  function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';setTimeout(hide,4000);}
+  function start(min){if(iv){clearInterval(iv);iv=null;}total=min*60;rem=total;p.classList.remove('cd-done','cd-warn','cd-danger');w.classList.remove('hiding');w.classList.add('visible');upd();
+    iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+      var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+  });
+ })();
+</script>
+<!-- Live Polling via Supabase -->
+<style>
+ .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+ .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+ .poll-option.voted::after{content:" \2713";color:#2563eb}
+ .poll-option.disabled{pointer-events:none;opacity:.6}
+ .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+ .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+ .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+ .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+ .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+ .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+</style>
+<script>
+ (function(){
+  var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+  var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+  var localCounts={};
+  var isLocal=window.location.protocol==="file:";
+  if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+  function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+  function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});
+    if(!localCounts[pid])localCounts[pid]={};localCounts[pid][ch]=(localCounts[pid][ch]||0)+1;render(pid,localCounts[pid]);
+    if(!isLocal){sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);}).catch(function(){});}}
+  function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*80);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' vote'+(t!==1?"s":"")+'</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+  function fetchR(pid){if(!pid)return;if(isLocal){if(localCounts[pid])render(pid,localCounts[pid]);return;}sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});localCounts[pid]=ct;render(pid,ct);}).catch(function(){if(localCounts[pid])render(pid,localCounts[pid]);});}
+  window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;localCounts[pid]={};render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});if(!isLocal)sf("DELETE","poll_votes?poll_id=eq."+pid);};
+  document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;if(!pid)return;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);if(!isLocal)setInterval(function(){fetchR(pid);},2000);});
+ })();
+</script>
+
+<!-- Interactive RepeatedPDExplorer — grim-trigger PV comparison on a shared discount factor. Safely no-ops if its elements are absent. -->
+<script>
+(function(){
+  var svg=document.getElementById('rpd-svg'); if(!svg) return;
+  var dS=document.getElementById('rpd-delta'), dR=document.getElementById('rpd-deltaRead');
+  var bn=document.getElementById('rpd-banner'), sc=document.getElementById('rpd-score');
+  var btns=document.querySelectorAll('.rpd-preset');
+  var PRE={
+    pd:      {T:5,   R:3,   P:1,      lbl:'Canonical PD',      tag:'(T,R,P) = (5,3,1)'},
+    cournot: {T:900, R:800, P:711.11, lbl:'Cournot cartel',    tag:'πdev=900, πM=800, πC=711'}
+  };
+  var key='pd';
+  var L=58, Rr=672, T=22, Bm=320;       // plot box
+  var DMAX=0.9;                          // plot delta up to 0.9 to keep curves on-screen
+  function dstar(p){return (p.T-p.R)/(p.T-p.P);}
+  function pvCoop(p,d){return p.R/(1-d);}
+  function pvDef(p,d){return p.T + d*p.P/(1-d);}
+  function xx(d){return L + (d/DMAX)*(Rr-L);}
+  function yy(v,YMAX){return Bm - (Math.min(v,YMAX)/YMAX)*(Bm-T);}
+  function draw(){
+    var p=PRE[key], d=parseFloat(dS.value), ds=dstar(p);
+    var YMAX=pvCoop(p, DMAX);            // top of axis = coop PV at delta=0.9
+    var s='';
+    // gridlines + y labels (5 ticks)
+    var i,gy,gv,gx,gd;
+    for(i=0;i<=5;i++){ gv=YMAX*i/5; gy=yy(gv,YMAX); s+='<line x1="'+L+'" y1="'+gy+'" x2="'+Rr+'" y2="'+gy+'" stroke="rgba(156,163,175,0.18)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(gy+4)+'" text-anchor="end" font-size="10" fill="#6b7280">'+Math.round(gv)+'</text>'; }
+    for(i=0;i<=9;i++){ gd=DMAX*i/9; gx=xx(gd); s+='<text x="'+gx+'" y="'+(Bm+16)+'" text-anchor="middle" font-size="10" fill="#6b7280">'+gd.toFixed(1)+'</text>'; }
+    // axes
+    s+='<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+Bm+'" stroke="#374151" stroke-width="1.5"/><line x1="'+L+'" y1="'+Bm+'" x2="'+Rr+'" y2="'+Bm+'" stroke="#374151" stroke-width="1.5"/>';
+    s+='<text x="16" y="171" text-anchor="middle" font-size="10.5" fill="#374151" transform="rotate(-90 16 171)">Present value of payoffs</text>';
+    s+='<text x="365" y="'+(Bm+33)+'" text-anchor="middle" font-size="11.5" fill="#374151">Discount factor δ</text>';
+    // sustainable region shading (delta >= delta*)
+    if(ds<DMAX){ s+='<rect x="'+xx(ds)+'" y="'+T+'" width="'+(xx(DMAX)-xx(ds))+'" height="'+(Bm-T)+'" fill="rgba(16,185,129,0.10)"/>'; }
+    // curves: sample delta 0..DMAX
+    var coop='', def='', dd, n=120;
+    for(i=0;i<=n;i++){ dd=DMAX*i/n; coop+=(i?' ':'')+xx(dd)+','+yy(pvCoop(p,dd),YMAX); def+=(i?' ':'')+xx(dd)+','+yy(pvDef(p,dd),YMAX); }
+    s+='<polyline points="'+def+'" fill="none" stroke="#ef4444" stroke-width="2.5"/>';
+    s+='<polyline points="'+coop+'" fill="none" stroke="#2563eb" stroke-width="2.5"/>';
+    // delta* vertical line + label
+    if(ds<DMAX){ s+='<line x1="'+xx(ds)+'" y1="'+T+'" x2="'+xx(ds)+'" y2="'+Bm+'" stroke="#10b981" stroke-width="1.5" stroke-dasharray="5 4"/><text x="'+xx(ds)+'" y="'+(T+12)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#10b981">δ* = '+ds.toFixed(3)+'</text>'; }
+    // current-delta marker
+    var dc=Math.min(d,DMAX), yc=yy(pvCoop(p,dc),YMAX), yf=yy(pvDef(p,dc),YMAX);
+    s+='<line x1="'+xx(dc)+'" y1="'+T+'" x2="'+xx(dc)+'" y2="'+Bm+'" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3 3"/>';
+    s+='<circle cx="'+xx(dc)+'" cy="'+yf+'" r="4.5" fill="#ef4444"/>';
+    s+='<circle cx="'+xx(dc)+'" cy="'+yc+'" r="4.5" fill="#2563eb"/>';
+    // curve labels
+    s+='<text x="'+(Rr-4)+'" y="'+(yy(pvCoop(p,DMAX),YMAX)+13)+'" text-anchor="end" font-size="10.5" font-weight="700" fill="#2563eb">cooperate</text>';
+    s+='<text x="'+(Rr-4)+'" y="'+(yy(pvDef(p,DMAX),YMAX)-6)+'" text-anchor="end" font-size="10.5" font-weight="700" fill="#ef4444">defect</text>';
+    svg.innerHTML=s;
+    // banner + score
+    var coopV=pvCoop(p,d), defV=pvDef(p,d), sust=(d>=ds);
+    var lab, col, bg;
+    if(sust){ lab=p.lbl+': cooperation SUSTAINABLE — δ = '+d.toFixed(2)+' ≥ δ* = '+ds.toFixed(3); col='#10b981'; bg='rgba(16,185,129,0.12)'; }
+    else { lab=p.lbl+': cooperation COLLAPSES — δ = '+d.toFixed(2)+' < δ* = '+ds.toFixed(3); col='#ef4444'; bg='rgba(239,68,68,0.12)'; }
+    bn.textContent=lab; bn.style.color=col; bn.style.background=bg;
+    sc.innerHTML='<span style="color:#2563eb;">PV cooperate = $'+coopV.toFixed(0)+'</span><span style="color:#ef4444;">PV defect = $'+defV.toFixed(0)+'</span><span style="color:#374151;">gap = $'+(coopV-defV).toFixed(0)+'</span><span style="color:#6b7280;">'+p.tag+'</span>';
+  }
+  function setPre(k){key=k; btns.forEach(function(b){b.classList.toggle('active', b.dataset.pre===k);}); draw();}
+  btns.forEach(function(b){b.addEventListener('click',function(){setPre(b.dataset.pre);});});
+  dS.addEventListener('input',function(){dR.textContent=parseFloat(dS.value).toFixed(2); draw();});
+  dR.textContent=parseFloat(dS.value).toFixed(2);
+  setPre('pd');
+})();
+</script>
+
+<!-- Click-to-zoom lightbox: click any chart (not the cover) to enlarge full-screen; click / Esc to close.
+     Overlay lives OUTSIDE .reveal so position:fixed is viewport-relative (reveal scales .slides with transform). -->
+<style>
+ img.zoomable{cursor:zoom-in;transition:box-shadow .15s ease;}
+ img.zoomable:hover{box-shadow:0 0 0 3px var(--secondary-color);}
+ #lb-ov{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;cursor:zoom-out;padding:2vh 2vw;}
+ #lb-ov.open{display:flex;}
+ #lb-ov img{max-width:96vw;max-height:92vh;background:#fff;border-radius:6px;box-shadow:0 10px 50px rgba(0,0,0,0.6);}
+ #lb-hint{position:fixed;bottom:14px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.65);font-size:13px;letter-spacing:0.04em;}
+</style>
+<div id="lb-ov"><img id="lb-img" alt="Enlarged chart"><div id="lb-hint">Click anywhere (or press Esc) to close</div></div>
+<script>
+(function(){
+  var ov=document.getElementById('lb-ov'), im=document.getElementById('lb-img');
+  if(!ov) return;
+  function close(){ ov.classList.remove('open'); }
+  document.querySelectorAll('.reveal .slides section img').forEach(function(z){
+    if(z.closest('#title')) return;            // skip the cover hero photo
+    z.classList.add('zoomable');
+    z.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); im.src=z.currentSrc||z.src; im.alt=z.alt||'Enlarged chart'; ov.classList.add('open'); });
+  });
+  ov.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&ov.classList.contains('open')) close(); });
+})();
+</script>
+</body>
+</html>
