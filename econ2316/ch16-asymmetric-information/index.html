@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Asymmetric Information &mdash; ECON 2316 Ch 16</title>
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+      startup: { ready: () => { MathJax.startup.defaultReady(); } }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    .timer-badge { display: inline-block; background: #f0f5f8; color: var(--secondary-color); padding: 6px 14px; border-radius: 16px; font-size: 12pt; font-weight: 600; }
+    .timer-badge i { margin-right: 6px; }
+    .stat-card { background: #f8f6f3; border-radius: 10px; padding: 16px 14px; text-align: center; border-left: 4px solid var(--secondary-color); }
+    .stat-card .num { font-size: 28pt; font-weight: 800; color: var(--secondary-color); margin: 0; line-height: 1; }
+    .stat-card .lbl { font-size: 11.5pt; color: var(--muted-color); margin-top: 6px; }
+    .stat-card.accent { border-left-color: var(--accent-color); }
+    .stat-card.accent .num { color: var(--accent-color); }
+    .stat-card.sage { border-left-color: var(--success-color); }
+    .stat-card.sage .num { color: var(--success-color); }
+    .stat-card.rose { border-left-color: var(--danger-color); }
+    .stat-card.rose .num { color: var(--danger-color); }
+    .reveal table.table-standard { font-size: 14pt; }
+    .reveal table.table-standard th { padding: 9px 11px; font-size: 12.5pt; }
+    .reveal table.table-standard td { padding: 8px 11px; font-size: 12pt; vertical-align: middle; }
+    .conj-card { background: #f8f6f3; border-radius: 8px; padding: 11px 16px; }
+    .conj-card .nm { font-size: 11pt; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 3px; }
+    /* payoff / contract mini grid */
+    .pm { border-collapse: collapse; margin: 0 auto; font-size: 13pt; }
+    .pm td, .pm th { border: 1.5px solid var(--line-color); padding: 9px 16px; text-align: center; }
+    .pm th { background: #f0f5f8; font-weight: 700; font-size: 11.5pt; color: var(--secondary-color); }
+    .pm td.ce { background: #d9f2e6; font-weight: 700; }
+    .pm td.hi { background: #fbeec8; }
+    /* AdverseSelectionExplorer preset toggles */
+    .rap-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 2px 0 4px; }
+    .rap-preset { font-family: var(--body-font); font-size: 11.5pt; font-weight: 600; padding: 5px 15px; border-radius: 16px; border: 1.5px solid var(--line-color); background: #f8f6f3; color: var(--text-color); cursor: pointer; transition: all .15s; }
+    .rap-preset:hover { border-color: var(--secondary-color); }
+    .rap-preset.active { background: var(--secondary-color); color: #fff; border-color: var(--secondary-color); }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ===== Slide 1 — Cover ===== -->
+<section class="section-divider" data-state="is-section-divider" id="title" style="padding: 0;">
+  <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+    <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+      <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">
+        ECON 2316 &bull; Microeconomic Theory &bull; Chapter 16
+      </p>
+      <h1 style="font-size: 38pt; line-height: 1.18; color: var(--primary-color); margin-bottom: 22px;">
+        Asymmetric Information
+      </h1>
+      <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; max-width: 520px; margin-top: 4px;">
+        Chapter 15 priced risk when both sides knew the odds. Now <strong style="color: var(--text-color);">one side knows more</strong> &mdash; and markets can unravel. Lemons, signals, screens, and incentive contracts are the four moves that fight back.
+      </p>
+      <div style="margin-top: auto; padding-bottom: 15px;">
+        <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; margin-bottom: 8px;">
+          Dr. Richeng Piao
+        </p>
+        <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; line-height: 1.8;">
+          Department of Economics<br>
+          Northeastern University &mdash; 100 min
+        </p>
+      </div>
+    </div>
+    <div style="overflow: hidden;">
+      <img alt="A used-car lot at dusk seen through a windshield, a vehicle-history report and an insurance letter on the dashboard — the everyday face of trading when one side knows more than the other" src="figures/ch16-cover.png" style="width: 100%; height: 100%; object-fit: cover;">
+    </div>
+  </div>
+</section>
+
+<!-- ===== Slide 2 — Learning Objectives ===== -->
+<section id="learning-objectives" style="padding: 40px 50px;">
+  <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+  <p style="font-size: 13pt; color: var(--muted-color); margin-bottom: 14px;">
+    By the end of class today, you will be able to&hellip;
+  </p>
+  <div style="display: flex; flex-direction: column; gap: 9px;">
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">1</p>
+      <p style="font-size: 14pt;"><strong>Distinguish</strong> hidden information (adverse selection) from hidden action (moral hazard) and pick the right mathematics for each. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">2</p>
+      <p style="font-size: 14pt;"><strong>Solve</strong> Akerlof's lemons model and derive the unraveling threshold \(\lambda^{\ast}=(r_H-v_L)/(v_H-v_L)\). <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">3</p>
+      <p style="font-size: 14pt;"><strong>Derive</strong> the Spence least-cost separating signal under single-crossing, and the Rothschild&ndash;Stiglitz screening menu. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L5)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">4</p>
+      <p style="font-size: 14pt;"><strong>Characterize</strong> the second-best principal&ndash;agent contract and Holmstrom's informativeness principle. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L5 &mdash; central result)</span></p>
+    </div>
+    <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">5</p>
+      <p style="font-size: 14pt;"><strong>Explain</strong> why the ACA marketplace survives as a <em>partial pool under regulation</em>, not a death spiral. <span style="color: var(--muted-color); font-size: 11pt;">(Bloom L4)</span></p>
+    </div>
+  </div>
+  <aside class="notes">Five LOs trace the chapter's spine: the hidden-info / hidden-action taxonomy (&sect;16.1); Akerlof lemons + unraveling threshold (&sect;16.2); Spence signaling + Rothschild&ndash;Stiglitz screening, the two deliberate repairs for hidden information (&sect;16.3&ndash;16.4); Holmstrom's principal&ndash;agent contract for hidden action (&sect;16.5); and the ACA partial-pooling synthesis that closes the freelancer thread (&sect;16.6). The unifying idea: when one side knows more, the symmetric-information benchmark breaks, and every repair is a way to claw surplus back.</aside>
+</section>
+
+<!-- ===== Slide 3 — Ch 15 → Ch 16 Bridge ===== -->
+<section id="bridge">
+  <h2><i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--secondary-color);"></i> From Symmetric Risk to One-Sided Knowledge</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Chapter 15 &mdash; what we built</p>
+      <ul style="font-size: 13pt; line-height: 1.6; margin-top: 8px;">
+        <li>Expected utility, concave \(u\), the risk premium</li>
+        <li>Mossin: a risk-averse agent <strong>fully insures at a fair premium</strong></li>
+        <li>Both sides knew the <em>same</em> loss distribution</li>
+      </ul>
+    </div>
+    <div style="background: #fef9f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Chapter 16 &mdash; the asymmetry</p>
+      <ul style="font-size: 13pt; line-height: 1.6; margin-top: 8px;">
+        <li>Now <strong>one party knows something the other cannot observe</strong></li>
+        <li>A fixed <em>type</em> \(\theta\) (hidden info) or a chosen <em>action</em> \(e\) (hidden action)</li>
+        <li>The market itself can <strong>unravel</strong> &mdash; Mossin's benchmark fails</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 14px;">
+    <p style="margin: 0;"><strong>Same Part V theme: the welfare theorem keeps breaking.</strong> Ch 15 broke it with risk; Ch 16 breaks it with information. Four economists named the repairs &mdash; Akerlof (1970) the disease, Spence (1973) signaling, Rothschild&ndash;Stiglitz (1976) screening, Holmstrom (1979) incentive contracts. Today we build all four.</p>
+  </div>
+  <aside class="notes">Frame the pivot. Ch 15 was individual decision theory under <em>symmetric</em> risk &mdash; Mossin gave full coverage at a fair premium. Ch 16 introduces the wedge that makes real insurance loaded and real used-car markets thin: one side observes something the other cannot. Stress the two flavors up front (type vs action) because they map to different math and different repairs &mdash; that is the whole &sect;16.1 taxonomy. The four-name roll call previews the chapter's structure.</aside>
+</section>
+
+<!-- ===== Slide 4 — Opening vignette: Maya returns ===== -->
+<section id="opener">
+  <h2><i class="fa-solid fa-laptop-medical" style="color: var(--accent-color);"></i> Maya Returns &mdash; the Number Mossin Cannot Explain</h2>
+  <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">Same freelancer, same \$60,000 income, same Bernoulli utility. Last chapter she ran Mossin at a 30% loading and bought. This January she runs the <em>realistic-loading</em> version: net premium \$5,976, expected indemnity about \$1,970 &mdash; an effective loading of <strong>203%</strong>.</p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">Under log utility, the certainty equivalent of being <em>uninsured</em> now exceeds the CE of being insured. <strong>The math says skip the plan.</strong></p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0;">Yet CMS reported <strong>23.1 million</strong> 2026 marketplace selections. They are not all making Maya's arithmetic error. The model is missing something &mdash; and the missing piece is <em>information</em>.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start;">
+      <div class="stat-card"><p class="num">\$5,976</p><p class="lbl">annual net premium</p></div>
+      <div class="stat-card rose"><p class="num">203%</p><p class="lbl">effective loading</p></div>
+      <div class="stat-card accent"><p class="num">23.1M</p><p class="lbl">2026 plan selections</p></div>
+      <div class="stat-card sage"><p class="num">Skip?</p><p class="lbl">what log utility predicts</p></div>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top: 12px;">
+    <p style="margin: 0; font-size: 12.5pt;">Mossin assumed the insurer faced one agent of <em>known</em> risk type. Real marketplaces face a <strong>distribution</strong> of types they cannot tell apart &mdash; and <em>who shows up</em> depends on the premium itself. That feedback loop is adverse selection. By the end of class, &sect;16.6 resolves Maya as a <strong>partial pooling equilibrium under regulation</strong>.</p>
+  </div>
+  <aside class="notes">The chapter's hook and the closing payoff in one slide. The puzzle: a 203% loading makes "skip" the log-utility-rational choice for a low-risk type, yet 23.1M enrolled. The resolution is not that people are irrational &mdash; it is that the premium is community-rated over a pool whose composition is endogenous to the premium. Hold the tension; W16.8 in &sect;16.6 closes it with the partial-pool computation. Note 23.1M is plan <em>selections</em>, not effectuated &mdash; HeadsUp 16.6 returns to that distinction.</aside>
+</section>
+
+<!-- ===== Slide 5 — Section divider §16.1 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-taxonomy">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;16.1</p>
+  <h1>Hidden Information vs Hidden Action</h1>
+  <p class="subtitle">Two asymmetries, two failure modes, two families of repair</p>
+</section>
+
+<!-- ===== Slide 6 — §16.1 taxonomy + HeadsUp 16.1 ===== -->
+<section id="taxonomy">
+  <h2><i class="fa-solid fa-code-branch" style="color: var(--accent-color);"></i> A Fixed Type, or a Chosen Action</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+    <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Hidden information &mdash; <em>adverse selection</em></p>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">One party knows a <strong>fixed type</strong> \(\theta\), set before trade, that the other cannot observe. The used-car seller knows the engine; the applicant knows her family history.</p>
+      <p style="font-size: 11.5pt; line-height: 1.45; margin: 8px 0 0; color: var(--muted-color);"><strong>Repairs:</strong> signaling, screening, mandatory disclosure, community rating, risk adjustment.</p>
+    </div>
+    <div style="background: #fef9f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Hidden action &mdash; <em>moral hazard</em></p>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">One party takes an <strong>action</strong> \(e\) <em>after</em> contracting that the other cannot observe &mdash; and that responds to the contract. The insured driver chooses care; the worker chooses effort.</p>
+      <p style="font-size: 11.5pt; line-height: 1.45; margin: 8px 0 0; color: var(--muted-color);"><strong>Repairs:</strong> incentive contracts, monitoring, reputation.</p>
+    </div>
+  </div>
+  <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); border-radius: 6px; padding: 11px 18px; margin-top: 12px;">
+    <p style="margin: 0 0 4px; font-size: 11pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-triangle-exclamation"></i> Heads Up 16.1 &mdash; type vs action</p>
+    <p style="margin: 0; font-size: 12.5pt; line-height: 1.5;">A sharecropper's <em>hours on the field</em> are a hidden <strong>action</strong> (moral hazard); her <em>farming skill</em> is a hidden <strong>type</strong> (adverse selection). Same person, both asymmetries &mdash; but the right diagnosis tells you which mathematics to reach for. The model uses one piece at a time.</p>
+  </div>
+  <aside class="notes">The load-bearing taxonomy. Hidden information = a fixed type \(\theta\) determined before contracting (adverse selection); hidden action = an effort \(e\) chosen after contracting and endogenous to the incentives (moral hazard). They generate different mathematics &mdash; pool-composition effects and existence failures for adverse selection; effort distortions and second-best insurance-vs-incentive tradeoffs for moral hazard &mdash; and different repairs. Heads Up 16.1 is the diagnostic test: same agent can carry both, but you model one at a time. The first half of class is hidden information (&sect;&sect;16.2&ndash;16.4); the second is hidden action (&sect;16.5).</aside>
+</section>
+
+<!-- ===== Slide 7 — Section divider §16.2 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-lemons">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;16.2</p>
+  <h1>Adverse Selection &mdash; the Lemons Model</h1>
+  <p class="subtitle">When buyers can't tell plums from lemons, the plums can vanish</p>
+</section>
+
+<!-- ===== Slide 8 — §16.2 lemons setup + Recall 1116 §18.1 ===== -->
+<section id="lemons-setup">
+  <h2><i class="fa-solid fa-car-side" style="color: var(--accent-color);"></i> Akerlof's Used-Car Market</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 6px;">Two qualities: <strong>plums</strong> worth \(v_H\) to a buyer, <strong>lemons</strong> worth \(v_L &lt; v_H\). Sellers know their car; buyers do not. Seller reservations \(r_H &gt; r_L\).</p>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 6px;">If a buyer believes a fraction \(\lambda\) are plums, expected quality &mdash; and a risk-neutral buyer's WTP &mdash; is</p>
+      <div class="key-result" style="margin: 6px 0;">
+        <p style="margin: 0; font-size: 13pt; text-align: center;">\(E[v] = \lambda v_H + (1-\lambda) v_L\)</p>
+      </div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 7px 0 0;">If WTP \(&lt; r_H\), plum sellers <strong>exit</strong>. The pool updates to all-lemons, WTP falls to \(v_L\), and the high quality is gone.</p>
+    </div>
+    <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-rotate-left"></i> Recall from Principles &mdash; 1116 &sect;18.1</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;">Principles told the lemons story in words: buyers pay only the average, high-quality sellers refuse, and the average collapses to the low price &mdash; <strong>market unraveling</strong>. Carfax, certified pre-owned, and return windows exist to fight it. This chapter pins the <em>threshold</em> below which unraveling is inevitable.</p>
+    </div>
+  </div>
+  <aside class="notes">Set the model carefully. The buyer's WTP equals expected quality because the buyer is risk-neutral. The fragility is the feedback: WTP depends on the pool composition \(\lambda\), but the pool composition depends on whether high types find WTP &ge; \(r_H\). If not, they exit, the buyer rationally updates beliefs to \(\lambda=0\), and bids only \(v_L\). The Recall anchor formalizes the intuitive 1116 story. Next slide derives the exact unraveling threshold.</aside>
+</section>
+
+<!-- ===== Slide 9 — §16.2 CC 16.1 threshold + figure-16-1 ===== -->
+<section id="cc-16-1">
+  <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> Calculus Corner 16.1 &mdash; the Unraveling Threshold</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.05fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 5px;"><strong>Result.</strong> Both qualities trade iff \(\lambda \geq \lambda^{\ast}\), where</p>
+      <div class="key-result" style="margin: 6px 0;">
+        <p style="margin: 0; font-size: 13pt; text-align: center;">\(\lambda^{\ast} = \dfrac{r_H - v_L}{v_H - v_L}\)</p>
+      </div>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 8px 0 4px;"><strong>Derivation.</strong> High types participate only if WTP at the pool average clears their reservation:</p>
+      <p style="font-size: 11.5pt; text-align: center; margin: 4px 0;">\(\lambda v_H + (1-\lambda) v_L \geq r_H\)</p>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 4px 0 0;">Solve for \(\lambda\). Below \(\lambda^{\ast}\), high types keep their cars; the buyer updates to \(\lambda=0\) and bids \(v_L\). Only lemons trade (if \(v_L \geq r_L\)).</p>
+      <p style="font-size: 11pt; line-height: 1.4; margin: 8px 0 0; color: var(--muted-color);">A <em>single-round</em> equilibrium prediction &mdash; not a multi-round death spiral.</p>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Pool-average buyer WTP rising linearly in lambda from v_L to v_H, crossing the high-type reservation r_H at the threshold lambda-star; below the threshold the equilibrium collapses to the lemons price v_L" src="figures/figure-16-1-akerlof-unraveling.png" style="max-height: 300px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">WTP \(=\lambda v_H+(1-\lambda)v_L\) crosses \(r_H\) at \(\lambda^{\ast}\). Left of it, the market trades only lemons.</p>
+    </div>
+  </div>
+  <aside class="notes">The threshold is the whole model in one line. Derivation is a one-step solve of the high-type participation constraint. Emphasize the discontinuity at \(\lambda^{\ast}\): an infinitesimal drop below it doesn't shave a little quality off the pool &mdash; it removes <em>all</em> the plums, because the buyer's belief jumps to \(\lambda=0\). The figure shows WTP rising linearly in \(\lambda\) and crossing \(r_H\); the equilibrium price is the upper line right of \(\lambda^{\ast}\) and \(v_L\) to the left. Akerlof's contribution: this is an equilibrium prediction of competitive pricing, not a friction.</aside>
+</section>
+
+<!-- ===== Slide 10 — §16.2 Walkthrough 16.1 ===== -->
+<section id="walkthrough-16-1">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 16.1 &mdash; Unraveling on a Used-Car Market</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> \(v_H = 20{,}000\), \(v_L = 5{,}000\), \(r_H = 12{,}000\), \(r_L = 4{,}000\). Find \(\lambda^{\ast}\); then the equilibrium at \(\lambda=0.6\) and at \(\lambda=0.4\).</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>1.</strong> \(\lambda^{\ast} = \dfrac{12{,}000 - 5{,}000}{20{,}000 - 5{,}000} = \dfrac{7{,}000}{15{,}000} = \tfrac{7}{15} \approx 0.467\).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>2. \(\lambda = 0.6\):</strong> WTP \(= 0.6(20{,}000)+0.4(5{,}000) = 14{,}000 \geq 12{,}000\). Plums sell. Price \$14,000, every seller trades.</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>3. \(\lambda = 0.4\):</strong> WTP \(= 0.4(20{,}000)+0.6(5{,}000) = 11{,}000 &lt; 12{,}000\). Plums exit &rarr; pool is all lemons &rarr; price \$5,000, only the \(0.6N\) lemons trade.</p>
+    </div>
+    <div>
+      <table class="pm" style="font-size: 11.5pt;">
+        <tr><th>\(\lambda\)</th><th>Pool WTP</th><th>Outcome</th></tr>
+        <tr><td>0.6</td><td>\$14,000</td><td class="ce">both trade</td></tr>
+        <tr><td>0.467</td><td>\$12,000</td><td>knife-edge</td></tr>
+        <tr><td>0.4</td><td>\$11,000</td><td class="hi">lemons only</td></tr>
+      </table>
+      <div class="key-result fragment fade-up" data-fragment-index="4" style="margin: 12px 0 0;">
+        <p style="margin: 0; font-size: 12pt;"><strong>Check.</strong> \(\tfrac{7}{15}(20{,}000)+\tfrac{8}{15}(5{,}000) = 12{,}000 = r_H\) ✓ &mdash; the threshold is exactly the \(\lambda\) at which WTP just covers the plum reservation.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Four reveals. Compute the threshold, then verify the two cases sit on opposite sides of it. At \(\lambda=0.6\) the market clears at WTP = \$14,000 with all cars trading; at \(\lambda=0.4\), WTP of \$11,000 is below \(r_H=12{,}000\), so plums exit and price collapses to \(v_L=\$5{,}000\). The check confirms \(\lambda^{\ast}\) is the indifference point. Takeaway: a market with hidden quality has a fragility threshold; below it, mutually beneficial trade in the high quality simply vanishes &mdash; and Akerlof's four institutional repairs (guarantees, brand, certification, norms) all work by raising the effective \(\lambda\) a buyer can rely on.</aside>
+</section>
+
+<!-- ===== Slide 11 — INTERACTIVE AdverseSelectionExplorer ===== -->
+<section id="rap-explorer">
+  <h2><i class="fa-solid fa-sliders" style="color: var(--accent-color);"></i> Drive It: the Pool, the Threshold, and Unraveling</h2>
+  <div class="iv-card" style="padding: 8px 18px 10px;">
+    <div class="rap-row">
+      <button class="rap-preset" data-pre="cars"><i class="fa-solid fa-car-side"></i> Used cars \((r_H=\$12k)\)</button>
+      <button class="rap-preset" data-pre="cars-hi"><i class="fa-solid fa-gem"></i> Pickier buyers \((r_H=\$15k)\)</button>
+      <button class="rap-preset" data-pre="cars-lo"><i class="fa-solid fa-tag"></i> Lower-reservation plums \((r_H=\$9k)\)</button>
+    </div>
+    <div style="text-align:center; margin-bottom:4px;"><span id="rap-banner" style="display:inline-block; font-size:11.5pt; font-weight:700; padding:3px 16px; border-radius:6px;"></span></div>
+    <div id="rap-score" style="text-align:center; font-size:12.5pt; font-weight:700; display:flex; flex-wrap:wrap; justify-content:center; gap:3px 16px; margin:0 0 4px; min-height:18px;"></div>
+    <svg id="rap-svg" viewBox="0 0 700 330" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; max-height:280px; display:block;"></svg>
+    <div style="max-width:560px; margin:8px auto 0;"><label class="iv-label">Plum share in the pool \(\lambda\) <span class="iv-readout" id="rap-lamRead">0.60</span></label><input type="range" class="iv-slider" id="rap-lam" min="0" max="1" step="0.01" value="0.60"></div>
+    <p style="text-align:center; font-size:11pt; color:var(--muted-color); margin:7px 0 0;">\(v_H=\$20k\), \(v_L=\$5k\). <span style="color:#2563eb;font-weight:700;">Blue = pool WTP \(E[v]\)</span>, <span style="color:#ef4444;font-weight:700;">red = plum reservation \(r_H\)</span>, <span style="color:#10b981;font-weight:700;">green = threshold \(\lambda^{\ast}\)</span>. Left of \(\lambda^{\ast}\) the plums exit and price drops to \(v_L\).</p>
+  </div>
+  <aside class="notes">Headline interactive (AdverseSelectionExplorer). The blue line is WTP \(=\lambda v_H+(1-\lambda)v_L\), rising from \$5k to \$20k; the red horizontal is \(r_H\); their crossing is \(\lambda^{\ast}\). Drag \(\lambda\): right of the green threshold both qualities trade at the blue WTP; cross to the left and the verdict flips to "unravels" &mdash; the realized price snaps down to \(v_L=\$5k\) (the dashed floor) because the buyer's belief jumps to \(\lambda=0\). The presets move \(r_H\): pickier buyers (\(r_H=\$15k\)) push \(\lambda^{\ast}\) up to \(\tfrac{2}{3}\), shrinking the region where plums survive; lower-reservation plums (\(r_H=\$9k\)) drop \(\lambda^{\ast}\) to \(\tfrac{4}{15}\). This is W16.1 made continuous: the discontinuous price collapse at the threshold is the entire Akerlof result.</aside>
+</section>
+
+<!-- ===== Slide 12 — §16.2 Walkthrough 16.2 insurance death spiral ===== -->
+<section id="walkthrough-16-2">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 16.2 &mdash; the Insurance Death Spiral</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> Low-risk claim cost \$2,000; high-risk \$15,000. Community premium \(P(\lambda)=1.25\cdot[\,2{,}000\lambda + 15{,}000(1-\lambda)\,]\) (the 80% MLR gross-up). Find the premium at \(\lambda=0.7\) and \(\lambda=0.4\), and the \(\lambda\) giving \$15,500.</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>\(\lambda=0.7\):</strong> avg \(= 1{,}400+4{,}500 = 5{,}900\); \(P = 1.25(5{,}900) = \) <strong>\$7,375</strong>.</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>\(\lambda=0.4\):</strong> avg \(= 800+9{,}000 = 9{,}800\); \(P = 1.25(9{,}800) = \) <strong>\$12,250</strong>.</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>\$15,500 at:</strong> bracket \(=12{,}400\Rightarrow -13{,}000\lambda = -2{,}600 \Rightarrow \lambda = 0.20\) (pool 80% high-risk).</p>
+    </div>
+    <div>
+      <div class="conj-card" style="border-left: 4px solid var(--danger-color);">
+        <p class="nm" style="color: var(--danger-color);">The spiral</p>
+        <p style="font-size: 11.5pt; line-height: 1.5; margin: 4px 0 0;">As \(\lambda\to 0\) (all high-risk), \(P\to 1.25(15{,}000) = \) <strong>\$18,750</strong> &mdash; the death-spiral floor. As \(\lambda\to 1\), \(P\to\) \$2,500. The premium is monotone in \(-\lambda\).</p>
+      </div>
+      <div class="key-result fragment fade-up" data-fragment-index="4" style="margin: 12px 0 0;">
+        <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> Premium is a wedge function of pool composition &mdash; and composition is <em>endogenous</em> to the premium, because low-risk types drop out when \(P\) rises above their WTP. Which fixed point the market reaches depends on the institutional repairs of &sect;16.6.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Four reveals. This is the lemons model wearing an insurance costume: replace plums/lemons with low/high-risk, buyer/seller with insurer/applicant. The community premium covers the average claim of whoever shows up, and the 1.25 factor is the 80% MLR gross-up. The spiral: higher \(P\) drives out low-risk types, raising \(\lambda\)'s complement, raising \(P\) again. Three possible fixed points &mdash; balanced low-premium pool, high-risk-dominated high-premium pool, or no equilibrium &mdash; and without subsidies/mandates/risk-adjustment the floor at \(\lambda\to 0\) (\$18,750) is the typical landing. Sets up &sect;16.6.</aside>
+</section>
+
+<!-- ===== Slide 13 — Poll #1 (adverse selection) ===== -->
+<section>
+  <section id="poll-1-question">
+    <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #1 &mdash; What Actually Drives the Spiral?</h2>
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px;">
+      <p style="font-size: 15pt; line-height: 1.7;">
+        A community-rated insurer raises its premium after a bad year. Premiums keep climbing year after year until only high-risk people remain. What is the <strong>core mechanism</strong>?
+      </p>
+    </div>
+    <div class="poll-grid" data-poll-id="ch16-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+      <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Insurer greed &mdash; markups rise each year</div>
+      <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Low-risk types exit, raising the pool's average cost</div>
+      <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) People get sicker over time</div>
+      <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Regulation forces the premium up</div>
+    </div>
+    <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 45 sec to vote</span></p>
+    <aside class="notes">Press 1 for a timer; down arrow reveals. Answer is B: the premium and the pool composition are jointly determined &mdash; a higher premium drives the cheapest-to-insure (low-risk) types out, which raises the average claim cost, which forces the next premium hike. A is wrong: the 1.25 markup is fixed (it's the MLR floor, not greed). C confuses adverse selection with a change in underlying risk &mdash; the spiral happens even with a fixed population. D inverts causation: regulation (community rating) is the constraint that makes pooling necessary, but the spiral is driven by selection, and other regulations (subsidies, mandates) are what <em>stop</em> it.</aside>
+  </section>
+  <section data-poll-results="ch16-poll-1" id="poll-1-reveal" style="display: flex; flex-direction: column;">
+    <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Selection, Not Greed or Aging</h2>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+      <div class="poll-results-chart" data-poll-id="ch16-poll-1" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+      <div style="padding: 14px 50px 0;">
+        <p style="font-size: 15pt; line-height: 1.7;">The premium covers the average cost of <em>whoever stays</em>. Each hike pushes out the marginal low-risk buyer, raising the average &mdash; a fixed point in \((\lambda, P)\) space, exactly W16.2.</p>
+        <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); padding: 14px 22px; border-radius: 8px; margin: 14px 0;">
+          <p style="font-size: 14pt; margin: 0;"><strong>Trap A/C:</strong> the markup is fixed and the population's true risk is fixed. The spiral is pure composition &mdash; <em>who shows up</em> changes, not how sick they are or how greedy the insurer is.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===== Slide 14 — §16.2 Application Carvana/Carfax + TheoryAndData Hendren ===== -->
+<section id="lemons-evidence">
+  <h2><i class="fa-solid fa-database" style="color: var(--secondary-color);"></i> Application &amp; Evidence &mdash; Fighting the Lemons</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-car"></i> Application &mdash; Carvana, Carfax, CarMax</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;">The modern platform stack <em>is</em> Akerlof's institutional list. Manheim Used-Vehicle Index 215.3 (Mar 2026, +6.2% YoY); Carvana sold 596,641 retail units in FY2025, CarMax ~780,000 in FY2026. Vehicle-history reports + reconditioning + 7&ndash;10-day returns <strong>raise the effective \(\lambda\)</strong> until buyer WTP clears \(r_H\).</p>
+      <p style="margin: 8px 0 0; font-size: 11.5pt; line-height: 1.45; color: var(--text-color);">The market didn't unravel in 2024&ndash;26 &mdash; it <strong>industrialized</strong>.</p>
+    </div>
+    <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-flask"></i> Theory &amp; Data 16.1 &mdash; Hendren (2013, <em>Econometrica</em>)</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;">Using subjective-probability data, Hendren bounds private information by computing the mark-up rejected applicants would need to enter a pool. For <strong>long-term-care insurance: 82%</strong> &mdash; so steep it explains the standalone LTC market's near-collapse and the migration to hybrid life-LTC products.</p>
+      <p style="margin: 8px 0 0; font-size: 11.5pt; line-height: 1.45; color: var(--muted-color);">Smaller bounds for life and disability &mdash; consistent with those markets staying viable.</p>
+    </div>
+  </div>
+  <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); border-radius: 6px; padding: 9px 16px; margin-top: 11px;">
+    <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;"><strong>Heads Up 16.2 &mdash; pooling can be the right answer.</strong> When separation is infeasible and the low-risk share is high, a single pooling contract can deliver higher utility to <em>both</em> types than no trade. "Less efficient" at the contract level can be more efficient at the welfare level. &sect;16.4 makes this precise.</p>
+  </div>
+  <aside class="notes">Two real-world anchors plus the pooling caveat. Carvana/Carfax/CarMax: the platforms did not abolish hidden information &mdash; they certified enough per-vehicle that buyer WTP rises above the plum reservation, raising the effective \(\lambda\). Hendren's method is the empirical face of the model: an 82% private-information mark-up for rejected LTC applicants is so large that no feasible loaded premium clears, which is exactly why standalone LTC collapsed and hybrid life-LTC took over (the rider's death benefit offsets the selection). Heads Up 16.2 flags that pooling is not always a failure &mdash; under good parameters it Pareto-dominates, which &sect;16.4's existence result formalizes.</aside>
+</section>
+
+<!-- ===== Slide 15 — Section divider §16.3 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-signaling">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;16.3</p>
+  <h1>Signaling &mdash; the Spence Model</h1>
+  <p class="subtitle">The <em>informed</em> party pays a costly action to prove its type</p>
+</section>
+
+<!-- ===== Slide 16 — §16.3 single-crossing + Recall 1116 §18.2 + figure-16-2 ===== -->
+<section id="cc-16-2">
+  <h2><i class="fa-solid fa-graduation-cap" style="color: var(--accent-color);"></i> Calculus Corner 16.2 &mdash; Single-Crossing</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 5px;">Two worker types \(p_H &gt; p_L\) choose a costly signal \(s\) (education) at cost \(c(s,\theta)\). The signal works only if cost differs by type &mdash; the <strong>single-crossing condition</strong>:</p>
+      <div class="key-result" style="margin: 6px 0;">
+        <p style="margin: 0; font-size: 13pt; text-align: center;">\(\dfrac{\partial^2 c}{\partial s\, \partial \theta} &lt; 0\)</p>
+      </div>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 7px 0 0;">High-ability workers have <em>lower marginal signaling cost</em> &mdash; the same credential is cheaper for them. With \(c(s,\theta)=s/\theta\), the least-cost separating signal is</p>
+      <p style="font-size: 12pt; text-align: center; margin: 5px 0;">\(s_H^{\ast} = \theta_L\,(p_H - p_L)\)</p>
+      <p style="font-size: 11pt; line-height: 1.4; margin: 6px 0 0; color: var(--muted-color);">IC bounds: \(\theta_L(p_H-p_L) \leq s_H \leq \theta_H(p_H-p_L)\). Least-cost picks the lower bound.</p>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Two indifference curves in signal-wage space, one for each worker type; the low type's curves are steeper, so they cross the high type's exactly once — the single-crossing geometry that supports a separating signal level" src="figures/figure-16-2-spence-single-crossing.png" style="max-height: 280px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Single-crossing: the low type's indifference curves are steeper &mdash; they cross the high type's once.</p>
+    </div>
+  </div>
+  <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 8px 15px; margin-top: 10px;">
+    <p style="margin: 0 0 3px; font-size: 10.5pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-rotate-left"></i> Recall from Principles &mdash; 1116 &sect;18.2</p>
+    <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;">Principles framed a degree as a sorting device even if college taught nothing &mdash; high-ability workers earn the credential at lower personal cost. This chapter writes the cost structure and derives the exact least-cost signal.</p>
+  </div>
+  <aside class="notes">Single-crossing is the engine. \(\partial^2 c/\partial s\,\partial\theta &lt; 0\) means marginal signaling cost falls as ability rises &mdash; school is easier for the high type. Geometrically, the low type's indifference curves in (signal, wage) space are steeper, so they cross the high type's exactly once; that single crossing is what lets a wage schedule separate the types. With \(c=s/\theta\), the IC bounds are \([\theta_L(p_H-p_L),\,\theta_H(p_H-p_L)]\) and the least-cost equilibrium picks the lower bound: signal just enough to deter mimicking, no more. Recall 1116 &sect;18.2 is the verbal version.</aside>
+</section>
+
+<!-- ===== Slide 17 — §16.3 Walkthrough 16.3 Spence ===== -->
+<section id="walkthrough-16-3">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 16.3 &mdash; Spence Separating Equilibrium</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> \(p_H=50\), \(p_L=20\), \(c(s,\theta)=s/\theta\), \(\theta_H=10\), \(\theta_L=5\). Find the IC bounds, the least-cost \(s_H^{\ast}\), each payoff, and the welfare loss.</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>1. Single-crossing:</strong> \(\partial c/\partial s = 1/\theta\), \(\partial^2 c/\partial s\partial\theta = -1/\theta^2 &lt; 0\) ✓.</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>2. IC bounds:</strong> low type \(20 \geq 50 - s_H/5 \Rightarrow s_H \geq 150\); high type \(50 - s_H/10 \geq 20 \Rightarrow s_H \leq 300\). So \(s_H \in [150, 300]\).</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>3. Least-cost:</strong> \(s_H^{\ast}=150\). Wages \(w(150)=50\), \(w(0)=20\). Payoffs: high \(=50-150/10=35\); low \(=20\).</p>
+    </div>
+    <div>
+      <div class="key-result fragment fade-up" data-fragment-index="4" style="margin: 0 0 10px;">
+        <p style="margin: 0; font-size: 12pt;"><strong>4. Welfare loss.</strong> Symmetric info: high earns 50, low 20. Separating: high earns 35, low 20. Social surplus falls by <strong>15</strong> &mdash; the high type's wasted signaling cost.</p>
+      </div>
+      <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); border-radius: 6px; padding: 9px 14px;">
+        <p style="margin: 0 0 3px; font-size: 10.5pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-triangle-exclamation"></i> Heads Up 16.3</p>
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;">Even at <em>perfect</em> separation the equilibrium is socially wasteful &mdash; the signal carries zero productive value, it only sorts. Spence's most uncomfortable result: signaling that works is still Pareto-dominated by symmetric information.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Four reveals. Verify single-crossing, derive the IC sandwich \([150,300]\), pick the least-cost lower bound \(s_H^{\ast}=150\). The high type pays \$15 of productivity-equivalent value to prove she is the high type &mdash; the signal does not raise her productivity from 50, it only certifies it. The welfare loss is exactly that \$15. Heads Up 16.3 is the discomfort: a planner with a cheap verifiable test (a regulator-administered exam) would Pareto-improve on Spence. Real credentials surely mix signaling with genuine human capital, but the signaling component is real and the waste applies to it &mdash; the Sheepskin effect is its empirical signature.</aside>
+</section>
+
+<!-- ===== Slide 18 — §16.3 Application GED ===== -->
+<section id="ged-application">
+  <h2><i class="fa-solid fa-scroll" style="color: var(--secondary-color);"></i> Application &mdash; the GED as a Pure Signal</h2>
+  <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: center;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.55; margin: 0 0 8px;">State-level GED passing thresholds vary, so two dropouts with the <em>same test score</em> can land on opposite sides of the credential cutoff. Same human capital, different credential &mdash; the cleanest natural experiment for isolating the <strong>signaling component</strong>.</p>
+      <p style="font-size: 12.5pt; line-height: 1.55; margin: 0 0 8px;"><strong>Tyler, Murnane &amp; Willett (2000, <em>QJE</em>):</strong> the GED raises young white dropouts' earnings <strong>10&ndash;19%</strong> &mdash; with the same underlying skills, that return is the signal.</p>
+      <p style="font-size: 11.5pt; line-height: 1.5; margin: 0; color: var(--muted-color);">The complication: Clark &amp; Martorell (2014, <em>JPE</em>) find little diploma-signaling premium at high-school exit-exam thresholds. <strong>Signaling intensity varies by credential and population.</strong></p>
+    </div>
+    <div style="display: grid; gap: 12px;">
+      <div class="stat-card accent"><p class="num">10&ndash;19%</p><p class="lbl">GED earnings premium, same score</p></div>
+      <div class="stat-card sage"><p class="num">\$15</p><p class="lbl">wasted signaling cost in W16.3</p></div>
+      <div class="stat-card"><p class="num">~0</p><p class="lbl">diploma premium (Clark&ndash;Martorell)</p></div>
+    </div>
+  </div>
+  <aside class="notes">The GED is the textbook empirical test of Spence because state-threshold variation holds human capital fixed while flipping the credential. Tyler&ndash;Murnane&ndash;Willett find a 10&ndash;19% premium for white dropouts &mdash; and no significant premium for minority dropouts, itself a sharp question about who the signal serves. The Clark&ndash;Martorell RD at exit-exam thresholds finds near-zero diploma signaling, so the honest takeaway is heterogeneity: signaling is real for some credentials and populations, weak for others. Either way it connects W16.3's abstract \$15 waste to a measured wage gap.</aside>
+</section>
+
+<!-- ===== Slide 19 — Section divider §16.4 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-screening">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;16.4</p>
+  <h1>Screening &mdash; Rothschild&ndash;Stiglitz</h1>
+  <p class="subtitle">The <em>uninformed</em> party offers a menu, and the types self-sort</p>
+</section>
+
+<!-- ===== Slide 20 — §16.4 screening setup + figure-16-3 ===== -->
+<section id="screening-setup">
+  <h2><i class="fa-solid fa-list-check" style="color: var(--accent-color);"></i> The Mirror Image of Signaling</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.05fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 6px;">Now the <strong>uninformed</strong> insurer moves first, offering a <strong>menu</strong> of contracts \((q, p)\) so each type optimally picks her own &mdash; subject to two constraints:</p>
+      <div style="display: flex; flex-direction: column; gap: 7px; margin: 8px 0;">
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 12pt; margin: 0;"><strong>Incentive compatibility</strong> &mdash; each type prefers her own contract</p></div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--accent-color);"><p style="font-size: 12pt; margin: 0;"><strong>Individual rationality</strong> &mdash; each type prefers it to no contract</p></div>
+      </div>
+      <div class="key-result" style="margin: 8px 0 0;">
+        <p style="margin: 0; font-size: 12pt;">Result: high-risk type gets <strong>full coverage at her fair premium</strong>; low-risk type gets <strong>partial coverage</strong>, distorted down until the high-risk type is just indifferent to mimicking.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="State-contingent wealth space showing a pooling contract on the population odds line versus a separating pair: the high-risk full-coverage point on the 45-degree certainty line and the low-risk partial-coverage point pulled down along the low-risk fair-odds line" src="figures/figure-16-3-pooling-vs-separating.png" style="max-height: 290px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Pooling vs separating in state-contingent wealth space.</p>
+    </div>
+  </div>
+  <aside class="notes">Screening is signaling with the mover order reversed: the uninformed party designs a menu and the informed party reveals herself by choosing. IC (each type prefers her own contract) and IR (each prefers it to the outside option) are the two constraints. The clean Rothschild&ndash;Stiglitz result: high-risk gets full coverage at her fair premium (no distortion at the top), low-risk gets partial coverage pulled down until the high-risk IC binds &mdash; the low-risk type bears the entire cost of the asymmetry. The figure is the canonical state-contingent-wealth picture; next slide puts numbers on it.</aside>
+</section>
+
+<!-- ===== Slide 21 — §16.4 Walkthrough 16.5 RS menu + figure-16-4 ===== -->
+<section id="walkthrough-16-5">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 16.5 &mdash; The Separating Menu</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> \(\pi_L=0.05\), \(\pi_H=0.20\), \(L=10{,}000\), \(W_0=50{,}000\), \(u=\ln W\). Solve the symmetric benchmark, then the separating menu.</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>1. Symmetric.</strong> Both fully insure: low pays 500 (wealth 49,500, \(u\approx 10.80983\)); high pays 2,000 (wealth 48,000, \(u\approx 10.77896\)).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>2. High-risk contract</strong> unchanged: full coverage, wealth 48,000.</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>3. Low-risk \(q_L\)</strong> set so the high type is indifferent to mimicking:</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 10.5pt; text-align:center; line-height: 1.3; margin: 0;">\(\ln 48{,}000 = 0.8\ln(50{,}000-0.05q_L)+0.2\ln(40{,}000+0.95q_L)\)</p>
+      <p class="fragment fade-up" data-fragment-index="4" style="font-size: 11.5pt; line-height: 1.5; margin: 4px 0 0;"><strong>4. Bisection:</strong> \(q_L^{\ast} \approx \$977.25\) &mdash; far below the \$10,000 full-coverage benchmark.</p>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Rothschild-Stiglitz menu: the high-risk full-coverage contract on the certainty line and the low-risk partial-coverage contract on the low-risk fair-odds line, positioned where the high-risk indifference curve through the full-coverage point is tangent" src="figures/figure-16-4-rothschild-stiglitz-menu.png" style="max-height: 235px;">
+      <div class="key-result fragment fade-up" data-fragment-index="5" style="margin: 8px 0 0; text-align: left;">
+        <p style="margin: 0; font-size: 11.5pt;"><strong>Check.</strong> At \(q_L^{\ast}\), high-risk mimic-EU \(\approx 10.77893 = \ln 48{,}000\) ✓ &mdash; the high-risk IC binds, as required.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Five reveals. The symmetric benchmark is just Mossin twice. Under asymmetry the high type keeps full coverage (no distortion at the top), and the low type's coverage is pulled down to the point where the high type is exactly indifferent between her own full-coverage contract and mimicking the low-risk one with her OWN loss probability \(\pi_H=0.20\). The binding-IC equation has no closed form; bisection on \([0,10{,}000]\) gives \(q_L^{\ast}\approx\$977.25\) &mdash; coverage barely a tenth of full. Low-risk EU drops modestly (10.80884 vs 10.80983); that gap is the dollar cost of hidden information borne by the informed low-risk party. The check confirms the high-risk IC binds to four decimals.</aside>
+</section>
+
+<!-- ===== Slide 22 — §16.4 HeadsUp 16.4 existence + LTC Application ===== -->
+<section id="screening-existence">
+  <h2><i class="fa-solid fa-circle-question" style="color: var(--secondary-color);"></i> When the Separating Equilibrium Doesn't Exist</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-triangle-exclamation"></i> Heads Up 16.4 &mdash; existence can fail</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;">When low-risk types are a <strong>large share</strong>, an insurer can profitably deviate to a <em>pooling</em> contract priced at the pool average, attracting both types and beating the menu. Then no pure-strategy separating equilibrium exists.</p>
+      <p style="margin: 8px 0 0; font-size: 11.5pt; line-height: 1.45;">Wilson (1977) and Riley (1979) restore existence with refined concepts &mdash; the menu structure survives empirically even where pure-strategy equilibrium is fragile.</p>
+    </div>
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-house-medical"></i> Application &mdash; LTC &amp; multidimensional info</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;">Standalone LTC sales fell ~80% from a 2002 peak; the market migrated to <strong>hybrid life-LTC</strong> (&gt;\$17B new premium in 2025). <strong>Finkelstein&ndash;McGarry (2006):</strong> high-risk people buy more, but cautious low-risk people also buy more &mdash; the two cancel in the raw correlation, so clean menu screening isn't feasible.</p>
+    </div>
+  </div>
+  <div style="background: rgba(107,139,164,0.10); border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 9px 16px; margin-top: 11px;">
+    <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;"><strong>Health-plan tiers screen too.</strong> Bronze / Silver / Gold sort consumers on coverage-vs-premium taste. Marone &amp; Sabety (2022): under community rating, the welfare gain from vertical choice is much smaller than "more variety is better" suggests.</p>
+  </div>
+  <aside class="notes">Two cautions. First, existence: Rothschild&ndash;Stiglitz themselves proved the separating equilibrium can fail in pure strategies when low-risk types dominate, because a pooling deviation becomes profitable &mdash; Wilson/Riley refinements restore existence by assuming the deviator anticipates withdrawal of the separating contracts. The qualitative menu (high-risk full, low-risk partial, self-sorting) survives in real markets even though the theory looks fragile. Second, multidimensionality: Finkelstein&ndash;McGarry show why the naive positive-correlation test fails &mdash; risk-based and preference-based selection offset &mdash; which is why LTC migrated to hybrid products that attack the asymmetry from a different angle. Metal tiers are the live screening menu students actually face.</aside>
+</section>
+
+<!-- ===== Slide 23 — Poll #2 (screening) ===== -->
+<section>
+  <section id="poll-2-question">
+    <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll #2 &mdash; Who Bears the Distortion?</h2>
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px;">
+      <p style="font-size: 15pt; line-height: 1.7;">
+        In the Rothschild&ndash;Stiglitz separating menu, whose contract gets distorted away from the symmetric-information ideal &mdash; and in which direction?
+      </p>
+    </div>
+    <div class="poll-grid" data-poll-id="ch16-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+      <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) High-risk type &mdash; coverage cut</div>
+      <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Low-risk type &mdash; coverage cut below full</div>
+      <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Both types equally</div>
+      <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The insurer &mdash; it loses money</div>
+    </div>
+    <p style="text-align: center; margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 40 sec to vote</span></p>
+    <aside class="notes">Answer B. "No distortion at the top": the high-risk type gets her efficient full-coverage contract; the low-risk type's coverage is pulled <em>below</em> full to make mimicking unattractive to the high type. A inverts it. C misses that the asymmetry's cost falls entirely on the informed low-risk party. D is wrong &mdash; the insurer breaks even per type by construction (competitive zero-profit, fair premiums). This is the same "distortion below the top" pattern as Mirrlees optimal taxation &mdash; flag the mechanism-design connection from the appendix.</aside>
+  </section>
+  <section data-poll-results="ch16-poll-2" id="poll-2-reveal" style="display: flex; flex-direction: column;">
+    <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Low-Risk Coverage Cut Below Full</h2>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+      <div class="poll-results-chart" data-poll-id="ch16-poll-2" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
+      <div style="padding: 14px 50px 0;">
+        <p style="font-size: 15pt; line-height: 1.7;">"No distortion at the top." The high-risk type gets her efficient full coverage; the low-risk type's coverage is pulled down (W16.5: \(q_L^{\ast}\approx\$977\) vs \$10,000) just enough to bind the high-risk IC.</p>
+        <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); padding: 14px 22px; border-radius: 8px; margin: 14px 0;">
+          <p style="font-size: 14pt; margin: 0;"><strong>Same pattern as Mirrlees taxation:</strong> the top type is undistorted; everyone below pays an information rent. That's the mechanism-design thread in the chapter appendix.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===== Slide 24 — Section divider §16.5 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-moral-hazard">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;16.5</p>
+  <h1>Moral Hazard &amp; the Principal&ndash;Agent Problem</h1>
+  <p class="subtitle">Hidden <em>action</em>: pay for output to buy effort &mdash; and bear the risk cost</p>
+</section>
+
+<!-- ===== Slide 25 — §16.5 P-A setup ===== -->
+<section id="pa-setup">
+  <h2><i class="fa-solid fa-handshake-angle" style="color: var(--accent-color);"></i> First-Best Risk-Sharing Collapses Under Hidden Action</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+    <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">First-best &mdash; effort observable</p>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">Risk-neutral principal pays a <strong>fixed wage</strong> conditioned on effort; absorbs all output risk. Perfect insurance for the risk-averse agent. Clean.</p>
+    </div>
+    <div style="background: #fef9f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Second-best &mdash; effort hidden</p>
+      <p style="font-size: 12pt; line-height: 1.5; margin: 7px 0 0;">A fixed wage gives <strong>no reason to work</strong>. The principal must make wage <em>vary with output</em>, exposing the agent to risk and paying a risk premium. Insurance traded against incentives.</p>
+    </div>
+  </div>
+  <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); border-radius: 6px; padding: 11px 18px; margin-top: 12px;">
+    <p style="margin: 0 0 4px; font-size: 11pt; color: var(--danger-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-triangle-exclamation"></i> Heads Up 16.5 &mdash; mitigated, not eliminated</p>
+    <p style="margin: 0; font-size: 12.5pt; line-height: 1.5;">Monitoring tightens the effort&ndash;output link and pushes the second-best toward first-best &mdash; but monitoring is costly, so optimal intensity is interior. Quotas, billable-hour audits, KPI dashboards, performance RSUs where output is informative; fixed wages survive where output is too noisy.</p>
+  </div>
+  <aside class="notes">The core tension. Under observable effort, the optimal contract is a fixed wage: the risk-neutral principal bears all output risk, the risk-averse agent is perfectly insured. That contract is incentive-incompatible once effort is hidden &mdash; nothing ties pay to effort. So the principal must load wage on output, which re-exposes the agent to risk and forces a compensating risk premium: the second-best trades insurance against incentives. Heads Up 16.5: monitoring helps but is costly, so real institutions reach for it only where output is informative about effort.</aside>
+</section>
+
+<!-- ===== Slide 26 — §16.5 CC 16.3 FOC + informativeness ===== -->
+<section id="cc-16-3">
+  <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> Calculus Corner 16.3 &mdash; the Informativeness Principle</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12pt; line-height: 1.45; margin: 0 0 5px;"><strong>Result.</strong> The optimal second-best wage satisfies, at each output \(y\),</p>
+      <div class="key-result" style="margin: 6px 0;">
+        <p style="margin: 0; font-size: 12pt; text-align: center;">\(\dfrac{1}{u'(w(y))} = \mu + \nu\!\left(1 - \dfrac{f(y\mid e_L)}{f(y\mid e_H)}\right)\)</p>
+      </div>
+      <p style="font-size: 11.5pt; line-height: 1.4; margin: 7px 0 0;">\(\mu\) is the IR multiplier, \(\nu\) the IC multiplier. The wage <strong>rises with the likelihood ratio</strong> \(f(y\mid e_H)/f(y\mid e_L)\).</p>
+    </div>
+    <div style="background: rgba(107,139,164,0.10); border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 12px 16px;">
+      <p style="font-size: 11.5pt; line-height: 1.5; margin: 0;"><strong>Plain English.</strong> Pay the agent more for outputs that are <em>more likely under high effort</em> &mdash; those outputs are diagnostic of effort. Outputs equally likely under either effort carry no information and should not enter the wage.</p>
+      <p style="font-size: 11.5pt; line-height: 1.5; margin: 8px 0 0;"><strong>The principle:</strong> any signal correlated with the hidden action belongs in the contract &mdash; coworker output, machine telemetry, customer feedback. More signal &rarr; tighter IC at lower variance cost &rarr; closer to first-best.</p>
+    </div>
+  </div>
+  <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 9px 16px; margin-top: 11px;">
+    <p style="margin: 0; font-size: 11.5pt; line-height: 1.4;"><strong>Derivation.</strong> Minimize \(E[w(y)\mid e_H]\) subject to IR and IC; the Lagrangian FOC w.r.t. \(w(y)\) at each realization gives the condition above. The wage tilts toward outputs that <em>prove</em> the agent worked hard.</p>
+  </div>
+  <aside class="notes">Holmstrom's informativeness principle. The FOC says \(1/u'(w(y))\) is linear in the likelihood ratio: at outputs much more likely under high effort, the wage is high; at outputs equally likely under either effort (likelihood ratio = 1, the \(\nu\) term vanishes), the wage is set purely by IR. The deep implication: any additional signal informative about effort should enter the contract, because it lets you load incentives on the informative dimension while insuring the noise &mdash; balanced scorecards and multi-metric reviews are this principle in practice. The next two walkthroughs make it concrete with first-best vs second-best numbers.</aside>
+</section>
+
+<!-- ===== Slide 27 — §16.5 Walkthrough 16.6 first-best + figure-16-5 ===== -->
+<section id="walkthrough-16-6">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 16.6 &mdash; First-Best (Observable Effort)</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> \(U=\sqrt{w}-c(e)\), \(c(e_L)=0\), \(c(e_H)=1.5\), \(y\in\{0,100\}\), \(\Pr(100\mid e_L)=0.3\), \(\Pr(100\mid e_H)=0.7\), \(u_0=6\). Effort observable &mdash; find the contract.</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>1. Wage for \(e_H\):</strong> \(\sqrt{w}-1.5=6 \Rightarrow \sqrt{w}=7.5 \Rightarrow w=56.25\) (fixed).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>2. Profit at \(e_H\):</strong> \(0.7(100)-56.25 = 70-56.25 = 13.75\).</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 12pt; line-height: 1.5; margin: 0 0 5px;"><strong>3. Profit at \(e_L\):</strong> \(0.3(100)-36 = -6\) &mdash; rejected.</p>
+      <div class="key-result fragment fade-up" data-fragment-index="4" style="margin: 6px 0 0;">
+        <p style="margin: 0; font-size: 12pt;"><strong>4.</strong> Induce \(e_H\) at a fixed wage <strong>56.25</strong>; principal earns <strong>13.75</strong>. Agent's IR binds: \(\sqrt{56.25}-1.5 = 6 = u_0\) ✓.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Moral-hazard incentive diagram: the agent's concave utility of wage with the fixed first-best wage delivering reservation utility, contrasted against the spread of output-contingent wages needed when effort is hidden" src="figures/figure-16-5-moral-hazard-incentive.png" style="max-height: 280px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">First-best: one flat wage on the concave \(\sqrt{w}\); the agent bears no risk.</p>
+    </div>
+  </div>
+  <aside class="notes">Four reveals. With observable effort the contract conditions on \(e\) directly, so no need to load wage on output: pay the flat wage that just delivers reservation utility net of effort cost. \(\sqrt{w}=7.5\Rightarrow w=56.25\). Check the two effort levels: inducing \(e_H\) earns 13.75, inducing \(e_L\) would lose 6, so induce \(e_H\). The agent's IR binds exactly. This is the clean benchmark &mdash; risk-averse agent perfectly insured, risk-neutral principal bears all output risk. The problem is that this exact contract is incentive-incompatible the moment effort goes unobservable, which is W16.7.</aside>
+</section>
+
+<!-- ===== Slide 28 — §16.5 Walkthrough 16.7 second-best + figure-16-8 ===== -->
+<section id="walkthrough-16-7">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 16.7 &mdash; Second-Best (Hidden Effort)</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> Same numbers, but effort is hidden. Find \((w_L, w_H)\) inducing \(e_H\) at minimum cost. Let \(x=\sqrt{w_H}\), \(y_v=\sqrt{w_L}\); both constraints bind.</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>IR:</strong> \(0.7x + 0.3y_v = 7.5\). &nbsp;&nbsp;<strong>IC:</strong> \(0.4(x-y_v)=1.5 \Rightarrow x-y_v=3.75\).</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>Solve:</strong> \(y_v=4.875\), \(x=8.625\). So \(w_L=23.77\), \(w_H=74.39\).</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>Expected wage:</strong> \(0.7(74.39)+0.3(23.77) = 59.20\). <strong>Profit:</strong> \(70-59.20 = 10.80\).</p>
+      <div class="key-result fragment fade-up" data-fragment-index="4" style="margin: 6px 0 0;">
+        <p style="margin: 0; font-size: 12pt;"><strong>Welfare loss</strong> vs first-best: \(13.75 - 10.80 = \) <strong>2.95</strong> &mdash; the risk premium the agent demands for bearing output risk.</p>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="Principal-agent tradeoff: as the wage spread between high and low output widens, incentive compatibility tightens but the risk-averse agent's required risk premium rises, with the second-best at the cost-minimizing balance" src="figures/figure-16-8-principal-agent-tradeoff.png" style="max-height: 240px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">\(w_H=74.39\) is 3.1&times; \(w_L=23.77\) &mdash; wage varies to buy effort.</p>
+    </div>
+  </div>
+  <aside class="notes">Four reveals. With both IR and IC binding, two linear equations in \(x=\sqrt{w_H}\), \(y_v=\sqrt{w_L}\): IR \(0.7x+0.3y_v=7.5\), IC \(x-y_v=3.75\). Solve to \(w_L=23.77\), \(w_H=74.39\) &mdash; the high-output wage is 3.1&times; the low. Expected wage 59.20 vs first-best 56.25; the \$2.95 wedge is the risk premium compensating the agent for the output risk she now bears. That is moral hazard "mitigated, not eliminated": effort is induced, but at a real welfare cost. Informativeness principle: any extra effort-correlated signal would tighten the IC at lower variance cost, shrinking the 2.95.</aside>
+</section>
+
+<!-- ===== Slide 29 — §16.5 TheoryAndData Brot-Goldberg + Application CEO ===== -->
+<section id="pa-evidence">
+  <h2><i class="fa-solid fa-database" style="color: var(--secondary-color);"></i> Evidence &mdash; Deductibles and CEO Pay</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+    <div style="background: #eef2f0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-flask"></i> Theory &amp; Data 16.2 &mdash; Brot-Goldberg et&nbsp;al. (2017, <em>QJE</em>)</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;">A large employer forced everyone onto a high-deductible plan. Spending fell <strong>11.8&ndash;13.8%</strong> &mdash; driven by <em>quantity</em> cuts (fewer visits, scripts, ED trips), <strong>not price-shopping</strong>. And cuts were broad: high-value preventive care fell about as much as elective.</p>
+      <p style="margin: 8px 0 0; font-size: 11.5pt; line-height: 1.45; color: var(--muted-color);">Deductibles are blunt incentives: they reduce moral hazard by reducing care <em>across the board</em>.</p>
+    </div>
+    <div style="background: #fef9f3; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 13px 18px;">
+      <p style="margin: 0 0 5px; font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;"><i class="fa-solid fa-building-user"></i> Application &mdash; CEO compensation</p>
+      <p style="margin: 0; font-size: 12pt; line-height: 1.5;"><strong>Hall &amp; Liebman (1998):</strong> large-firm CEOs hold enough stock and options that the firm-performance / CEO-wealth link is far stronger than salary suggests &mdash; pay-for-performance flows through equity, as Holmstrom predicts.</p>
+      <p style="margin: 8px 0 0; font-size: 11.5pt; line-height: 1.45;">SEC's 2022 Pay-vs-Performance rule standardizes the comparison. <strong>Bebchuk&ndash;Fried (2003):</strong> board capture shapes pay too &mdash; both stories carry real content.</p>
+    </div>
+  </div>
+  <aside class="notes">Two evidence anchors. Brot-Goldberg et al.: a clean forced-switch design shows the deductible cuts spending through quantity, not smarter shopping &mdash; and it suppresses high-value care as much as low-value, so the principal-agent model captures the spending response but the welfare verdict needs the heterogeneous social value of the suppressed care. Hall&ndash;Liebman: executive contracts load wage on observable performance through equity roughly as Holmstrom predicts; Bebchuk&ndash;Fried's managerial-power counter-narrative says board capture also shapes pay. Both are real &mdash; the chapter's point is that the contract does load on performance, the central prediction.</aside>
+</section>
+
+<!-- ===== Slide 30 — Section divider §16.6 ===== -->
+<section class="section-divider" data-state="is-section-divider" id="div-aca">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;16.6</p>
+  <h1>Returning to the ACA</h1>
+  <p class="subtitle">Why a market with hidden information survives &mdash; as a regulated partial pool</p>
+</section>
+
+<!-- ===== Slide 31 — §16.6 synthesis + figure-16-7 ===== -->
+<section id="aca-synthesis">
+  <h2><i class="fa-solid fa-shield-heart" style="color: var(--accent-color);"></i> The Repair Stack That Stops the Spiral</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1.05fr; gap: 18px; align-items: start;">
+    <div>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">Maya is a low-risk type whose individual WTP is <em>below</em> the community premium. If the insurer could risk-rate her, Mossin says full coverage at \$2,000 and she buys. Community rating forbids that &mdash; so the relevant premium is the pool average, above what her own log utility justifies.</p>
+      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0;">The equilibrium doesn't collapse to the all-high-risk floor because of a <strong>stack of institutional repairs</strong>:</p>
+      <ul style="font-size: 12pt; line-height: 1.55; margin: 6px 0 0;">
+        <li>Premium tax credits (below 400% FPL)</li>
+        <li>Community rating + guaranteed issue</li>
+        <li>80% medical-loss-ratio floor</li>
+        <li>Permanent risk adjustment (11.0% of premiums, 2024)</li>
+      </ul>
+    </div>
+    <div style="text-align: center;">
+      <img class="figure" alt="ACA partial-pooling diagram: the community premium as a function of the low-risk pool share, with the unsubsidized death-spiral path versus the subsidized equilibrium held above the collapse floor by the repair stack" src="figures/figure-16-7-aca-partial-pooling.png" style="max-height: 290px;">
+      <p style="font-size: 10.5pt; color: var(--muted-color); margin-top: 4px;">Subsidies + mandates + risk adjustment hold \(\lambda\) above the death-spiral floor.</p>
+    </div>
+  </div>
+  <aside class="notes">The synthesis. Maya's puzzle resolves once you see the premium as community-rated over a regulated pool. She is low-risk; her own fair premium is \$2,000, but community rating means she pays the pool average, which her log utility alone wouldn't justify. The market doesn't death-spiral because the repair stack &mdash; subsidies, community rating + guaranteed issue, the 80% MLR floor, and permanent risk adjustment (11.0% of premiums transferred in 2024) &mdash; holds the equilibrium \(\lambda\) above Akerlof's collapse floor. The figure shows the subsidized equilibrium sitting above the unsubsidized spiral path. W16.8 puts numbers on it.</aside>
+</section>
+
+<!-- ===== Slide 32 — §16.6 Walkthrough 16.8 ACA partial pooling ===== -->
+<section id="walkthrough-16-8">
+  <h2><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Walkthrough 16.8 &mdash; Partial Pooling Under Regime Change</h2>
+  <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start;">
+    <div>
+      <div style="background: rgba(196, 123, 90, 0.10); border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 8px 15px; margin: 0 0 9px;">
+        <p style="margin: 0; font-size: 11.5pt; line-height: 1.45;"><strong>Problem.</strong> \(P(\lambda)=1.25[\,2{,}000\lambda+15{,}000(1-\lambda)\,]\). Low-risk drop out when net premium exceeds \$5,976. Find the no-subsidy equilibrium \(\lambda^{\ast}\); then the subsidized outcome.</p>
+      </div>
+      <p class="fragment fade-up" data-fragment-index="1" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>1. No subsidy:</strong> \(P=5{,}976\Rightarrow\) bracket \(=4{,}780.8\Rightarrow -13{,}000\lambda=-10{,}219.2\Rightarrow \lambda^{\ast}=0.7861\). Fragile &mdash; below it, low-risk types exit <em>en masse</em>.</p>
+      <p class="fragment fade-up" data-fragment-index="2" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>2. Post-cliff subsidy</strong> caps low-risk payment at \$5,976. Realistic \(\lambda\approx 0.65\): \(P=1.25[1{,}300+5{,}250]=\) <strong>\$8,187.50</strong>. Treasury covers \(8{,}187.50-5{,}976=\$2{,}211.50\) per low-risk enrollee.</p>
+      <p class="fragment fade-up" data-fragment-index="3" style="font-size: 11.5pt; line-height: 1.5; margin: 0 0 4px;"><strong>3. IRA-enhanced</strong> (8.5% cap, no cliff): more low-risk enroll, \(\lambda\approx 0.75\Rightarrow P=\$6,562.50\). Better pool, lower premium.</p>
+    </div>
+    <div>
+      <table class="pm" style="font-size: 11.5pt;">
+        <tr><th>Regime</th><th>\(\lambda\)</th><th>Gross \(P\)</th></tr>
+        <tr><td>No subsidy (knife-edge)</td><td>0.786</td><td>\$5,976</td></tr>
+        <tr><td>Post-cliff 2026</td><td>0.65</td><td class="hi">\$8,188</td></tr>
+        <tr><td>IRA-enhanced</td><td>0.75</td><td class="ce">\$6,563</td></tr>
+      </table>
+      <div class="key-result fragment fade-up" data-fragment-index="4" style="margin: 12px 0 0;">
+        <p style="margin: 0; font-size: 12pt;"><strong>Takeaway.</strong> Maya's choice is <em>not</em> the Ch 15 Mossin-symmetric problem &mdash; it's Rothschild&ndash;Stiglitz-plus-regulation. The partial pool is jointly determined by individual utility, pool composition, gross premium, and the repair stack.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Four reveals; this closes the freelancer thread. The no-subsidy equilibrium \(\lambda^{\ast}=0.7861\) is fragile &mdash; it needs 79% low-risk just to clear \$5,976, and below that the pool collapses. Subsidies break the link between the gross premium and what the consumer pays: capping low-risk payment at \$5,976 lets them stay even as gross \(P\) rises to \$8,188 at \(\lambda=0.65\), with Treasury covering the \$2,211.50 gap. The IRA counterfactual (8.5% cap, no cliff) pulls more low-risk in, improving the pool to \(\lambda=0.75\) and dropping gross \(P\) to \$6,563. The 2026 cliff reversion shifted \(\lambda\) the wrong way &mdash; visible in the metal-tier downgrade. Maya enrolls because the subsidized partial pool, not Mossin, is her actual problem.</aside>
+</section>
+
+<!-- ===== Slide 33 — §16.6 HeadsUp 16.6 selected vs effectuated ===== -->
+<section id="headsup-16-6">
+  <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Heads Up 16.6 &mdash; "Selected" Is Not "Effectuated"</h2>
+  <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: center;">
+    <div>
+      <p style="font-size: 13pt; line-height: 1.6; margin: 0 0 10px;">CMS reported <strong>23.1 million selected or auto-reenrolled</strong> in 2026 coverage. <em>Effectuated</em> enrollment &mdash; counted only after the first premium payment &mdash; had not been released as of late April 2026.</p>
+      <p style="font-size: 13pt; line-height: 1.6; margin: 0 0 10px;">The two can diverge <strong>5&ndash;15%</strong> in subsidy-cliff years. Distinguish them in any homework: 23.1M selected, an as-yet-unspecified number paid.</p>
+      <div style="background: #fef2f2; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 12px 18px;">
+        <p style="font-size: 12.5pt; margin: 0; line-height: 1.5;">The gap is <strong>itself a dynamic adverse-selection signal</strong>: the people most likely to drop after auto-renewal are the low-risk types whose net premium just rose.</p>
+      </div>
+    </div>
+    <div style="display: grid; gap: 12px;">
+      <div class="stat-card accent"><p class="num">23.1M</p><p class="lbl">selected / auto-reenrolled</p></div>
+      <div class="stat-card rose"><p class="num">3.8&ndash;5.8M</p><p class="lbl">projected effectuation shortfall</p></div>
+      <div class="stat-card"><p class="num">5&ndash;15%</p><p class="lbl">selected-vs-effectuated gap</p></div>
+    </div>
+  </div>
+  <aside class="notes">A data-literacy warning that doubles as economics. "Plan selections" counts everyone who picked or was auto-reenrolled into a plan; "effectuated" counts only those who paid the first premium. In a subsidy-cliff year the gap widens, and crucially it is not random attrition &mdash; the marginal dropper is exactly the low-risk type whose net premium just jumped, so the effectuation shortfall is adverse selection happening in real time. Wakely projected a 3.8&ndash;5.8M shortfall for 2026. Tell students to never conflate the two numbers in problem sets.</aside>
+</section>
+
+<!-- ===== Slide 34 — Chapter Summary ===== -->
+<section id="summary">
+  <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> Chapter 16 in a Nutshell</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 12pt; margin: 0; line-height: 1.45;"><strong>1. Taxonomy.</strong> Hidden information (fixed type, adverse selection) vs hidden action (chosen effort, moral hazard) &mdash; different math, different repairs.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 12pt; margin: 0; line-height: 1.45;"><strong>2. Akerlof.</strong> Market unravels when WTP at the pool average falls below the high-type reservation: \(\lambda^{\ast}=(r_H-v_L)/(v_H-v_L)\).</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 12pt; margin: 0; line-height: 1.45;"><strong>3. Spence.</strong> Under single-crossing the high type signals just enough to deter mimicking, \(s_H^{\ast}=\theta_L(p_H-p_L)\) &mdash; perfect sorting, socially wasteful.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 12pt; margin: 0; line-height: 1.45;"><strong>4. Rothschild&ndash;Stiglitz.</strong> Screening menu: high-risk full coverage, low-risk distorted down to bind the high-risk IC. May fail to exist when low-risk share is high.</p>
+    </div>
+    <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+      <p style="font-size: 12pt; margin: 0; line-height: 1.45;"><strong>5. Holmstrom.</strong> Second-best loads wage on the likelihood ratio (informativeness principle); the agent's risk premium is the welfare cost of moral hazard.</p>
+    </div>
+    <div style="background: #fef9f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+      <p style="font-size: 12pt; margin: 0; line-height: 1.45;"><strong>6. ACA.</strong> 23.1M enroll despite high loading because the equilibrium is a <em>regulated partial pool</em> &mdash; subsidies, MLR floor, risk adjustment hold \(\lambda\) above the spiral floor.</p>
+    </div>
+  </div>
+  <aside class="notes">The six load-bearing results, one per box. Walk the spine: taxonomy &rarr; the disease (Akerlof) &rarr; the two hidden-information repairs (Spence signaling, Rothschild&ndash;Stiglitz screening) &rarr; the hidden-action repair (Holmstrom) &rarr; the synthesis (ACA partial pool). The connective tissue: every result is a deviation from the symmetric-information benchmark, and every institution exists to claw back the lost surplus. This is the diagnostic vocabulary &mdash; given a market, you can now read why its institutions exist and predict what changes when one repair is removed.</aside>
+</section>
+
+<!-- ===== Slide 35 — Closer / Q&A ===== -->
+<section class="section-divider" data-state="is-section-divider" id="closer">
+  <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">End of Chapter 16</p>
+  <h1>Questions?</h1>
+  <p class="subtitle">Next &mdash; Ch 17: Externalities &amp; Public Goods, where one party's choice spills onto another and the welfare theorem breaks again</p>
+  <div style="margin-top: 22px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+    <span class="timer-badge"><i class="fa-solid fa-rotate-left"></i> Lemons &middot; Signaling &middot; Screening &middot; Moral Hazard</span>
+    <span class="timer-badge"><i class="fa-solid fa-pen"></i> Problems P16.1&ndash;P16.16</span>
+  </div>
+  <aside class="notes">Close by returning to the chapter's arc: four models, one disease (hidden information / hidden action) and four repairs (signaling, screening, incentive contracts, regulation). The freelancer thread that opened in Ch 4 and ran through Ch 15 closes here at the ACA partial pool. Ch 17 opens a fresh failure &mdash; externalities and public goods &mdash; with no thread carry-over. Point students to P16.1&ndash;P16.16 and the mechanism-design appendix (revelation principle, "no distortion at the top") for the graduate-level generalization.</aside>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 2.0
+  });
+  Reveal.on('slidechanged', e => {
+    const v = document.querySelector('.reveal-viewport') || document.body;
+    if (e.currentSlide.classList.contains('section-divider')) v.classList.add('is-section-divider');
+    else v.classList.remove('is-section-divider');
+  });
+</script>
+
+<!-- Countdown Timer (press 1-9 to start an N-minute countdown) -->
+<style>
+ .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+ .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+ .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+ .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+ .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+ .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+ .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+ .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+ .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+ .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+ .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+ @keyframes cdF{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+<div class="cd-wrap" id="cd-wrap">
+ <div class="cd-pill" id="cd-pill">
+  <div>
+   <div class="cd-label">Activity Timer</div>
+   <div class="cd-time" id="cd-time">0:00</div>
+  </div>
+  <div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div>
+ </div>
+</div>
+<script>
+ (function(){
+  var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+  var iv=null,rem=0,total=0;
+  function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=((rem/total)*100)+'%';}
+  function hide(){w.classList.remove('visible');w.classList.add('hiding');setTimeout(function(){w.classList.remove('hiding');p.classList.remove('cd-done','cd-warn','cd-danger');},500);}
+  function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';setTimeout(hide,4000);}
+  function start(min){if(iv){clearInterval(iv);iv=null;}total=min*60;rem=total;p.classList.remove('cd-done','cd-warn','cd-danger');w.classList.remove('hiding');w.classList.add('visible');upd();
+    iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+      var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+  });
+ })();
+</script>
+<!-- Live Polling via Supabase -->
+<style>
+ .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+ .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+ .poll-option.voted::after{content:" \2713";color:#2563eb}
+ .poll-option.disabled{pointer-events:none;opacity:.6}
+ .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+ .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+ .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+ .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+ .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+ .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+</style>
+<script>
+ (function(){
+  var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+  var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+  var localCounts={};
+  var isLocal=window.location.protocol==="file:";
+  if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+  function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+  function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});
+    if(!localCounts[pid])localCounts[pid]={};localCounts[pid][ch]=(localCounts[pid][ch]||0)+1;render(pid,localCounts[pid]);
+    if(!isLocal){sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);}).catch(function(){});}}
+  function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*80);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' vote'+(t!==1?"s":"")+'</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+  function fetchR(pid){if(!pid)return;if(isLocal){if(localCounts[pid])render(pid,localCounts[pid]);return;}sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});localCounts[pid]=ct;render(pid,ct);}).catch(function(){if(localCounts[pid])render(pid,localCounts[pid]);});}
+  window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;localCounts[pid]={};render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});if(!isLocal)sf("DELETE","poll_votes?poll_id=eq."+pid);};
+  document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;if(!pid)return;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);if(!isLocal)setInterval(function(){fetchR(pid);},2000);});
+ })();
+</script>
+
+<!-- Interactive AdverseSelectionExplorer — pool WTP vs plum reservation r_H, the unraveling threshold lambda-star, and the price collapse to v_L. Safely no-ops if its elements are absent. -->
+<script>
+(function(){
+  var svg=document.getElementById('rap-svg'); if(!svg) return;
+  var dS=document.getElementById('rap-lam'), dR=document.getElementById('rap-lamRead');
+  var bn=document.getElementById('rap-banner'), sc=document.getElementById('rap-score');
+  var btns=document.querySelectorAll('.rap-preset');
+  var VH=20000, VL=5000, RL=4000;
+  var PRE={
+    'cars':    {lbl:'Used cars',           rH:12000},
+    'cars-hi': {lbl:'Pickier buyers',      rH:15000},
+    'cars-lo': {lbl:'Lower-reservation plums', rH:9000}
+  };
+  var key='cars';
+  var L=70, Rr=672, T=20, Bm=276;     // plot box
+  var PMIN=0, PMAX=22000;
+  function xL_(l){return L + l*(Rr-L);}            // lambda 0..1 on x
+  function yP(p){return Bm - ((p-PMIN)/(PMAX-PMIN))*(Bm-T);}
+  function draw(){
+    var pre=PRE[key], lam=parseFloat(dS.value), rH=pre.rH;
+    var wtp=lam*VH+(1-lam)*VL;
+    var lamStar=(rH-VL)/(VH-VL);
+    var trades=(wtp>=rH);
+    var price=trades?wtp:VL;
+    var s='';
+    // y gridlines + labels (every 5000)
+    var i,gy,gv,gx,gl;
+    for(i=0;i<=4;i++){ gv=PMIN+(PMAX-PMIN)*i/4; gy=yP(gv); s+='<line x1="'+L+'" y1="'+gy+'" x2="'+Rr+'" y2="'+gy+'" stroke="rgba(156,163,175,0.13)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(gy+3)+'" text-anchor="end" font-size="9.5" fill="#6b7280">$'+(gv/1000)+'k</text>'; }
+    // x gridlines + labels (lambda)
+    for(i=0;i<=5;i++){ gl=i/5; gx=xL_(gl); s+='<line x1="'+gx+'" y1="'+T+'" x2="'+gx+'" y2="'+Bm+'" stroke="rgba(156,163,175,0.10)" stroke-width="1"/><text x="'+gx+'" y="'+(Bm+15)+'" text-anchor="middle" font-size="9.5" fill="#6b7280">'+gl.toFixed(1)+'</text>'; }
+    // axes
+    s+='<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+Bm+'" stroke="#374151" stroke-width="1.5"/><line x1="'+L+'" y1="'+Bm+'" x2="'+Rr+'" y2="'+Bm+'" stroke="#374151" stroke-width="1.5"/>';
+    s+='<text x="22" y="148" text-anchor="middle" font-size="10.5" fill="#374151" transform="rotate(-90 22 148)">Price / WTP</text>';
+    s+='<text x="371" y="'+(Bm+31)+'" text-anchor="middle" font-size="11" fill="#374151">Plum share in the pool &#955;</text>';
+    // v_L floor (dashed)
+    s+='<line x1="'+L+'" y1="'+yP(VL)+'" x2="'+Rr+'" y2="'+yP(VL)+'" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="4 4"/><text x="'+(Rr-2)+'" y="'+(yP(VL)-4)+'" text-anchor="end" font-size="9.5" fill="#6b7280">v_L = $5k (lemons floor)</text>';
+    // r_H line (red)
+    s+='<line x1="'+L+'" y1="'+yP(rH)+'" x2="'+Rr+'" y2="'+yP(rH)+'" stroke="#ef4444" stroke-width="2"/><text x="'+(L+6)+'" y="'+(yP(rH)-5)+'" font-size="10" font-weight="700" fill="#ef4444">r_H = $'+(rH/1000)+'k</text>';
+    // WTP line (blue): from (0, v_L) to (1, v_H)
+    s+='<line x1="'+xL_(0)+'" y1="'+yP(VL)+'" x2="'+xL_(1)+'" y2="'+yP(VH)+'" stroke="#2563eb" stroke-width="2.5"/>';
+    // threshold vertical (green)
+    var xStar=xL_(lamStar);
+    s+='<line x1="'+xStar+'" y1="'+T+'" x2="'+xStar+'" y2="'+Bm+'" stroke="#10b981" stroke-width="1.6" stroke-dasharray="5 4"/>';
+    s+='<text x="'+xStar+'" y="'+(T+12)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#10b981">&#955;* = '+lamStar.toFixed(3)+'</text>';
+    // current lambda marker
+    var xCur=xL_(lam), yWtp=yP(wtp), yPr=yP(price);
+    s+='<line x1="'+xCur+'" y1="'+T+'" x2="'+xCur+'" y2="'+Bm+'" stroke="#374151" stroke-width="1" stroke-dasharray="2 3"/>';
+    s+='<circle cx="'+xCur+'" cy="'+yWtp+'" r="4" fill="#2563eb"/>';
+    // realized price marker (green if trades both, orange if collapsed)
+    s+='<circle cx="'+xCur+'" cy="'+yPr+'" r="5.5" fill="'+(trades?'#10b981':'#f97316')+'"/>';
+    s+='<text x="'+(xCur+8)+'" y="'+(yPr+3)+'" font-size="10" font-weight="700" fill="'+(trades?'#10b981':'#f97316')+'">price $'+(price/1000).toFixed(2)+'k</text>';
+    svg.innerHTML=s;
+    // banner + score
+    var verdict, col, bg;
+    if(trades){ verdict='&#955; &ge; &#955;*: plums stay &mdash; both qualities trade at the pool WTP'; col='#10b981'; bg='rgba(16,185,129,0.12)'; }
+    else { verdict='&#955; &lt; &#955;*: plums exit &mdash; market unravels, price collapses to v_L'; col='#f97316'; bg='rgba(249,115,22,0.14)'; }
+    bn.innerHTML=verdict; bn.style.color=col; bn.style.background=bg;
+    sc.innerHTML='<span style="color:#2563eb;">pool WTP = $'+wtp.toFixed(0)+'</span><span style="color:#ef4444;">r_H = $'+rH.toFixed(0)+'</span><span style="color:#10b981;">&#955;* = '+lamStar.toFixed(3)+'</span><span style="color:'+(trades?'#10b981':'#f97316')+';">price = $'+price.toFixed(0)+'</span>';
+  }
+  function setPre(k){key=k; btns.forEach(function(b){b.classList.toggle('active', b.dataset.pre===k);}); draw();}
+  btns.forEach(function(b){b.addEventListener('click',function(){setPre(b.dataset.pre);});});
+  dS.addEventListener('input',function(){dR.textContent=parseFloat(dS.value).toFixed(2); draw();});
+  dR.textContent=parseFloat(dS.value).toFixed(2);
+  setPre('cars');
+})();
+</script>
+
+<!-- Click-to-zoom lightbox -->
+<style>
+ img.zoomable{cursor:zoom-in;transition:box-shadow .15s ease;}
+ img.zoomable:hover{box-shadow:0 0 0 3px var(--secondary-color);}
+ #lb-ov{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;cursor:zoom-out;padding:2vh 2vw;}
+ #lb-ov.open{display:flex;}
+ #lb-ov img{max-width:96vw;max-height:92vh;background:#fff;border-radius:6px;box-shadow:0 10px 50px rgba(0,0,0,0.6);}
+ #lb-hint{position:fixed;bottom:14px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.65);font-size:13px;letter-spacing:0.04em;}
+</style>
+<div id="lb-ov"><img id="lb-img" alt="Enlarged chart"><div id="lb-hint">Click anywhere (or press Esc) to close</div></div>
+<script>
+(function(){
+  var ov=document.getElementById('lb-ov'), im=document.getElementById('lb-img');
+  if(!ov) return;
+  function close(){ ov.classList.remove('open'); }
+  document.querySelectorAll('.reveal .slides section img').forEach(function(z){
+    if(z.closest('#title')) return;
+    z.classList.add('zoomable');
+    z.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); im.src=z.currentSrc||z.src; im.alt=z.alt||'Enlarged chart'; ov.classList.add('open'); });
+  });
+  ov.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&ov.classList.contains('open')) close(); });
+})();
+</script>
+</body>
+</html>
