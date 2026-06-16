@@ -44,6 +44,30 @@
     .rpd-preset { font-family: var(--body-font); font-size: 11.5pt; font-weight: 600; padding: 5px 15px; border-radius: 16px; border: 1.5px solid var(--line-color); background: #f8f6f3; color: var(--text-color); cursor: pointer; transition: all .15s; }
     .rpd-preset:hover { border-color: var(--secondary-color); }
     .rpd-preset.active { background: var(--secondary-color); color: #fff; border-color: var(--secondary-color); }
+    /* Grade-game payoff matrix (gmtx) with step highlights + rings */
+    .gmtx{border-collapse:separate; border-spacing:0; margin:0 auto; font-size:14pt; display:inline-table; width:auto !important;}
+    .gmtx td{text-align:center;}
+    .gmtx .gm-top{color:#d1106a; font-weight:800; padding-bottom:3px; font-size:12.5pt;}
+    .gmtx .gm-colh{color:#d1106a; font-weight:700; padding:0 6px 4px; position:relative;}
+    .gmtx .gm-side{color:#11a890; font-weight:800; padding-right:7px; font-size:12.5pt;}
+    .gmtx .gm-rowh{color:#11a890; font-weight:700; padding-right:8px; text-align:right; position:relative; white-space:nowrap;}
+    .gmtx .gm-cell{border:2.5px solid #2D2D2D; padding:13px 22px; position:relative; font-weight:800; min-width:72px;}
+    .gm-me{color:#11a890; position:relative; z-index:1;}
+    .gm-pair{color:#d1106a; position:relative; z-index:1;}
+    .gm-sep{position:relative; z-index:1; color:#2D2D2D; margin:0 1px;}
+    .gm-hl{position:absolute; inset:0; background:rgba(240,222,120,0.62); z-index:0;}
+    .gmtx .gm-colh .gm-hl, .gmtx .gm-rowh .gm-hl{inset:-2px -5px; border-radius:5px;}
+    .gm-ring{position:absolute; inset:-6px -9px; border:3px solid #E0A329; border-radius:50%; z-index:3; pointer-events:none;}
+    /* You-try payoff matrix (ytm) — namespaced copy of the 1116 .pm system to avoid clashing with this deck's .pm */
+    .ytm{border-collapse:separate; border-spacing:7px; margin:4px auto 0;}
+    .ytm th, .ytm td{padding:10px 14px; border-radius:8px; text-align:center;}
+    .ytm .corner{background:transparent;}
+    .ytm .colh, .ytm .rowh{background:#ece8e1; color:var(--primary-color); font-weight:700; font-size:12pt;}
+    .ytm .cell{background:#f8f6f3; border:1.5px solid #e6e1d9; font-size:13.5pt; min-width:172px; line-height:1.5; position:relative;}
+    .ytm .you{color:#2563eb; font-weight:700;}
+    .ytm .them{color:#C47B5A; font-weight:700;}
+    .ytm-hero .cell{font-size:17pt; min-width:214px; padding:18px 24px;}
+    .ytm-hero .colh, .ytm-hero .rowh{font-size:13.5pt; padding:14px 20px;}
   </style>
 </head>
 <body>
@@ -438,19 +462,19 @@
  <aside class="notes">A roadmap of where game theory takes us: the three competition models (Bertrand price, Cournot quantity, Stackelberg entry &mdash; all formalized this chapter) plus application areas: price wars, collusion (&sect;14.5), network goods, law &amp; economics, entry deterrence (&sect;14.4), R&amp;D races (&sect;14.6), contestable markets, behavioral economics (&sect;14.6). Game theory is the connective tissue of market structure and strategy.</aside>
 </section>
 
-<!-- every game has three ingredients -->
+<!-- normal-form game: three ingredients + dominance (merged from the §14.1 definition slide) -->
 <section id="game-theory">
- <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> Every Game Has Three Ingredients</h2>
- <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 20px; align-items: center;">
+ <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> A Normal-Form Game: Three Ingredients</h2>
+ <div style="display: grid; grid-template-columns: 1.08fr 1fr; gap: 20px; align-items: center;">
   <div>
-   <div style="background: #eef3f6; border-radius: 10px; padding: 13px 18px; border-left: 4px solid var(--secondary-color); margin-bottom: 11px;">
-    <p style="font-size: 13pt;">From a penalty kick to OPEC, every strategic game is built from the same three parts &mdash; the language we&rsquo;ll use for the rest of the chapter.</p>
+   <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+    <div style="background:#f8f6f3; border-radius:8px; padding:9px 8px; text-align:center;"><p style="font-size:11pt; font-weight:700; color:var(--secondary-color); margin:0;">PLAYERS</p><p style="font-size:11.5pt; margin:3px 0 0;">\(\{1, \ldots, n\}\)</p><p style="font-size:10pt; color:var(--muted-color); margin:2px 0 0;">kicker &amp; keeper</p></div>
+    <div style="background:#f8f6f3; border-radius:8px; padding:9px 8px; text-align:center;"><p style="font-size:11pt; font-weight:700; color:var(--accent-color); margin:0;">STRATEGIES</p><p style="font-size:11.5pt; margin:3px 0 0;">\(S_i\)</p><p style="font-size:10pt; color:var(--muted-color); margin:2px 0 0;">left or right</p></div>
+    <div style="background:#f8f6f3; border-radius:8px; padding:9px 8px; text-align:center;"><p style="font-size:11pt; font-weight:700; color:var(--success-color); margin:0;">PAYOFFS</p><p style="font-size:11.5pt; margin:3px 0 0;">\(u_i(s_1,\ldots,s_n)\)</p><p style="font-size:10pt; color:var(--muted-color); margin:2px 0 0;">goal or save</p></div>
    </div>
-   <p style="font-size: 11.5pt; color: var(--muted-color); margin-bottom: 10px;">Formalized by von Neumann &amp; Morgenstern in the 1940s; now central to economics, political science, biology, and CS.</p>
-   <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-    <div style="background:#f8f6f3; border-radius:8px; padding:10px; text-align:center;"><p style="font-size:11pt; font-weight:700; color:var(--secondary-color);">PLAYERS</p><p style="font-size:10.5pt;">kicker &amp; keeper</p></div>
-    <div style="background:#f8f6f3; border-radius:8px; padding:10px; text-align:center;"><p style="font-size:11pt; font-weight:700; color:var(--accent-color);">STRATEGIES</p><p style="font-size:10.5pt;">left or right</p></div>
-    <div style="background:#f8f6f3; border-radius:8px; padding:10px; text-align:center;"><p style="font-size:11pt; font-weight:700; color:var(--success-color);">PAYOFFS</p><p style="font-size:10.5pt;">goal or save</p></div>
+   <p style="font-size: 11.5pt; line-height:1.45; color: var(--muted-color); margin: 0 0 9px;">Choices are <strong>simultaneous</strong> in the formal sense &mdash; no player observes another's before choosing. The <strong>payoff matrix</strong> records every profile: row = player 1, column = player 2, cell = \((u_1, u_2)\).</p>
+   <div class="key-result" style="margin:0;">
+    <p style="margin:0; font-size:12pt;">A strategy <strong>strictly dominates</strong> when it pays more for <em>every</em> rival choice: \(u_i(s_i, s_{-i}) &gt; u_i(s_i', s_{-i})\) for all \(s_{-i}\). <strong>Never play a strictly dominated strategy</strong> &mdash; the sharpest prediction game theory offers.</p>
    </div>
   </div>
   <div>
@@ -460,7 +484,7 @@
    <p style="font-size:10.5pt; text-align:center; color:var(--muted-color); margin-top:6px; font-style:italic;">A penalty kick is a game.</p>
   </div>
  </div>
- <aside class="notes">Every game has three ingredients. The penalty kick makes them concrete: players = kicker &amp; keeper, strategies = dive left/right, payoffs = goal or save. On the payoff matrix: players = the two firms, strategies = rows/columns, payoffs = the cell entries. This previews &sect;14.1's formal normal-form definition.</aside>
+ <aside class="notes">Merged slide (the &sect;14.1 &ldquo;A Game Is Three Things&rdquo; definition folded in here). The penalty kick makes the three ingredients concrete: players = kicker &amp; keeper, strategies = dive left/right, payoffs = goal or save &mdash; with the formal notation \(\{1,\ldots,n\}\), \(S_i\), \(u_i(\cdot)\) on each card. Payoff matrix convention: row player's payoff first. Strict dominance (strictly better against EVERY rival choice) is the sharpest prediction; most games (Cournot) have none, which is why we need Nash next. The famous exception &mdash; the PD &mdash; is the live Grade Game students just played.</aside>
 </section>
 
 <!-- game theory assumptions -->
@@ -559,6 +583,292 @@
  </section>
 </section>
 
+<!-- ============================================================ -->
+<!-- ===== Formalizing the Grade Game: outcome matrix → solution concepts → you-try → poll (ported from 1116 ch13 pages 49-61) ===== -->
+<!-- ============================================================ -->
+<section id="outcome-matrix">
+ <h2><i class="fa-solid fa-table-cells-large" style="color: var(--secondary-color);"></i> Outcome Matrix</h2>
+ <div class="key-result" style="margin-bottom:14px;"><p style="margin:0;"><strong>Outcome matrix:</strong> a table that records every possible result of the game &mdash; the grades for the <strong>row player</strong> and the <strong>column player</strong> at each combination of choices. Far easier to absorb than four sentences.</p></div>
+ <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; justify-items:center;">
+  <div style="text-align:center;">
+   <table style="border-collapse:collapse; margin:0 auto; font-size:14pt;">
+    <tr><td></td><td></td><td colspan="2" style="text-align:center; padding-bottom:5px; color:var(--muted-color); font-weight:700;">My Pair</td></tr>
+    <tr><td></td><td></td><td style="text-align:center; padding:0 20px 5px; font-weight:700;">Alpha</td><td style="text-align:center; padding:0 20px 5px; font-weight:700;">Beta</td></tr>
+    <tr><td rowspan="2" style="font-weight:700; padding-right:10px; color:var(--muted-color);">Me</td><td style="text-align:right; padding-right:10px; font-weight:700;">Alpha</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">B&minus;</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">A</td></tr>
+    <tr><td style="text-align:right; padding-right:10px; font-weight:700;">Beta</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">C</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">B+</td></tr>
+   </table>
+   <p style="font-size:13pt; font-weight:700; margin-top:10px;">My Grades</p>
+  </div>
+  <div style="text-align:center;">
+   <table style="border-collapse:collapse; margin:0 auto; font-size:14pt;">
+    <tr><td></td><td></td><td colspan="2" style="text-align:center; padding-bottom:5px; color:var(--muted-color); font-weight:700;">My Pair</td></tr>
+    <tr><td></td><td></td><td style="text-align:center; padding:0 20px 5px; font-weight:700;">Alpha</td><td style="text-align:center; padding:0 20px 5px; font-weight:700;">Beta</td></tr>
+    <tr><td rowspan="2" style="font-weight:700; padding-right:10px; color:var(--muted-color);">Me</td><td style="text-align:right; padding-right:10px; font-weight:700;">Alpha</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">B&minus;</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">C</td></tr>
+    <tr><td style="text-align:right; padding-right:10px; font-weight:700;">Beta</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">A</td><td style="border:2.5px solid #2D2D2D; padding:15px 28px; text-align:center; font-weight:800;">B+</td></tr>
+   </table>
+   <p style="font-size:13pt; font-weight:700; margin-top:10px;">Pair&rsquo;s Grades</p>
+  </div>
+ </div>
+ <aside class="notes">Formalizing the Grade Game students just played. Two views of the same game: my grade for each combo, and my pair's grade. Reading text is slow; a matrix is instant. Next: superimpose the two into one compact table &mdash; the standard payoff matrix.</aside>
+</section>
+
+<section id="outcome-matrix-merge">
+ <h2><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> A More Compact Representation</h2>
+ <p style="font-size:13pt; text-align:center; color:var(--muted-color); margin:0 0 6px;">Superimpose the two tables &mdash; <b style="color:#11a890;">my grade</b> first, <b style="color:#d1106a;">my pair&rsquo;s grade</b> second:</p>
+ <table style="border-collapse:collapse; margin:6px auto 0; font-size:17pt;">
+  <tr><td></td><td></td><td colspan="2" style="text-align:center; padding-bottom:6px; color:#d1106a; font-weight:800;">My Pair</td></tr>
+  <tr><td></td><td></td><td style="text-align:center; padding:0 34px 6px; color:#d1106a; font-weight:700;">Alpha</td><td style="text-align:center; padding:0 34px 6px; color:#d1106a; font-weight:700;">Beta</td></tr>
+  <tr><td rowspan="2" style="color:#11a890; font-weight:800; padding-right:14px;">Me</td><td style="text-align:right; color:#11a890; font-weight:700; padding-right:14px;">Alpha</td><td style="border:3px solid #2D2D2D; padding:20px 36px; text-align:center;"><b style="color:#11a890;">B&minus;</b> , <b style="color:#d1106a;">B&minus;</b></td><td style="border:3px solid #2D2D2D; padding:20px 36px; text-align:center;"><b style="color:#11a890;">A</b> , <b style="color:#d1106a;">C</b></td></tr>
+  <tr><td style="text-align:right; color:#11a890; font-weight:700; padding-right:14px;">Beta</td><td style="border:3px solid #2D2D2D; padding:20px 36px; text-align:center;"><b style="color:#11a890;">C</b> , <b style="color:#d1106a;">A</b></td><td style="border:3px solid #2D2D2D; padding:20px 36px; text-align:center;"><b style="color:#11a890;">B+</b> , <b style="color:#d1106a;">B+</b></td></tr>
+ </table>
+ <p style="font-size:12pt; text-align:center; margin-top:14px;"><b style="color:#11a890;">1st grade</b> = row player (my grade) &nbsp;&bull;&nbsp; <b style="color:#d1106a;">2nd grade</b> = column player (my pair&rsquo;s grade)</p>
+ <aside class="notes">This is THE payoff matrix &mdash; the universal language of game theory. Each cell = (row player's payoff, column player's payoff). Convention: row player first, column player second. Every game from here on lives in a box like this. Now we can hunt for the equilibrium.</aside>
+</section>
+
+<section id="solution-concepts">
+ <h2><i class="fa-solid fa-bullseye" style="color:var(--secondary-color);"></i> Solution Concepts</h2>
+ <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px; font-size:12.5pt;">
+  <p style="margin:0;">&bull; To be a useful model, we need a <strong>solution concept</strong> to predict the outcome &mdash; otherwise, what&rsquo;s the point?</p>
+  <p style="margin:0;">&bull; Game theory looks for the <strong>equilibrium</strong> &mdash; a <strong>no-regrets</strong> solution.</p>
+  <p style="margin:0;">&bull; The trick: <strong>put yourself in your pair&rsquo;s shoes.</strong> Is there a strategy you <em>always</em> want to play?</p>
+ </div>
+ <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; justify-items:center; align-items:start;">
+  <div style="text-align:center;">
+   <p style="font-size:12.5pt; font-weight:700; margin:0 0 6px;">If my pair plays <span style="color:#d1106a;">Alpha</span>&hellip;</p>
+   <table class="gmtx">
+    <tr><td></td><td></td><td colspan="2" class="gm-top">My Pair</td></tr>
+    <tr><td></td><td></td><td class="gm-colh">Alpha<span class="gm-hl fragment" data-fragment-index="1"></span></td><td class="gm-colh">Beta</td></tr>
+    <tr><td rowspan="2" class="gm-side">Me</td><td class="gm-rowh">Alpha</td>
+     <td class="gm-cell"><span class="gm-me">B&minus;<span class="gm-ring fragment" data-fragment-index="2"></span></span><span class="gm-sep">,</span><span class="gm-pair">B&minus;</span><span class="gm-hl fragment" data-fragment-index="1"></span></td>
+     <td class="gm-cell"><span class="gm-me">A</span><span class="gm-sep">,</span><span class="gm-pair">C</span></td></tr>
+    <tr><td class="gm-rowh">Beta</td>
+     <td class="gm-cell"><span class="gm-me">C</span><span class="gm-sep">,</span><span class="gm-pair">A</span><span class="gm-hl fragment" data-fragment-index="1"></span></td>
+     <td class="gm-cell"><span class="gm-me">B+</span><span class="gm-sep">,</span><span class="gm-pair">B+</span></td></tr>
+   </table>
+   <p class="fragment" data-fragment-index="2" style="font-size:11.5pt; margin:7px 0 0; color:var(--success-color); font-weight:700;">&rarr; I prefer <strong>Alpha</strong> (B&minus; &gt; C)</p>
+  </div>
+  <div class="fragment" data-fragment-index="3" style="text-align:center;">
+   <p style="font-size:12.5pt; font-weight:700; margin:0 0 6px;">If my pair plays <span style="color:#d1106a;">Beta</span>&hellip;</p>
+   <table class="gmtx">
+    <tr><td></td><td></td><td colspan="2" class="gm-top">My Pair</td></tr>
+    <tr><td></td><td></td><td class="gm-colh">Alpha</td><td class="gm-colh">Beta<span class="gm-hl fragment" data-fragment-index="4"></span></td></tr>
+    <tr><td rowspan="2" class="gm-side">Me</td><td class="gm-rowh">Alpha</td>
+     <td class="gm-cell"><span class="gm-me">B&minus;</span><span class="gm-sep">,</span><span class="gm-pair">B&minus;</span></td>
+     <td class="gm-cell"><span class="gm-me">A<span class="gm-ring fragment" data-fragment-index="5"></span></span><span class="gm-sep">,</span><span class="gm-pair">C</span><span class="gm-hl fragment" data-fragment-index="4"></span></td></tr>
+    <tr><td class="gm-rowh">Beta</td>
+     <td class="gm-cell"><span class="gm-me">C</span><span class="gm-sep">,</span><span class="gm-pair">A</span></td>
+     <td class="gm-cell"><span class="gm-me">B+</span><span class="gm-sep">,</span><span class="gm-pair">B+</span><span class="gm-hl fragment" data-fragment-index="4"></span></td></tr>
+   </table>
+   <p class="fragment" data-fragment-index="5" style="font-size:11.5pt; margin:7px 0 0; color:var(--success-color); font-weight:700;">&rarr; I prefer <strong>Alpha</strong> (A &gt; B+)</p>
+  </div>
+ </div>
+ <aside class="notes">Two situations, one at a time. Step 1: suppose my pair plays Alpha (highlight that column) &mdash; my payoff is B&minus; if I play Alpha vs C if I play Beta; B&minus; beats C, so I circle B&minus;. Step 2: suppose my pair plays Beta &mdash; A beats B+, circle A. Either way my best reply is Alpha. That sets up the dominant strategy.</aside>
+</section>
+
+<section id="dominant-grade">
+ <h2><i class="fa-solid fa-crown" style="color:var(--accent-color);"></i> Dominant Strategy</h2>
+ <div style="background:#f3eef6; border-radius:10px; padding:10px 18px; border-left:4px solid #7C3A5F; margin-bottom:6px;">
+  <p style="font-size:12.5pt; margin:0;"><strong style="color:#7C3A5F;">Dominant strategy:</strong> the choice that yields your highest payoff <em>regardless</em> of what the other player does. <strong>If both players have one, the outcome is a Nash equilibrium.</strong></p>
+ </div>
+ <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; justify-items:center; align-items:start;">
+  <div style="text-align:center;">
+   <p style="font-size:12pt; font-weight:700; margin:0 0 6px;">If <span style="color:#11a890;">I play Alpha</span> (top row)&hellip;</p>
+   <table class="gmtx">
+    <tr><td></td><td></td><td colspan="2" class="gm-top">My Pair</td></tr>
+    <tr><td></td><td></td><td class="gm-colh">Alpha</td><td class="gm-colh">Beta</td></tr>
+    <tr><td rowspan="2" class="gm-side">Me</td><td class="gm-rowh">Alpha<span class="gm-hl fragment" data-fragment-index="1"></span></td>
+     <td class="gm-cell"><span class="gm-me">B&minus;<span class="gm-ring fragment" data-fragment-index="2"></span></span><span class="gm-sep">,</span><span class="gm-pair">B&minus;</span><span class="gm-hl fragment" data-fragment-index="1"></span></td>
+     <td class="gm-cell"><span class="gm-me">A<span class="gm-ring fragment" data-fragment-index="2"></span></span><span class="gm-sep">,</span><span class="gm-pair">C</span><span class="gm-hl fragment" data-fragment-index="1"></span></td></tr>
+    <tr><td class="gm-rowh">Beta</td>
+     <td class="gm-cell"><span class="gm-me">C</span><span class="gm-sep">,</span><span class="gm-pair">A</span></td>
+     <td class="gm-cell"><span class="gm-me">B+</span><span class="gm-sep">,</span><span class="gm-pair">B+</span></td></tr>
+   </table>
+   <p class="fragment" data-fragment-index="2" style="font-size:11pt; margin:6px 0 0; color:var(--muted-color);">I get <strong style="color:#11a890;">B&minus;</strong> or <strong style="color:#11a890;">A</strong></p>
+  </div>
+  <div class="fragment" data-fragment-index="3" style="text-align:center;">
+   <p style="font-size:12pt; font-weight:700; margin:0 0 6px;">If <span style="color:#11a890;">I play Beta</span> (bottom row)&hellip;</p>
+   <table class="gmtx">
+    <tr><td></td><td></td><td colspan="2" class="gm-top">My Pair</td></tr>
+    <tr><td></td><td></td><td class="gm-colh">Alpha</td><td class="gm-colh">Beta</td></tr>
+    <tr><td rowspan="2" class="gm-side">Me</td><td class="gm-rowh">Alpha</td>
+     <td class="gm-cell"><span class="gm-me">B&minus;</span><span class="gm-sep">,</span><span class="gm-pair">B&minus;</span></td>
+     <td class="gm-cell"><span class="gm-me">A</span><span class="gm-sep">,</span><span class="gm-pair">C</span></td></tr>
+    <tr><td class="gm-rowh">Beta<span class="gm-hl fragment" data-fragment-index="4"></span></td>
+     <td class="gm-cell"><span class="gm-me">C<span class="gm-ring fragment" data-fragment-index="5"></span></span><span class="gm-sep">,</span><span class="gm-pair">A</span><span class="gm-hl fragment" data-fragment-index="4"></span></td>
+     <td class="gm-cell"><span class="gm-me">B+<span class="gm-ring fragment" data-fragment-index="5"></span></span><span class="gm-sep">,</span><span class="gm-pair">B+</span><span class="gm-hl fragment" data-fragment-index="4"></span></td></tr>
+   </table>
+   <p class="fragment" data-fragment-index="5" style="font-size:11pt; margin:6px 0 0; color:var(--muted-color);">I get <strong style="color:#11a890;">C</strong> or <strong style="color:#11a890;">B+</strong></p>
+  </div>
+ </div>
+ <div class="key-result fragment" data-fragment-index="6" style="margin-top:6px;"><p style="margin:0;">B&minus; &gt; C <em>and</em> A &gt; B+ &rarr; <strong>Alpha is dominant.</strong> Both players reason the same way &mdash; this is a <strong>Prisoner&rsquo;s Dilemma.</strong> So why can&rsquo;t they both just play beta?</p></div>
+ <aside class="notes">Compare my two rows. Alpha row gives me (B&minus;, A); Beta row gives me (C, B+). Since B&minus;&gt;C and A&gt;B+, Alpha is better in BOTH columns &mdash; that's a dominant strategy. By symmetry the pair has it too, so both play alpha &rarr; (B&minus;,B&minus;). But (B+,B+) is better for both! That tension is the Prisoner's Dilemma.</aside>
+</section>
+
+<section id="nash-grade">
+ <h2><i class="fa-solid fa-handshake-angle" style="color:var(--danger-color);"></i> Nash Equilibrium</h2>
+ <div style="background:#eef3f6; border-radius:10px; padding:10px 18px; border-left:4px solid var(--secondary-color); margin-bottom:8px;">
+  <p style="font-size:12.5pt; margin:0;"><strong>Nash equilibrium:</strong> an outcome where each player is choosing their <strong>best strategy given everyone else&rsquo;s</strong>. No player has an incentive to <strong>unilaterally</strong> deviate &mdash; doing so would only make them worse off.</p>
+ </div>
+ <div style="text-align:center; margin:6px 0 8px;">
+  <table class="gmtx" style="font-size:16pt;">
+   <tr><td></td><td></td><td colspan="2" class="gm-top">My Pair</td></tr>
+   <tr><td></td><td></td><td class="gm-colh">Alpha</td><td class="gm-colh">Beta</td></tr>
+   <tr><td rowspan="2" class="gm-side">Me</td><td class="gm-rowh">Alpha</td>
+    <td class="gm-cell"><span class="gm-me">B&minus;<span class="gm-ring fragment" data-fragment-index="1"></span></span><span class="gm-sep">,</span><span class="gm-pair">B&minus;<span class="gm-ring fragment" data-fragment-index="1"></span></span></td>
+    <td class="gm-cell"><span class="gm-me">A</span><span class="gm-sep">,</span><span class="gm-pair">C</span></td></tr>
+   <tr><td class="gm-rowh">Beta</td>
+    <td class="gm-cell"><span class="gm-me">C</span><span class="gm-sep">,</span><span class="gm-pair">A</span></td>
+    <td class="gm-cell"><span class="gm-me">B+</span><span class="gm-sep">,</span><span class="gm-pair">B+</span></td></tr>
+  </table>
+ </div>
+ <div class="key-result fragment" data-fragment-index="2"><p style="margin:0;"><strong>The Prisoner&rsquo;s Dilemma:</strong> the Nash equilibrium <span style="color:#11a890; font-weight:700;">(B&minus;</span>, <span style="color:#d1106a; font-weight:700;">B&minus;)</span> is <strong>inferior for both</strong> compared with cooperating at (B+, B+). Each has a dominant strategy that leads to a worse outcome &mdash; because they <strong>can&rsquo;t trust</strong> the other to cooperate.</p></div>
+ <aside class="notes">(Alpha, Alpha) = (B&minus;, B&minus;) is the Nash equilibrium: given my pair plays Alpha, Alpha is my best reply, and vice versa &mdash; neither regrets it alone. The tragedy: (B+, B+) beats it for BOTH, but it's not stable (each would defect to Alpha). Nash equilibrium &ne; best outcome. That's the whole point of the prisoner's dilemma.</aside>
+</section>
+
+<!-- ADAPTED for 2316: Kung Fu Tea vs Husky Boba Cournot duopoly (replaces 1116 James/David garbage duopoly) -->
+<section id="kungfu-husky-solve">
+ <h2><i class="fa-solid fa-mug-hot" style="color: var(--success-color);"></i> Kung Fu Tea vs. Husky Boba &mdash; Solving the Duopoly</h2>
+ <p style="font-size:12pt; color:var(--muted-color); margin:0 0 8px;"><strong style="color:var(--primary-color);">Where the payoffs come from:</strong> the more total cups the two sell, the <strong>lower the price</strong> (\(P = 19.99 - 0.03Q\)), and profit \(= (P - \$1)\times q\). Each cell = (<span style="color:var(--accent-color); font-weight:700;">Kung Fu Tea profit</span>, <span style="color:var(--secondary-color); font-weight:700;">Husky Boba profit</span>). <strong style="color:var(--primary-color);">Best-response analysis:</strong> find each firm&rsquo;s best reply.</p>
+ <div style="display:grid; grid-template-columns:1.05fr 0.95fr; gap:24px; align-items:center;">
+  <div style="text-align:center;">
+   <table style="border-collapse:separate; border-spacing:0; margin:0 auto; font-size:12pt;">
+    <tr><td></td><td></td><td colspan="2" style="text-align:center; padding-bottom:3px; font-weight:700; color:var(--secondary-color);">Husky Boba</td></tr>
+    <tr><td></td><td></td><td style="text-align:center; font-weight:700; color:var(--secondary-color); padding:0 12px 5px;">Restrict <span style="font-weight:400; color:var(--muted-color);">(q=158)</span></td><td style="text-align:center; font-weight:700; color:var(--secondary-color); padding:0 12px 5px;">Flood <span style="font-weight:400; color:var(--muted-color);">(q=211)</span></td></tr>
+    <tr><td rowspan="2" style="text-align:center; padding-right:6px; vertical-align:middle; font-weight:700; color:var(--accent-color); writing-mode:vertical-rl; transform:rotate(180deg);">Kung Fu Tea</td>
+     <td style="font-weight:700; color:var(--accent-color); padding-right:8px;">Restrict</td>
+     <td style="border:2.5px solid #2D2D2D; padding:11px 16px; text-align:center; line-height:1.35;"><span style="color:var(--accent-color); font-weight:700;">$1,503</span> KFT<br><span style="color:var(--secondary-color); font-weight:700;">$1,503</span> Husky</td>
+     <td style="border:2.5px solid #2D2D2D; padding:11px 16px; text-align:center; line-height:1.35;"><span style="color:var(--accent-color); font-weight:700;">$1,251</span> KFT<br><span style="color:var(--secondary-color); font-weight:700;">$1,671</span> Husky</td></tr>
+    <tr><td style="font-weight:700; color:var(--accent-color); padding-right:8px;">Flood</td>
+     <td style="border:2.5px solid #2D2D2D; padding:11px 16px; text-align:center; line-height:1.35; position:relative;"><span style="color:var(--accent-color); font-weight:700;">$1,671</span> KFT<br><span style="color:var(--secondary-color); font-weight:700;">$1,251</span> Husky<span class="fragment" data-fragment-index="1" style="position:absolute; inset:3px; border:3px solid #D9534F; border-radius:6px;"></span></td>
+     <td style="border:2.5px solid #2D2D2D; padding:11px 16px; text-align:center; line-height:1.35; position:relative;"><span style="color:var(--accent-color); font-weight:700;">$1,336</span> KFT<br><span style="color:var(--secondary-color); font-weight:700;">$1,336</span> Husky<span class="fragment" data-fragment-index="2" style="position:absolute; inset:3px; border:3px solid #D9534F; border-radius:6px;"></span><span class="fragment" data-fragment-index="4" style="position:absolute; inset:0; background:rgba(217,164,65,0.35);"></span></td></tr>
+   </table>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:8px;">
+   <div class="fragment" data-fragment-index="1" style="background:#fef9f3; border-radius:8px; padding:8px 14px; border-left:3px solid var(--accent-color);"><p style="font-size:12pt; margin:0;">Husky <strong>Restricts</strong> &rarr; KFT gets <strong>$1,671</strong> (Flood) vs $1,503 (Restrict) &rarr; <strong>KFT Floods</strong></p></div>
+   <div class="fragment" data-fragment-index="2" style="background:#fef9f3; border-radius:8px; padding:8px 14px; border-left:3px solid var(--accent-color);"><p style="font-size:12pt; margin:0;">Husky <strong>Floods</strong> &rarr; KFT gets <strong>$1,336</strong> (Flood) vs $1,251 (Restrict) &rarr; <strong>KFT Floods</strong></p></div>
+   <div class="fragment" data-fragment-index="3" style="background:#eef3f6; border-radius:8px; padding:8px 14px; border-left:3px solid var(--secondary-color);"><p style="font-size:12pt; margin:0;"><strong>Flood wins either way</strong> &mdash; it&rsquo;s Kung Fu Tea&rsquo;s dominant strategy. By symmetry, Husky&rsquo;s too.</p></div>
+   <div class="fragment key-result" data-fragment-index="4" style="margin-top:2px;"><p style="margin:0;">Nash equilibrium: <strong>(Flood, Flood) &rarr; ($1,336, $1,336).</strong> Both flood, the price falls to \(\$7.33\), and each earns <strong>less</strong> than the <strong>$1,503</strong> they&rsquo;d make by colluding at Restrict &mdash; but neither can trust the other. <strong>The cartel collapses: a Prisoner&rsquo;s Dilemma.</strong></p></div>
+  </div>
+ </div>
+ <aside class="notes">The 2316 adaptation of the 1116 James/David slide, using the Ch 13 boba duopoly (Kung Fu Tea vs Husky Boba) on the locked calibration \(P=19.99-0.03Q\), \(MC=\$1\). Strategies discretize the Cournot story: Restrict = cartel half (q=158, total 316.5 = monopoly Q, each earns \$1,503 = half of the \$3,005 monopoly profit) vs Flood = Cournot (q=211, each earns \$1,336). Off-diagonal: restrictor earns \$1,251, flooder \$1,671. Best-response: Flood beats Restrict in both columns (\$1,671&gt;\$1,503; \$1,336&gt;\$1,251) &rarr; dominant. Nash (Flood,Flood) = (\$1,336, \$1,336) &lt; cartel (\$1,503 each) &mdash; quantity competition is a prisoner's dilemma, exactly the W13.2 Cournot result reframed. Ties the abstract grade-game tools to the chapter's running boba example.</aside>
+</section>
+
+<!-- ===== YOU TRY: EZ Gas vs QuikFill (vertical stack) ===== -->
+<section>
+ <section id="you-try-matrix">
+  <p style="text-align:center; margin:0 0 6px;"><span style="background:var(--accent-color); color:#fff; font-size:11pt; font-weight:700; padding:3px 14px; border-radius:999px; letter-spacing:1px;">&#9999;&#65039; YOUR TURN</span></p>
+  <h2 style="text-align:center;"><i class="fa-solid fa-gas-pump" style="color: var(--secondary-color);"></i> EZ Gas vs. QuikFill</h2>
+  <p style="font-size: 12.5pt; text-align: center; margin: 0 0 4px; color: var(--muted-color);">You just played the grade game. Same tools, new game: two stations on one corner each pick <strong>High ($3.50)</strong> or <strong>Low ($3.00)</strong>. Each cell = (<span class="you">EZ Gas</span>, <span class="them">QuikFill</span>) weekly profit.</p>
+  <table class="ytm ytm-hero" style="margin-top:14px;">
+   <tr><td class="corner"></td><th class="colh">QuikFill: High</th><th class="colh">QuikFill: Low</th></tr>
+   <tr><th class="rowh">EZ Gas: High</th>
+    <td class="cell"><span class="you">$800</span>, <span class="them">$800</span></td>
+    <td class="cell"><span class="you">$300</span>, <span class="them">$1,100</span></td></tr>
+   <tr><th class="rowh">EZ Gas: Low</th>
+    <td class="cell"><span class="you">$1,100</span>, <span class="them">$300</span></td>
+    <td class="cell"><span class="you">$500</span>, <span class="them">$500</span></td></tr>
+  </table>
+  <p style="font-size: 12pt; text-align: center; margin-top: 10px; font-weight:700; color:var(--primary-color);">Press <strong>&darr;</strong> and work it out yourself: what will each station do?</p>
+  <aside class="notes">Reframed as practice (EZ Gas / QuikFill = the 1116 &sect;13.2 stations students refresh from). Apply the grade-game tools to a new payoff matrix. Read the cells, note the tension (both High = $1,600 joint; undercutting to Low pays $1,100 vs $800). Then press DOWN for the dominant-strategy exercise.</aside>
+ </section>
+
+ <section id="you-try-dominant">
+  <p style="text-align:center; margin:0 0 6px;"><span style="background:var(--accent-color); color:#fff; font-size:11pt; font-weight:700; padding:3px 14px; border-radius:999px; letter-spacing:1px;">&#9999;&#65039; YOUR TURN</span></p>
+  <h2 style="text-align:center;"><i class="fa-solid fa-crown" style="color: var(--accent-color);"></i> Find the Dominant Strategy</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: center;">
+   <div>
+    <p style="font-size: 13pt; margin-bottom: 10px;"><strong>Put yourself in EZ Gas&rsquo;s shoes:</strong></p>
+    <p style="font-size: 12.5pt; margin-bottom:6px;">&bull; If QuikFill plays <strong>High</strong> &mdash; do you want High or Low?</p>
+    <p style="font-size: 12.5pt;">&bull; If QuikFill plays <strong>Low</strong> &mdash; High or Low?</p>
+    <div class="fragment" data-fragment-index="1" style="margin-top:12px;">
+     <div style="background:#fdf6ec; border-radius:8px; padding:8px 14px; margin-bottom:6px;"><p style="font-size:12pt; margin:0;">QuikFill High: Low pays <strong>$1,100</strong> &gt; $800 &rarr; <strong>Low</strong></p></div>
+     <div style="background:#fdf6ec; border-radius:8px; padding:8px 14px;"><p style="font-size:12pt; margin:0;">QuikFill Low: Low pays <strong>$500</strong> &gt; $300 &rarr; <strong>Low</strong></p></div>
+     <p style="font-size: 12.5pt; margin-top: 8px; color: var(--primary-color);"><strong>Low is dominant</strong> for EZ Gas &mdash; and for QuikFill by symmetry.</p>
+    </div>
+   </div>
+   <div style="text-align:center;">
+    <table class="ytm" style="border-spacing:5px;">
+     <tr><td class="corner"></td><th class="colh">QF: High</th><th class="colh">QF: Low</th></tr>
+     <tr><th class="rowh">EZ: High</th>
+      <td class="cell"><span class="you">$800</span>, <span class="them">$800</span></td>
+      <td class="cell"><span class="you">$300</span>, <span class="them">$1,100</span></td></tr>
+     <tr><th class="rowh">EZ: Low</th>
+      <td class="cell"><span class="you">$1,100</span>, <span class="them">$300</span><span class="fragment gm-hl" data-fragment-index="1"></span></td>
+      <td class="cell"><span class="you">$500</span>, <span class="them">$500</span><span class="fragment gm-hl" data-fragment-index="1"></span></td></tr>
+    </table>
+    <p class="fragment" data-fragment-index="1" style="font-size: 11pt; color: var(--muted-color); margin-top:8px;">EZ Gas&rsquo;s <strong>Low</strong> row wins in <em>both</em> columns.</p>
+   </div>
+  </div>
+  <aside class="notes">Let students try before revealing. Walk both conditional comparisons: Low beats High whatever the rival does &rarr; dominant. Both firms reason identically. Click to reveal the answer + highlight the Low row.</aside>
+ </section>
+
+ <section id="you-try-nash">
+  <p style="text-align:center; margin:0 0 6px;"><span style="background:var(--accent-color); color:#fff; font-size:11pt; font-weight:700; padding:3px 14px; border-radius:999px; letter-spacing:1px;">&#9999;&#65039; YOUR TURN</span></p>
+  <h2 style="text-align:center;"><i class="fa-solid fa-handcuffs" style="color: var(--danger-color);"></i> Nash Equilibrium &amp; the Dilemma</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: center;">
+   <div>
+    <p style="font-size: 13pt; margin-bottom: 10px;"><strong>Two questions:</strong></p>
+    <p style="font-size: 12.5pt; margin-bottom:6px;">&bull; Where do the two stations <strong>end up</strong>?</p>
+    <p style="font-size: 12.5pt;">&bull; Could they <em>both</em> do better? Is this a <strong>Prisoner&rsquo;s Dilemma</strong>?</p>
+    <div class="fragment" data-fragment-index="1" style="margin-top:12px;">
+     <p style="font-size: 12.5pt; margin-bottom:8px;">Both play their dominant strategy &rarr; <strong>(Low, Low)</strong> = <strong>$500</strong> each &mdash; the Nash equilibrium. But <strong>(High, High)</strong> = <strong>$800</strong> each is better for <em>both!</em></p>
+     <div style="background: #fdf2f0; border-radius: 10px; padding: 10px 16px; border-left: 4px solid var(--danger-color);">
+      <p style="font-size: 12pt; margin:0;"><strong>Yes &mdash; a Prisoner&rsquo;s Dilemma:</strong> each has a dominant strategy to defect, yet mutual defection beats nobody. Individual rationality &rarr; collective loss.</p>
+     </div>
+    </div>
+   </div>
+   <div style="text-align:center;">
+    <table class="ytm" style="border-spacing:5px;">
+     <tr><td class="corner"></td><th class="colh">QF: High</th><th class="colh">QF: Low</th></tr>
+     <tr><th class="rowh">EZ: High</th>
+      <td class="cell"><span class="you">$800</span>, <span class="them">$800</span><span class="fragment gm-hl" data-fragment-index="1" style="background:rgba(106,142,107,0.4);"></span></td>
+      <td class="cell"><span class="you">$300</span>, <span class="them">$1,100</span></td></tr>
+     <tr><th class="rowh">EZ: Low</th>
+      <td class="cell"><span class="you">$1,100</span>, <span class="them">$300</span></td>
+      <td class="cell"><span class="you">$500</span>, <span class="them">$500</span><span class="fragment gm-hl" data-fragment-index="1"></span></td></tr>
+    </table>
+    <p class="fragment" data-fragment-index="1" style="font-size: 11pt; color: var(--muted-color); margin-top:8px;"><span style="color:#6A8E6B; font-weight:700;">green</span> = better for both &middot; <span style="color:#D9A441; font-weight:700;">gold</span> = where they land</p>
+   </div>
+  </div>
+  <aside class="notes">The signature structure of the whole chapter: individual rationality &rarr; collective irrationality. (Low,Low) is the Nash equilibrium (neither regrets it alone) but (High,High) beats it for both. Same shape as the grade game, the boba duopoly, the cola war, the arms race.</aside>
+ </section>
+</section>
+
+<!-- POLL — vertical stack (renamed ch14-poll-3 to avoid collision) -->
+<section>
+<section id="gt-poll">
+ <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll &mdash; Why Don&rsquo;t They Cooperate?</h2>
+ <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 20px; margin-bottom: 12px; border-left: 4px solid var(--secondary-color);">
+  <p style="font-size: 14pt; margin:0;">EZ Gas and QuikFill could <em>both</em> charge High and earn <strong>$800 each</strong> instead of $500. A friend says &ldquo;just agree to both go High.&rdquo; What&rsquo;s the problem?</p>
+ </div>
+ <div class="poll-grid" data-poll-id="ch14-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 6px;">
+  <div class="poll-option" data-choice="A" style="background: #e3f2fd; border: 2px solid #3b82f6; border-radius: 8px; padding: 13px 18px; cursor: pointer;">
+   <p style="font-size: 12.5pt; margin:0;"><strong>A.</strong> No problem &mdash; they&rsquo;ll both go High and stay there</p>
+  </div>
+  <div class="poll-option" data-choice="B" style="background: #e8f5e9; border: 2px solid #22c55e; border-radius: 8px; padding: 13px 18px; cursor: pointer;">
+   <p style="font-size: 12.5pt; margin:0;"><strong>B.</strong> Each is tempted to secretly undercut to $1,100 &mdash; so the deal unravels</p>
+  </div>
+  <div class="poll-option" data-choice="C" style="background: #fff7ed; border: 2px solid #f97316; border-radius: 8px; padding: 13px 18px; cursor: pointer;">
+   <p style="font-size: 12.5pt; margin:0;"><strong>C.</strong> High prices are illegal, so they can&rsquo;t</p>
+  </div>
+  <div class="poll-option" data-choice="D" style="background: #f5e9f7; border: 2px solid #a855f7; border-radius: 8px; padding: 13px 18px; cursor: pointer;">
+   <p style="font-size: 12.5pt; margin:0;"><strong>D.</strong> Customers wouldn&rsquo;t notice the difference anyway</p>
+  </div>
+ </div>
+ <p style="font-size: 12.5pt; color: var(--muted-color); text-align: center; margin-top: 12px; font-style: italic;">Click your answer. Press <strong>&darr;</strong> for results.</p>
+ <aside class="notes">Correct: <strong>B</strong>. The agreement isn't stable &mdash; defecting to Low pays $1,100 &gt; $800. The dominant-strategy logic destroys the cooperative outcome. This is exactly why cartels break down (&sect;14.5 repeated games asks when they don't).</aside>
+</section>
+<section id="gt-poll-reveal">
+ <h2><i class="fa-solid fa-chart-column" style="color: var(--accent-color);"></i> Poll Results</h2>
+ <div class="poll-results-chart" data-poll-id="ch14-poll-3" style="display: flex; align-items: flex-end; justify-content: space-around; height: 200px; margin: 20px 0 40px 0; border-bottom: 2px solid #ddd; padding: 0 40px;"></div>
+ <div style="background: #ecfdf5; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--success-color); margin-top: 12px;">
+  <p style="font-size: 14pt; margin:0;"><strong>Answer: B.</strong> The cooperative (High, High) is not <em>stable</em>. Each station can earn $1,100 by quietly cutting to Low while the other holds High &mdash; so both are tempted, and the deal collapses back to (Low, Low).</p>
+  <p style="font-size: 12pt; margin: 8px 0 0; color: var(--muted-color);">This is the whole problem with cartels: the agreement is exactly the unstable cell. &sect;14.5 shows how repetition can rescue it.</p>
+ </div>
+ <aside class="notes">If many pick A, re-run the undercut arithmetic: $1,100 &gt; $800. The temptation is individually rational and collectively ruinous.</aside>
+</section>
+</section>
+
 <!-- ===== Slide 11 — Section divider §14.1 ===== -->
 <section class="section-divider" data-state="is-section-divider" id="div-normal-form">
   <p style="font-size: 13pt; color: var(--accent-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;">&sect;14.1</p>
@@ -566,29 +876,7 @@
   <p class="subtitle">Players, strategies, payoffs &mdash; and the simplest prediction: never play a strictly dominated strategy</p>
 </section>
 
-<!-- ===== Slide 6 — §14.1 normal-form game definition + payoff matrix ===== -->
-<section id="normal-form-def">
-  <h2><i class="fa-solid fa-table-cells" style="color: var(--accent-color);"></i> A Game Is Three Things</h2>
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
-    <div>
-      <p style="font-size: 12.5pt; line-height: 1.5; margin: 0 0 8px;">A <strong>normal-form game</strong> specifies:</p>
-      <div style="display: flex; flex-direction: column; gap: 7px;">
-        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 12.5pt; margin: 0;"><strong>Players</strong> \(\{1, 2, \ldots, n\}\)</p></div>
-        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--accent-color);"><p style="font-size: 12.5pt; margin: 0;"><strong>Strategy sets</strong> \(S_i\) &mdash; the choices available to each player \(i\)</p></div>
-        <div style="background: #f8f6f3; border-radius: 8px; padding: 8px 14px; border-left: 4px solid var(--success-color);"><p style="font-size: 12.5pt; margin: 0;"><strong>Payoffs</strong> \(u_i(s_1, \ldots, s_n)\) &mdash; depend on the <em>whole</em> profile</p></div>
-      </div>
-      <p style="font-size: 12pt; line-height: 1.45; margin: 9px 0 0; color: var(--muted-color);">Choices are <strong>simultaneous</strong> in the formal sense: no player observes another's choice before making her own.</p>
-    </div>
-    <div class="key-result" style="margin: 0;">
-      <p style="margin: 0 0 6px; font-size: 12.5pt;">The simplest game: two players, two strategies each. The <strong>payoff matrix</strong> is a \(2\times2\) grid &mdash; player 1 picks the row, player 2 the column, and each cell holds \((u_1, u_2)\).</p>
-      <p style="margin: 0; font-size: 12.5pt;">A strategy \(s_i\) <strong>strictly dominates</strong> \(s_i'\) if it pays more <em>for every</em> rival choice: \(u_i(s_i, s_{-i}) &gt; u_i(s_i', s_{-i})\) for all \(s_{-i}\). No rational player ever plays a strictly dominated strategy.</p>
-    </div>
-  </div>
-  <div style="background: rgba(107,139,164,0.10); border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 9px 16px; margin-top: 12px;">
-    <p style="margin: 0; font-size: 12pt; line-height: 1.45;">The notation \(s_{-i}\) means &ldquo;everyone except \(i\).&rdquo; Most games &mdash; including Cournot &mdash; have <em>no</em> dominant strategy, because each firm's best output depends on the rival's. The exception is the most famous game in social science.</p>
-  </div>
-  <aside class="notes">Set the vocabulary cleanly: players, strategy sets, payoff functions. Stress &ldquo;simultaneous&rdquo; = unobserved, not literally same-instant. The payoff matrix is the workhorse for 2&times;2 games. Define strict dominance precisely (strictly better against EVERY rival choice) &mdash; it gives the sharpest possible prediction when it applies. Flag that Cournot has no dominant strategy (best response depends on rival q), which is exactly why we'll need Nash equilibrium next. But first, the one game where dominance solves everything: the PD.</aside>
-</section>
+<!-- (normal-form definition merged up into the #game-theory slide in the PD block) -->
 
 <!-- ===== Slide 7 — §14.1 Walkthrough 14.1 PD + figure-14-2 ===== -->
 <section id="walkthrough-14-1">
