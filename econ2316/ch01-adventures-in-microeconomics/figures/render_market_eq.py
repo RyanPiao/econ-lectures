@@ -44,14 +44,14 @@ ax.plot([0, Qstar], [Pstar, Pstar], ls="--", color=C["muted"], lw=1.2, zorder=1)
 ax.plot([Qstar, Qstar], [0, Pstar], ls="--", color=C["muted"], lw=1.2, zorder=1)
 ax.scatter([Qstar], [Pstar], s=95, color=C["text"], zorder=6)
 ax.text(Qstar + 3500, Pstar + 0.12, "E", color=C["text"], fontsize=14, fontweight="bold")
-ax.text(-3000, Pstar, "$P^{*}=\\$1.75$", color=C["text"], fontsize=12.5, fontweight="bold", ha="right", va="center")
-ax.text(Qstar, -0.28, "$Q^{*}=70{,}000$", color=C["text"], fontsize=12.5, fontweight="bold", ha="center")
+ax.text(-3000, Pstar, "$P^{*}$", color=C["text"], fontsize=14, fontweight="bold", ha="right", va="center")
+ax.text(Qstar, -0.22, "$Q^{*}$", color=C["text"], fontsize=14, fontweight="bold", ha="center")
 
-# region captions -----------------------------------------------------------
-ax.text(64000, 2.62, "SURPLUS", color=C["surplus"], fontsize=13.5, fontweight="bold", ha="center")
-ax.text(64000, 2.40, "$Q^{s}>Q^{d}\\ \\Rightarrow$ price falls", color=C["surplus"], fontsize=10.5, ha="center", fontstyle="italic")
-ax.text(70000, 1.02, "SHORTAGE", color=C["shortage"], fontsize=13.5, fontweight="bold", ha="center")
-ax.text(70000, 0.80, "$Q^{d}>Q^{s}\\ \\Rightarrow$ price rises", color=C["shortage"], fontsize=10.5, ha="center", fontstyle="italic")
+# region captions — centered inside each wedge -------------------------------
+ax.text(67000, 2.52, "SURPLUS", color=C["surplus"], fontsize=14, fontweight="bold", ha="center")
+ax.text(67000, 2.28, "$Q^{s}>Q^{d}\\ \\Rightarrow$ price falls", color=C["surplus"], fontsize=10.5, ha="center", fontstyle="italic")
+ax.text(74000, 1.00, "SHORTAGE", color=C["shortage"], fontsize=14, fontweight="bold", ha="center")
+ax.text(74000, 0.76, "$Q^{d}>Q^{s}\\ \\Rightarrow$ price rises", color=C["shortage"], fontsize=10.5, ha="center", fontstyle="italic")
 
 # axis labels at top / far-right so they clear the P*/Q* labels
 ax.text(2500, 3.42, "Price ($/lb)", fontsize=12, fontweight="bold", color="#374151", ha="left", va="center")
