@@ -1,8 +1,8 @@
 """Original surge-pricing tradeoff diagram for ECON 2316 Ch 1.
-During a demand surge: letting the price rise to the equilibrium clears the
-market (short wait) but at a higher fare; capping the fare at the normal level
-leaves quantity demanded above quantity supplied -> a shortage (long waits, no
-cars). Efficiency vs fairness; the market clears either way only at the surge price.
+A demand surge shifts demand D0 -> D1. Letting the price rise to the new
+equilibrium E1 clears the market (short wait) at a higher fare; capping the
+fare at the old normal level (E0's price) leaves quantity demanded far above
+quantity supplied -> a shortage (long waits, no cars).
 Convention: point markers drawn ON TOP of the curves."""
 import os
 import numpy as np
@@ -11,7 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 OUT = os.path.dirname(os.path.abspath(__file__))
-C = {"demand": "#6B8BA4", "supply": "#6A8E6B", "surge": "#C47B5A",
+C = {"d1": "#3b6f99", "d0": "#9DB9CC", "supply": "#6A8E6B", "surge": "#C47B5A",
      "cap": "#A85C5C", "muted": "#8C8580", "text": "#2D2D2D"}
 
 plt.rcParams.update({
@@ -21,38 +21,43 @@ plt.rcParams.update({
     "axes.grid": False, "axes.spines.top": False, "axes.spines.right": False,
 })
 
-def D(Q): return 30 - Q          # surge-level demand
-def S(Q): return 6 + 0.5 * Q     # drivers' supply
-Qstar, Pstar = 16, 14            # surge equilibrium
-Pcap = 8                         # normal fare (no surge)
-Qs_cap, Qd_cap = 4, 22           # supply & demand at the capped fare
+def S(Q):  return 4 + Q          # drivers' supply
+def D0(Q): return 16 - Q         # normal demand
+def D1(Q): return 24 - Q         # surge demand (shifted right)
+E0 = (6, 10)                     # normal equilibrium  -> normal fare = 10
+E1 = (10, 14)                    # surge equilibrium
+Pcap = 10                        # capped at the normal fare
+Qd_cap = 14                      # demand on D1 at the cap
 
-fig, ax = plt.subplots(figsize=(6.8, 4.5))
+fig, ax = plt.subplots(figsize=(7.0, 4.7))
 
-Q = np.array([0, 24])
-ax.plot(Q, D(Q), color=C["demand"], lw=2.7, zorder=3)
+Q = np.array([0, 20])
 ax.plot(Q, S(Q), color=C["supply"], lw=2.7, zorder=3)
-ax.text(24.4, D(24), "D", color=C["demand"], fontsize=14, fontweight="bold", va="center")
-ax.text(24.4, S(24), "S", color=C["supply"], fontsize=14, fontweight="bold", va="center")
+ax.plot(np.array([0, 16]), D0(np.array([0, 16])), color=C["d0"], lw=2.3, ls="--", zorder=2)
+ax.plot(Q, D1(Q), color=C["d1"], lw=2.7, zorder=3)
+ax.text(19.6, S(19.6), "S", color=C["supply"], fontsize=14, fontweight="bold", va="center")
+ax.text(15.2, 1.1, "$D_0$", color=C["d0"], fontsize=13, fontweight="bold")
+ax.text(19.4, D1(19.4) - 0.6, "$D_1$ (surge)", color=C["d1"], fontsize=12.5, fontweight="bold", va="top")
 
-# surge equilibrium (clears)
-ax.plot([0, Qstar], [Pstar, Pstar], ls=":", color=C["surge"], lw=1.2, zorder=1)
-ax.scatter([Qstar], [Pstar], s=90, color=C["surge"], zorder=6)
-ax.annotate("surge price clears\nthe market (short wait)", xy=(Qstar, Pstar),
-            xytext=(17.5, 22), fontsize=10.5, color=C["surge"], fontweight="bold",
-            ha="left", arrowprops=dict(arrowstyle="->", color=C["surge"], lw=1.3))
+# normal equilibrium + surge equilibrium (markers on top)
+ax.scatter([E0[0]], [E0[1]], s=55, color=C["muted"], zorder=6)
+ax.plot([0, E1[0]], [E1[1], E1[1]], ls=":", color=C["surge"], lw=1.2, zorder=1)
+ax.scatter([E1[0]], [E1[1]], s=95, color=C["surge"], zorder=6)
+ax.annotate("surge price clears the\nmarket (short wait)", xy=E1, xytext=(12.4, 18.6),
+            fontsize=10.5, color=C["surge"], fontweight="bold", ha="left",
+            arrowprops=dict(arrowstyle="->", color=C["surge"], lw=1.3))
 
 # capped fare -> shortage
 ax.axhline(Pcap, color=C["cap"], lw=2, ls="--", zorder=2)
-ax.text(0.3, Pcap + 0.7, "normal fare (no surge)", color=C["cap"], fontsize=10, fontweight="bold")
-ax.scatter([Qs_cap, Qd_cap], [Pcap, Pcap], s=46, color=C["cap"], zorder=6)
-ax.annotate("", xy=(Qd_cap, Pcap), xytext=(Qs_cap, Pcap),
+ax.text(0.3, Pcap + 0.6, "normal fare", color=C["cap"], fontsize=10, fontweight="bold")
+ax.scatter([Qd_cap], [Pcap], s=46, color=C["cap"], zorder=6)
+ax.annotate("", xy=(Qd_cap, Pcap), xytext=(E0[0], Pcap),
             arrowprops=dict(arrowstyle="<->", color=C["cap"], lw=1.6))
-ax.text((Qs_cap + Qd_cap) / 2, Pcap - 2.6, "SHORTAGE\nlong waits, no cars",
+ax.text(13.0, Pcap - 2.5, "SHORTAGE\nlong waits, no cars",
         color=C["cap"], fontsize=10.5, fontweight="bold", ha="center", linespacing=1.15)
 
-ax.set_xlim(0, 27)
-ax.set_ylim(0, 31)
+ax.set_xlim(0, 21)
+ax.set_ylim(0, 26)
 ax.set_xlabel("Rides per hour")
 ax.set_ylabel("Price per ride ($)")
 ax.set_xticks([]); ax.set_yticks([])
