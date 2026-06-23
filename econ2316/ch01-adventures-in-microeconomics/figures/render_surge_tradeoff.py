@@ -43,7 +43,7 @@ ax.text(19.4, D1(19.4) - 0.6, "$D_1$ (surge)", color=C["d1"], fontsize=12.5, fon
 ax.scatter([E0[0]], [E0[1]], s=55, color=C["muted"], zorder=6)
 ax.plot([0, E1[0]], [E1[1], E1[1]], ls=":", color=C["surge"], lw=1.2, zorder=1)
 ax.scatter([E1[0]], [E1[1]], s=95, color=C["surge"], zorder=6)
-ax.annotate("surge price clears the\nmarket (short wait)", xy=E1, xytext=(12.4, 18.6),
+ax.annotate("surge price clears the\nmarket (short wait)", xy=E1, xytext=(5.6, 20.5),
             fontsize=10.5, color=C["surge"], fontweight="bold", ha="left",
             arrowprops=dict(arrowstyle="->", color=C["surge"], lw=1.3))
 
