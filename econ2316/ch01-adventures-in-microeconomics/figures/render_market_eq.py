@@ -48,8 +48,8 @@ ax.text(-3000, Pstar, "$P^{*}$", color=C["text"], fontsize=14, fontweight="bold"
 ax.text(Qstar, -0.22, "$Q^{*}$", color=C["text"], fontsize=14, fontweight="bold", ha="center")
 
 # region captions — centered inside each wedge -------------------------------
-ax.text(67000, 2.52, "SURPLUS", color=C["surplus"], fontsize=14, fontweight="bold", ha="center")
-ax.text(67000, 2.28, "$Q^{s}>Q^{d}\\ \\Rightarrow$ price falls", color=C["surplus"], fontsize=10.5, ha="center", fontstyle="italic")
+ax.text(63000, 2.86, "SURPLUS", color=C["surplus"], fontsize=14, fontweight="bold", ha="center")
+ax.text(63000, 2.64, "$Q^{s}>Q^{d}\\ \\Rightarrow$ price falls", color=C["surplus"], fontsize=10.5, ha="center", fontstyle="italic")
 ax.text(74000, 1.00, "SHORTAGE", color=C["shortage"], fontsize=14, fontweight="bold", ha="center")
 ax.text(74000, 0.76, "$Q^{d}>Q^{s}\\ \\Rightarrow$ price rises", color=C["shortage"], fontsize=10.5, ha="center", fontstyle="italic")
 
