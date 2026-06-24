@@ -17,8 +17,8 @@ plt.rcParams.update({
     "axes.grid": False, "axes.spines.top": False, "axes.spines.right": False,
 })
 
-def f(x):  return 4 * (1 - np.exp(-0.5 * x))
-def fp(x): return 2.0 * np.exp(-0.5 * x)
+def f(x):  return 4 * (1 - np.exp(-0.8 * x))
+def fp(x): return 3.2 * np.exp(-0.8 * x)
 
 x = np.linspace(0, 8, 300)
 fig, ax = plt.subplots(figsize=(6.6, 4.3))
@@ -31,8 +31,9 @@ def tangent(x0, half, label, lx, ly, ha="center"):
     ax.scatter([x0], [y0], s=55, color=C["tan"], zorder=6)
     ax.text(lx, ly, label, color=C["tan"], fontsize=11, fontweight="bold", ha=ha, linespacing=1.1)
 
-tangent(1.4, 1.2, "slope ≈ 1\n(losing fast)", 0.5, 3.35, ha="left")
-tangent(6.6, 1.4, "slope ≈ 0\n(flat: plateau)", 6.3, 3.25, ha="center")
+tangent(1.45, 1.1, "slope ≈ 1\n(losing fast)", 0.4, 4.05, ha="left")   # slope ~1.0
+tangent(6.8, 1.3, "slope ≈ 0\n(flat: plateau)", 6.3, 3.4, ha="center")  # slope ~0.014
+ax.set_ylim(0, 4.6)
 
 ax.set_xlim(0, 8.2)
 ax.set_ylim(0, 4.4)
