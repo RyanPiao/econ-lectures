@@ -17,7 +17,7 @@ plt.rcParams.update({
     "axes.grid": False, "axes.spines.top": False, "axes.spines.right": False,
 })
 
-fig, ax = plt.subplots(figsize=(6.6, 4.4))
+fig, ax = plt.subplots(figsize=(7.0, 3.9))
 qa = np.array([0, 160]); ax.plot(qa, 20 - 0.1 * qa, color=C["ar"], lw=2.8, zorder=3)
 qm = np.array([0, 120]); ax.plot(qm, 20 - 0.2 * qm, color=C["mr"], lw=2.8, zorder=3)
 ax.text(150, 20 - 0.1 * 150 + 0.7, "AR", color=C["ar"], fontsize=13, fontweight="bold", ha="center")
