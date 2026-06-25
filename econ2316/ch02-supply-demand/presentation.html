@@ -497,17 +497,24 @@
      <section data-poll-results="ch02-poll-worldcup" id="worldcup-reveal" style="display: flex; flex-direction: column;">
       <h2>
        <i class="fa-solid fa-chart-column" style="color: var(--success-color);"></i>
-       <em>Your votes ARE a demand schedule</em>
+       <em>Your votes ARE a demand curve</em>
       </h2>
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-       <div class="poll-results-chart" data-poll-id="ch02-poll-worldcup" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 130px; margin: 12px 60px;"></div>
-       <div style="padding: 14px 50px 0;">
-        <p style="font-size: 14pt; line-height: 1.6;">At each price tier, count how many of you would still buy. <strong>That count, plotted against price, is the demand curve</strong> for World Cup seats in this room &mdash; downward-sloping, just like eggs.</p>
-        <div class="key-result" style="margin-top: 12px;">
-         <p style="font-size: 13pt;">Demand isn't an assumption &mdash; it's a thing we <em>measure</em>. \(Q^d(p)\) just names that count-vs-price relationship. And the gap between the \$120 face value and a \$1,100+ resale price is exactly the surplus &sect;2.3 measures &mdash; FIFA's dynamic pricing and the resale market are fighting over who captures it.</p>
-        </div>
+      <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 18px; align-items: start; margin-top: 4px;">
+       <div>
+        <p style="font-size: 11pt; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 2px;">How you voted (by WTP tier)</p>
+        <div class="poll-results-chart" data-poll-id="ch02-poll-worldcup" style="display: flex; gap: 14px; align-items: flex-end; justify-content: center; height: 120px; margin: 10px 6px 28px;"></div>
+       </div>
+       <div>
+        <p style="font-size: 11pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 4px;">&rarr; The demand curve they imply</p>
+        <svg id="wc-demand-svg" viewBox="0 0 470 280" style="width: 100%; height: auto; background: #fafaf7; border-radius: 8px; border: 1px solid #e5e7eb;"></svg>
        </div>
       </div>
+      <div class="key-result" style="margin-top: 10px;">
+       <p style="font-size: 12.5pt;">Sort buyers by willingness to pay, highest first &mdash; each student's tier is the <em>height</em> of the curve at that quantity. As price falls, more of you buy: that downward-sloping staircase <strong>is</strong> \(Q^d(p)\). The gap between the \$120 face value and a \$1,100+ resale price is the surplus &sect;2.3 will measure. <span style="color: var(--muted-color);">(Where's supply? That's the other half of Chapter 2.)</span></p>
+      </div>
+      <aside class="notes">
+       The payoff slide: the poll bars (left) are votes per price tier; the SVG (right) re-plots them as an actual demand curve, live, as votes arrive. Mechanics: sort the four tiers by representative WTP (D&asymp;\$3,500, C&asymp;\$1,500, B&asymp;\$375, A&asymp;\$100), stack the counts highest-WTP-first, and the cumulative count at each price is quantity demanded &mdash; a downward staircase. As price falls each tier "joins," so \(Q^d\) rises. We deliberately draw demand only; supply is the rest of the chapter. Tie-back: the face-vs-resale gap is the surplus of &sect;2.3.
+      </aside>
      </section>
     </section>
     <!-- ===== willingness-to-pay (NEW top-level, after page-7 position) + strawberry video verticals ===== -->
@@ -6263,5 +6270,57 @@
     else init();
    })();
   </script>
- </body>
+ 
+<!-- Live demand curve built from the ch02-poll-worldcup WTP votes (demand only). Reads the rendered poll bars; no-ops if absent. -->
+<script>
+(function(){
+  var svg=document.getElementById('wc-demand-svg'); if(!svg) return;
+  var PID='ch02-poll-worldcup';
+  // representative willingness-to-pay per tier, highest first
+  var TIERS=[{k:'D',wtp:3500,col:'#a855f7'},{k:'C',wtp:1500,col:'#f97316'},{k:'B',wtp:375,col:'#22c55e'},{k:'A',wtp:100,col:'#3b82f6'}];
+  var PMAX=3800, L=48, R=452, T=14, B=244;
+  function readCounts(){
+    var ct={A:0,B:0,C:0,D:0};
+    var chart=document.querySelector('.poll-results-chart[data-poll-id="'+PID+'"]');
+    if(chart){ chart.querySelectorAll('.poll-bar-wrap').forEach(function(w){
+      var labEl=w.querySelector('.poll-bar-label'), cEl=w.querySelector('.poll-bar-count');
+      var lab=labEl?labEl.textContent.trim():''; var n=cEl?parseInt(cEl.textContent,10):0;
+      if(ct.hasOwnProperty(lab)) ct[lab]=isNaN(n)?0:n;
+    }); }
+    return ct;
+  }
+  function draw(){
+    var ct=readCounts(); var total=ct.A+ct.B+ct.C+ct.D; var qmax=Math.max(total,6);
+    function xQ(q){ return L+(q/qmax)*(R-L); }
+    function yP(p){ return B-(p/PMAX)*(B-T); }
+    var s='';
+    s+='<line x1="'+L+'" y1="'+B+'" x2="'+R+'" y2="'+B+'" stroke="#374151" stroke-width="1.4"/>';
+    s+='<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+B+'" stroke="#374151" stroke-width="1.4"/>';
+    s+='<text x="'+(R-2)+'" y="'+(B+13)+'" text-anchor="end" font-size="9.5" fill="#374151">quantity (students who buy)</text>';
+    s+='<text x="'+(L+3)+'" y="'+(T+10)+'" font-size="9.5" fill="#374151">price ($/ticket)</text>';
+    [150,600,1500,2500,3500].forEach(function(p){ var gy=yP(p); s+='<line x1="'+(L-3)+'" y1="'+gy+'" x2="'+L+'" y2="'+gy+'" stroke="#374151" stroke-width="1"/><text x="'+(L-5)+'" y="'+(gy+3)+'" text-anchor="end" font-size="8" fill="#6b7280">$'+p.toLocaleString()+'</text>'; });
+    if(total>0){
+      var d='', cum=0, started=false, topWtp=0;
+      TIERS.forEach(function(t){ var n=ct[t.k]; if(n<=0) return; var y=yP(t.wtp);
+        if(!started){ d+='M'+xQ(0).toFixed(1)+' '+y.toFixed(1)+' '; started=true; topWtp=t.wtp; }
+        else { d+='L'+xQ(cum).toFixed(1)+' '+y.toFixed(1)+' '; }
+        cum+=n; d+='L'+xQ(cum).toFixed(1)+' '+y.toFixed(1)+' ';
+      });
+      s+='<path d="'+d+'" fill="none" stroke="#2563eb" stroke-width="2.8"/>';
+      // tier dots
+      cum=0;
+      TIERS.forEach(function(t){ var n=ct[t.k]; if(n<=0) return; cum+=n; s+='<circle cx="'+xQ(cum).toFixed(1)+'" cy="'+yP(t.wtp).toFixed(1)+'" r="3.2" fill="'+t.col+'"/>'; });
+      s+='<text x="'+xQ(0.12*qmax).toFixed(1)+'" y="'+(yP(topWtp)-6).toFixed(1)+'" font-size="10.5" font-weight="700" fill="#2563eb">D = your WTP</text>';
+      s+='<text x="'+((L+R)/2)+'" y="'+(T+11)+'" text-anchor="middle" font-size="9" fill="#6b7280">'+total+' vote'+(total!==1?'s':'')+' &middot; price falls &rarr; more buy</text>';
+    } else {
+      s+='<text x="'+((L+R)/2)+'" y="'+((T+B)/2)+'" text-anchor="middle" font-size="11" fill="#9ca3af">Vote on the previous slide &mdash; your demand curve builds here.</text>';
+    }
+    svg.innerHTML=s;
+  }
+  draw();
+  setInterval(draw,1200);
+  if(window.Reveal&&Reveal.on){ Reveal.on('slidechanged',function(){ setTimeout(draw,120); }); }
+})();
+</script>
+</body>
 </html>
