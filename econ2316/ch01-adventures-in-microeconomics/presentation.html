@@ -1762,14 +1762,18 @@
   });
 </script>
 
-<!-- TEMP key-detector: long-press the remote to see what key it sends; remove after diagnosing -->
-<div id="keyspy" style="position:fixed;bottom:10px;right:120px;z-index:99999;background:rgba(0,0,0,.82);color:#5dff5d;font:12px ui-monospace,Menlo,monospace;padding:6px 11px;border-radius:6px;pointer-events:none;max-width:60vw;white-space:nowrap;">key-spy: press a remote button…</div>
+<!-- Presentation clicker: Lenovo long-press emits Ctrl+H (back) / Ctrl+L (forward). Map to navigate left/right. -->
 <script>
-document.addEventListener('keydown',function(e){
-  var el=document.getElementById('keyspy'); if(!el) return;
-  el.textContent='key="'+e.key+'"  code="'+e.code+'"  keyCode='+e.keyCode
-    +(e.metaKey?' +Meta':'')+(e.ctrlKey?' +Ctrl':'')+(e.altKey?' +Alt':'')+(e.shiftKey?' +Shift':'');
-},true);
+(function(){
+  document.addEventListener('keydown', function(e){
+    if(typeof Reveal==='undefined') return;
+    if(!e.ctrlKey || e.metaKey || e.altKey) return;
+    var tag=((e.target&&e.target.tagName)||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select') return;
+    if(e.code==='KeyH' || e.keyCode===72){ Reveal.left();  e.preventDefault(); }
+    else if(e.code==='KeyL' || e.keyCode===76){ Reveal.right(); e.preventDefault(); }
+  }, true);
+})();
 </script>
 
 <!-- Countdown Timer (press 1-9 to start an N-minute countdown) -->
