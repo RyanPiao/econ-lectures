@@ -399,7 +399,19 @@
       </table>
     </div>
     <div>
-      <img alt="A working student's time budget: hours of study on one axis, hours of paid work on the other, with a straight frontier S plus W equals 97 and three candidate points including the interior optimum" src="figures/figure-1-1-time-budget.png" style="width: 100%; border-radius: 8px;">
+      <div class="iv-card" style="padding: 6px 12px 9px;">
+        <div class="tr-row" style="margin-bottom: 2px;">
+          <button class="tr-preset tb-preset" data-pre="work"><i class="fa-solid fa-briefcase"></i> All work</button>
+          <button class="tr-preset tb-preset" data-pre="opt"><i class="fa-solid fa-bullseye"></i> Optimum</button>
+          <button class="tr-preset tb-preset" data-pre="study"><i class="fa-solid fa-book"></i> All study</button>
+        </div>
+        <svg class="iv-svg" id="tb-svg" viewBox="0 0 380 290" style="width: 100%; min-height: 228px;"></svg>
+        <div class="iv-controls" style="margin-top: 2px;">
+          <label class="iv-label" style="font-size: 11pt;">Study hours \(S\): <span class="iv-readout" id="tb-sRead">20</span></label>
+          <input class="iv-slider" id="tb-s" type="range" min="0" max="97" step="1" value="20">
+        </div>
+        <div id="tb-score" style="margin-top: 5px; font-size: 10.5pt; display: flex; flex-wrap: wrap; gap: 3px 12px; justify-content: center;"></div>
+      </div>
     </div>
   </div>
   <div class="recall-box" style="margin-top: 12px;">
@@ -1694,6 +1706,49 @@
   btns.forEach(function(b){b.addEventListener('click',function(){setPre(PRE[b.dataset.pre]);});});
   dP.addEventListener('input',function(){var v=parseFloat(dP.value);rP.textContent='$'+v;btns.forEach(function(b){b.classList.toggle('active',PRE[b.dataset.pre]===v);});draw();});
   setPre(9);
+})();
+</script>
+
+<!-- Interactive Figure 1.1 — student's time budget. Slider moves the point along S+W=97. No-ops if absent. -->
+<script>
+(function(){
+  var svg=document.getElementById('tb-svg'); if(!svg) return;
+  var dS=document.getElementById('tb-s'), rS=document.getElementById('tb-sRead'), sc=document.getElementById('tb-score');
+  var btns=document.querySelectorAll('.tb-preset');
+  var PRE={'work':0,'opt':20,'study':97};
+  var TOT=97, WAGE=18, AX=100;
+  var L=46, Rr=360, TT=16, B=248;
+  function xS(s){ return L + (s/AX)*(Rr-L); }
+  function yW(w){ return B - (w/AX)*(B-TT); }
+  function draw(){
+    var S=parseFloat(dS.value), W=TOT-S, pay=WAGE*W, s='';
+    // axes
+    s+='<line x1="'+L+'" y1="'+B+'" x2="'+Rr+'" y2="'+B+'" stroke="#374151" stroke-width="1.4"/>';
+    s+='<line x1="'+L+'" y1="'+TT+'" x2="'+L+'" y2="'+B+'" stroke="#374151" stroke-width="1.4"/>';
+    s+='<text x="'+Rr+'" y="'+(B+15)+'" text-anchor="end" font-size="10" fill="#374151">study hours S</text>';
+    s+='<text x="'+(L+3)+'" y="'+(TT-3)+'" font-size="10" fill="#374151">work hours W</text>';
+    s+='<text x="'+xS(97)+'" y="'+(B+14)+'" text-anchor="middle" font-size="9" fill="#6b7280">97</text>';
+    s+='<text x="'+(L-5)+'" y="'+(yW(97)+3)+'" text-anchor="end" font-size="9" fill="#6b7280">97</text>';
+    // budget line
+    s+='<line x1="'+xS(0)+'" y1="'+yW(97)+'" x2="'+xS(97)+'" y2="'+yW(0)+'" stroke="#6b8ba4" stroke-width="2.6"/>';
+    s+='<text x="'+xS(40)+'" y="'+(yW(57)-7)+'" font-size="10.5" font-weight="700" fill="#6b8ba4">S + W = 97</text>';
+    // optimum (20,77)
+    s+='<circle cx="'+xS(20)+'" cy="'+yW(77)+'" r="4.5" fill="#C47B5A"/>';
+    s+='<text x="'+(xS(20)+7)+'" y="'+(yW(77)-6)+'" font-size="9" font-weight="700" fill="#C47B5A">optimum (20, 77)</text>';
+    // current point + droplines
+    var cx=xS(S), cy=yW(W);
+    s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+cx+'" y2="'+B+'" stroke="#2563eb" stroke-width="1" stroke-dasharray="2 3"/>';
+    s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+L+'" y2="'+cy+'" stroke="#2563eb" stroke-width="1" stroke-dasharray="2 3"/>';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="#2563eb"/>';
+    svg.innerHTML=s;
+    sc.innerHTML='<span style="color:#2563eb;font-weight:600;">S = '+S+' h</span>'
+      +'<span style="color:#6b8ba4;font-weight:600;">W = '+W+' h</span>'
+      +'<span style="color:#6A8E6B;font-weight:600;">pay = $18 &times; '+W+' = $'+pay.toLocaleString()+'/wk</span>';
+  }
+  function setPre(v){ dS.value=v; rS.textContent=v; btns.forEach(function(b){b.classList.toggle('active',PRE[b.dataset.pre]===v);}); draw(); }
+  btns.forEach(function(b){b.addEventListener('click',function(){setPre(PRE[b.dataset.pre]);});});
+  dS.addEventListener('input',function(){var v=parseFloat(dS.value);rS.textContent=v;btns.forEach(function(b){b.classList.toggle('active',PRE[b.dataset.pre]===v);});draw();});
+  setPre(20);
 })();
 </script>
 
