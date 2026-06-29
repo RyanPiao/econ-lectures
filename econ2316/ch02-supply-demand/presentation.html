@@ -1577,6 +1577,12 @@
          <input class="iv-slider" data-control="me-s" max="0.75" min="-0.75" step="0.05" type="range" value="0">
         </div>
        </div>
+       <div style="text-align: right; margin-top: 8px;">
+        <button class="iv-reset" type="button" style="font-size: 11pt; padding: 5px 14px; border-radius: 6px; border: 1.5px solid var(--secondary-color); background: #fff; color: var(--secondary-color); cursor: pointer; font-family: inherit; white-space: nowrap;">
+         <i class="fa-solid fa-rotate-left"></i>
+         Reset
+        </button>
+       </div>
       </div>
       <div>
        <div class="key-result" style="margin: 0 0 10px;">
@@ -3029,17 +3035,23 @@
           <input class="iv-slider" data-control="rc-s" max="0.75" min="0" step="0.05" type="range" value="0.4">
          </div>
         </div>
-        <p style="font-size: 12.5pt; margin: 8px 0 0; text-align: center;">
-         \(E^*\) = (
-         <span data-readout="rc-q" style="color: var(--success-color); font-weight: 700;">
-          40.0
-         </span>
-         k, &nbsp;
-         <span data-readout="rc-p" style="color: var(--success-color); font-weight: 700;">
-          $3.40
-         </span>
-         ) &mdash; drag either slider: \(p^*\) always &uarr;, \(Q^*\) flips with the bigger shift.
-        </p>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px;">
+         <p style="font-size: 12pt; margin: 0; line-height: 1.4;">
+          \(E^*\) = (
+          <span data-readout="rc-q" style="color: var(--success-color); font-weight: 700;">
+           40.0
+          </span>
+          k, &nbsp;
+          <span data-readout="rc-p" style="color: var(--success-color); font-weight: 700;">
+           $3.40
+          </span>
+          ) &mdash; drag either slider: \(p^*\) always &uarr;, \(Q^*\) flips with the bigger shift.
+         </p>
+         <button class="iv-reset" type="button" style="font-size: 11pt; padding: 5px 14px; border-radius: 6px; border: 1.5px solid var(--secondary-color); background: #fff; color: var(--secondary-color); cursor: pointer; font-family: inherit; white-space: nowrap;">
+          <i class="fa-solid fa-rotate-left"></i>
+          Reset
+         </button>
+        </div>
        </div>
        <div>
         <div class="poll-results-chart" data-poll-id="ch02-poll-2" style="display: flex; gap: 12px; align-items: flex-end; justify-content: center; height: 64px; margin: 0 0 12px;">
@@ -6187,6 +6199,16 @@
         rcS.addEventListener("input", renderRC);
         renderRC();
       }
+      // --- Reset buttons: restore an iv-card's sliders to their default values ---
+      document.querySelectorAll("button.iv-reset").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var card = btn.closest(".iv-card");
+          if (!card) return;
+          var sliders = card.querySelectorAll("input.iv-slider");
+          sliders.forEach(function(sl){ sl.value = sl.defaultValue; });
+          sliders.forEach(function(sl){ sl.dispatchEvent(new Event("input")); });
+        });
+      });
     }
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
