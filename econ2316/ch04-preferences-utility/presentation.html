@@ -733,6 +733,466 @@
   <aside class="notes">The gauge is the metaphor: a utility function takes a consumption bundle (here, a cucumber) and returns a number on a satisfaction scale &mdash; 10 out of 100 for a consumer who doesn't much like cucumber (hence the needle in the red zone). Stress the right-column points: utility is well-being, NOT income; the function just has to (a) represent the preferences and (b) obey the four assumptions we formalize in &sect;4.1. "Utils" are subjective units &mdash; only the ranking they induce is meaningful (ordinal), which is the thread from the earlier slides.</aside>
 </section>
 
+
+<!-- ============================================================ -->
+<!-- ===== Utility elicitation + functional forms (ported from 1116 ch08, coffee/boba) ===== -->
+<!-- ============================================================ -->
+
+<section>
+
+<!-- ===== Live numeric survey: rate utility 1-100 for coffee & boba ===== -->
+<section id="utility-survey">
+  <h2><i class="fa-solid fa-sliders" style="color: var(--accent-color);"></i> How Much Utility Do <em>You</em> Get? <span style="font-size: 13pt; color: var(--muted-color); font-weight: 400; font-style: italic;">(live class survey)</span></h2>
+
+  <p style="font-size: 14pt; color: var(--text-color); margin: 0 0 10px;">
+    Type your <strong>initials</strong>, drag each slider to your &ldquo;utils&rdquo; rating <strong>right now</strong> &mdash; <strong>1 = hate it, 100 = love it</strong>.
+  </p>
+
+  <!-- Initials field -->
+  <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0 0 14px;">
+    <label for="num-initials-utility" style="font-size: 14pt; color: var(--primary-color); font-weight: 700;">Your initials:</label>
+    <input id="num-initials-utility" type="text" maxlength="3" pattern="[A-Za-z]{1,3}" placeholder="AB" autocomplete="off"
+           class="num-initials" data-poll-base="ch04-survey-utility"
+           style="font-size: 18pt; font-weight: 700; text-transform: uppercase; text-align: center; padding: 6px 12px; width: 90px; border: 2px solid var(--secondary-color); border-radius: 8px; font-family: 'SF Mono', Menlo, monospace; letter-spacing: 2px;">
+    <span style="font-size: 11pt; color: var(--muted-color); font-style: italic;">(1&ndash;3 letters)</span>
+  </div>
+
+  <!-- Two-good slider survey, scoped by ch04-survey-utility -->
+  <div class="num-survey" data-poll-base="ch04-survey-utility" style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: stretch;">
+
+    <!-- COFFEE -->
+    <div class="num-survey-card" style="background: #fff5f5; border: 1px solid #fecaca; border-radius: 10px; padding: 14px 18px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 28pt;">&#9749;</span>
+          <span style="font-size: 18pt; font-weight: 700; color: var(--primary-color);">Coffee</span>
+        </div>
+        <div class="num-display" data-item="coffee" style="font-size: 28pt; font-weight: 800; color: #b91c1c; font-family: 'SF Mono', Menlo, monospace; min-width: 78px; text-align: right;">50</div>
+      </div>
+      <input type="range" min="1" max="100" value="50" class="num-slider" data-item="coffee" style="width: 100%; height: 8px; accent-color: #b91c1c;">
+      <div style="display: flex; justify-content: space-between; font-size: 11pt; color: var(--muted-color); margin-top: 4px;">
+        <span>1 &mdash; hate it</span><span>100 &mdash; love it</span>
+      </div>
+      <!-- Histogram + summary (rendered after submit) -->
+      <div class="num-results" data-item="coffee" style="margin-top: 12px; display: none;">
+        <div class="num-hist" style="display: flex; align-items: flex-end; justify-content: space-between; height: 70px; gap: 2px; padding: 0 2px; border-bottom: 1.5px solid #fecaca;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 10pt; color: var(--muted-color); margin-top: 4px;">
+          <span>1</span><span>25</span><span>50</span><span>75</span><span>100</span>
+        </div>
+        <p class="num-stats" style="font-size: 12pt; margin: 6px 0 0; text-align: center; color: var(--primary-color);"></p>
+      </div>
+    </div>
+
+    <!-- BOBA -->
+    <div class="num-survey-card" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 18px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 28pt;">&#129483;</span>
+          <span style="font-size: 18pt; font-weight: 700; color: var(--primary-color);">Boba</span>
+        </div>
+        <div class="num-display" data-item="boba" style="font-size: 28pt; font-weight: 800; color: #15803d; font-family: 'SF Mono', Menlo, monospace; min-width: 78px; text-align: right;">50</div>
+      </div>
+      <input type="range" min="1" max="100" value="50" class="num-slider" data-item="boba" style="width: 100%; height: 8px; accent-color: #15803d;">
+      <div style="display: flex; justify-content: space-between; font-size: 11pt; color: var(--muted-color); margin-top: 4px;">
+        <span>1 &mdash; hate it</span><span>100 &mdash; love it</span>
+      </div>
+      <div class="num-results" data-item="boba" style="margin-top: 12px; display: none;">
+        <div class="num-hist" style="display: flex; align-items: flex-end; justify-content: space-between; height: 70px; gap: 2px; padding: 0 2px; border-bottom: 1.5px solid #bbf7d0;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 10pt; color: var(--muted-color); margin-top: 4px;">
+          <span>1</span><span>25</span><span>50</span><span>75</span><span>100</span>
+        </div>
+        <p class="num-stats" style="font-size: 12pt; margin: 6px 0 0; text-align: center; color: var(--primary-color);"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit + status + live indicators -->
+  <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px;">
+    <button class="num-submit" data-poll-base="ch04-survey-utility" style="background: var(--secondary-color); color: #fff; font-size: 15pt; font-weight: 700; padding: 9px 26px; border: 0; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.15);">Submit Ratings</button>
+    <span class="num-status" data-poll-base="ch04-survey-utility" style="font-size: 12pt; color: var(--muted-color); font-style: italic;"></span>
+  </div>
+
+  <!-- Live voter count + connection indicator (always visible) -->
+  <div style="display: flex; justify-content: center; gap: 18px; margin-top: 12px;">
+    <div class="num-counter" data-poll-base="ch04-survey-utility" style="background: #f8f6f3; border-radius: 999px; padding: 6px 16px; font-size: 13pt; font-weight: 700; color: var(--primary-color); border: 1.5px solid var(--line-color);">
+      <i class="fa-solid fa-users" style="color: var(--secondary-color); margin-right: 6px;"></i><span class="num-counter-n">0</span> <span style="font-weight: 400; color: var(--muted-color);">votes received</span>
+    </div>
+    <div class="num-live" data-poll-base="ch04-survey-utility" style="background: #f0fdf4; border-radius: 999px; padding: 6px 16px; font-size: 12pt; color: var(--muted-color); border: 1.5px solid #bbf7d0; font-family: 'SF Mono', Menlo, monospace;">
+      <span class="num-live-dot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#9ca3af; margin-right:6px; vertical-align:middle;"></span><span class="num-live-text">checking…</span>
+    </div>
+  </div>
+
+  <p style="text-align: center; font-size: 12pt; color: var(--muted-color); margin-top: 12px; font-style: italic;">
+    Press <strong>&darr;</strong> to see each student&rsquo;s rating on a 2-D map &middot; Press <strong>R</strong> to force-show class distribution
+  </p>
+
+  <aside class="notes">Live elicitation of utility. Each student types their initials, drags two sliders, and submits. Initials go into voter_id as `INIT_NNNN`; numeric value goes in `choice` field. Two poll ids used: `ch04-survey-utility-coffee` and `ch04-survey-utility-boba`. After submit, inline histograms render with 10 bins + class mean/median per item. **Press DOWN arrow to navigate to the vertical sub-slide** that shows every student as a labeled dot on a 2-D (coffee, boba) plane — preference-space visualization. Pedagogical payoff: utility is ordinal AND personal, AND each student's bundle preference is now a literal point in 2-D utility space.</aside>
+</section>
+
+<!-- ===== Vertical sub-slide: per-student scatter plot of (coffee, boba) ratings ===== -->
+<section id="utility-survey-results">
+  <h2><i class="fa-solid fa-chart-scatter" style="color: var(--accent-color);"></i> How Much Satisfaction Are You Getting <em>Right Now</em> From These Drinks?</h2>
+  <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px;">
+    <p style="font-size: 13pt; color: var(--muted-color); margin: 0;">Each dot is one student. <strong>Right</strong> = loves coffee. <strong>Up</strong> = loves boba.</p>
+    <div style="display: flex; gap: 10px;">
+      <div class="num-counter" data-poll-base="ch04-survey-utility" style="background: #f8f6f3; border-radius: 999px; padding: 5px 14px; font-size: 12pt; font-weight: 700; color: var(--primary-color); border: 1.5px solid var(--line-color);">
+        <i class="fa-solid fa-users" style="color: var(--secondary-color); margin-right: 6px;"></i><span class="num-counter-n">0</span> <span style="font-weight: 400; color: var(--muted-color);">votes</span>
+      </div>
+      <div class="num-live" data-poll-base="ch04-survey-utility" style="background: #f0fdf4; border-radius: 999px; padding: 5px 14px; font-size: 11pt; color: var(--muted-color); border: 1.5px solid #bbf7d0; font-family: 'SF Mono', Menlo, monospace;">
+        <span class="num-live-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#9ca3af; margin-right:6px; vertical-align:middle;"></span><span class="num-live-text">checking…</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="num-scatter-wrap" data-poll-base="ch04-survey-utility" style="display: grid; grid-template-columns: 1fr 280px; gap: 18px; align-items: start;">
+    <!-- Scatter plot SVG -->
+    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px;">
+      <svg class="num-scatter" viewBox="0 0 800 540" style="width: 100%; height: auto; max-height: 480px;" preserveAspectRatio="xMidYMid meet">
+        <!-- Background quadrants (Q1 top-right loves both, Q2 top-left boba, Q3 bottom-right coffee, Q4 bottom-left neither) -->
+        <rect x="80" y="40"  width="340" height="220" fill="#f0fdf4"/>
+        <rect x="420" y="40" width="320" height="220" fill="#dcfce7"/>
+        <rect x="80" y="260" width="340" height="240" fill="#f3f4f6"/>
+        <rect x="420" y="260" width="320" height="240" fill="#fee2e2"/>
+
+        <!-- Quadrant labels -->
+        <text x="250" y="155" font-size="13" fill="#15803d" font-style="italic" text-anchor="middle">Loves boba, hates coffee</text>
+        <text x="580" y="155" font-size="14" fill="#0a8c4f" font-weight="700" text-anchor="middle">Loves both</text>
+        <text x="250" y="385" font-size="13" fill="#6b7280" font-style="italic" text-anchor="middle">Picky / hates both</text>
+        <text x="580" y="385" font-size="14" fill="#b91c1c" font-weight="700" text-anchor="middle">All coffee</text>
+
+        <!-- Axes (centered at 50,50) -->
+        <line x1="80" y1="260" x2="740" y2="260" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="420" y1="40" x2="420" y2="500" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+        <!-- Axis lines (frame) -->
+        <line x1="80"  y1="40"  x2="80"  y2="500" stroke="#374151" stroke-width="2"/>
+        <line x1="80"  y1="500" x2="740" y2="500" stroke="#374151" stroke-width="2"/>
+
+        <!-- X-axis (coffee) labels -->
+        <text x="80"  y="525" font-size="12" fill="#374151" text-anchor="middle">1</text>
+        <text x="250" y="525" font-size="12" fill="#374151" text-anchor="middle">25</text>
+        <text x="420" y="525" font-size="12" fill="#374151" text-anchor="middle">50</text>
+        <text x="580" y="525" font-size="12" fill="#374151" text-anchor="middle">75</text>
+        <text x="740" y="525" font-size="12" fill="#374151" text-anchor="middle">100</text>
+        <text x="410" y="540" font-size="15" font-weight="700" fill="#b91c1c" text-anchor="middle">&#9749; Coffee rating &rarr;</text>
+
+        <!-- Y-axis (boba) labels -->
+        <text x="68" y="500" font-size="12" fill="#374151" text-anchor="end">1</text>
+        <text x="68" y="385" font-size="12" fill="#374151" text-anchor="end">25</text>
+        <text x="68" y="265" font-size="12" fill="#374151" text-anchor="end">50</text>
+        <text x="68" y="155" font-size="12" fill="#374151" text-anchor="end">75</text>
+        <text x="68" y="45"  font-size="12" fill="#374151" text-anchor="end">100</text>
+        <text x="25" y="270" font-size="15" font-weight="700" fill="#15803d" text-anchor="middle" transform="rotate(-90 25 270)">&#129483; Boba rating &rarr;</text>
+
+        <!-- Dots get rendered dynamically by JS into this group -->
+        <g class="num-scatter-dots"></g>
+      </svg>
+    </div>
+
+    <!-- Per-student list + summary -->
+    <div>
+      <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 14px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 11pt; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 4px;">Class summary</p>
+        <p class="num-scatter-summary" style="font-size: 13pt; margin: 0; line-height: 1.6; color: var(--primary-color);">Waiting for votes&hellip;</p>
+      </div>
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 12px; margin-top: 10px; max-height: 360px; overflow-y: auto;">
+        <p style="font-size: 11pt; font-weight: 700; color: var(--muted-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px;">Per student</p>
+        <div class="num-scatter-list" style="font-size: 11pt; font-family: 'SF Mono', Menlo, monospace; line-height: 1.7;"></div>
+      </div>
+      <p style="font-size: 11pt; color: var(--muted-color); margin-top: 8px; font-style: italic; line-height: 1.5;">Press <strong>&uarr;</strong> to go back to the survey. Press <strong>R</strong> to refresh.</p>
+    </div>
+  </div>
+
+  <aside class="notes">Each student's two ratings become a single point in 2-D "preference space." Cluster patterns are pedagogically powerful: are most students in the "carnivore" quadrant? Bimodal? Tight cluster around the center (suggesting weak preferences)? This is the same logic that produces individual demand curves &mdash; bundle preferences are revealed by what people pick when both items are available. **Implementation:** the scatter pulls both poll_ids (coffee + boba) and joins them by voter_id prefix (initials_NNNN → initials before underscore). Students who only submitted one good aren't plotted (we'd need both ratings). Auto-refreshes every 2s while this slide is on screen.</aside>
+</section>
+
+</section>
+
+<section id="bundles-reality">
+  <h2><i class="fa-solid fa-basket-shopping" style="color: var(--accent-color);"></i> Reality &mdash; We Buy <em>Bundles</em>, Not Single Items</h2>
+  <div style="display: grid; grid-template-columns: 1.08fr 1fr; gap: 22px; align-items: start;">
+    <!-- Left column: narrative + revealed preference reminder -->
+    <div>
+      <div style="background: #f8f6f3; padding: 14px 20px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 15pt; line-height: 1.55; margin: 0;">
+          A consumer doesn&rsquo;t pick <em>one</em> item &mdash; they pick a <strong>bundle</strong>: a combination of goods and services consumed together.
+        </p>
+        <p style="font-size: 14pt; line-height: 1.55; margin: 10px 0 0;">
+          <strong>Which bundle?</strong> Depends on what kind of consumer you are. <strong>All feasible bundles must fit the budget in your pocket.</strong>
+        </p>
+      </div>
+
+      <div class="key-result" style="margin-top: 12px;">
+        <p><strong>Principle of Revealed Preference (over bundles).</strong> If a consumer chooses bundle \(A\) over bundle \(B\) when <em>both are affordable</em>, then \[A \succeq B.\]</p>
+      </div>
+
+      <div style="background: #f0fdf4; padding: 10px 18px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 13pt; margin: 0;">
+          Flawless? Of course not &mdash; but an <strong>extremely useful approximation</strong>. People tend not to leave money on the table.
+        </p>
+      </div>
+
+      <!-- Visual: budget planner + price tags -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 14px;">
+        <div style="text-align: center;">
+          <div style="font-size: 32pt;">&#128181;</div>
+          <p style="font-size: 12pt; margin: 0; font-weight: 700; color: var(--primary-color);">Budget</p>
+          <p style="font-size: 17pt; margin: 0; font-weight: 800; color: var(--secondary-color);">$40</p>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 30pt;">&#9749;</div>
+          <p style="font-size: 11pt; margin: 0; color: var(--muted-color);">Coffee</p>
+          <p style="font-size: 14pt; margin: 0; font-weight: 700;">$4 each</p>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 30pt;">&#129483;</div>
+          <p style="font-size: 11pt; margin: 0; color: var(--muted-color);">Boba</p>
+          <p style="font-size: 14pt; margin: 0; font-weight: 700;">$2 each</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: bundle table (standard ch08 style — no dark band) -->
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 18px; border-left: 4px solid var(--accent-color);">
+      <p style="text-align: center; font-size: 15pt; font-weight: 800; color: var(--primary-color); margin: 0 0 2px; letter-spacing: 0.5px;">POTENTIAL CHOICES</p>
+      <p style="text-align: center; font-size: 11pt; color: var(--muted-color); margin: 0 0 10px; letter-spacing: 1px;">(EACH COSTS $40)</p>
+
+      <div style="background: #ffffff; border-radius: 8px; padding: 8px 14px;">
+        <table style="width: 100%; font-size: 13pt; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--line-color);">
+              <th style="text-align: left; padding: 6px 8px; font-weight: 700; color: var(--primary-color);">Bundle</th>
+              <th style="text-align: right; padding: 6px 8px; font-weight: 700; color: var(--primary-color);">&#9749; Coffee</th>
+              <th style="text-align: center; padding: 6px 6px; color: var(--muted-color);">&amp;</th>
+              <th style="text-align: left; padding: 6px 8px; font-weight: 700; color: var(--primary-color);">&#129483; Boba</th>
+            </tr>
+          </thead>
+          <tbody style="font-family: 'SF Mono', Menlo, monospace;">
+            <tr><td style="padding: 5px 8px;"><strong style="color: #15803d;">Bundle (V):</strong></td><td style="text-align: right; padding: 5px 8px;">0 cups</td><td></td><td style="padding: 5px 8px;">20 cups</td></tr>
+            <tr style="background: #fafafa;"><td style="padding: 5px 8px;"><strong>Bundle&nbsp;A:</strong></td><td style="text-align: right; padding: 5px 8px;">2 cups</td><td></td><td style="padding: 5px 8px;">16 cups</td></tr>
+            <tr><td style="padding: 5px 8px;"><strong>Bundle&nbsp;B:</strong></td><td style="text-align: right; padding: 5px 8px;">4 cups</td><td></td><td style="padding: 5px 8px;">12 cups</td></tr>
+            <tr style="background: #fafafa;"><td style="padding: 5px 8px;"><strong>Bundle&nbsp;C:</strong></td><td style="text-align: right; padding: 5px 8px;">6 cups</td><td></td><td style="padding: 5px 8px;">8 cups</td></tr>
+            <tr><td style="padding: 5px 8px;"><strong>Bundle&nbsp;D:</strong></td><td style="text-align: right; padding: 5px 8px;">8 cups</td><td></td><td style="padding: 5px 8px;">4 cups</td></tr>
+            <tr style="background: #fafafa;"><td style="padding: 5px 8px;"><strong style="color: #b91c1c;">Bundle (P):</strong></td><td style="text-align: right; padding: 5px 8px;">10 cups</td><td></td><td style="padding: 5px 8px;">0 cups</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 10px 4px 0; line-height: 1.4;">
+        <strong style="color: #15803d;">V</strong> = all boba &nbsp;&middot;&nbsp; <strong style="color: #b91c1c;">P</strong> = all coffee. <strong>Same $40, different lifestyles.</strong>
+      </p>
+    </div>
+  </div>
+  <aside class="notes">Bridge from preferences (slides 4-15) to the budget constraint. Three moves: (1) consumers don't buy ONE item — they buy bundles; (2) which bundle they pick reveals their preferences (callback to slide 8 + the live scatter on slide 15); (3) every feasible bundle must fit the budget — that's the budget line we build in Ch 5. The 6 bundles are clean integer points on a $40 budget with coffee $4 + boba $2: 4B + 2A = 40 → 2B + A = 20. Bundle V (all boba) = 0 lb coffee + 20 lb boba. Bundle P (all coffee) = 10 lb coffee + 0 lb boba. Standard ch08 slide style — no dark title bar — matches the rest of the deck. Picks back up the coffee/boba-toast theme from the survey two slides earlier.</aside>
+</section>
+
+<section id="util-fn-cobb-douglas">
+  <h2><i class="fa-solid fa-square-root-variable" style="color: var(--accent-color);"></i> Utility Functions in the Wild &mdash; 1. Cobb-Douglas</h2>
+
+  <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--secondary-color); margin: 0 0 14px;">
+    <p style="font-size: 14pt; margin: 0;">
+      Three bundles of \((x, y)\) = (coffee, boba). Pick whichever bundle gives you the most &ldquo;utils.&rdquo;
+    </p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 10px;">
+      <div style="text-align: center;"><span style="font-size: 46px;">&#9749;</span><p style="font-size: 11pt; color: var(--muted-color); margin: 2px 0 0;">1 cup Coffee (x)</p></div>
+      <span style="font-size: 18pt; color: var(--muted-color);">+</span>
+      <div style="text-align: center;"><span style="font-size: 46px;">&#129483;</span><p style="font-size: 11pt; color: var(--muted-color); margin: 2px 0 0;">1 cup Boba (y)</p></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 16px; align-items: stretch;">
+    <!-- LEFT: BUNDLES -->
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="text-align: center; font-size: 12pt; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Bundles</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; a = (1, 2)</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; b = (2, 2)</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; c = (2, 1)</p>
+    </div>
+
+    <!-- MIDDLE: utility function formula -->
+    <div style="background: #fff7ed; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--accent-color); text-align: center;">
+      <p style="font-size: 12pt; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Utility Function</p>
+      <p style="font-size: 17pt; margin: 14px 0; color: var(--primary-color); font-family: \'SF Mono\', Menlo, monospace;">
+        U(x, y) = x<sup style="font-size:0.7em; vertical-align: super; line-height: 0;">0.8</sup> &middot; y<sup style="font-size:0.7em; vertical-align: super; line-height: 0;">0.2</sup>
+      </p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 6px 0 0; font-style: italic;">Cobb-Douglas form &mdash; coffee weighted 4&times; more than boba at the margin.</p>
+    </div>
+
+    <!-- RIGHT: UTILS -->
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+      <p style="text-align: center; font-size: 12pt; font-weight: 700; color: var(--success-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Utils</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; U<sub>a</sub> = <span style="color:#b91c1c;">1.15</span></p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; U<sub>b</sub> = <span style="color:#b91c1c;">2.00</span></p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; U<sub>c</sub> = <span style="color:#b91c1c;">1.74</span></p>
+    </div>
+  </div>
+
+  <div style="background: #fff3e0; border-radius: 8px; padding: 10px 20px; margin-top: 12px; border-left: 4px solid var(--accent-color);">
+    <p style="font-size: 13pt; margin: 0;"><strong>Ranking:</strong> b &succ; c &succ; a. Bundle b (2 coffee + 2 boba) is the favorite of this Cobb-Douglas consumer.</p>
+  </div>
+
+  <aside class="notes">Cobb-Douglas U(x,y) = x^0.8 &times; y^0.2 is the most common functional form in applied micro &mdash; the exponents (0.8, 0.2) are weights that sum to 1 and encode how much the consumer values each good at the margin. Compute: U_a = 1^0.8 &times; 2^0.2 &approx; 1.15; U_b = 2^0.8 &times; 2^0.2 = 2.00; U_c = 2^0.8 &times; 1^0.2 &approx; 1.74. Students DON\'T need to redo the math; the point is just \"this is what utility functions look like as math objects that researchers and firms actually fit to demand data.\"</aside>
+</section>
+
+<section id="util-fn-complements">
+  <h2><i class="fa-solid fa-bicycle" style="color: var(--accent-color);"></i> Utility Functions in the Wild &mdash; 2. Perfect Complements</h2>
+
+  <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--secondary-color); margin: 0 0 14px;">
+    <p style="font-size: 14pt; margin: 0;">Some goods only work <em>together</em>. One bicycle needs <strong>one frame</strong> AND <strong>two wheels</strong> &mdash; extras of either alone add zero utility.</p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 30px; margin-top: 10px;">
+      <div style="text-align: center;"><img src="figures/bike_frame.png" alt="bike frame" style="width: 80px; height: 80px; object-fit: contain;"><p style="font-size: 11pt; color: var(--muted-color); margin: 2px 0 0;">1 Bicycle Frame (x)</p></div>
+      <span style="font-size: 24pt; color: var(--muted-color);">+</span>
+      <div style="text-align: center;"><img src="figures/wheel.png" alt="wheel" style="width: 80px; height: 80px; object-fit: contain;"><p style="font-size: 11pt; color: var(--muted-color); margin: 2px 0 0;">1 Set of Wheels (y)</p></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 0.85fr 1fr 1.3fr; gap: 16px; align-items: stretch;">
+    <!-- LEFT: BUNDLES -->
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="text-align: center; font-size: 12pt; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Bundles</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; a = (1, 2)</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; b = (2, 2)</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; c = (4, 3)</p>
+    </div>
+
+    <!-- MIDDLE: formula -->
+    <div style="background: #fff7ed; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--accent-color); text-align: center;">
+      <p style="font-size: 12pt; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Utility Function</p>
+      <p style="font-size: 16pt; margin: 14px 0; color: var(--primary-color); font-family: \'SF Mono\', Menlo, monospace;">
+        U = min(<em>x</em>, <em>y</em>)
+      </p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 6px 0 0; font-style: italic;">Perfect complements (Leontief)</p>
+    </div>
+
+    <!-- RIGHT: UTILS with bike images + leftover badge -->
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 16px; border-left: 4px solid var(--success-color);">
+      <p style="text-align: center; font-size: 12pt; font-weight: 700; color: var(--success-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Utils</p>
+
+      <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px dotted var(--line-color);">
+        <span style="font-family: \'SF Mono\', Menlo, monospace; font-size: 13pt; min-width: 70px;">U<sub>a</sub> = 1</span>
+        <img src="figures/bike.png" alt="bike" style="width: 28px; height: 28px; object-fit: contain;">
+        <span style="margin-left: auto; background: #fee2e2; color: #b91c1c; font-size: 10pt; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">+<img src="figures/wheel.png" alt="" style="width: 16px; height: 16px; object-fit: contain;"> leftover</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px dotted var(--line-color);">
+        <span style="font-family: \'SF Mono\', Menlo, monospace; font-size: 13pt; min-width: 70px;">U<sub>b</sub> = 2</span>
+        <img src="figures/bike.png" alt="" style="width: 28px; height: 28px; object-fit: contain;">
+        <img src="figures/bike.png" alt="" style="width: 28px; height: 28px; object-fit: contain;">
+        <span style="margin-left: auto; background: #dcfce7; color: #15803d; font-size: 10pt; padding: 2px 7px; border-radius: 4px;">no leftover</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0;">
+        <span style="font-family: \'SF Mono\', Menlo, monospace; font-size: 13pt; min-width: 70px;">U<sub>c</sub> = 3</span>
+        <img src="figures/bike.png" alt="" style="width: 28px; height: 28px; object-fit: contain;">
+        <img src="figures/bike.png" alt="" style="width: 28px; height: 28px; object-fit: contain;">
+        <img src="figures/bike.png" alt="" style="width: 28px; height: 28px; object-fit: contain;">
+        <span style="margin-left: auto; background: #fee2e2; color: #b91c1c; font-size: 10pt; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">+<img src="figures/bike_frame.png" alt="" style="width: 16px; height: 16px; object-fit: contain;"> leftover</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background: #fff3e0; border-radius: 8px; padding: 10px 20px; margin-top: 12px; border-left: 4px solid var(--accent-color);">
+    <p style="font-size: 13pt; margin: 0;"><strong>Other examples:</strong> left + right shoes; peanut butter + bread; GPU + monitor. Adding more of just one side adds <em>nothing</em>.</p>
+  </div>
+
+  <aside class="notes">Perfect complements (Leontief) U(F,W) = min(F, W) &mdash; two goods consumed in fixed proportions. Bicycle math: U_a = min(1, 2) = 1 (one bike built; 1 leftover wheel); U_b = min(2, 2) = 2 (two bikes, no leftover); U_c = min(4, 3) = 3 (three bikes; 1 leftover frame). Indifference curves are L-shaped at the kink F = W. The leftover units add zero utility &mdash; that\'s the perfect-complements signature.</aside>
+</section>
+
+<section id="util-fn-substitutes">
+  <h2><i class="fa-solid fa-lemon" style="color: var(--accent-color);"></i> Utility Functions in the Wild &mdash; 3. Perfect Substitutes</h2>
+
+  <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--secondary-color); margin: 0 0 14px;">
+    <p style="font-size: 14pt; margin: 0;">Some goods swap 1-for-1. For many purposes, the consumer just cares about <strong>total citrus</strong> &mdash; not which variety.</p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 30px; margin-top: 10px;">
+      <div style="text-align: center;"><img src="figures/tangerine.png" alt="tangerine" style="width: 70px; height: 70px; object-fit: contain;"><p style="font-size: 11pt; color: var(--muted-color); margin: 2px 0 0;">1 Tangerine (x)</p></div>
+      <span style="font-size: 24pt; color: var(--muted-color);">+</span>
+      <div style="text-align: center;"><img src="figures/orange.png" alt="orange" style="width: 70px; height: 70px; object-fit: contain;"><p style="font-size: 11pt; color: var(--muted-color); margin: 2px 0 0;">1 Orange (y)</p></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 0.85fr 1fr 1.4fr; gap: 16px; align-items: stretch;">
+    <!-- LEFT: BUNDLES -->
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+      <p style="text-align: center; font-size: 12pt; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Bundles</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; a = (1, 2)</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; b = (2, 2)</p>
+      <p style="font-family: \'SF Mono\', Menlo, monospace; font-size: 14pt; margin: 6px 0;">&bull; c = (4, 3)</p>
+    </div>
+
+    <!-- MIDDLE: formula -->
+    <div style="background: #fff7ed; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--accent-color); text-align: center;">
+      <p style="font-size: 12pt; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Utility Function</p>
+      <p style="font-size: 17pt; margin: 14px 0; color: var(--primary-color); font-family: \'SF Mono\', Menlo, monospace;">
+        U(x, y) = x + y
+      </p>
+      <p style="font-size: 11pt; color: var(--muted-color); margin: 6px 0 0; font-style: italic;">Perfect substitutes (linear)</p>
+    </div>
+
+    <!-- RIGHT: UTILS with citrus row -->
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 16px; border-left: 4px solid var(--success-color);">
+      <p style="text-align: center; font-size: 12pt; font-weight: 700; color: var(--success-color); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;">Utils</p>
+
+      <div style="display: flex; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px dotted var(--line-color);">
+        <span style="font-family: \'SF Mono\', Menlo, monospace; font-size: 13pt; min-width: 70px;">U<sub>a</sub> = 3</span>
+        <img src="figures/tangerine.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/orange.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/orange.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px dotted var(--line-color);">
+        <span style="font-family: \'SF Mono\', Menlo, monospace; font-size: 13pt; min-width: 70px;">U<sub>b</sub> = 4</span>
+        <img src="figures/tangerine.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/tangerine.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/orange.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/orange.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 4px; padding: 4px 0;">
+        <span style="font-family: \'SF Mono\', Menlo, monospace; font-size: 13pt; min-width: 70px;">U<sub>c</sub> = 7</span>
+        <img src="figures/tangerine.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/tangerine.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/tangerine.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/tangerine.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/orange.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/orange.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+        <img src="figures/orange.png" alt="" style="width: 24px; height: 24px; object-fit: contain;">
+      </div>
+    </div>
+  </div>
+
+  <div class="key-result" style="margin-top: 14px; text-align: center;">
+    <p style="font-size: 16pt; font-weight: 800; letter-spacing: 0.5px;">Only the <em>ranking</em> of utility numbers matters &mdash; not the numbers themselves.</p>
+  </div>
+
+  <aside class="notes">Perfect substitutes (linear) U(x,y) = x + y &mdash; two goods that swap 1-for-1. A tangerine and an orange are pretty close substitutes; the consumer just cares about TOTAL citrus. U_a = 1+2 = 3, U_b = 2+2 = 4, U_c = 4+3 = 7. Indifference curves are straight lines with slope &minus;1. Other examples: $1 bill + 4 quarters; identical brands of bottled water. The big closing point &mdash; these specific numerical values are arbitrary; only the RANK matters. If we multiplied every U by 10 or took log, the consumer\'s preferences wouldn\'t change. This is the formal content of *ordinal utility* (callback to slide 6 satisfaction-to-number).</aside>
+</section>
+
+<section id="utility-definition">
+ <h2>Utility &mdash; A Ranking System</h2>
+ <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; margin: 12px 0; border-left: 4px solid var(--secondary-color);">
+  <p style="font-size: 16pt;"><strong>Utility:</strong> an abstract measure of the satisfaction a consumer gets from goods &amp; services.</p>
+ </div>
+ <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 12px;">
+  <div style="background: #e3f2fd; border-radius: 8px; padding: 16px 22px;">
+   <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">You don&rsquo;t need to measure utils</p>
+   <p style="font-size: 14pt; line-height: 1.7;">You just need to <em>rank</em> options consistently. &ldquo;I prefer pizza to salad&rdquo; is enough.</p>
+  </div>
+  <div style="background: #fff7ed; border-radius: 8px; padding: 16px 22px;">
+   <p style="font-size: 13pt; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Two flavors</p>
+   <ul style="font-size: 14pt; line-height: 1.7;">
+    <li><strong>Total utility:</strong> total satisfaction from a bundle</li>
+    <li><strong>Marginal utility (MU):</strong> &Delta;TU from one more unit</li>
+   </ul>
+  </div>
+ </div>
+ <div style="background: #fff3e0; border-radius: 8px; padding: 12px 22px; margin-top: 14px; border-left: 4px solid var(--accent-color);">
+  <p style="font-size: 14pt;"><strong>Misconception:</strong> &ldquo;Utility is measured in exact units.&rdquo; Hicks (1934): we only need <em>ordinal</em> rankings. Total utils are an analytical fiction; relative rankings are real.</p>
+ </div>
+ <aside class="notes">
+  Make the cardinal-vs-ordinal point quickly &mdash; modern theory only needs that consumers can rank consistently. The math we do uses numbers for convenience, but nothing in the chapter requires precise cardinal measurement.
+ </aside>
+</section>
+
 <!-- ===== Slide 11 — From a utility function to an indifference curve (worked example) ===== -->
 <section id="utility-to-ic">
   <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> From a Utility Function to an Indifference Curve</h2>
@@ -3183,6 +3643,384 @@
       }, window.location.search.includes('export') ? { animation: false } : {})
     }
   });
+</script>
+
+
+<!-- ===== Live numeric slider survey (coffee/boba) — ported from 1116 ch08 ===== -->
+<script>
+(function(){
+  var SU = "https://dpntbrsorgbivmntwmod.supabase.co";
+  var SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+  var VID = "v_" + Math.random().toString(36).slice(2,10);
+  var isLocal = window.location.protocol === "file:";
+  var localRows = {};       // pollId -> [{value, voter_id}]
+  var submitted = {};       // pollBase -> bool
+  var BIN_COUNT = 10;
+
+  function sf(m,p,b){
+    var o = { method:m, headers:{ "apikey":SK, "Authorization":"Bearer "+SK, "Content-Type":"application/json" } };
+    if (b) o.body = JSON.stringify(b);
+    return fetch(SU + "/rest/v1/" + p, o);
+  }
+
+  function median(arr){
+    if (!arr.length) return 0;
+    var s = arr.slice().sort(function(a,b){return a-b;});
+    var m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : Math.round((s[m-1] + s[m]) / 2);
+  }
+  function mean(arr){
+    if (!arr.length) return 0;
+    return arr.reduce(function(a,b){return a+b;},0) / arr.length;
+  }
+
+  function renderHist(card, rows, accent){
+    var vals = rows.map(function(r){ return r.value; });
+    var hist = card.querySelector(".num-hist");
+    var stats = card.querySelector(".num-stats");
+    if (!hist || !stats) return;
+    // Bin into 10 buckets: 1-10, 11-20, ..., 91-100
+    var bins = new Array(BIN_COUNT).fill(0);
+    vals.forEach(function(v){
+      var idx = Math.min(BIN_COUNT - 1, Math.max(0, Math.floor((v - 1) / 10)));
+      bins[idx] += 1;
+    });
+    var max = Math.max.apply(null, bins) || 1;
+    hist.innerHTML = bins.map(function(c){
+      var h = Math.max(3, (c / max) * 65);
+      return '<div title="' + c + ' votes" style="flex:1; min-width:8px; height:' + h + 'px; background:' + accent + '; border-radius:3px 3px 0 0; position:relative;">' +
+             (c > 0 ? '<span style="position:absolute; bottom:100%; left:50%; transform:translate(-50%,-2px); font-size:9pt; font-weight:700; color:' + accent + ';">' + c + '</span>' : '') +
+             '</div>';
+    }).join("");
+    var n = vals.length;
+    if (n === 0) {
+      stats.textContent = "Waiting for votes…";
+    } else {
+      stats.innerHTML = '<strong>n = ' + n + '</strong> &nbsp;&middot;&nbsp; mean ' +
+                        '<strong>' + mean(vals).toFixed(1) + '</strong> &nbsp;&middot;&nbsp; median ' +
+                        '<strong>' + median(vals) + '</strong> &nbsp;&middot;&nbsp; range ' +
+                        '<strong>' + Math.min.apply(null, vals) + '-' + Math.max.apply(null, vals) + '</strong>';
+    }
+  }
+
+  // Extract initials from voter_id of the form "AB_NNNN" (or raw initials if no underscore)
+  function initialsOf(vid){
+    if (!vid) return "?";
+    var i = vid.indexOf("_");
+    return (i > 0 ? vid.slice(0, i) : vid).toUpperCase();
+  }
+
+  function fetchResults(card, pid, accent){
+    if (isLocal) {
+      renderHist(card, (localRows[pid] || []), accent);
+      return;
+    }
+    sf("GET", "poll_votes?poll_id=eq." + pid + "&select=choice,voter_id")
+      .then(function(r){ return r.json(); })
+      .then(function(rows){
+        var parsed = rows
+          .map(function(r){ return { value: parseInt(r.choice, 10), voter_id: r.voter_id }; })
+          .filter(function(r){ return !isNaN(r.value); });
+        localRows[pid] = parsed;
+        renderHist(card, parsed, accent);
+      })
+      .catch(function(){
+        renderHist(card, (localRows[pid] || []), accent);
+      });
+  }
+
+  // Update voter-count badges + live-status badges for a given pollBase
+  function updateBadges(pollBase, voterCount, liveOk, errMsg){
+    document.querySelectorAll('.num-counter[data-poll-base="' + pollBase + '"]').forEach(function(c){
+      var n = c.querySelector(".num-counter-n");
+      if (n) n.textContent = String(voterCount);
+    });
+    document.querySelectorAll('.num-live[data-poll-base="' + pollBase + '"]').forEach(function(c){
+      var dot = c.querySelector(".num-live-dot");
+      var txt = c.querySelector(".num-live-text");
+      if (isLocal) {
+        if (dot) dot.style.background = "#9ca3af";
+        if (txt) txt.textContent = "local file:// mode";
+        c.style.background = "#f3f4f6";
+        c.style.borderColor = "#d1d5db";
+      } else if (liveOk) {
+        if (dot) dot.style.background = "#22c55e";
+        if (txt) txt.textContent = "live · " + pollBase;
+        c.style.background = "#f0fdf4";
+        c.style.borderColor = "#bbf7d0";
+      } else {
+        if (dot) dot.style.background = "#ef4444";
+        if (txt) txt.textContent = "offline · " + (errMsg || "retrying");
+        c.style.background = "#fef2f2";
+        c.style.borderColor = "#fecaca";
+      }
+    });
+  }
+
+  // Periodic live count fetch: counts UNIQUE voter_ids across both items in the survey
+  function refreshLiveCount(pollBase){
+    if (isLocal) {
+      var s = localRows[pollBase + "-coffee"] || [];
+      var a = localRows[pollBase + "-boba"] || [];
+      var ids = {};
+      s.forEach(function(r){ ids[r.voter_id] = 1; });
+      a.forEach(function(r){ ids[r.voter_id] = 1; });
+      updateBadges(pollBase, Object.keys(ids).length, false);
+      return;
+    }
+    Promise.all([
+      sf("GET", "poll_votes?poll_id=eq." + pollBase + "-coffee&select=voter_id"),
+      sf("GET", "poll_votes?poll_id=eq." + pollBase + "-boba&select=voter_id")
+    ])
+    .then(function(rs){ return Promise.all(rs.map(function(r){
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })); })
+    .then(function(both){
+      var ids = {};
+      both.forEach(function(rows){ rows.forEach(function(r){ ids[r.voter_id] = 1; }); });
+      updateBadges(pollBase, Object.keys(ids).length, true);
+    })
+    .catch(function(e){
+      updateBadges(pollBase, 0, false, (e && e.message) || "error");
+    });
+  }
+
+  // ===== Scatter plot (vertical sub-slide) =====
+  function joinByVoter(coffeeRows, bobaRows){
+    var map = {};
+    coffeeRows.forEach(function(r){
+      if (!map[r.voter_id]) map[r.voter_id] = {};
+      map[r.voter_id].coffee = r.value;
+    });
+    bobaRows.forEach(function(r){
+      if (!map[r.voter_id]) map[r.voter_id] = {};
+      map[r.voter_id].boba = r.value;
+    });
+    return Object.keys(map)
+      .map(function(vid){
+        return {
+          initials: initialsOf(vid),
+          coffee: map[vid].coffee,
+          boba: map[vid].boba
+        };
+      });
+  }
+
+  function renderScatter(wrap, pollBase){
+    function actuallyRender(coffeeRows, bobaRows){
+      var students = joinByVoter(coffeeRows, bobaRows);
+      var paired = students.filter(function(s){ return !isNaN(s.coffee) && !isNaN(s.boba); });
+      var svg = wrap.querySelector(".num-scatter");
+      var dotsG = svg.querySelector(".num-scatter-dots");
+      var summary = wrap.querySelector(".num-scatter-summary");
+      var list = wrap.querySelector(".num-scatter-list");
+
+      // Plot area: x in [80,740] for coffee [1,100], y in [40,500] for boba [100,1] (flip)
+      function px(v){ return 80 + ((v - 1) / 99) * (740 - 80); }
+      function py(v){ return 500 - ((v - 1) / 99) * (500 - 40); }
+
+      // Render dots
+      dotsG.innerHTML = paired.map(function(s, i){
+        var cx = px(s.coffee), cy = py(s.boba);
+        return '<g>' +
+               '<circle cx="' + cx + '" cy="' + cy + '" r="13" fill="#1e3a8a" fill-opacity="0.78" stroke="#fff" stroke-width="2"/>' +
+               '<text x="' + cx + '" y="' + (cy + 4) + '" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">' + s.initials + '</text>' +
+               '</g>';
+      }).join("");
+
+      // Summary
+      if (paired.length === 0) {
+        summary.textContent = "Waiting for votes…";
+      } else {
+        var avgCoffee = paired.reduce(function(a,b){return a+b.coffee;}, 0) / paired.length;
+        var avgAvo = paired.reduce(function(a,b){return a+b.boba;}, 0) / paired.length;
+        summary.innerHTML = '<strong>' + paired.length + '</strong> student' + (paired.length === 1 ? '' : 's') +
+                            '<br>mean &#129385; <strong>' + avgCoffee.toFixed(1) + '</strong>' +
+                            ' &middot; mean &#129361; <strong>' + avgAvo.toFixed(1) + '</strong>';
+      }
+
+      // Per-student list (sorted by initials)
+      var sorted = paired.slice().sort(function(a,b){ return a.initials.localeCompare(b.initials); });
+      list.innerHTML = sorted.map(function(s){
+        return '<div style="display:flex; justify-content:space-between; padding:2px 4px; border-bottom:1px dotted #e5e7eb;">' +
+               '<strong style="color:#1e3a8a;">' + s.initials + '</strong>' +
+               '<span><span style="color:#b91c1c;">&#129385; ' + s.coffee + '</span> &nbsp;<span style="color:#15803d;">&#129361; ' + s.boba + '</span></span>' +
+               '</div>';
+      }).join("") || '<div style="color:#9ca3af; font-style:italic;">(no paired votes yet)</div>';
+    }
+
+    if (isLocal) {
+      actuallyRender(localRows[pollBase + "-coffee"] || [], localRows[pollBase + "-boba"] || []);
+      return;
+    }
+    Promise.all([
+      sf("GET", "poll_votes?poll_id=eq." + pollBase + "-coffee&select=choice,voter_id"),
+      sf("GET", "poll_votes?poll_id=eq." + pollBase + "-boba&select=choice,voter_id")
+    ])
+    .then(function(rs){ return Promise.all(rs.map(function(r){ return r.json(); })); })
+    .then(function(both){
+      var parse = function(rows){ return rows
+        .map(function(r){ return { value: parseInt(r.choice, 10), voter_id: r.voter_id }; })
+        .filter(function(r){ return !isNaN(r.value); }); };
+      var s = parse(both[0]), a = parse(both[1]);
+      localRows[pollBase + "-coffee"] = s;
+      localRows[pollBase + "-boba"] = a;
+      actuallyRender(s, a);
+    })
+    .catch(function(){
+      actuallyRender(localRows[pollBase + "-coffee"] || [], localRows[pollBase + "-boba"] || []);
+    });
+  }
+
+  // Track which poll bases we've seen so we can refresh their counters globally
+  var allPollBases = {};
+
+  document.querySelectorAll(".num-survey").forEach(function(survey){
+    var pollBase = survey.dataset.pollBase;
+    if (!pollBase) return;
+    allPollBases[pollBase] = true;
+
+    // Live update of the numeric display next to each slider as the student drags
+    survey.querySelectorAll(".num-slider").forEach(function(slider){
+      var item = slider.dataset.item;
+      var disp = survey.querySelector('.num-display[data-item="' + item + '"]');
+      slider.addEventListener("input", function(){
+        if (disp) disp.textContent = slider.value;
+      });
+    });
+
+    var btn = document.querySelector('.num-submit[data-poll-base="' + pollBase + '"]');
+    var status = document.querySelector('.num-status[data-poll-base="' + pollBase + '"]');
+
+    function showResults(){
+      survey.querySelectorAll(".num-results").forEach(function(r){
+        r.style.display = "block";
+        var item = r.dataset.item;
+        var card = r.closest(".num-survey-card");
+        var accent = (item === "coffee") ? "#b91c1c" : "#15803d";
+        fetchResults(card, pollBase + "-" + item, accent);
+      });
+    }
+
+    if (btn) {
+      btn.addEventListener("click", function(){
+        if (submitted[pollBase]) return;
+
+        // Read + validate initials
+        var initInput = document.querySelector('.num-initials[data-poll-base="' + pollBase + '"]');
+        var initials = (initInput && initInput.value ? initInput.value : "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
+        if (initials.length < 1) {
+          if (status) status.textContent = "Please enter your initials (1–3 letters) first.";
+          if (initInput) { initInput.focus(); initInput.style.borderColor = "#dc2626"; }
+          return;
+        }
+        // Build voter_id: INIT_NNNN (random 4-char suffix to avoid initials collisions)
+        var voterId = initials + "_" + Math.random().toString(36).slice(2, 6).toUpperCase();
+
+        submitted[pollBase] = true;
+        btn.disabled = true;
+        btn.style.opacity = "0.55";
+        btn.style.cursor = "default";
+        if (initInput) { initInput.disabled = true; initInput.style.borderColor = "var(--success-color)"; }
+
+        var payloads = [];
+        survey.querySelectorAll(".num-slider").forEach(function(slider){
+          var item = slider.dataset.item;
+          var val = parseInt(slider.value, 10);
+          var pid = pollBase + "-" + item;
+          payloads.push({ pid: pid, val: val });
+          // Local fallback
+          if (!localRows[pid]) localRows[pid] = [];
+          localRows[pid].push({ value: val, voter_id: voterId });
+        });
+
+        if (status) status.textContent = "Submitting as " + initials + "…";
+
+        if (isLocal) {
+          if (status) status.textContent = "Recorded locally as " + initials + " (no live server).";
+          showResults();
+          return;
+        }
+
+        Promise.all(payloads.map(function(p){
+          return sf("POST", "poll_votes", { poll_id: p.pid, choice: String(p.val), voter_id: voterId });
+        }))
+        .then(function(){
+          if (status) status.innerHTML = "Submitted as <strong>" + initials + "</strong> &mdash; thanks! Press <strong>&darr;</strong> to see the class map.";
+          showResults();
+        })
+        .catch(function(){
+          if (status) status.textContent = "Submission failed — showing local data.";
+          showResults();
+        });
+      });
+    }
+
+    // Refresh every 2s after a vote has been cast so the histograms update live
+    setInterval(function(){
+      if (!submitted[pollBase]) return;
+      showResults();
+    }, 2000);
+  });
+
+  // Refresh voter-count + live-status badges for every survey every 3s (always-on)
+  function refreshAllBadges(){
+    Object.keys(allPollBases).forEach(function(pb){ refreshLiveCount(pb); });
+  }
+  refreshAllBadges();              // initial probe
+  setInterval(refreshAllBadges, 3000);
+
+  // Show-results-without-voting hotkey: press R on the survey or results slide (instructor)
+  document.addEventListener("keydown", function(e){
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.key !== "r" && e.key !== "R") return;
+    // On the survey slide: reveal inline histograms
+    document.querySelectorAll(".num-survey").forEach(function(survey){
+      if (!survey.closest("section")?.classList.contains("present")) return;
+      var pollBase = survey.dataset.pollBase;
+      if (!pollBase) return;
+      survey.querySelectorAll(".num-results").forEach(function(r){
+        r.style.display = "block";
+        var item = r.dataset.item;
+        var card = r.closest(".num-survey-card");
+        var accent = (item === "coffee") ? "#b91c1c" : "#15803d";
+        fetchResults(card, pollBase + "-" + item, accent);
+      });
+    });
+    // On the results sub-slide: force-refresh the scatter
+    document.querySelectorAll(".num-scatter-wrap").forEach(function(wrap){
+      if (!wrap.closest("section")?.classList.contains("present")) return;
+      var pollBase = wrap.dataset.pollBase;
+      if (pollBase) renderScatter(wrap, pollBase);
+    });
+  });
+
+  // Auto-refresh the scatter plot every 2 s while its sub-slide is on screen
+  if (window.Reveal) {
+    var scatterTimer = null;
+    function startScatterRefresh(){
+      var wrap = document.querySelector("section.present .num-scatter-wrap, section.present.num-scatter-wrap");
+      if (!wrap) return;
+      var pollBase = wrap.dataset.pollBase;
+      if (!pollBase) return;
+      renderScatter(wrap, pollBase);
+      if (scatterTimer) clearInterval(scatterTimer);
+      scatterTimer = setInterval(function(){ renderScatter(wrap, pollBase); }, 2000);
+    }
+    function stopScatterRefresh(){
+      if (scatterTimer) { clearInterval(scatterTimer); scatterTimer = null; }
+    }
+    Reveal.on("ready", function(){
+      if (document.querySelector("section.present .num-scatter-wrap")) startScatterRefresh();
+    });
+    Reveal.on("slidechanged", function(e){
+      stopScatterRefresh();
+      var wrap = e.currentSlide.querySelector(".num-scatter-wrap");
+      if (wrap) startScatterRefresh();
+    });
+  }
+})();
 </script>
 
 <!-- Lazy-load + auto-play <video data-src=""> on slide enter; pause on exit. -->
