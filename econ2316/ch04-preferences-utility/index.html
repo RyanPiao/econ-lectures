@@ -1570,6 +1570,35 @@
   <aside class="notes">Proof by contradiction &mdash; the transitivity characteristic, made rigorous. Walk it slowly: D~F (same curve), assume a crossing curve gives F~E, transitivity forces D~E, but the picture shows E is up-and-to-the-right of D (more apartment AND more friends), so monotonicity forces E&succ;D. D~E and E&succ;D is a contradiction. The only way out: curves never cross. This is exactly why "no crossing" is on the characteristics list &mdash; it is transitivity + monotonicity working together.</aside>
 </section>
 
+<!-- ===== Slide 31b — 3D utility surface (interactive mountain, Plotly) ===== -->
+<section id="ic-3d-mountain">
+  <h2><i class="fa-solid fa-mountain-sun" style="color: var(--accent-color);"></i> The utility &ldquo;mountain&rdquo; &mdash; indifference curves are its contour lines</h2>
+  <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start;">
+    <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 4px;">
+      <div id="mtn-plot" style="width: 100%; height: 452px;"></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);">
+        <p style="font-size: 12.5pt; line-height: 1.5; margin: 0;">Height = <strong>utility</strong>; the floor is the two goods \(x_1, x_2\). More of either &rArr; climb <em>higher</em> &mdash; &ldquo;more is better.&rdquo;</p>
+      </div>
+      <div style="background: #f0f5f8; border-radius: 10px; padding: 10px 16px; border-left: 4px solid var(--accent-color);">
+        <p style="font-size: 12.5pt; line-height: 1.5; margin: 0;">An <strong>indifference curve</strong> is a <em>contour line</em> &mdash; same height. Blue rings on the floor = the <strong>IC map</strong>; the red ring is the level you pick.</p>
+      </div>
+      <div style="background: #eef7ee; border-radius: 10px; padding: 9px 16px; border-left: 4px solid var(--success-color);">
+        <p style="font-size: 12pt; line-height: 1.45; margin: 0;"><i class="fa-solid fa-arrows-up-down-left-right" style="color: var(--success-color);"></i> <strong>Drag</strong> the surface to spin it freely; scroll to zoom.</p>
+      </div>
+      <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 11px 16px;">
+        <label style="font-size: 12pt; font-weight: 700; color: var(--primary-color);">Utility level &nbsp;<span id="mtn-level-val" style="color: #dc2626;">&mdash;</span></label>
+        <input id="mtn-level" type="range" min="4" max="38" step="0.5" value="18" style="width: 100%; accent-color: #dc2626;">
+        <div style="text-align: center; margin-top: 10px;">
+          <button id="mtn-side" style="background: var(--secondary-color); color: #fff; font-size: 11.5pt; font-weight: 700; padding: 7px 16px; border: 0; border-radius: 8px; cursor: pointer;">Side view &mdash; watch utility rise</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Interactive 3D utility surface (Plotly, free-drag orbit). Height = utility, floor = the two goods; U = x1 + x2 + 0.28 x1 x2 (non-homothetic: near the origin ICs are almost straight = substitutes-like; as utility rises toward the NE they bow more = increasing variety-preference). No formula shown. Blue projected contours on the floor = the IC map; red ring = the level chosen with the slider, on the surface and dropped to the floor. Drag to rotate; "Side view" sets a near-horizontal camera so the vertical axis reads as utility and students watch height climb with consumption.</aside>
+</section>
+
 <!-- ===== Slide 13 — Opening Hook ===== -->
 <section id="opening-hook">
   <h2><i class="fa-solid fa-tv" style="color: #f59e0b;"></i> Netflix's Million Indifference Curves</h2>
@@ -4235,5 +4264,41 @@
 })();
 </script>
 
+<!-- ===== 3D utility-mountain widget (Plotly, free-drag orbit) ===== -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+(function(){
+  var div=document.getElementById('mtn-plot'); if(!div) return;
+  var beta=0.28, NX=42, GMAX=10;
+  function U(x,y){return x+y+beta*x*y;}
+  var xs=[],ys=[],zz=[];
+  for(var i=0;i<=NX;i++){xs.push(i*GMAX/NX);ys.push(i*GMAX/NX);}
+  for(var j=0;j<=NX;j++){var row=[];for(var i=0;i<=NX;i++)row.push(U(xs[i],ys[j]));zz.push(row);}
+  var UMIN=U(0,0),UMAX=U(GMAX,GMAX),level=18;
+  function ring(L,z){var X=[],Y=[],Z=[];for(var k=0;k<=80;k++){var x=k*GMAX/80,y=(L-x)/(1+beta*x);if(y<0||y>GMAX)continue;X.push(x);Y.push(y);Z.push(z===null?L:z);}return{x:X,y:Y,z:Z};}
+  function surfTrace(){return {type:'surface',x:xs,y:ys,z:zz,showscale:false,colorscale:'YlGnBu',reversescale:true,opacity:0.9,
+    contours:{z:{show:true,project:{z:true},usecolormap:false,color:'#60a5fa',width:2,start:UMIN+3,end:UMAX-1,size:(UMAX-UMIN)/9}},hoverinfo:'skip'};}
+  function ringTraces(){var r=ring(level,null),rf=ring(level,UMIN);
+    return [{type:'scatter3d',mode:'lines',x:r.x,y:r.y,z:r.z,line:{color:'#dc2626',width:8},hoverinfo:'skip'},
+            {type:'scatter3d',mode:'lines',x:rf.x,y:rf.y,z:rf.z,line:{color:'#dc2626',width:6},hoverinfo:'skip'}];}
+  var layout={margin:{l:0,r:0,t:0,b:0},showlegend:false,paper_bgcolor:'rgba(0,0,0,0)',
+    scene:{camera:{eye:{x:1.55,y:1.55,z:1.0}},aspectmode:'cube',
+      xaxis:{title:'Good x₁',range:[0,GMAX],backgroundcolor:'#f8fafc',showbackground:true},
+      yaxis:{title:'Good x₂',range:[0,GMAX],backgroundcolor:'#f8fafc',showbackground:true},
+      zaxis:{title:'Utility',range:[UMIN,UMAX],backgroundcolor:'#f8fafc',showbackground:true}}};
+  var config={responsive:true,displayModeBar:false};
+  var plotted=false;
+  function ensure(){if(plotted||typeof Plotly==='undefined')return;Plotly.newPlot(div,[surfTrace()].concat(ringTraces()),layout,config);plotted=true;}
+  var lval=document.getElementById('mtn-level-val'); if(lval)lval.textContent=Math.round(level);
+  var lv=document.getElementById('mtn-level');
+  if(lv)lv.addEventListener('input',function(){level=parseFloat(lv.value);if(lval)lval.textContent=Math.round(level);if(!plotted)return;var r=ring(level,null),rf=ring(level,UMIN);Plotly.restyle(div,{x:[r.x,rf.x],y:[r.y,rf.y],z:[r.z,rf.z]},[1,2]);});
+  var side=document.getElementById('mtn-side');
+  if(side)side.addEventListener('click',function(){if(!plotted)return;Plotly.relayout(div,{'scene.camera.eye':{x:2.4,y:0.15,z:0.32}});});
+  if(window.Reveal){
+    Reveal.on('ready',function(e){if(e.currentSlide&&e.currentSlide.querySelector('#mtn-plot'))ensure();});
+    Reveal.on('slidechanged',function(e){if(e.currentSlide&&e.currentSlide.querySelector('#mtn-plot')){ensure();if(plotted)setTimeout(function(){Plotly.Plots.resize(div);},60);}});
+  } else { ensure(); }
+})();
+</script>
 </body>
 </html>
