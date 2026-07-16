@@ -145,10 +145,14 @@
 /* The rule above targets `li` DIRECTLY, and an explicit rule beats inheritance.
    So `<ul style="font-size: 11pt">` sized the <ul> but its bullets snapped back
    to --text-size (16pt) — the authored size was silently ignored on every list
-   in the deck. Let an inline size on a list reach its own items. Lists that
-   don't ask for a size are untouched and still get --text-size. */
-.reveal ul[style*="font-size"] > li,
-.reveal ol[style*="font-size"] > li {
+   in the deck. Let an inline size on a list reach its items.
+
+   Descendant (not child) on purpose: a nested sub-list rarely declares its own
+   size, so `inherit` walks it back up through the parent <li> to the size the
+   author actually set. A top-level list that asks for no size is untouched and
+   still gets --text-size. */
+.reveal ul[style*="font-size"] li,
+.reveal ol[style*="font-size"] li {
   font-size: inherit;
 }
 
