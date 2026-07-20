@@ -2989,6 +2989,32 @@
   document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;if(!pid)return;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);if(!isLocal)setInterval(function(){fetchR(pid);},2000);});
  })();
 </script>
+<!-- Click-to-zoom lightbox: click any image (not the cover) to enlarge full-screen; click / Esc to close.
+     Overlay lives OUTSIDE .reveal so position:fixed is viewport-relative (reveal scales .slides with transform). -->
+<style>
+ img.zoomable{cursor:zoom-in;transition:box-shadow .15s ease;}
+ img.zoomable:hover{box-shadow:0 0 0 3px var(--secondary-color);}
+ #lb-ov{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;cursor:zoom-out;padding:2vh 2vw;}
+ #lb-ov.open{display:flex;}
+ #lb-ov img{max-width:96vw;max-height:92vh;background:#fff;border-radius:6px;box-shadow:0 10px 50px rgba(0,0,0,0.6);}
+ #lb-hint{position:fixed;bottom:14px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.65);font-size:13px;letter-spacing:0.04em;}
+</style>
+<div id="lb-ov"><img id="lb-img" alt="Enlarged image"><div id="lb-hint">Click anywhere (or press Esc) to close</div></div>
+<script>
+(function(){
+  var ov=document.getElementById('lb-ov'), im=document.getElementById('lb-img');
+  if(!ov) return;
+  function close(){ ov.classList.remove('open'); }
+  document.querySelectorAll('.reveal .slides section img').forEach(function(z){
+    if(z.closest('#title')) return;            // skip the cover hero photo
+    z.classList.add('zoomable');
+    z.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); im.src=z.currentSrc||z.src; im.alt=z.alt||'Enlarged image'; ov.classList.add('open'); });
+  });
+  ov.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&ov.classList.contains('open')) close(); });
+})();
+</script>
+
 <!-- Presentation clicker: PageUp/Down -> prev/next; Lenovo long-press Ctrl+H / Ctrl+L -> prev/next (back/forward) -->
 <script>
 (function(){
