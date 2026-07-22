@@ -2043,8 +2043,8 @@
       <svg id="acmc-svg" viewBox="0 0 560 330" style="width: 100%; max-height: 262px; display: block;" xmlns="http://www.w3.org/2000/svg" aria-label="Interactive chart: a U-shaped average cost curve and an upward-sloping marginal cost curve. A draggable quantity marker shows the value of AC and MC at that quantity and the vertical gap between them."></svg>
       <div style="display: flex; align-items: center; gap: 8px; margin: 2px 6px 0 6px;">
         <span style="font-size: 10pt; color: var(--muted-color); white-space: nowrap;">\(q\)</span>
-        <input id="acmc-q" type="range" min="4" max="25" step="0.1" value="9" style="flex: 1; accent-color: #C47B5A; cursor: ew-resize;" aria-label="Quantity">
-        <span id="acmc-qval" style="font-size: 11pt; font-weight: 800; color: var(--primary-color); min-width: 42px; text-align: right;">9.0</span>
+        <input id="acmc-q" type="range" min="4" max="25" step="0.01" value="9" style="flex: 1; accent-color: #C47B5A; cursor: ew-resize;" aria-label="Quantity">
+        <span id="acmc-qval" style="font-size: 11pt; font-weight: 800; color: var(--primary-color); min-width: 52px; text-align: right;">9.0</span>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 5px;">
         <div style="background: #fef3e8; border-radius: 6px; padding: 4px 6px;">
@@ -3372,6 +3372,10 @@
 
   function render(){
     var q = parseFloat(slider.value);
+    // Snap onto the exact crossing. q* = 18.0644 is not a multiple of the slider
+    // step, so without this the marker can only straddle it (gap +0.16 or -0.09)
+    // and the readout would contradict the "MC = AC" message.
+    if(Math.abs(q - QSTAR) <= 0.06) q = QSTAR;
     var a = AC(q), m = MC(q), d = a - m;
     var xq = X(q), ya = Y(a), ym = Y(m);
     vline.setAttribute('x1',xq); vline.setAttribute('x2',xq);
@@ -3382,14 +3386,14 @@
     dMC.setAttribute('cx',xq); dMC.setAttribute('cy',ym);
     gtxt.setAttribute('x', xq + (q > 21 ? -26 : 26));
     gtxt.setAttribute('y', (ya+ym)/2 + 3);
-    gtxt.textContent = (Math.abs(d) < 0.15 ? '' : 'gap ' + d.toFixed(2));
+    gtxt.textContent = (Math.abs(d) < 0.005 ? '' : 'gap ' + d.toFixed(2));
 
-    oQ.textContent  = q.toFixed(1);
+    oQ.textContent  = q.toFixed(2);
     oAC.textContent = '$' + a.toFixed(2);
     oMC.textContent = '$' + m.toFixed(2);
-    oGap.textContent= (d>=0?'+':'\u2212') + '$' + Math.abs(d).toFixed(2);
+    oGap.textContent= (Math.abs(d) < 0.005 ? '' : (d > 0 ? '+' : '\u2212')) + '$' + Math.abs(d).toFixed(2);
 
-    if(Math.abs(d) < 0.15){
+    if(Math.abs(d) < 0.005){
       msg.style.color = '#1F7A3A';
       msg.innerHTML = 'MC = AC \u2192 AC is flat &mdash; this is <strong>AC\u2019s minimum</strong>.';
     } else if(d > 0){
