@@ -1909,19 +1909,16 @@ def fig_engines_mc_family():
         ax.text(qx + dx, qy + dy, lbl, fontsize=11.5,
                 color=LR_BLUE, fontweight="bold")
 
-    # A, B on MC_LR — marginal cost at each planning Q
-    for (qx, qy, lbl, dx, dy) in [
-        (10,  8.5, "A",  0.55, -0.55),
-        (30, 12.5, "B",  0.55, -0.55),
-    ]:
-        ax.plot(qx, qy, "o", color=LR_RED, markersize=8,
-                markeredgecolor="white", markeredgewidth=1.2, zorder=6)
-        ax.text(qx + dx, qy + dy, lbl, fontsize=11.5,
-                color=LR_RED, fontweight="bold")
+    # A, B on MC_LR REMOVED 2026-07-22 (instructor request): having ATC points
+    # (X, Y, Z) and MC points (A, B) labelled on one chart made students expect
+    # MC_SR,10 to pass through X and MC_SR,30 through Z. It never does -- X and Z
+    # sit on the ATC curves, while the MC_SR curves meet MC_LR at the same
+    # quantity but at a different height. Only the ATC points are labelled now;
+    # the MC_SR-meets-MC_LR crossings are left unlabelled and read off the curves.
 
     # ---- Dashed verticals at Q = 10, 20, 30 from MC_LR up to ATC_LR
-    for (qx, qy_lo, qy_hi) in [(10, 8.5, 9.5), (20, 9.0, 9.0), (30, 9.5, 12.5)]:
-        ax.plot([qx, qx], [5.5, max(qy_lo, qy_hi)], color=MUTED,
+    for (qx, qy_hi) in [(10, 9.5), (20, 9.0), (30, 9.5)]:
+        ax.plot([qx, qx], [5.5, qy_hi], color=MUTED,
                 lw=0.7, ls=":", alpha=0.6)
 
     # ---- Dashed horizontals at $9 and $12
