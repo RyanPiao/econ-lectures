@@ -68,7 +68,7 @@ def sr_total_cost(q, Kbar):
 
 # ============================================================
 # FIGURE 1 — Headline / cover: SR family + LR envelope
-# (Doubles as ch08-cover.png AND fig-sr-lr-envelope.png)
+# (Doubles as ch08-cover.jpg AND fig-sr-lr-envelope.png)
 # ============================================================
 def fig_cover_sr_lr_envelope():
     fig, ax = plt.subplots(figsize=(7, 5))
@@ -154,7 +154,7 @@ def fig_cover_sr_lr_envelope():
             fontsize=10, color=SECONDARY, ha="center", style="italic")
     ax.text(75, 1.9, "Long-run\nenvelope",
             fontsize=10, color=ACCENT, ha="right", style="italic")
-    out2 = os.path.join(HERE, "ch08-cover.png")
+    out2 = os.path.join(HERE, "ch08-cover.jpg")
     plt.savefig(out2)
     plt.close(fig)
 
@@ -2123,7 +2123,7 @@ def fig_lratc_regions():
 # ============================================================
 if __name__ == "__main__":
     fig_cover_sr_lr_envelope()
-    print("OK: ch08-cover.png + fig-sr-lr-envelope.png")
+    print("OK: ch08-cover.jpg + fig-sr-lr-envelope.png")
     fig_isocost_tangency()
     print("OK: fig-isocost-tangency.png")
     fig_wage_shock()

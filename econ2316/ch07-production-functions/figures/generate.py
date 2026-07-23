@@ -59,7 +59,7 @@ def fig_cover():
                  fontsize=15, color=NAVY, pad=14)
     fig.patch.set_facecolor("white")
     plt.tight_layout()
-    plt.savefig(OUT/"ch07-cover.png", dpi=160, bbox_inches="tight", facecolor="white")
+    plt.savefig(OUT/"ch07-cover.jpg", dpi=160, bbox_inches="tight", facecolor="white")
     plt.close()
 
 # ---------- 1. Isoquants for Cobb-Douglas ----------
