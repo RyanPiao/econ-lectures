@@ -1999,10 +1999,19 @@ def fig_engines_w85_stc_kbar4():
         (48, 1.306),  # approx tangency
         (64, 1.790),
     ]
+    # Offsets tuned per point: (16) sits ABOVE-left so it clears the LRC line
+    # below it; (32) sits above-left to clear the wedge arrow; (48) and (64)
+    # sit below-right in open space.
+    pt_offsets = {16: (-1.0, 0.075, "right", "bottom"),
+                  32: (-1.2, 0.075, "right", "bottom"),
+                  48: (1.6, -0.085, "left", "top"),
+                  64: (-1.6, 0.075, "right", "bottom")}   # above-left: below-right crosses LRC
     for qx, qy in w85_points:
         ax.plot(qx, qy, "o", **pt_style)
+        dx, dy, ha, va = pt_offsets[qx]
         ax.annotate(f"({qx}, \\${qy:.2f}B)", xy=(qx, qy),
-                    xytext=(qx + 1.5, qy - 0.10), fontsize=9, color=PRIMARY)
+                    xytext=(qx + dx, qy + dy), fontsize=9, color=PRIMARY,
+                    ha=ha, va=va)
 
     # ---- SR-LR tangency at q = 47.79
     q_tan = 47.79
@@ -2029,11 +2038,9 @@ def fig_engines_w85_stc_kbar4():
                 fontweight="bold",
                 arrowprops=dict(arrowstyle="->", color="#EA580C", lw=1.2))
 
-    # ---- Curve labels at right
-    ax.text(67, LRC(67) + 0.05, "$LRC$", fontsize=12, color=LR_BLUE,
-            fontweight="bold")
-    ax.text(67, STC(67) - 0.08, "$STC$\n$(\\bar K = 4)$", fontsize=11, color=SR_BLUE,
-            fontweight="bold", va="top")
+    # ---- Curve end-labels REMOVED 2026-07-23: the upper-left legend already
+    # names both curves, and these duplicates sat on top of the (64, \$1.79B)
+    # annotation and its marker in the top-right corner.
 
     # ---- Axes formatting
     ax.set_xlabel("Quantity of batteries  $q$  (GWh/yr)", fontsize=11)
