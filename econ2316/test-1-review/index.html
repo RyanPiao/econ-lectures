@@ -29,6 +29,25 @@
    .reveal .detail-card mjx-container { font-size: 0.92em !important; }
    .reveal .detail-card { overflow-wrap: break-word; }
 
+   /* MathJax 3 emits SVG. An <svg> is a single atomic inline box, so
+      overflow-wrap cannot break it and a fixed font-size reduction only rescues
+      borderline cases — a genuinely long expression (e.g. the Ch 2 CS/PS
+      integrals) still spills past the card border and gets clipped. Constrain
+      the SVG itself so ANY expression scales proportionally down to fit
+      whatever column it lands in. Applied globally as a safety net. */
+   .reveal mjx-container[jax="SVG"] {
+     display: inline-block;   /* REQUIRED: on a plain inline box, max-width
+                                 resolves circularly against the shrink-to-fit
+                                 width and does nothing. inline-block makes it
+                                 resolve against the containing block instead. */
+     /* 4px absorbs sub-pixel rounding from reveal's fractional scale
+        transform when the viewport is narrower than the 1280 design width */
+     max-width: calc(100% - 4px);
+     vertical-align: middle;
+   }
+   .reveal mjx-container[jax="SVG"] > svg { max-width: 100%; height: auto; }
+   .reveal .detail-card li { overflow-wrap: anywhere; }
+
    /* Mistakes slide has 12 items — 2 cols × 6 rows overflowed off the bottom.
       3 cols × 4 rows fits all 12 with breathing room. Shrink font + tighten
       padding so each cell stays compact. */
@@ -425,8 +444,8 @@
        </div>
        <div class="detail-card">
         <ul>
-         <li>\(CS = \int_0^{Q^*}\!(p^d(q) - p^*) dq\)</li>
-         <li>\(PS = \int_0^{Q^*}\!(p^* - p^s(q)) dq\)</li>
+         <li>\(CS = \int_0^{Q^*}\!(p^d - p^*)\,dq\)</li>
+         <li>\(PS = \int_0^{Q^*}\!(p^* - p^s)\,dq\)</li>
          <li>Linear &rarr; triangles</li>
          <li>Nonlinear &rarr; integrate</li>
         </ul>
