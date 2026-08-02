@@ -298,3 +298,59 @@ if __name__ == "__main__":
     entry_exit()
     austin()
     print("wrote fig-sr-profit.png, fig-entry-exit.png, fig-austin-entry-sd.png")
+
+
+# ================================================== fig-satellite-vs-cable
+def satellite_vs_cable():
+    """Illustrative ATC-per-subscriber against subscriber density.
+
+    Neither SpaceX nor the cable operators publish per-subscriber ATC, so this
+    is a MODEL, not reported data. The teaching content is the shape and the
+    crossover, not the level:
+      cable      fixed plant must be built past every home, so cost per
+                 subscriber falls with density   ->  ATC = k/d + c
+      satellite  the constellation is a global fixed cost, geography-blind,
+                 but capacity is shared per cell ->  ATC = a + b*d
+    """
+    d = np.logspace(0, np.log10(5000), 400)
+    cable = 900.0 / d + 25.0
+    sat = 45.0 + 0.02 * d
+    dx = 43.2                                   # root of 0.02d^2 + 20d - 900
+
+    fig, ax = plt.subplots(figsize=(8.6, 5.5))
+    ax.fill_between(d, 0, 130, where=(d <= dx), color=SAGE, alpha=0.10)
+    ax.fill_between(d, 0, 130, where=(d >= dx), color=TERRA, alpha=0.08)
+
+    ax.plot(d, cable, color=TERRA, lw=2.8, label="Cable — plant past every home")
+    ax.plot(d, sat, color=NAVY, lw=2.8, label="Satellite — one global constellation")
+
+    ax.axvline(dx, color=MUTED, lw=1.2, ls=":")
+    ax.plot([dx], [45 + 0.02 * dx], "o", ms=9, color=INK, zorder=6,
+            markeredgecolor="white", markeredgewidth=1.4)
+    ax.annotate("crossover\n≈ 43 homes / sq mi", xy=(dx, 45 + 0.02 * dx),
+                xytext=(105, 88), fontsize=11, fontweight="bold", color=INK,
+                ha="left", va="center",
+                arrowprops=dict(arrowstyle="-", color=INK, lw=1.0))
+
+    ax.text(4.0, 20, "satellite\ncheaper", fontsize=12.5, fontweight="bold",
+            color="#4E7A50", ha="center", va="center")
+    ax.text(1300, 95, "cable\ncheaper", fontsize=12.5, fontweight="bold",
+            color=TERRA, ha="center", va="center")
+
+    ax.set_xscale("log")
+    ax.set_xlim(1, 5000)
+    ax.set_ylim(0, 130)
+    ax.set_xticks([1, 10, 100, 1000, 5000])
+    ax.set_xticklabels(["1", "10", "100", "1,000", "5,000"], fontsize=11)
+    ax.set_yticks([0, 25, 50, 75, 100, 125])
+    ax.set_yticklabels(["", "\\$25", "\\$50", "\\$75", "\\$100", "\\$125"], fontsize=11)
+    ax.set_xlabel("Subscriber density (homes per square mile, log scale)", fontsize=12)
+    ax.set_ylabel("ATC per subscriber (\\$/month)", fontsize=12)
+    ax.set_title("Illustrative: two fixed costs with different geometry",
+                 fontsize=13.5, fontweight="bold", pad=11)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2,
+              frameon=False, fontsize=11, handlelength=1.9)
+    _clean(ax)
+    fig.tight_layout()
+    fig.savefig("fig-satellite-vs-cable.png", dpi=155, facecolor="white")
+    plt.close(fig)
