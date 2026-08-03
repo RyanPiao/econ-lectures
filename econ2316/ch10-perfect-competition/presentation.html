@@ -1622,6 +1622,7 @@
         <span id="da-timer" style="font-size:12pt; font-weight:700; color:var(--accent-color); font-family:'SF Mono',Menlo,monospace;"></span>
         <span style="flex:1;"></span>
         <span id="da-round-btns" style="display:flex; gap:4px;"></span>
+        <button id="da-start" style="display:none; background:var(--success-color); color:#fff; border:0; border-radius:13px; padding:3px 13px; font-size:10pt; font-weight:700; cursor:pointer;"><i class="fa-solid fa-play"></i> Start lab</button>
         <button id="da-reset" style="display:none; background:#f4f1ed; border:1px solid var(--line-color); border-radius:13px; padding:2px 10px; font-size:9pt; color:var(--muted-color); cursor:pointer;"><i class="fa-solid fa-rotate-left"></i> reset lab</button>
       </div>
       <div style="height:5px; background:#efece8; border-radius:3px; overflow:hidden; margin-bottom:8px;"><div id="da-progress" style="height:100%; width:0%; background:var(--accent-color); transition:width .9s linear;"></div></div>
@@ -2015,9 +2016,11 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
     var el=document.getElementById("da-card");
     if(INSTR){el.style.borderStyle="solid";el.style.background="#eef2f0";el.style.borderColor="var(--secondary-color)";
       var e=inducedEq(joins);
-      el.innerHTML='<p style="margin:0;font-size:10pt;color:var(--secondary-color);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Presenter view</p>'
-        +'<p style="margin:4px 0 0;font-size:12pt;line-height:1.4;"><strong>'+joins+'</strong> student'+(joins===1?"":"s")+' seated. Cards are private to their phones.</p>'
-        +(joins>1?'<p style="margin:3px 0 0;font-size:10.5pt;color:var(--muted-color);">Induced equilibrium: <strong>$'+(e.lo===e.hi?e.lo:e.lo+"–$"+e.hi)+'</strong> &middot; '+e.q+' trades available</p>':'');
+      var nb=Math.ceil(joins/2),ns=Math.floor(joins/2);
+      el.innerHTML='<p style="margin:0;font-size:10pt;color:var(--secondary-color);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">'+(clockAt?"Presenter view":"Lobby — waiting to start")+'</p>'
+        +'<p style="margin:4px 0 0;font-size:12pt;line-height:1.35;"><strong>'+joins+'</strong> seated &mdash; <strong style="color:var(--secondary-color);">'+nb+'</strong> buyer'+(nb===1?"":"s")+' &middot; <strong style="color:var(--accent-color);">'+ns+'</strong> seller'+(ns===1?"":"s")+'</p>'
+        +(joins>1?'<p style="margin:3px 0 0;font-size:10.5pt;color:var(--muted-color);">Induced equilibrium: <strong>$'+(e.lo===e.hi?e.lo:e.lo+"–$"+e.hi)+'</strong> &middot; '+e.q+' trades available</p>':'')
+        +(clockAt?'':'<p style="margin:4px 0 0;font-size:10.5pt;color:var(--accent-color);">Cards are already dealt. Press <strong>Start lab</strong> when the room is ready.</p>');
       return;}
     if(card===null){el.innerHTML='<p style="margin:0;font-size:11pt;color:var(--muted-color);">Joining the market&hellip;</p>';return;}
     var buy=card.role==="BUYER";
@@ -2026,7 +2029,8 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
     el.style.borderColor=buy?"var(--secondary-color)":"var(--accent-color)";
     el.innerHTML='<p style="margin:0;font-size:10pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:'+(buy?"var(--secondary-color)":"var(--accent-color)")+';">Your card &mdash; keep it private</p>'
       +'<p style="margin:3px 0 0;font-size:20pt;font-weight:700;color:var(--primary-color);">'+card.role+'</p>'
-      +'<p style="margin:1px 0 0;font-size:12pt;">'+(buy?"Pay at most":"Accept at least")+' <strong style="font-size:17pt;">$'+card.v+'</strong></p>';}
+      +'<p style="margin:1px 0 0;font-size:12pt;">'+(buy?"Pay at most":"Accept at least")+' <strong style="font-size:17pt;">$'+card.v+'</strong></p>'
+      +(joins>1?'<p style="margin:3px 0 0;font-size:9.5pt;color:var(--muted-color);">'+joins+' traders in this market</p>':'');}
 
   function join(){
     if(INSTR||isLocal){renderCard();return;}
@@ -2045,7 +2049,7 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
   function refreshJoins(){
     if(isLocal)return;
     sf("GET","poll_votes?poll_id=eq.ch10-da-join&select=voter_id").then(function(r){return r.json();})
-      .then(function(rows){joins=rows.length;if(INSTR)renderCard();}).catch(function(){});}
+      .then(function(rows){joins=rows.length;renderCard();}).catch(function(){});}
 
   // ---- clock
   function readClock(){
@@ -2053,8 +2057,19 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
     sf("GET","poll_votes?poll_id=eq.ch10-da-clock&select=created_at&order=created_at.asc&limit=1")
       .then(function(r){return r.json();}).then(function(rows){
         if(rows.length){clockAt=Date.parse(rows[0].created_at);started=true;}
-        else if(INSTR&&!started){started=true;sf("POST","poll_votes",{poll_id:"ch10-da-clock",choice:"start",voter_id:VID}).then(readClock);}
-        tick();}).catch(function(){});}
+        else{clockAt=null;started=false;}
+        paintStart();renderCard();tick();}).catch(function(){});}
+
+  function paintStart(){
+    var b=document.getElementById("da-start");if(!b)return;
+    b.style.display=(INSTR&&!clockAt)?"inline-block":"none";}
+
+  function startLab(){
+    if(!INSTR||clockAt)return;
+    var b=document.getElementById("da-start");b.disabled=true;b.textContent="Starting…";
+    sf("POST","poll_votes",{poll_id:"ch10-da-clock",choice:"start",voter_id:VID})
+      .then(function(){setTimeout(readClock,400);})
+      .catch(function(){b.disabled=false;b.innerHTML='<i class="fa-solid fa-play"></i> Start lab';});}
 
   function tick(){
     var lbl=document.getElementById("da-roundlabel"),tm=document.getElementById("da-timer"),pg=document.getElementById("da-progress");
@@ -2088,6 +2103,7 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
   function syncInput(){
     var i=document.getElementById("da-input"),s=document.getElementById("da-submit"),st=document.getElementById("da-status");
     if(INSTR){i.style.display="none";s.style.display="none";st.textContent="Presenter view — students submit from their phones.";return;}
+    if(!clockAt){i.disabled=true;s.disabled=true;s.style.opacity=".65";st.textContent="Waiting for the lab to start…";return;}
     if(localStorage.getItem(votedKey(live))){i.disabled=true;s.disabled=true;s.textContent="Submitted ✓";s.style.opacity=".65";st.textContent="Round "+live+" recorded.";}
     else{i.disabled=false;i.value="";s.disabled=false;s.textContent="Submit";s.style.opacity="1";st.textContent="";}}
 
@@ -2107,6 +2123,7 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
   document.getElementById("da-submit").addEventListener("click",submit);
   document.getElementById("da-input").addEventListener("keydown",function(e){if(e.key==="Enter")submit();});
 
+  document.getElementById("da-start").addEventListener("click",startLab);
   var rst=document.getElementById("da-reset");
   if(INSTR){rst.style.display="inline-block";
     rst.addEventListener("click",function(){
@@ -2114,7 +2131,8 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
       ["ch10-da-join","ch10-da-clock"].concat([1,2,3,4,5].map(pid)).forEach(function(q){if(!isLocal)sf("DELETE","poll_votes?poll_id=eq."+q);});
       for(var r=1;r<=ROUNDS;r++)localStorage.removeItem(votedKey(r));
       data={};clockAt=null;started=false;live=1;view=null;joins=0;
-      setTimeout(function(){readClock();refreshJoins();renderHist();renderConverge();paintBtns();},600);});}
+      var sb=document.getElementById("da-start");sb.disabled=false;sb.innerHTML='<i class="fa-solid fa-play"></i> Start lab';
+      setTimeout(function(){readClock();refreshJoins();renderHist();renderConverge();paintBtns();syncInput();},600);});}
 
   // ---- charts
   function renderHist(){
@@ -2170,7 +2188,7 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
       .catch(function(){});}
   function fetchAll(){for(var r=1;r<=ROUNDS;r++)fetchRound(r);}
 
-  paintBtns();syncInput();renderHist();renderConverge();
+  paintBtns();paintStart();syncInput();renderHist();renderConverge();
   if(!isLocal){join();readClock();refreshJoins();fetchAll();
     setInterval(tick,1000);
     setInterval(function(){fetchRound(shown());},2000);
