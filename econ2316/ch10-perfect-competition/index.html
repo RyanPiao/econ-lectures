@@ -1656,6 +1656,7 @@ Then press DOWN, not right — the card, timer and live histogram are the vertic
         <span id="da-roundlabel" style="font-size:13pt; font-weight:700; color:var(--primary-color);">Round &mdash;</span>
         <span id="da-timer" style="font-size:12pt; font-weight:700; color:var(--accent-color); font-family:'SF Mono',Menlo,monospace;"></span>
         <span style="flex:1;"></span>
+        <button id="da-revealnow" style="display:none; background:#f4f1ed; border:1px solid var(--line-color); border-radius:13px; padding:3px 12px; font-size:9.5pt; color:var(--muted-color); cursor:pointer;"><i class="fa-solid fa-forward"></i> reveal now</button>
         <span id="da-round-btns" style="display:flex; gap:4px;"></span>
       </div>
       <div style="height:5px; background:#efece8; border-radius:3px; overflow:hidden; margin-bottom:8px;"><div id="da-progress" style="height:100%; width:0%; background:var(--accent-color); transition:width .9s linear;"></div></div>
@@ -1665,19 +1666,28 @@ Then press DOWN, not right — the card, timer and live histogram are the vertic
         <button id="da-submit" style="background:var(--secondary-color); color:#fff; font-size:11.5pt; font-weight:700; padding:7px 17px; border:0; border-radius:8px; cursor:pointer;">Submit</button>
         <span id="da-status" style="font-size:10.5pt; color:var(--success-color); font-style:italic;"></span>
       </div>
+      <div id="da-curtain" style="display:none; height:186px; border-radius:9px; background:#f8f6f3; border:1px dashed var(--line-color); flex-direction:column; align-items:center; justify-content:center;">
+        <p id="da-count" style="margin:0; font-size:26pt; font-weight:700; color:var(--secondary-color);">0</p>
+        <p id="da-countlbl" style="margin:2px 0 0; font-size:12pt; color:var(--muted-color);">trades reported</p>
+        <p style="margin:9px 0 0; font-size:10.5pt; color:var(--muted-color); font-style:italic;">Prices stay hidden until the round closes.</p>
+      </div>
       <svg id="da-hist" viewBox="0 0 520 186" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; max-height:186px; display:block;"></svg>
       <p id="da-stats" style="font-size:10.5pt; color:var(--text-color); margin:4px 0 0; text-align:center; min-height:15px;"></p>
     </div>
   </div>
-  <aside class="notes">THE TRADING SLIDE. Cards appear here the instant the clock starts and not before — a student sitting here early sees "your card appears when the lab starts", so there is nothing to peek at.
+  <aside class="notes">THE TRADING SLIDE. Cards appear the instant the clock starts and not before, so a student sitting here early has nothing to peek at.
 
-Project this one for the whole lab. The countdown and progress bar are shared, driven off the single start timestamp, so every phone rolls into round 2 together without you saying anything. The histogram is one bar per whole dollar and refreshes every couple of seconds; the numbered circles let you review an earlier round without disturbing which round students submit into — submission always targets the live round, never the one you are reviewing.
+EACH ROUND HAS TWO PHASES, and the slide switches between them by itself. While trading is open the histogram is REPLACED by a plain counter — "11 trades reported" — because prices here are self-reported, and a live histogram would let someone skip trading entirely and type the number they can see on the screen. You would be measuring copying, not convergence. When the round closes the histogram and statistics appear for fifteen seconds, then the next round opens.
 
-The input refuses a price outside the student's own card limit, which removes the commonest way these experiments go wrong: someone reporting a trade they could not legally have made. It does not stop them trading badly inside their limit, which is the interesting kind of mistake and worth raising in the debrief.
+Revealing between rounds is not a compromise, it is the mechanism. Smith's traders could see past transaction prices, and that is precisely how convergence happens — people adjust because they saw where trades landed last time. Hide it during, show it after.
 
-Do not coach between rounds. Round 1 is usually scattered, with people taking poor deals or missing trades; the tightening from round 3 is the demonstration, and it is far more convincing if you have said nothing.
+TIMING is 90 seconds for round 1 and 60 for rounds 2 to 5, plus 15 seconds of reveal each; about seven minutes in total. Round 1 gets longer because that is when they are still working out whether they are a buyer and who to shout at.
 
-When the five rounds are done, press down again for the convergence chart.</aside>
+"REVEAL NOW" (instructor view only) closes trading early when the room is obviously finished, and every phone follows — the remaining rounds shift earlier with it, so you are shortening the lab rather than padding the reveal. You never have to touch it; it is there for dead air.
+
+DO NOT EXPECT EVERYONE TO SUBMIT. With these cards only the profitable pairs can trade — about 14 people in a class of 20, fewer proportionally in a bigger room. The students holding the extreme cards are supposed to sit out, and noticing that they are the marginal traders is half the lesson. A round where the counter stalls below the class size is working correctly.
+
+Do not coach between rounds. Round 1 is usually scattered; the tightening from round 3 is the demonstration and it is far more convincing if you have said nothing.</aside>
 </section>
 
 <section id="double-auction-results">
@@ -2018,19 +2028,20 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
 })();
 </script>
 
-<!-- Live double auction (§10.10 lab): auto-dealt cards, self-running rounds.
+<!-- Live double auction (§10.10 lab): auto-dealt cards, self-running rounds,
+     prices curtained during trading and revealed at each round's close.
      Shared Supabase poll_votes table. poll_id ch10-da-join (seats),
-     ch10-da-clock (round clock), ch10-da-r1..r5 (traded prices). -->
+     ch10-da-clock (start), ch10-da-skip (early close), ch10-da-r1..r5 (prices). -->
 <script>
  (function(){
   var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
   if(!document.getElementById("da-hist"))return;
   var isLocal=window.location.protocol==="file:";
   var INSTR=window.location.search.indexOf("instructor")!==-1;
-  var ROUNDS=5,ROUND_SECS=120,PLO=2,PHI=14;
+  var ROUNDS=5,TRADE_SECS=[90,60,60,60,60],REVEAL_SECS=15,PLO=2,PHI=14;
   var VID=localStorage.getItem("ch10-da-vid");
   if(!VID){VID="v_"+Math.random().toString(36).slice(2,10);localStorage.setItem("ch10-da-vid",VID);}
-  var data={},seat=null,card=null,joins=0,clockAt=null,live=1,view=null;
+  var data={},seat=null,card=null,joins=0,clockAt=null,skips={},live=1,view=null,ph={state:"pre"};
   var $=function(id){return document.getElementById(id);};
 
   function sf(m,p,b){var o={method:m,headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
@@ -2045,14 +2056,32 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
       if(q>best){best=q;ps=[p];}else if(q===best)ps.push(p);}
     return {q:best,lo:ps[0],hi:ps[ps.length-1],mid:(ps[0]+ps[ps.length-1])/2};}
 
-  // ---------- lobby panel
+  // ---------- schedule: trading then reveal, per round, honouring early closes
+  function segments(){
+    var segs=[],t=clockAt;
+    for(var r=1;r<=ROUNDS;r++){
+      var sched=t+TRADE_SECS[r-1]*1000;
+      var end=(skips[r]&&skips[r]<sched)?skips[r]:sched;
+      segs.push({r:r,start:t,tradeEnd:end,revealEnd:end+REVEAL_SECS*1000});
+      t=end+REVEAL_SECS*1000;}
+    return segs;}
+
+  function phase(){
+    if(!clockAt)return {state:"pre"};
+    var now=Date.now(),segs=segments();
+    for(var i=0;i<segs.length;i++){var s=segs[i];
+      if(now<s.tradeEnd)return {state:"trade",r:s.r,left:Math.ceil((s.tradeEnd-now)/1000),span:TRADE_SECS[s.r-1]};
+      if(now<s.revealEnd)return {state:"reveal",r:s.r,left:Math.ceil((s.revealEnd-now)/1000),span:REVEAL_SECS};}
+    return {state:"done",r:ROUNDS,left:0,span:1};}
+
+  // ---------- lobby
   function renderLobby(){
     var el=$("da-lobbypanel");if(!el)return;
     var nb=Math.ceil(joins/2),ns=Math.floor(joins/2),e=inducedEq(joins);
     var head=clockAt?"Lab running":"Lobby &mdash; waiting to start";
     var body='<p style="margin:0;font-size:10pt;color:var(--secondary-color);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">'+head+'</p>'
       +'<p style="margin:4px 0 0;font-size:13pt;line-height:1.35;"><strong>'+joins+'</strong> seated &mdash; <strong style="color:var(--secondary-color);">'+nb+'</strong> buyer'+(nb===1?"":"s")+' &middot; <strong style="color:var(--accent-color);">'+ns+'</strong> seller'+(ns===1?"":"s")+'</p>';
-    if(INSTR&&joins>1)body+='<p style="margin:3px 0 0;font-size:10.5pt;color:var(--muted-color);">Induced equilibrium: <strong>$'+(e.lo===e.hi?e.lo:e.lo+"&ndash;$"+e.hi)+'</strong> &middot; '+e.q+' trades available</p>';
+    if(INSTR&&joins>1)body+='<p style="margin:3px 0 0;font-size:10.5pt;color:var(--muted-color);">Induced equilibrium: <strong>$'+(e.lo===e.hi?e.lo:e.lo+"&ndash;$"+e.hi)+'</strong> &middot; '+e.q+' trades available &mdash; so at most <strong>'+(2*e.q)+'</strong> will submit</p>';
     el.innerHTML=body;
     el.style.borderStyle=clockAt?"solid":"dashed";
     el.style.background=clockAt?"rgba(106,142,107,.12)":"#f4f1ed";
@@ -2060,7 +2089,7 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
     var st=$("da-lobbystatus");
     if(st)st.textContent=clockAt?"Running — press down for the trading slide.":(INSTR?"":"Waiting for your instructor to start.");}
 
-  // ---------- the card, gated on the clock
+  // ---------- card
   function renderCard(){
     var el=$("da-card");if(!el)return;
     if(INSTR){el.style.borderStyle="solid";el.style.background="#eef2f0";el.style.borderColor="var(--secondary-color)";
@@ -2098,13 +2127,16 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
     sf("GET","poll_votes?poll_id=eq.ch10-da-join&select=voter_id").then(function(r){return r.json();})
       .then(function(rows){joins=rows.length;renderLobby();renderCard();}).catch(function(){});}
 
-  // ---------- clock
+  // ---------- clock + early closes
   function readClock(){
     if(isLocal)return;
     sf("GET","poll_votes?poll_id=eq.ch10-da-clock&select=created_at&order=created_at.asc&limit=1")
       .then(function(r){return r.json();}).then(function(rows){
         clockAt=rows.length?Date.parse(rows[0].created_at):null;
-        paintStart();renderLobby();renderCard();syncInput();tick();}).catch(function(){});}
+        return sf("GET","poll_votes?poll_id=eq.ch10-da-skip&select=choice,created_at&order=created_at.asc");})
+      .then(function(r){return r?r.json():[];}).then(function(rows){
+        skips={};(rows||[]).forEach(function(o){var k=parseInt(o.choice,10);if(!skips[k])skips[k]=Date.parse(o.created_at);});
+        paintStart();renderLobby();renderCard();tick();}).catch(function(){});}
 
   function paintStart(){var b=$("da-start");if(b)b.style.display=(INSTR&&!clockAt)?"inline-block":"none";}
 
@@ -2115,17 +2147,27 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
       .then(function(){setTimeout(readClock,400);})
       .catch(function(){b.disabled=false;b.innerHTML='<i class="fa-solid fa-play"></i> Start lab';});}
 
+  function revealNow(){
+    if(!INSTR||ph.state!=="trade"||skips[ph.r])return;
+    var b=$("da-revealnow");b.disabled=true;
+    skips[ph.r]=Date.now();
+    if(!isLocal)sf("POST","poll_votes",{poll_id:"ch10-da-skip",choice:String(ph.r),voter_id:VID}).then(function(){setTimeout(readClock,400);});
+    setTimeout(function(){b.disabled=false;},1500);tick();}
+
   function tick(){
     var lbl=$("da-roundlabel"),tm=$("da-timer"),pg=$("da-progress");if(!lbl)return;
-    if(!clockAt){lbl.textContent="Waiting to start";tm.textContent="";pg.style.width="0%";return;}
-    var el=(Date.now()-clockAt)/1000,r=Math.floor(el/ROUND_SECS)+1;
-    if(r>ROUNDS){lbl.textContent="All rounds complete";tm.textContent="";pg.style.width="100%";live=ROUNDS;}
+    var prev=ph.state+"/"+ph.r;
+    ph=phase();
+    if(ph.r&&ph.r!==live){live=ph.r;if(view===null)paintBtns();}
+    if(prev!==ph.state+"/"+ph.r)syncInput();
+    var rn=$("da-revealnow");
+    if(rn)rn.style.display=(INSTR&&ph.state==="trade")?"inline-block":"none";
+    if(ph.state==="pre"){lbl.textContent="Waiting to start";tm.textContent="";pg.style.width="0%";}
+    else if(ph.state==="done"){lbl.textContent="All rounds complete";tm.textContent="";pg.style.width="100%";}
     else{
-      if(r!==live){live=r;if(view===null)paintBtns();syncInput();}
-      var left=Math.ceil(ROUND_SECS-(el%ROUND_SECS));
-      lbl.textContent="Round "+live+" of "+ROUNDS;
-      tm.textContent=Math.floor(left/60)+":"+("0"+(left%60)).slice(-2)+" left";
-      pg.style.width=(100*(1-(left/ROUND_SECS))).toFixed(1)+"%";}
+      lbl.textContent="Round "+ph.r+" of "+ROUNDS+(ph.state==="reveal"?" — results":"");
+      tm.textContent=Math.floor(ph.left/60)+":"+("0"+(ph.left%60)).slice(-2)+(ph.state==="reveal"?" to next round":" left");
+      pg.style.width=(100*(1-(ph.left/ph.span))).toFixed(1)+"%";}
     if(view===null)renderHist();}
 
   // ---------- round view
@@ -2146,39 +2188,55 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
   function syncInput(){
     var i=$("da-input"),s=$("da-submit"),st=$("da-status");if(!i)return;
     if(INSTR){i.style.display="none";s.style.display="none";st.textContent="Presenter view — students submit from their phones.";return;}
-    if(!clockAt){i.disabled=true;s.disabled=true;s.style.opacity=".65";st.textContent="Waiting for the lab to start…";return;}
-    if(localStorage.getItem(votedKey(live))){i.disabled=true;s.disabled=true;s.textContent="Submitted ✓";s.style.opacity=".65";st.textContent="Round "+live+" recorded.";}
+    if(ph.state==="pre"){i.disabled=true;s.disabled=true;s.style.opacity=".65";st.textContent="Waiting for the lab to start…";return;}
+    if(ph.state==="reveal"||ph.state==="done"){i.disabled=true;s.disabled=true;s.style.opacity=".65";
+      st.textContent=ph.state==="done"?"Lab complete.":"Round "+ph.r+" is closed — results are up.";return;}
+    if(localStorage.getItem(votedKey(ph.r))){i.disabled=true;s.disabled=true;s.textContent="Submitted ✓";s.style.opacity=".65";st.textContent="Round "+ph.r+" recorded.";}
     else{i.disabled=false;i.value="";s.disabled=false;s.textContent="Submit";s.style.opacity="1";st.textContent="";}}
 
   function submit(){
-    if(INSTR||!clockAt||localStorage.getItem(votedKey(live)))return;
+    if(INSTR||ph.state!=="trade"||localStorage.getItem(votedKey(ph.r)))return;
     var i=$("da-input"),v=parseInt(i.value,10),st=$("da-status");
     if(isNaN(v)||v<0){st.style.color="var(--danger-color)";st.textContent="Enter a whole-dollar price.";return;}
     if(card){var bad=card.role==="BUYER"?v>card.v:v<card.v;
       if(bad){st.style.color="var(--danger-color)";st.textContent=(card.role==="BUYER"?"Above":"Below")+" your card limit of $"+card.v+".";return;}}
     st.style.color="var(--success-color)";
-    localStorage.setItem(votedKey(live),String(v));
-    if(!data[live])data[live]=[];data[live].push(v);
+    localStorage.setItem(votedKey(ph.r),String(v));
+    if(!data[ph.r])data[ph.r]=[];data[ph.r].push(v);
     syncInput();renderHist();renderConverge();
-    if(!isLocal)sf("POST","poll_votes",{poll_id:pid(live),choice:String(v),voter_id:VID}).then(function(){fetchRound(live);}).catch(function(){});}
+    if(!isLocal)sf("POST","poll_votes",{poll_id:pid(ph.r),choice:String(v),voter_id:VID}).then(function(){fetchRound(ph.r);}).catch(function(){});}
 
   $("da-submit").addEventListener("click",submit);
   $("da-input").addEventListener("keydown",function(e){if(e.key==="Enter")submit();});
   if($("da-start"))$("da-start").addEventListener("click",startLab);
+  if($("da-revealnow"))$("da-revealnow").addEventListener("click",revealNow);
 
   var rst=$("da-reset");
   if(INSTR&&rst){rst.style.display="inline-block";
     rst.addEventListener("click",function(){
       if(!confirm("Clear all seats, the clock and every round?"))return;
-      ["ch10-da-join","ch10-da-clock"].concat([1,2,3,4,5].map(pid)).forEach(function(q){if(!isLocal)sf("DELETE","poll_votes?poll_id=eq."+q);});
+      ["ch10-da-join","ch10-da-clock","ch10-da-skip"].concat([1,2,3,4,5].map(pid)).forEach(function(q){if(!isLocal)sf("DELETE","poll_votes?poll_id=eq."+q);});
       for(var r=1;r<=ROUNDS;r++)localStorage.removeItem(votedKey(r));
-      data={};clockAt=null;live=1;view=null;joins=0;
+      data={};clockAt=null;skips={};live=1;view=null;joins=0;ph={state:"pre"};
       var sb=$("da-start");sb.disabled=false;sb.innerHTML='<i class="fa-solid fa-play"></i> Start lab';
       setTimeout(function(){readClock();refreshJoins();renderHist();renderConverge();paintBtns();syncInput();},600);});}
 
   // ---------- charts
+  function curtain(on,count){
+    var c=$("da-curtain"),h=$("da-hist"),st=$("da-stats");
+    c.style.display=on?"flex":"none";
+    h.style.display=on?"none":"block";
+    if(on){$("da-count").textContent=count;
+      $("da-countlbl").textContent=count===1?"trade reported":"trades reported";
+      st.textContent="";}}
+
   function renderHist(){
-    var r=shown(),d=data[r]||[],W=520,H=186,L=32,B=28,R=8,T=12;
+    var r=shown(),d=data[r]||[];
+    // during live trading the prices stay behind the curtain — self-reported
+    // numbers would otherwise be copied off the screen instead of negotiated
+    if(view===null&&ph.state==="trade"){curtain(true,d.length);return;}
+    curtain(false);
+    var W=520,H=186,L=32,B=28,R=8,T=12;
     var n=PHI-PLO+1,bw=(W-L-R)/n,counts=new Array(n).fill(0);
     d.forEach(function(v){counts[Math.min(PHI,Math.max(PLO,v))-PLO]++;});
     var mx=Math.max.apply(null,counts)||1,tp=inducedEq(joins||14).mid;
@@ -2189,7 +2247,7 @@ Reveal 3 is the economics to leave them with, and it ties straight back to Heads
       if(c)h+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+ht+'" fill="#6B8BA4" rx="3"/><text x="'+(x+w/2)+'" y="'+(y-3)+'" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1F3B57">'+c+'</text>';
       h+='<text x="'+(L+k*bw+bw/2)+'" y="'+(H-B+13)+'" text-anchor="middle" font-size="9.5" fill="#8C8580">'+(PLO+k)+'</text>';}
     h+='<text x="'+((W-L)/2+L)+'" y="'+(H-3)+'" text-anchor="middle" font-size="10.5" fill="#3A3632">Traded price ($)</text>';
-    if(!d.length)h+='<text x="'+((W-L)/2+L)+'" y="'+((H-B+T)/2)+'" text-anchor="middle" font-size="11.5" fill="#b3aca6">'+(clockAt?"Round "+r+" — waiting for trades…":"Waiting for the lab to start…")+'</text>';
+    if(!d.length)h+='<text x="'+((W-L)/2+L)+'" y="'+((H-B+T)/2)+'" text-anchor="middle" font-size="11.5" fill="#b3aca6">'+(clockAt?"No trades reported in round "+r:"Waiting for the lab to start…")+'</text>';
     $("da-hist").innerHTML=h;
     var st=$("da-stats");
     if(!d.length){st.textContent="";return;}
