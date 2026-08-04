@@ -1653,11 +1653,15 @@ Two places they part company, both worth a sentence. First, in the SHORT run, PS
   <div style="display: grid; grid-template-columns: 1.06fr 0.94fr; gap: 18px; align-items: start;">
     <div style="background:#f0f5f8; border-left:4px solid var(--secondary-color); border-radius:8px; padding:11px 17px;">
       <p style="margin:0; font-size:10.5pt; color:var(--secondary-color); font-weight:700; text-transform:uppercase; letter-spacing:0.06em;">What is about to happen</p>
-      <p style="margin:6px 0 0; font-size:11.5pt; line-height:1.5;"><strong>1.</strong> Your phone deals you a card &mdash; a <strong>buyer</strong> with a private maximum, or a <strong>seller</strong> with a private minimum. <strong>Tell nobody your number.</strong></p>
+      <p style="margin:6px 0 0; font-size:11.5pt; line-height:1.5;"><strong>1.</strong> Your device deals you a card &mdash; a <strong>buyer</strong> with a private maximum, or a <strong>seller</strong> with a private minimum. <strong>Tell nobody your number.</strong></p>
       <p style="margin:5px 0 0; font-size:11.5pt; line-height:1.5;"><strong>2.</strong> Submit <em>one</em> number: buyers, the most you would pay. Sellers, the least you would accept.</p>
       <p style="margin:5px 0 0; font-size:11.5pt; line-height:1.5;"><strong>3.</strong> You may bid strategically &mdash; buyers <em>can</em> offer less than their card, sellers <em>can</em> ask more. You just cannot go past your own limit.</p>
       <p style="margin:5px 0 0; font-size:11.5pt; line-height:1.5;"><strong>4.</strong> When the round closes, every bid and every ask is <strong>sorted into two curves</strong> and we read off where they cross.</p>
       <p style="margin:5px 0 0; font-size:11.5pt; line-height:1.5;"><strong>5.</strong> Five rounds, <strong>same card throughout</strong>. No talking &mdash; this one is silent.</p>
+      <div style="background:rgba(106,142,107,0.14); border-radius:7px; padding:7px 12px; margin-top:8px;">
+        <p style="margin:0; font-size:11pt; line-height:1.45;"><strong>What you earn.</strong> Buy and you keep <strong>your card &minus; the price</strong>. Sell and you keep <strong>the price &minus; your card</strong>. <strong>No trade earns you nothing.</strong></p>
+        <p style="margin:4px 0 0; font-size:10.5pt; line-height:1.4; color:var(--text-color);">So shading wins you a better price <em>only if you still trade</em>. That is the whole game.</p>
+      </div>
     </div>
     <div>
       <div id="da-lobbypanel" style="border-radius:10px; padding:12px 17px; background:#f4f1ed; border:2px dashed var(--line-color); min-height:92px; display:flex; flex-direction:column; justify-content:center;">
@@ -1700,6 +1704,7 @@ BEFORE YOU PRESS, glance at the split. From about fourteen students up, truthful
       <div class="misconception" style="padding:7px 14px; margin-top:8px;">
         <p style="margin:0; font-size:10.5pt; line-height:1.38;">You may shade &mdash; but never past your own card. The box will stop you.</p>
       </div>
+      <div id="da-payoff" style="display:none; border-radius:9px; padding:9px 14px; margin-top:8px; border-left:4px solid var(--success-color); background:rgba(106,142,107,0.12);"></div>
     </div>
     <div>
       <div style="display:flex; align-items:center; gap:9px; margin-bottom:6px;">
@@ -2099,10 +2104,56 @@ REVEAL 3 is the honest caveat and the handoff. What the room just performed was 
 
   // sort bids down, asks up, walk until they cross: that is the market
   function clearing(subs){
-    var B=subs.filter(function(x){return x.role==="B";}).map(function(x){return x.v;}).sort(function(a,b){return b-a;});
-    var A=subs.filter(function(x){return x.role==="S";}).map(function(x){return x.v;}).sort(function(a,b){return a-b;});
+    // price-time priority, exactly as a real exchange ranks resting orders
+    var bs=subs.filter(function(x){return x.role==="B";}).slice().sort(function(a,b){return b.v-a.v||(a.t||0)-(b.t||0);});
+    var as=subs.filter(function(x){return x.role==="S";}).slice().sort(function(a,b){return a.v-b.v||(a.t||0)-(b.t||0);});
+    var B=bs.map(function(x){return x.v;}),A=as.map(function(x){return x.v;});
     var k=0;while(k<Math.min(B.length,A.length)&&B[k]>=A[k])k++;
-    return {B:B,A:A,q:k,lo:k?A[k-1]:null,hi:k?B[k-1]:null,p:k?(A[k-1]+B[k-1])/2:null};}
+    return {B:B,A:A,bs:bs,as:as,q:k,lo:k?A[k-1]:null,hi:k?B[k-1]:null,p:k?(A[k-1]+B[k-1])/2:null};}
+
+  // did I trade this round, and what did the card earn me?
+  function myResult(r){
+    if(!card||INSTR)return null;
+    var d=data[r]||[];
+    var mine=null;for(var i=0;i<d.length;i++)if(d[i].vid===VID){mine=d[i];break;}
+    if(!mine)return {submitted:false};
+    var c=clearing(d);
+    if(!c.q)return {submitted:true,bid:mine.v,traded:false,p:null,earned:0};
+    var side=card.role==="BUYER"?c.bs:c.as;
+    var traded=false;
+    for(var j=0;j<c.q;j++)if(side[j]&&side[j].vid===VID){traded=true;break;}
+    var earned=traded?(card.role==="BUYER"?card.v-c.p:c.p-card.v):0;
+    return {submitted:true,bid:mine.v,traded:traded,p:c.p,earned:earned};}
+
+  function totalEarned(){
+    var t=0;for(var r=1;r<=ROUNDS;r++){var m=myResult(r);if(m&&m.traded)t+=m.earned;}return t;}
+
+  function renderPayoff(){
+    var el=$("da-payoff");if(!el)return;
+    var r=shown();
+    if(INSTR||!card||(view===null&&ph.state==="trade")||ph.state==="pre"){el.style.display="none";return;}
+    var m=myResult(r);
+    if(!m){el.style.display="none";return;}
+    el.style.display="block";
+    var tot=totalEarned();
+    if(!m.submitted){
+      el.style.borderLeftColor="var(--muted-color)";el.style.background="#f4f1ed";
+      el.innerHTML='<p style="margin:0;font-size:11pt;line-height:1.4;"><strong>Round '+r+': you did not submit.</strong> Earned <strong>$0</strong>.</p>'
+        +'<p style="margin:3px 0 0;font-size:10pt;color:var(--muted-color);">Total so far: <strong>$'+tot.toFixed(2)+'</strong></p>';return;}
+    if(m.traded){
+      el.style.borderLeftColor="var(--success-color)";el.style.background="rgba(106,142,107,0.12)";
+      el.innerHTML='<p style="margin:0;font-size:11pt;line-height:1.4;"><strong>✓ You '+(card.role==="BUYER"?"bought":"sold")+' at $'+m.p.toFixed(2)+'.</strong> '
+        +'Your card was $'+card.v+', so you earned <strong style="font-size:13pt;">$'+m.earned.toFixed(2)+'</strong>.</p>'
+        +'<p style="margin:3px 0 0;font-size:10pt;color:var(--muted-color);">Total so far: <strong>$'+tot.toFixed(2)+'</strong></p>';
+    } else {
+      el.style.borderLeftColor="var(--danger-color)";el.style.background="rgba(168,92,92,0.10)";
+      var why=m.p===null?"nothing cleared this round"
+        :(card.role==="BUYER"?"your bid of $"+m.bid+" was below the $"+m.p.toFixed(2)+" clearing price"
+                             :"your ask of $"+m.bid+" was above the $"+m.p.toFixed(2)+" clearing price");
+      var missed=m.p===null?null:(card.role==="BUYER"?card.v-m.p:m.p-card.v);
+      el.innerHTML='<p style="margin:0;font-size:11pt;line-height:1.4;"><strong>✗ No trade &mdash; you earned $0.</strong> Because '+why+'.</p>'
+        +(missed!==null&&missed>0?'<p style="margin:3px 0 0;font-size:10.5pt;line-height:1.4;">Trading at that price would have paid you <strong>$'+missed.toFixed(2)+'</strong>.</p>':'')
+        +'<p style="margin:3px 0 0;font-size:10pt;color:var(--muted-color);">Total so far: <strong>$'+tot.toFixed(2)+'</strong></p>';}}
 
   function truthful(n){var s=[],i,c;
     for(i=0;i<n;i++){c=cardFor(i);s.push({role:c.role==="BUYER"?"B":"S",v:c.v});}
@@ -2222,14 +2273,15 @@ REVEAL 3 is the honest caveat and the handoff. What the room just performed was 
       lbl.textContent="Round "+ph.r+" of "+ROUNDS+(ph.state==="reveal"?" — the market clears":" — bidding open");
       tm.textContent=Math.floor(ph.left/60)+":"+("0"+(ph.left%60)).slice(-2)+(ph.state==="reveal"?" to next round":" left");
       pg.style.width=(100*(1-(ph.left/ph.span))).toFixed(1)+"%";}
-    if(view===null)renderCross();}
+    if(view===null)renderCross();
+    renderPayoff();}
 
   // ---------- round view
   var btns=$("da-round-btns");
   for(var k=1;k<=ROUNDS;k++){(function(n){
     var b=document.createElement("button");b.textContent=n;b.dataset.round=n;
     b.style.cssText="width:23px;height:23px;border-radius:50%;border:1.5px solid var(--line-color);background:#fff;font-size:10pt;font-weight:700;cursor:pointer;color:var(--muted-color);";
-    b.addEventListener("click",function(){view=(view===n?null:n);paintBtns();renderCross();});
+    b.addEventListener("click",function(){view=(view===n?null:n);paintBtns();renderCross();renderPayoff();});
     btns.appendChild(b);})(k);}
   function shown(){return view||live;}
   function paintBtns(){btns.querySelectorAll("button").forEach(function(b){
@@ -2257,8 +2309,8 @@ REVEAL 3 is the honest caveat and the handoff. What the room just performed was 
       st.textContent=(buy?"You cannot bid above your $":"You cannot ask below your $")+card.v+".";return;}
     st.style.color="var(--success-color)";
     localStorage.setItem(votedKey(ph.r),String(v));
-    if(!data[ph.r])data[ph.r]=[];data[ph.r].push({role:buy?"B":"S",v:v});
-    syncInput();renderCross();renderConverge();
+    if(!data[ph.r])data[ph.r]=[];data[ph.r].push({role:buy?"B":"S",v:v,vid:VID,t:Date.now()});
+    syncInput();renderCross();renderConverge();renderPayoff();
     if(!isLocal)sf("POST","poll_votes",{poll_id:pid(ph.r),choice:(buy?"B:":"S:")+v,voter_id:VID}).then(function(){fetchRound(ph.r);}).catch(function(){});}
 
   $("da-submit").addEventListener("click",submit);
@@ -2365,14 +2417,15 @@ REVEAL 3 is the honest caveat and the handoff. What the room just performed was 
 
   function fetchRound(r){
     if(isLocal){renderCross();renderConverge();return;}
-    sf("GET","poll_votes?poll_id=eq."+pid(r)+"&select=choice").then(function(x){return x.json();})
+    sf("GET","poll_votes?poll_id=eq."+pid(r)+"&select=choice,voter_id,created_at&order=created_at.asc").then(function(x){return x.json();})
       .then(function(rows){
-        data[r]=rows.map(function(o){var m=/^([BS]):(-?\d+)$/.exec(o.choice||"");return m?{role:m[1],v:parseInt(m[2],10)}:null;}).filter(Boolean);
-        renderCross();renderConverge();})
+        data[r]=rows.map(function(o){var m=/^([BS]):(-?\d+)$/.exec(o.choice||"");
+          return m?{role:m[1],v:parseInt(m[2],10),vid:o.voter_id,t:Date.parse(o.created_at)}:null;}).filter(Boolean);
+        renderCross();renderConverge();renderPayoff();})
       .catch(function(){});}
   function fetchAll(){for(var r=1;r<=ROUNDS;r++)fetchRound(r);}
 
-  paintBtns();paintStart();syncInput();renderLobby();renderCard();renderCross();renderConverge();
+  paintBtns();paintStart();syncInput();renderLobby();renderCard();renderCross();renderConverge();renderPayoff();
   if(!isLocal){join();readClock();refreshJoins();fetchAll();
     setInterval(tick,1000);
     setInterval(function(){fetchRound(shown());},2000);
