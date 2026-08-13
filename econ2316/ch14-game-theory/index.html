@@ -2672,6 +2672,126 @@
   <p class="subtitle">When one player moves first &mdash; credible commitment, non-credible threats, and SPNE</p>
 </section>
 
+<!-- ===== 14.4 opens with a live sequential game ===== -->
+<section id="cashbox-play">
+ <h2><i class="fa-solid fa-box-open" style="color:#7c3aed;"></i> Cash in a Box &mdash; Play It First</h2>
+ <div style="display:grid; grid-template-columns:1.06fr 0.94fr; gap:22px; align-items:start;">
+  <div>
+   <div style="background:#f3effc; border-radius:10px; padding:10px 16px; border-left:4px solid #7c3aed; margin-bottom:9px;">
+    <p style="font-size:12pt; margin:0; line-height:1.45;"><strong>Player 1</strong> puts <strong>\($0\)</strong>, <strong>\($1\)</strong> or <strong>\($3\)</strong> into a box and passes it on. <strong>Player 2</strong> then either <strong>matches</strong> (adds the same amount) or <strong>takes</strong> whatever is inside.</p>
+   </div>
+   <table class="pm" style="font-size:11.5pt; margin:0 auto 8px; width:100%;">
+    <tr><th>P1 puts in</th><th>P2 matches</th><th>P2 takes</th></tr>
+    <tr><th>\($0\)</th><td colspan="2" style="color:var(--muted-color);">nothing happens &mdash; \((\$0,\ \$0)\)</td></tr>
+    <tr><th>\($1\)</th><td style="background:#eef6ef;">\((+\$1,\ +\$1.50)\)</td><td style="background:#fdeceb;">\((-\$1,\ +\$1)\)</td></tr>
+    <tr><th>\($3\)</th><td style="background:#eef6ef;">\((+\$3,\ +\$2)\)</td><td style="background:#fdeceb;">\((-\$3,\ +\$3)\)</td></tr>
+   </table>
+   <p style="font-size:10.5pt; color:var(--muted-color); margin:0 0 9px; line-height:1.4;">Cell \(=\) (Player 1&rsquo;s net, Player 2&rsquo;s net). Matching grows the pot, so both gain &mdash; but taking is always tempting.</p>
+   <div style="background:#fef9f3; border-radius:9px; padding:9px 15px; border-left:4px solid var(--accent-color);">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;"><strong>You will answer as <em>both</em> players.</strong> Decide what you would do first, and what you would do on receiving each amount &mdash; before you know who you are.</p>
+   </div>
+  </div>
+  <div style="background:#fbfaf7; border-radius:14px; padding:14px 16px; box-shadow:0 2px 12px rgba(0,0,0,0.08); border:1px solid #ece9e2;">
+   <input id="cb-initials" type="text" maxlength="4" placeholder="initials" autocomplete="off" class="bg-ini" style="margin-bottom:11px;">
+   <p class="cb-q">As <strong>Player 1</strong>, I put in&hellip;</p>
+   <div class="cb-row" id="cb-p1">
+    <button class="cb-btn" data-g="p1" data-v="0">\($0\)</button>
+    <button class="cb-btn" data-g="p1" data-v="1">\($1\)</button>
+    <button class="cb-btn" data-g="p1" data-v="3">\($3\)</button>
+   </div>
+   <p class="cb-q">As <strong>Player 2</strong>, if the box holds \($1\)&hellip;</p>
+   <div class="cb-row" id="cb-r1">
+    <button class="cb-btn cb-m" data-g="r1" data-v="M">Match</button>
+    <button class="cb-btn cb-t" data-g="r1" data-v="T">Take</button>
+   </div>
+   <p class="cb-q">As <strong>Player 2</strong>, if the box holds \($3\)&hellip;</p>
+   <div class="cb-row" id="cb-r3">
+    <button class="cb-btn cb-m" data-g="r3" data-v="M">Match</button>
+    <button class="cb-btn cb-t" data-g="r3" data-v="T">Take</button>
+   </div>
+   <button class="bg-submit" style="margin-top:12px;" onclick="cbSubmit()">Lock it in</button>
+   <p id="cb-status" style="font-size:11pt; color:var(--muted-color); min-height:16px; margin:9px 0 0; text-align:center;"></p>
+   <div id="cb-counter" class="bg-counter" style="text-align:center;"><i class="fa-solid fa-users" style="color:var(--secondary-color);"></i> 0 responses</div>
+  </div>
+ </div>
+ <aside class="notes">Open 14.4 by playing, not defining &mdash; share the link ending in #/cashbox-play. Read the rules aloud once and resist explaining the strategy; the whole value is that they commit before they have the tool. Note the design: every student answers as BOTH players, which experimentalists call the strategy method. It matters here because it forces them to state what they would do on receiving $3 BEFORE they have any stake in the answer, and that conditional is exactly the object backward induction reasons about. Watch for the tell as they answer &mdash; students who would take the $3 themselves often still put $3 in as Player 1, which is the inconsistency the next two slides expose. Give it ninety seconds, chase stragglers on the counter, then reveal. Console reset: cbClear().</aside>
+</section>
+
+<section id="cashbox-results">
+ <h2><i class="fa-solid fa-chart-column" style="color:#7c3aed;"></i> What This Room Actually Did</h2>
+ <div class="bg-controls">
+  <button onclick="cbLoad()">&#8635; Load responses</button>
+  <span id="cb-load-msg">&mdash; click to load &mdash;</span>
+ </div>
+ <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+  <div>
+   <p style="font-size:11pt; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted-color); font-weight:700; margin:0 0 7px;">As Player 1, you put in</p>
+   <div id="cb-p1bars"></div>
+   <p style="font-size:11pt; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted-color); font-weight:700; margin:13px 0 7px;">As Player 2, you would match</p>
+   <div id="cb-r1bar"></div>
+   <div id="cb-r3bar" style="margin-top:8px;"></div>
+  </div>
+  <div>
+   <div style="background:#eef3f6; border-radius:10px; padding:10px 16px; border-left:4px solid var(--secondary-color); margin-bottom:9px;">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;">Your classmates&rsquo; match rates are the odds a real Player 1 faces here. So what was the <strong>best</strong> amount to put in &mdash; <em>against this room</em>?</p>
+   </div>
+   <div id="cb-ev"></div>
+  </div>
+ </div>
+ <div class="key-result" style="margin-top:11px; padding:9px 16px;"><p style="margin:0; font-size:12pt;">Two things usually show up. Almost nobody matches at \($3\) &mdash; and yet plenty of people <em>put in</em> \($3\). <strong>The same student is generous as Player 2 and trusting as Player 1, and the two answers contradict each other.</strong> Backward induction is the discipline that stops that.</p></div>
+ <aside class="notes">Read the room before any theory. The expected-payoff column on the right does the arithmetic live using the class's own match rates: putting in $1 pays 2m1 - 1, and $3 pays 6m3 - 3, where m1 and m3 are the observed match frequencies. Usually m3 is low enough that $3 has a clearly negative expected value while $1 is positive, so the class's own data recommends $1 &mdash; which is the subgame-perfect answer, arrived at empirically before it is derived. If the numbers come out differently, that is still a good class: ask what it would take for $3 to be worth it, and you get the threshold m3 > 1/2 for free. The inconsistency in the key-result is the real payoff of the exercise. Point at the two bars: the same people who say they would take the $3 also chose to put $3 in. Nobody is being irrational in isolation; they are just failing to put themselves in the other player's shoes, which is precisely what the next slides teach.</aside>
+</section>
+
+<section id="seq-vs-sim">
+ <h2><i class="fa-solid fa-arrow-right-long" style="color: var(--secondary-color);"></i> What Was Different About That Game?</h2>
+ <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:22px; align-items:center;">
+  <div>
+   <div class="fragment fade-up" data-fragment-index="1" style="background:#eef3f6; border-radius:10px; padding:11px 17px; border-left:4px solid var(--secondary-color); margin-bottom:10px;">
+    <p style="font-size:12.5pt; margin:0; line-height:1.45;">It is a <strong>sequential-move game</strong>: Player 1 chooses, <em>then</em> Player 2 chooses. Every game so far has been simultaneous.</p>
+   </div>
+   <div class="fragment fade-up" data-fragment-index="2" style="background:#fdeceb; border-radius:10px; padding:11px 17px; border-left:4px solid var(--danger-color); margin-bottom:10px;">
+    <p style="font-size:12.5pt; margin:0; line-height:1.45;"><strong>But timing is not the key.</strong> What matters is that Player 2 <strong>observes</strong> Player 1&rsquo;s choice before choosing &mdash; and that Player 1 <strong>knows</strong> this.</p>
+   </div>
+   <div class="fragment fade-up" data-fragment-index="3" style="background:#eef6ef; border-radius:10px; padding:11px 17px; border-left:4px solid var(--success-color);">
+    <p style="font-size:12.5pt; margin:0; line-height:1.45;">A game is &ldquo;simultaneous&rdquo; whenever you must move <strong>without seeing</strong> what the other did &mdash; even if the clock says otherwise.</p>
+   </div>
+  </div>
+  <div class="fragment fade-up" data-fragment-index="4">
+   <div style="background:#f8f6f3; border-radius:10px; padding:11px 16px; border-left:4px solid var(--accent-color); margin-bottom:9px;">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;"><strong>The penalty kick was simultaneous</strong> &mdash; even though the kick physically happens <em>before</em> the dive. The goalie has to commit while the ball is still on the spot, so she never observes it. Clock order: sequential. Strategic structure: simultaneous.</p>
+   </div>
+   <div style="background:#f8f6f3; border-radius:10px; padding:11px 16px; border-left:4px solid var(--secondary-color);">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;"><strong>Cash in a Box is genuinely sequential</strong> &mdash; Player 2 is holding the box. She can see exactly what is in it, and Player 1 knew she would.</p>
+   </div>
+  </div>
+ </div>
+ <div class="key-result fragment fade-up" data-fragment-index="5" style="margin-top:11px; padding:9px 16px;"><p style="margin:0; font-size:12pt;">So a payoff matrix is no longer the right picture &mdash; it cannot show who knew what, or when. We need a <strong>tree</strong>, and a way to solve it that starts where the game <em>ends</em>.</p></div>
+ <aside class="notes">The conceptual pivot, and the misconception to kill early. Students hear "sequential" and think clock order; the definition is informational. Player 2 observes Player 1's move, and crucially Player 1 KNOWS she will observe it &mdash; which is what lets Player 1 reason about her response in advance. Then the penalty-kick contrast, which is the sharpest thing on the slide and a direct callback to 14.3: the kick precedes the dive in physical time, yet the game is simultaneous, because the goalie must commit before she can observe. Timing is irrelevant; observability is everything. That distinction is exactly why the same 2x2 matrix can be the right model for one game and the wrong model for another, and it motivates the extensive form on the next slide. Worth one more example if there is time: sealed-bid auctions are simultaneous even though bids arrive at different moments, because none is opened until all are in.</aside>
+</section>
+
+<section id="cashbox-tree">
+ <h2><i class="fa-solid fa-diagram-project" style="color: var(--accent-color);"></i> Solve It Backwards &mdash; Start Where the Game Ends</h2>
+ <div style="display:grid; grid-template-columns:1.12fr 0.88fr; gap:20px; align-items:center;">
+  <div><div style="position:relative; width:100%; max-width:600px; height:344px; margin:0 auto;"><svg viewBox="0 0 600 344" style="position:absolute; inset:0; width:100%; height:100%;"><path d="M 96 139 L 386 24" fill="none" stroke="#8C8580" stroke-width="2"/><path d="M 96 139 L 236 118" fill="none" stroke="#8C8580" stroke-width="2"/><path d="M 96 139 L 236 274" fill="none" stroke="#8C8580" stroke-width="2"/><path d="M 330 118 L 386 94" fill="none" stroke="#6A8E6B" stroke-width="3"/><path d="M 330 118 L 386 146" fill="none" stroke="#8C8580" stroke-width="2"/><path d="M 330 274 L 386 248" fill="none" stroke="#8C8580" stroke-width="2"/><path d="M 330 274 L 386 300" fill="none" stroke="#B03A3A" stroke-width="3"/></svg><div style="position:absolute; left:6px; top:117px; width:90px; height:44px; box-sizing:border-box; background:#fef9f3; border:2px solid #C47B5A; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><p style="margin:0; font-size:11.5pt; font-weight:800; line-height:1.15;">Player 1</p><p style="margin:1px 0 0; font-size:10pt; line-height:1.15;">puts in</p></div><div style="position:absolute; left:238px; top:98px; width:92px; height:40px; box-sizing:border-box; background:#eef3f6; border:2px solid #6B8BA4; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><p style="margin:0; font-size:11.5pt; font-weight:800; line-height:1.15;">Player 2</p></div><div style="position:absolute; left:238px; top:254px; width:92px; height:40px; box-sizing:border-box; background:#eef3f6; border:2px solid #6B8BA4; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><p style="margin:0; font-size:11.5pt; font-weight:800; line-height:1.15;">Player 2</p></div><div style="position:absolute; left:386px; top:8px; width:172px; height:34px; box-sizing:border-box; background:#f8f6f3; border:2px solid #d8d3cb; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11.5pt; font-weight:700;">\((\$0,\ \$0)\)</div><div class="fragment fade-in" data-fragment-index="2" style="position:absolute; left:386px; top:78px; width:172px; height:34px; box-sizing:border-box; background:#eef6ef; border:2px solid #6A8E6B; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11.5pt; font-weight:700;">\((+\$1,\ +\$1.50)\)</div><div style="position:absolute; left:386px; top:130px; width:172px; height:34px; box-sizing:border-box; background:#f8f6f3; border:2px solid #d8d3cb; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11.5pt; font-weight:700;">\((-\$1,\ +\$1)\)</div><div style="position:absolute; left:386px; top:232px; width:172px; height:34px; box-sizing:border-box; background:#f8f6f3; border:2px solid #d8d3cb; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11.5pt; font-weight:700;">\((+\$3,\ +\$2)\)</div><div class="fragment fade-in" data-fragment-index="1" style="position:absolute; left:386px; top:284px; width:172px; height:34px; box-sizing:border-box; background:#fdeceb; border:2px solid #B03A3A; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11.5pt; font-weight:700;">\((-\$3,\ +\$3)\)</div><p style="position:absolute; left:150px; top:44px; width:70px; margin:0; font-size:10.5pt; font-weight:700; color:var(--muted-color); text-align:center;">\($0\)</p><p style="position:absolute; left:150px; top:104px; width:70px; margin:0; font-size:10.5pt; font-weight:700; color:var(--muted-color); text-align:center;">\($1\)</p><p style="position:absolute; left:150px; top:196px; width:70px; margin:0; font-size:10.5pt; font-weight:700; color:var(--muted-color); text-align:center;">\($3\)</p><p style="position:absolute; left:330px; top:74px; width:70px; margin:0; font-size:10.5pt; font-weight:700; color:#6A8E6B; text-align:center;">Match</p><p style="position:absolute; left:330px; top:140px; width:70px; margin:0; font-size:10.5pt; font-weight:700; color:var(--muted-color); text-align:center;">Take</p><p style="position:absolute; left:330px; top:222px; width:70px; margin:0; font-size:10.5pt; font-weight:700; color:var(--muted-color); text-align:center;">Match</p><p style="position:absolute; left:330px; top:296px; width:70px; margin:0; font-size:10.5pt; font-weight:700; color:#B03A3A; text-align:center;">Take</p></div></div>
+  <div style="display:flex; flex-direction:column; gap:8px;">
+   <div class="fragment fade-up" data-fragment-index="1" style="background:#fdeceb; border-radius:9px; padding:9px 15px; border-left:4px solid var(--danger-color);">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;"><strong>1 &mdash; The last decision, if the box holds \($3\).</strong> Player 2 compares matching \((\$2)\) with taking \((\$3)\). <strong>She takes.</strong> The \((+\$3, +\$2)\) cell everyone wants is <em>unreachable</em>.</p>
+   </div>
+   <div class="fragment fade-up" data-fragment-index="2" style="background:#eef6ef; border-radius:9px; padding:9px 15px; border-left:4px solid var(--success-color);">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;"><strong>2 &mdash; The other last decision, at \($1\).</strong> Matching pays \(\$1.50\), taking pays \(\$1\). <strong>She matches.</strong> Here honesty is not a virtue &mdash; it simply pays better.</p>
+   </div>
+   <div class="fragment fade-up" data-fragment-index="3" style="background:#f3effc; border-radius:9px; padding:9px 15px; border-left:4px solid #7c3aed;">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;"><strong>3 &mdash; Now Player 1 chooses,</strong> knowing both answers: \($0 \rightarrow \$0\); \($1 \rightarrow +\$1\); \($3 \rightarrow -\$3\). <strong>He puts in \($1\).</strong></p>
+   </div>
+   <div class="fragment fade-up" data-fragment-index="4" style="background:#eef3f6; border-radius:9px; padding:9px 15px; border-left:4px solid var(--secondary-color);">
+    <p style="font-size:11.5pt; margin:0; line-height:1.45;"><strong>SPNE:</strong> Player 1 puts \($1\); Player 2 matches after \($1\), takes after \($3\). Payoffs \((+\$1, +\$1.50)\).</p>
+   </div>
+  </div>
+ </div>
+ <div class="key-result fragment fade-up" data-fragment-index="5" style="margin-top:11px; padding:9px 16px;"><p style="margin:0; font-size:12pt;"><strong>Both players would prefer \((+\$3, +\$2)\) to what they get.</strong> It is not reached &mdash; not because anyone is short-sighted, but because Player 2&rsquo;s promise to match \($3\) is <strong>not credible</strong>, and Player 1 can see that in advance. A strategy has to be optimal <em>at every node</em>, including ones you never reach. That is what makes an equilibrium <strong>subgame perfect</strong>.</p></div>
+ <aside class="notes">The method, on the game they just played. Work strictly right to left and say why: Player 1's choice depends on what Player 2 will do, so Player 2's problem must be solved first &mdash; there is nothing to reason back from until the end is pinned down. Step 1 is the important one, so slow down: at $3 the tempting cell (+$3, +$2) is better for BOTH players than what they end up with, and it is still unreachable, because when the moment arrives Player 2 prefers $3 to $2. Nobody is being foolish. Step 2 is the pleasant surprise &mdash; at $1 matching genuinely pays more, so Player 2 keeps the deal out of self-interest rather than honesty, which is worth stating plainly. Then compare the prediction with what the class actually did two slides ago: theory says $1, and the room's own match rates usually agree even when individual students chose $3. Close on credibility and subgame perfection, and flag that the promise fails for exactly the reason the entry-deterrence THREAT fails on the next slide &mdash; both are statements about what you would do at a node where, once you got there, you would rather do something else.</aside>
+</section>
+
 <!-- ===== Game tree + strategic investment + Stackelberg (ported from 1116 ch13) ===== -->
 <section id="game-tree">
  <h2><i class="fa-solid fa-sitemap" style="color: var(--secondary-color);"></i> The Game Tree &amp; Backward Induction</h2>
@@ -3241,6 +3361,94 @@
  ladder(null);
  cnt(1);cnt(2);
  if(!isLocal)setInterval(function(){cnt(1);cnt(2);},3000);
+})();
+</script>
+
+<!-- Cash in a Box (live sequential-game experiment) — Supabase poll_votes, poll_id ch14-cashbox -->
+<style>
+ .cb-q{font-size:11.5pt; margin:0 0 5px; color:var(--text-color);}
+ .cb-row{display:flex; gap:7px; margin-bottom:10px;}
+ .cb-btn{flex:1; font-family:inherit; font-size:12.5pt; font-weight:800; padding:9px 4px; border-radius:9px; border:2px solid #ded9d1; background:#fff; color:var(--text-color); cursor:pointer; transition:all .12s;}
+ .cb-btn:hover{border-color:var(--secondary-color);}
+ .cb-btn.on{background:#7c3aed; border-color:#7c3aed; color:#fff;}
+ .cb-btn.cb-m.on{background:#6A8E6B; border-color:#6A8E6B;}
+ .cb-btn.cb-t.on{background:#B03A3A; border-color:#B03A3A;}
+ .cb-btn:disabled{opacity:.5; cursor:default;}
+ .cb-bar{display:flex; align-items:center; gap:9px; margin-bottom:6px;}
+ .cb-bar .lab{width:74px; font-size:11.5pt; font-weight:800; text-align:right; flex:0 0 auto;}
+ .cb-bar .track{display:block; flex:1; height:26px; background:#f0eeea; border-radius:6px; border:1.5px solid #e0ddd6; overflow:hidden;}
+ .cb-bar .fill{display:block; height:100%; min-width:2px; border-radius:4px 0 0 4px; transition:width .45s;}
+ .cb-bar .num{width:74px; font-size:11pt; font-weight:700; color:var(--muted-color); flex:0 0 auto;}
+ .cb-ev{border-radius:9px; padding:9px 15px; margin-bottom:7px; border-left:4px solid #d8d3cb; background:#f8f6f3;}
+ .cb-ev.best{border-left-color:var(--success-color); background:#eef6ef;}
+ .cb-ev p{margin:0; font-size:11.5pt; line-height:1.45;}
+</style>
+<script>
+(function(){
+ if(!document.getElementById('cb-initials') && !document.getElementById('cb-p1bars')) return;
+ var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+ var VID="v_"+Math.random().toString(36).slice(2,10);
+ var isLocal=window.location.protocol==="file:";
+ var PID="ch14-cashbox", sel={p1:null,r1:null,r3:null}, sent=false;
+ function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+ document.querySelectorAll('.cb-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+   if(sent)return; var g=b.dataset.g;
+   document.querySelectorAll('.cb-btn[data-g="'+g+'"]').forEach(function(x){x.classList.remove('on');});
+   b.classList.add('on'); sel[g]=b.dataset.v;
+  });
+ });
+ window.cbSubmit=function(){
+  if(sent)return;
+  var inp=document.getElementById('cb-initials'), st=document.getElementById('cb-status');
+  var ini=((inp&&inp.value)||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+  if(!ini){if(inp){inp.style.borderColor='#A85C5C';inp.focus();}return;}
+  if(!sel.p1||!sel.r1||!sel.r3){if(st)st.textContent='Answer all three, then lock it in.';return;}
+  sent=true;
+  document.querySelectorAll('.cb-btn').forEach(function(b){b.disabled=true;});
+  if(inp)inp.disabled=true;
+  var sb=document.querySelector('#cashbox-play .bg-submit'); if(sb)sb.disabled=true;
+  if(st)st.innerHTML='&#9989; <b>'+ini+'</b> &mdash; put in <b>$'+sel.p1+'</b>, '+(sel.r1==='M'?'match':'take')+' at $1, '+(sel.r3==='M'?'match':'take')+' at $3.';
+  if(!isLocal)sf("POST","poll_votes",{poll_id:PID,choice:sel.p1+'|'+sel.r1+'|'+sel.r3+'|'+ini,voter_id:VID}).then(cbCount).catch(function(){});
+ };
+ function cbCount(){
+  if(isLocal)return;
+  sf("GET","poll_votes?poll_id=eq."+PID+"&select=choice").then(function(r){return r.json();}).then(function(rows){
+   var el=document.getElementById('cb-counter');
+   if(el)el.innerHTML='<i class="fa-solid fa-users" style="color:var(--secondary-color);"></i> '+rows.length+' response'+(rows.length!==1?'s':'');
+  }).catch(function(){});
+ }
+ function bar(lab,pct,n,col){
+  return '<div class="cb-bar"><span class="lab">'+lab+'</span><span class="track"><span class="fill" style="width:'+pct+'%;background:'+col+'"></span></span><span class="num">'+n+' ('+Math.round(pct)+'%)</span></div>';
+ }
+ window.cbLoad=function(){
+  var msg=document.getElementById('cb-load-msg'); if(msg)msg.textContent='loading…';
+  sf("GET","poll_votes?poll_id=eq."+PID+"&select=choice").then(function(r){return r.json();}).then(function(rows){
+   var d=rows.map(function(o){var p=(o.choice||'').split('|');return{p1:p[0],r1:p[1],r3:p[2]};})
+             .filter(function(x){return ['0','1','3'].indexOf(x.p1)>-1;});
+   var n=d.length; if(msg)msg.textContent=n+' response'+(n!==1?'s':'');
+   if(!n){document.getElementById('cb-p1bars').innerHTML='<em style="color:var(--muted-color);">no responses yet</em>';return;}
+   var c={'0':0,'1':0,'3':0}; d.forEach(function(x){c[x.p1]++;});
+   document.getElementById('cb-p1bars').innerHTML=
+     bar('$0',100*c['0']/n,c['0'],'#8C8580')+bar('$1',100*c['1']/n,c['1'],'#6B8BA4')+bar('$3',100*c['3']/n,c['3'],'#C47B5A');
+   var m1=d.filter(function(x){return x.r1==='M';}).length/n, m3=d.filter(function(x){return x.r3==='M';}).length/n;
+   document.getElementById('cb-r1bar').innerHTML=bar('at $1',100*m1,Math.round(m1*n),'#6A8E6B');
+   document.getElementById('cb-r3bar').innerHTML=bar('at $3',100*m3,Math.round(m3*n),'#6A8E6B');
+   var e0=0, e1=2*m1-1, e3=6*m3-3, best=Math.max(e0,e1,e3);
+   function row(lab,v,det){return '<div class="cb-ev'+(Math.abs(v-best)<1e-9?' best':'')+'"><p><strong>Put in '+lab+'</strong> &rarr; expected <strong>$'+v.toFixed(2)+'</strong><br><span style="color:var(--muted-color); font-size:10.5pt;">'+det+'</span></p></div>';}
+   document.getElementById('cb-ev').innerHTML=
+     row('$0',e0,'nothing ventured')+
+     row('$1',e1,(100*m1).toFixed(0)+'% match &rarr; 2('+m1.toFixed(2)+') &minus; 1')+
+     row('$3',e3,(100*m3).toFixed(0)+'% match &rarr; 6('+m3.toFixed(2)+') &minus; 3');
+  }).catch(function(){if(msg)msg.textContent='(could not reach server)';});
+ };
+ window.cbClear=function(){
+  if(!confirm('Delete ALL Cash-in-a-Box responses?'))return;
+  sf("DELETE","poll_votes?poll_id=eq."+PID);
+  var el=document.getElementById('cb-counter');
+  if(el)el.innerHTML='<i class="fa-solid fa-users" style="color:var(--secondary-color);"></i> 0 responses';
+ };
+ cbCount(); if(!isLocal)setInterval(cbCount,3000);
 })();
 </script>
 
