@@ -2676,7 +2676,7 @@
 <section>
 
    <section id="cashbox-play">
-  <h2><i class="fa-solid fa-box-open" style="color:#7c3aed;"></i> Cash in a Box</h2>
+  <h2><i class="fa-solid fa-box-open" onclick="cbAdmin()" title="Instructor panel" style="color:#7c3aed; cursor:pointer;"></i> Cash in a Box</h2>
   <div style="display:grid; grid-template-columns:1.12fr 0.88fr; gap:22px; align-items:center;">
    <div>
     <div style="background:#f3effc; border-radius:10px; padding:10px 16px; border-left:4px solid #7c3aed; margin-bottom:9px;">
@@ -2695,7 +2695,7 @@
     </div>
    </div>
    <div style="text-align:center;">
-    <div onclick="cbAdmin()" title="Instructor panel" style="cursor:pointer; display:inline-block;"><div style="text-align:center; margin-top:11px;">
+    <div style="display:inline-block;"><div style="text-align:center; margin-top:11px;">
        <svg viewBox="0 0 300 170" role="img" aria-label="A dollar bill resting in an open cardboard box" style="width:74%; max-width:250px; height:auto;">
         <g transform="rotate(-13 168 56)">
          <rect x="108" y="20" width="120" height="62" rx="3" fill="#e8f1e6" stroke="#4a6b4f" stroke-width="2"/>
@@ -2756,6 +2756,12 @@
      <button class="bg-submit" onclick="cbMove()">Lock it in</button>
     </div>
     <p id="cb-status" style="font-size:11pt; color:var(--muted-color); min-height:17px; margin:9px 0 0; text-align:center;"></p>
+   <div id="cb-outcome" style="display:none; border-radius:12px; padding:13px 16px; margin-top:11px; text-align:center;">
+    <p style="font-size:10.5pt; letter-spacing:2px; text-transform:uppercase; margin:0 0 4px; color:var(--muted-color);">You walk away with</p>
+    <p id="cb-out-amt" style="font-size:30pt; font-weight:800; margin:0; line-height:1.05;"></p>
+    <p id="cb-out-note" style="font-size:11.5pt; margin:6px 0 0; line-height:1.4;"></p>
+   </div>
+
    </div>
    <div style="text-align:center;">
     <div id="cb-clock" style="display:none; margin-bottom:13px;">
@@ -3511,13 +3517,39 @@
   document.querySelectorAll('#cb-p1panel .bg-submit,#cb-p2panel .bg-submit').forEach(function(b){b.disabled=true;});
   var st=$('cb-status');
   if(role==='1'){ if(st)st.innerHTML='&#9989; You put in <b>$'+sel+'</b>. Passing the box across&hellip;'; if(!isLocal)post('A|'+sel); }
-  else { if(st)st.innerHTML='&#9989; You chose to <b>'+(sel==='M'?'match':'take')+'</b>.'; if(!isLocal)post('B|'+sel); }
+  else { if(st)st.innerHTML='&#9989; You chose to <b>'+(sel==='M'?'match':'take')+'</b>.'; if(!isLocal)post('B|'+sel);
+         showOutcome(partner&&partner.amt, sel); }
+  if(role==='1'&&sel==='0')showOutcome('0','M');
  };
  window.cbClear=function(){
   if(!confirm('Delete ALL Cash-in-a-Box records and reset the game?'))return;
   sf("DELETE","poll_votes?poll_id=eq."+PID).then(function(){location.reload();});
  };
 
+ var PAY={'0':{'M':[0,0],'T':[0,0]},'1':{'M':[1,1.5],'T':[-1,1]},'3':{'M':[3,2],'T':[-3,3]}};
+ function money(v){return (v<0?'&minus;$':'$')+Math.abs(v).toFixed(v%1?2:0);}
+ var shown=false;
+ function showOutcome(amt,resp){
+  if(shown)return; shown=true;
+  var pr=PAY[amt]&&PAY[amt][resp]; if(!pr)return;
+  var mine=role==='1'?pr[0]:pr[1], theirs=role==='1'?pr[1]:pr[0];
+  var el=document.getElementById('cb-outcome'); if(!el)return;
+  var good=mine>0, flat=mine===0;
+  el.style.background= flat?'#f8f6f3':(good?'#eef6ef':'#fdeceb');
+  el.style.border='2px solid '+(flat?'#ded9d1':(good?'#6A8E6B':'#B03A3A'));
+  var amtEl=document.getElementById('cb-out-amt');
+  amtEl.innerHTML=money(mine); amtEl.style.color= flat?'var(--muted-color)':(good?'#6A8E6B':'#B03A3A');
+  var note;
+  if(amt==='0') note='Nothing went in, so nothing came out.';
+  else if(resp==='M') note= role==='1'
+    ? 'Your partner <strong>matched</strong> your '+money(+amt)+'. They take '+money(theirs)+'.'
+    : 'You <strong>matched</strong>. Your partner takes '+money(theirs)+'.';
+  else note= role==='1'
+    ? 'Your partner <strong>took</strong> the box. They walk away with '+money(theirs)+'.'
+    : 'You <strong>took</strong> the box. Your partner is down '+money(theirs)+'.';
+  document.getElementById('cb-out-note').innerHTML=note;
+  el.style.display='block';
+ }
  function setCard(nm,sub,bg,bd,col){
   var c=$('cb-card'); if(!c)return;
   c.style.background=bg; c.style.border='2px solid '+bd;
@@ -3550,6 +3582,10 @@
       $('cb-clock').style.display='block';
       $('cb-status').innerHTML='<i class="fa-solid fa-hourglass-half"></i> Waiting for your partner to fill the box&hellip;'; }
     if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([$('cb-card').parentElement]);
+   }
+   if(role==='1'&&moved&&!shown&&partner){
+    var rp=null; rs.forEach(function(r){if(r.voter_id===partner.vid&&(r.choice||'')[0]==='B')rp=r.choice.slice(2);});
+    if(rp)showOutcome(sel,rp);
    }
    if(role==='2'&&partner&&partner.amt===null){
     var mv=null; rs.forEach(function(r){if(r.voter_id===partner.vid&&(r.choice||'')[0]==='A')mv=r.choice.slice(2);});
