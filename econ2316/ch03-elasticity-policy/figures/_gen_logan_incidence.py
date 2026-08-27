@@ -1,9 +1,13 @@
 """Walkthrough 3.4 -- Logan rideshare per-ride fee, a unit tax.
 Massport raised the per-trip rideshare fee $3.25 -> $5.50 on 1 July 2025, so t = $2.25.
 (The original proposal was $7.50; that second step was frozen.)
-Teaching elasticities are ASSUMED, chosen to be plausible and to flip cleanly:
-  A: eD = -0.8, eS = +2.0  -> dpc/dt = 2.0/2.8 = 0.714  -> rider $1.61 / driver $0.64
-  B: swapped               -> dpc/dt = 0.8/2.8 = 0.286  -> rider $0.64 / driver $1.61
+Elasticities anchored to the literature, NOT invented:
+  eD = -0.57 for UberX (Cohen, Hahn, Hall, Levitt & Metcalfe 2016, NBER w22627 --
+       RD design on surge pricing, four US markets). Rounded to -0.6 here.
+  eS large: Hall, Horton & Knoepfle find driver supply highly elastic -- no hours
+       restriction and minimal entry barriers. Using +2.0.
+  A (the estimated case): dpc/dt = 2.0/2.6 = 0.769 -> rider $1.73 / driver $0.52
+  B (counterfactual, swapped):     = 0.6/2.6 = 0.231 -> rider $0.52 / driver $1.73
 """
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -17,12 +21,12 @@ def split(eD, eS):
     share_c = eS / (eS - eD)
     return share_c * T, (1 - share_c) * T
 
-A = split(-0.8, 2.0)
-B = split(-2.0, 0.8)
+A = split(-0.6, 2.0)
+B = split(-2.0, 0.6)
 
 fig, ax = plt.subplots(figsize=(7.2, 4.3))
-labels = ["A.  riders stuck\n$\\varepsilon_D=-0.8$, $\\varepsilon_S=+2.0$",
-          "B.  riders can switch\n$\\varepsilon_D=-2.0$, $\\varepsilon_S=+0.8$"]
+labels = ["A.  what the estimates say\n$\\varepsilon_D=-0.6$, $\\varepsilon_S=+2.0$",
+          "B.  if it were reversed\n$\\varepsilon_D=-2.0$, $\\varepsilon_S=+0.6$"]
 x = [0, 1]
 rider = [A[0], B[0]]
 driver = [A[1], B[1]]
@@ -48,5 +52,5 @@ ax.legend(loc="upper center", bbox_to_anchor=(0.42, 1.14), ncol=2, frameon=False
 fig.tight_layout()
 fig.savefig("logan-incidence.png", bbox_inches="tight")
 print(f"t = ${T}")
-for n, (rc, dv), (eD, eS) in [("A", A, (-0.8, 2.0)), ("B", B, (-2.0, 0.8))]:
+for n, (rc, dv), (eD, eS) in [("A", A, (-0.6, 2.0)), ("B", B, (-2.0, 0.6))]:
     print(f"  {n}: eD={eD} eS={eS}  dpc/dt={eS/(eS-eD):.4f}  rider=${rc:.4f} driver=${dv:.4f}  sum=${rc+dv:.4f}")
