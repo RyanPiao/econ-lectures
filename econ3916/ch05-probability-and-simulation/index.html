@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Probability and Simulation — ECON 3916</title>
+  <title>Probability &amp; Simulation — ECON 3916 Topic 5</title>
 
   <!-- Reveal.js core -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
@@ -12,571 +12,1109 @@
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <!-- MathJax -->
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
   <!-- Custom styles -->
   <link rel="stylesheet" href="styles.css">
 
   <!-- Chart.js for data visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax 3 (tex-svg). Inline math is \\( ... \\), NOT $...$, so plain
+       currency figures in prose are never typeset as mathematics. -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
   <div class="reveal">
     <div class="slides">
-
-      <!-- ============ COVER SLIDE ============ -->
-      <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
-        <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
-          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
-            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 5</p>
-            <h1 style="font-size: 30pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Probability and Simulation: From Uncertainty to Decisions</h1>
-            <div style="width: 50px; height: 3px; background: var(--accent-color); margin-bottom: 0;"></div>
-            <div style="margin-top: auto; padding-bottom: 15px;">
-              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
-              <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e8f4f8 0%, #f0f9ff 100%); padding: 40px;">
-            <div style="text-align: center;">
-              <i class="fa-solid fa-dice" style="font-size: 72pt; color: var(--secondary-color); opacity: 0.3;"></i>
-              <br>
-              <i class="fa-solid fa-chart-line" style="font-size: 56pt; color: var(--accent-color); opacity: 0.4; margin-top: 20px;"></i>
-            </div>
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 56% 44%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 46px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Topic 5</p>
+          <h1 style="font-size: 31pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 24px;">Probability &amp; Simulation</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">From uncertainty to decisions &mdash; and how wrong your simulation probably is</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
           </div>
         </div>
-      </section>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch05-monte-carlo.png" alt="One hundred and fifty running Monte Carlo estimates of a proportion fanning inward toward one half, contained by a narrowing plus-or-minus two standard error envelope drawn in terracotta" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+      <aside class="notes">Have this up as they come in. The picture IS the lecture: every blue line is one honest simulation, and none of them is the truth. 75 minutes today; Lab 5 this week.</aside>
+    </section>
 
-      <!-- ============ LEARNING OBJECTIVES ============ -->
-      <section id="learning-objectives" style="padding: 40px 50px;">
-        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
-          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #f0f7fa; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
-            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">LO1</p>
-            <p style="font-size: 15pt;">Explain <strong>classical, frequentist, and Bayesian</strong> interpretations of probability</p>
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="objectives" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">5.1</p>
+            <p style="font-size: 15pt;">Tell <strong>classical</strong>, <strong>frequentist</strong> and <strong>Bayesian</strong> probability apart, and use the complement rule to make an &ldquo;at least one&rdquo; question easy</p>
           </div>
-          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #fdf5ec; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
-            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">LO2</p>
-            <p style="font-size: 15pt;">Use <strong>Bayes' Theorem</strong> to update beliefs and calculate posterior probabilities</p>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">5.2</p>
+            <p style="font-size: 15pt;">Apply <strong>Bayes&rsquo; Theorem</strong>, and explain why a highly accurate model is mostly wrong when it fires</p>
           </div>
-          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #edf7ee; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
-            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">LO3</p>
-            <p style="font-size: 15pt;">Build <strong>Monte Carlo simulations</strong>, diagnose convergence, and interpret the Law of Large Numbers</p>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">5.3</p>
+            <p style="font-size: 15pt;">Build a <strong>Monte Carlo</strong> estimate, <strong>attach a standard error to it</strong>, and diagnose convergence</p>
           </div>
-          <div style="display: grid; grid-template-columns: 60px 1fr; align-items: center; background: #fdf0f0; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
-            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">LO4</p>
-            <p style="font-size: 15pt;">Compare <strong>VaR vs. Expected Shortfall</strong> and assess when simulation beats formulas</p>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">5.4</p>
+            <p style="font-size: 15pt;">Compare <strong>VaR</strong> and <strong>Expected Shortfall</strong>, and report a risk number <em>honestly</em></p>
           </div>
         </div>
-      </section>
+      </div>
+      <aside class="notes">1 min. Point at 5.3 and say the five words that matter: "attach a standard error." That is the one thing in this lecture that is not in the textbook, and it is the thing they will be graded on in Lab 5.</aside>
+    </section>
 
-      <!-- ============ SECTION 1: PROBABILITY ============ -->
-      <section id="divider-probability" class="section-divider" data-state="is-section-divider">
-        <h1 style="font-size: 36pt; color: var(--primary-color);">The Language of Uncertainty</h1>
-        <p class="text-xl" style="color: var(--muted-color); margin-top: 15px;">Three interpretations, one set of rules</p>
-      </section>
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; margin-bottom: 15px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 4.</strong> The arithmetic mean has a breakdown point of \(1/n\). Say what that sentence means to someone who has not taken this course.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 3.</strong> You spent two weeks building histograms and KDEs. What exactly were you <em>estimating</em>?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both answers are about <strong>a distribution nobody wrote down</strong>. Today we write it down &mdash; and then we sample from it.</p>
+      </div>
+      <aside class="notes">2 min, cold-call two students. QC1 target: "one bad observation can drag it anywhere." QC2 target: "the shape of the distribution." Do not accept "the data" for QC2 &mdash; push until someone says distribution or density.</aside>
+    </section>
 
-      <!-- HOOK -->
-      <section id="hook">
-        <h2><i class="fa-solid fa-bolt" style="color: var(--accent-color);"></i> The GenCast Revolution</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start;">
-            <div>
-              <p style="font-size: 16pt; line-height: 1.7;">In December 2024, Google DeepMind's <strong>GenCast</strong> beat the world's best weather forecasting system.</p>
-              <p style="font-size: 16pt; line-height: 1.7; margin-top: 12px;">It didn't solve atmospheric equations more accurately. It generated <strong>50+ possible weather futures</strong> &mdash; a full probability distribution.</p>
-              <p style="font-size: 16pt; line-height: 1.7; margin-top: 12px;">One TPU. Eight minutes. Fifteen-day global forecast.</p>
-              <div class="fragment fade-up" style="background: #f0f7fa; padding: 16px 20px; border-radius: 8px; border-left: 4px solid var(--secondary-color); margin-top: 16px;">
-                <p style="font-size: 15pt; margin: 0;"><strong>Key insight:</strong> Forecasters don't want <em>one answer</em>. They want a probability. That probability drives evacuations, insurance, and billion-dollar supply chains.</p>
-              </div>
-            </div>
-            <div style="text-align: center; padding: 20px;">
-              <p style="font-size: 48pt; color: var(--secondary-color); font-weight: 700;">97.2%</p>
-              <p style="font-size: 14pt; color: var(--muted-color);">of tested targets outperformed by GenCast</p>
-              <p style="font-size: 14pt; color: var(--muted-color); margin-top: 20px;">Source: Price et al. 2024, <em>Nature</em></p>
-            </div>
+    <!-- SLIDE 4: Hook -->
+    <section id="hook" style="padding: 34px 58px;">
+      <h2><i class="fa-solid fa-cloud-bolt" style="color: var(--danger-color);"></i> December 2024: A Forecast That Refused to Give One Answer</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">DeepMind published <strong>GenCast</strong> in <em>Nature</em>. It did not solve the physics of the atmosphere better than anyone else. It learned to <em>sample plausible futures</em> &mdash; fifty-plus scenarios instead of one forecast.</p>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 24px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">97.2%</p>
+            <p style="font-size: 13pt; margin-top: 8px;">of tested targets where it beat the ECMWF ensemble</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--accent-color); line-height: 1;">8 min</p>
+            <p style="font-size: 13pt; margin-top: 8px;">for a 15-day global forecast, on one TPU v5</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--success-color); line-height: 1;">50+</p>
+            <p style="font-size: 13pt; margin-top: 8px;">scenarios per forecast, not one answer</p>
           </div>
         </div>
-        <aside class="notes">Open with confidence. Emphasize: "GenCast didn't solve equations better. It learned to simulate plausible futures." Pause after "97.2%" — let it land. Connect to today: "By the end of class, you'll understand the math behind this shift."</aside>
-      </section>
+        <p style="font-size: 13pt; color: var(--muted-color); margin-top: 16px; font-style: italic;">Price et al. (2024), <em>Nature</em>.</p>
+      </div>
+      <aside class="notes">2 min. Say 97.2% and stop for a beat. Do not explain what an ensemble is &mdash; no time, and they do not need it. The only point is that a distribution beat a point estimate.</aside>
+    </section>
 
-      <!-- THREE INTERPRETATIONS -->
-      <section id="three-interpretations">
-        <h2><i class="fa-solid fa-dice" style="color: var(--secondary-color);"></i> Three Ways to Think About Probability</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-            <div style="background: #f0f7fa; padding: 20px; border-radius: 8px; border-top: 4px solid var(--secondary-color);">
-              <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 1px;">Classical</p>
-              <p style="font-size: 15pt; margin-top: 8px;">Count equally likely outcomes</p>
-              <p style="font-size: 14pt; color: var(--muted-color); margin-top: 8px;"><em>P(six) = 1/6</em></p>
-              <p style="font-size: 13pt; color: var(--danger-color); margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Breaks in economics &mdash; "equally likely" is rarely defensible</p>
-            </div>
-            <div style="background: #fdf5ec; padding: 20px; border-radius: 8px; border-top: 4px solid var(--accent-color);">
-              <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 1px;">Frequentist</p>
-              <p style="font-size: 15pt; margin-top: 8px;">Long-run relative frequency</p>
-              <p style="font-size: 14pt; color: var(--muted-color); margin-top: 8px;"><em>% of winning lottery tickets</em></p>
-              <p style="font-size: 13pt; color: var(--danger-color); margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Awkward for one-time events &mdash; "P(recession in 2027)?"</p>
-            </div>
-            <div style="background: #edf7ee; padding: 20px; border-radius: 8px; border-top: 4px solid var(--success-color);">
-              <p style="font-size: 14pt; font-weight: 700; color: var(--success-color); text-transform: uppercase; letter-spacing: 1px;">Bayesian</p>
-              <p style="font-size: 15pt; margin-top: 8px;">Degree of belief, updated with evidence</p>
-              <p style="font-size: 14pt; color: var(--muted-color); margin-top: 8px;"><em>Start 50% &rarr; update with data</em></p>
-              <p style="font-size: 13pt; color: var(--success-color); margin-top: 8px;"><i class="fa-solid fa-check-circle"></i> Handles one-off events naturally</p>
-            </div>
+    <!-- SLIDE 5: Today's spine -->
+    <section id="spine" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-compass-drafting" style="color: var(--accent-color);"></i> Why the Forecasters Preferred It</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">They did not want <em>&ldquo;it will rain.&rdquo;</em> They wanted <strong>&ldquo;30% chance of severe rainfall in 72 hours&rdquo;</strong> &mdash; because that is the number an evacuation order and a crop-insurance payout actually run on.</p>
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e4eef4); border-radius: 12px; padding: 24px 32px; margin-top: 24px; border-left: 5px solid var(--secondary-color);">
+          <p class="text-xl" style="line-height: 1.5;"><strong>Today&rsquo;s spine.</strong> Every number a simulation prints is an <em>estimate</em>. You will learn to produce those numbers &mdash; and to say how wrong each one probably is.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 22px; text-align: center; color: var(--primary-color);">By minute 60 that will be one specific line: <strong>$19,494 &plusmn; $254</strong>.</p>
+      </div>
+      <aside class="notes">1 min. Put the $19,494 plus-or-minus $254 up and refuse to explain it. It is a loop you close in Section 5. If someone asks, say "you will compute it yourself in Lab 5 on Thursday."</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-1" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; The Language of Uncertainty</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Three interpretations, three axioms, and one trick worth more than either.</p>
+      <aside class="notes">11 minutes for this section. Ends at minute 15.</aside>
+    </section>
+
+    <!-- SLIDE: three interpretations -->
+    <section id="interpretations" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--secondary-color);"></i> Three Ways to Mean &ldquo;Probability&rdquo;</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;"><strong style="color: var(--secondary-color);">Classical</strong> &mdash; count equally likely outcomes. \(P(\text{six}) = 1/6\). Works where symmetry was <em>designed in</em>: dice, cards, roulette. <span style="color: var(--danger-color);">Almost never defensible in economics.</span></p>
           </div>
-          <div class="fragment fade-up" style="text-align: center; margin-top: 15px; padding: 12px; background: #f8f6f3; border-radius: 8px;">
-            <p style="font-size: 15pt;"><strong>All three obey the same mathematical rules.</strong> The axioms are shared &mdash; the interpretation differs.</p>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;"><strong style="color: var(--accent-color);">Frequentist</strong> &mdash; the long-run frequency across repeatable trials. The chance a scratch ticket pays is the fraction of winners across millions sold. <span style="color: var(--danger-color);">Awkward for one-off events</span> like &ldquo;a recession in 2027.&rdquo;</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong style="color: var(--success-color);">Bayesian</strong> &mdash; a degree of belief, updated with evidence. Handles one-off events naturally, which is why it dominates election forecasting and A/B testing (Ch 9).</p>
           </div>
         </div>
-        <aside class="notes">Quick overview — spend ~5 min here. Students often default to frequentist. Push: "What's the long-run frequency of a recession in 2027? It only happens once." This motivates Bayesian thinking.</aside>
-      </section>
+        <p style="margin-top: 18px; font-size: 15pt; text-align: center; color: var(--primary-color);"><i class="fa-solid fa-arrow-right" style="color: var(--accent-color);"></i> All three obey <strong>the same three rules</strong>.</p>
+      </div>
+      <aside class="notes">3 min. Ask which one GenCast is doing. Answer: Bayesian &mdash; it is a belief about one specific tomorrow, and there is no long run of tomorrows to take a frequency over.</aside>
+    </section>
 
-      <!-- COMPLEMENT TRICK -->
-      <section id="complement-trick">
-        <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> The Complement Trick</h2>
-        <div class="content">
-          <p class="text-lg" style="margin-bottom: 15px;"><strong>Problem:</strong> What is P(at least one six in 4 rolls)?</p>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
-            <div>
-              <p style="font-size: 15pt; color: var(--danger-color);"><i class="fa-solid fa-xmark"></i> <strong>Wrong approach:</strong></p>
-              <p style="font-size: 15pt;">\(1/6 + 1/6 + 1/6 + 1/6 = 4/6\)</p>
-              <p style="font-size: 13pt; color: var(--muted-color);">Exceeds 1 for 7+ rolls!</p>
-            </div>
-            <div>
-              <p style="font-size: 15pt; color: var(--success-color);"><i class="fa-solid fa-check"></i> <strong>Complement:</strong></p>
-              <p style="font-size: 15pt;">\(P(\text{at least one}) = 1 - P(\text{none})\)</p>
-              <p style="font-size: 15pt;">\(= 1 - (5/6)^4 = 1 - 0.482 = \mathbf{0.518}\)</p>
-            </div>
+    <!-- SLIDE: axioms -->
+    <section id="axioms" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-cube" style="color: var(--secondary-color);"></i> The Three Axioms</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 16px 26px; text-align: center;">
+          $$P(A) \geq 0 \qquad P(\Omega) = 1 \qquad P(A \cup B) = P(A) + P(B)$$
+          <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 4px;">the third holds when \(A\) and \(B\) cannot both happen</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; line-height: 1.55;"><em>In plain language:</em> probabilities are never negative; <strong>something</strong> must happen; and if two things cannot happen together, the chance of either is the sum of their chances.</p>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Before you compute anything, ask what \(\Omega\) is.</strong> For &ldquo;the probability of a 2027 recession&rdquo;: all US quarters since 1947 (frequentist), or all trajectories consistent with today (Bayesian)? In economics the sample space is usually harder than the arithmetic that follows.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Everything today &mdash; Bayes, the Law of Large Numbers, Value at Risk &mdash; is these three lines plus bookkeeping. Say that explicitly; it lowers the perceived difficulty of the rest of the hour.</aside>
+    </section>
+
+    <!-- SLIDE: two rules -->
+    <section id="rules" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-arrows-rotate" style="color: var(--accent-color);"></i> Two Rules That Follow Immediately</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+          <div style="background: #f8f6f3; border-radius: 12px; padding: 18px 22px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-weight: 700; color: var(--secondary-color); font-size: 15pt; margin-bottom: 8px;">Complement rule</p>
+            <p style="text-align: center;">$$P(\text{not } A) = 1 - P(A)$$</p>
+            <p style="font-size: 14pt; margin-top: 6px;"><em>The chance something does not happen is one minus the chance it does.</em></p>
           </div>
-          <div class="fragment fade-up" style="background: #f0f7fa; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--secondary-color); margin-top: 20px;">
-            <p style="font-size: 14pt;"><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> <strong>This trick appears constantly in risk analysis:</strong> "P(at least one default)" = 1 &minus; "P(zero defaults)"</p>
+          <div style="background: #f8f6f3; border-radius: 12px; padding: 18px 22px; border-top: 4px solid var(--accent-color);">
+            <p style="font-weight: 700; color: var(--accent-color); font-size: 15pt; margin-bottom: 8px;">General addition rule</p>
+            <p style="text-align: center;">$$P(A \cup B) = P(A) + P(B) - P(A \cap B)$$</p>
+            <p style="font-size: 14pt; margin-top: 6px;"><em>Subtract the overlap, or you count it twice.</em></p>
           </div>
         </div>
-        <aside class="notes">Work on board. Ask: "Why can I multiply?" — independence. Catch the 4/6 error explicitly — students make this mistake consistently.</aside>
-      </section>
+        <p style="margin-top: 20px; font-size: 15.5pt; text-align: center; color: var(--primary-color);">The complement rule looks trivial. It is the single most useful line in risk analysis.</p>
+      </div>
+      <aside class="notes">2 min. Foreshadow: "probability of at least one default in a portfolio" is computed as one minus "probability of zero defaults", every time, in every bank.</aside>
+    </section>
 
-      <!-- ============ POLL 1 ============ -->
-      <section>
-        <section id="poll-1">
-          <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Class Poll</h2>
-          <div class="content" style="justify-content: center;">
-            <p class="text-xl" style="text-align: center; margin-bottom: 20px;"><strong>"30% chance of rain tomorrow" &mdash; which interpretation?</strong></p>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 900px; margin: 0 auto;">
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #f0f7fa; border: 2px solid var(--secondary-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">A</p>
-                <p style="font-size: 14pt;">Classical &mdash; 30% of outcomes produce rain</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #fdf5ec; border: 2px solid var(--accent-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">B</p>
-                <p style="font-size: 14pt;">Frequentist &mdash; it rained 30% of similar days</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #edf7ee; border: 2px solid var(--success-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">C</p>
-                <p style="font-size: 14pt;">Bayesian &mdash; forecaster's updated belief is 30%</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #f8f6f3; border: 2px solid var(--muted-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--muted-color);">D</p>
-                <p style="font-size: 14pt;">All three could justify it</p>
-              </div>
-            </div>
-          </div>
-          <aside class="notes">Most pick B or D. The answer is D — all three could work. But modern weather forecasting (GenCast!) is explicitly Bayesian.</aside>
-        </section>
-        <section id="poll-1-reveal">
-          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: D &mdash; All Three Could Work</h2>
-          <div class="content">
-            <p style="font-size: 15pt; line-height: 1.7;">All three interpretations <em>could</em> justify "30% chance of rain." The correct interpretation depends on the forecaster's methodology.</p>
-            <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 16px 20px; border-radius: 8px; margin: 16px 0;">
-              <p style="font-size: 14pt; margin: 0;"><strong>Key insight:</strong> Modern weather forecasting (including GenCast) is <em>Bayesian</em> &mdash; it samples from a posterior distribution of weather states. The same number (30%) means different things in each framework.</p>
-            </div>
-            <p style="font-size: 14pt;"><strong>Connection:</strong> GenCast is Bayesian. It samples from a <em>posterior</em> &mdash; the word you'll learn formally in the next section.</p>
-          </div>
-        </section>
-      </section>
+    <!-- SLIDE: worked complement -->
+    <section id="worked-six" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-dice-five" style="color: var(--secondary-color);"></i> At Least One Six in Four Rolls</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Counting &ldquo;at least one&rdquo; directly means enumerating one six, two sixes, three, four. The complement is <em>one line</em>.</p>
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 12px 26px; margin-top: 12px; text-align: center;">
+          $$P(\text{no six, one roll}) = \tfrac{5}{6} \qquad P(\text{no six, four rolls}) = \left(\tfrac{5}{6}\right)^{4} = 0.482$$
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-radius: 12px; padding: 12px 26px; margin-top: 12px; text-align: center; border-left: 5px solid var(--success-color);">
+          $$P(\text{at least one six}) = 1 - 0.482 = 0.518$$
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px;"><em>In plain language:</em> compute what you do <strong>not</strong> want, then subtract from one. Just above a coin flip &mdash; which surprises most people.</p>
+      </div>
+      <aside class="notes">2 min. Work it on the board rather than clicking through. Then set up the poll without giving anything away.</aside>
+    </section>
 
-      <!-- ============ SECTION 2: BAYES ============ -->
-      <section id="divider-bayes" class="section-divider" data-state="is-section-divider">
-        <h1 style="font-size: 36pt; color: var(--primary-color);">Bayes' Theorem</h1>
-        <p class="text-xl" style="color: var(--muted-color); margin-top: 15px;">When 99% accurate is only 5% reliable</p>
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 1 &mdash; Vote on Your Device</h2>
+        <p class="text-lg" style="margin-bottom: 4px;">A fair six-sided die, rolled four times. <strong>What is \(P(\text{at least one six})\)?</strong></p>
+        <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 6px;">No arithmetic &mdash; go with your instinct.</p>
+        <div class="poll-grid" data-poll-id="ch05-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) \(4 \times \tfrac{1}{6} \approx 0.667\)</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) about 0.52</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) \(\tfrac{1}{6} \approx 0.167\)</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) \(1 - (\tfrac{1}{6})^{4} \approx 0.999\)</div>
+        </div>
+        <aside class="notes">1 min. Expect a heavy A. Do not let anyone compute &mdash; the value of this poll is entirely in how many people add one-sixth four times.</aside>
       </section>
-
-      <!-- FRAUD SETUP -->
-      <section id="fraud-setup">
-        <h2><i class="fa-solid fa-credit-card" style="color: var(--danger-color);"></i> The Fraud Detection Puzzle</h2>
-        <div class="content">
-          <p class="text-lg">You are a data scientist at a credit card company. Your algorithm flags a transaction. Should you block it?</p>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 15px;">
-            <div style="background: #edf7ee; padding: 20px; border-radius: 8px; text-align: center;">
-              <p style="font-size: 28pt; font-weight: 700; color: var(--success-color);">99%</p>
-              <p style="font-size: 14pt;">Catches real fraud<br><em>(sensitivity)</em></p>
-            </div>
-            <div style="background: #fdf5ec; padding: 20px; border-radius: 8px; text-align: center;">
-              <p style="font-size: 28pt; font-weight: 700; color: var(--accent-color);">2%</p>
-              <p style="font-size: 14pt;">Flags legitimate txns<br><em>(false positive rate)</em></p>
-            </div>
-            <div style="background: #fdf0f0; padding: 20px; border-radius: 8px; text-align: center;">
-              <p style="font-size: 28pt; font-weight: 700; color: var(--danger-color);">0.1%</p>
-              <p style="font-size: 14pt;">Actually fraudulent<br><em>(base rate)</em></p>
-            </div>
+      <section id="poll-1-reveal" data-poll-results="ch05-econ3916-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; 0.518</h2>
+        <div class="poll-results-chart" data-poll-id="ch05-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.55;">\(1 - (5/6)^4 = 0.518\). Barely better than a coin flip.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); padding: 12px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is wrong, and why it matters.</strong> Adding \(1/6\) four times treats the four rolls as mutually exclusive. They are not. Push the same logic to <strong>seven</strong> rolls and it returns a probability above 1 &mdash; which is how you know it broke an axiom, not just a calculation.</p>
           </div>
-          <div class="fragment fade-up" style="text-align: center; margin-top: 20px;">
-            <p class="text-xl" style="color: var(--danger-color);"><strong>Your instinct: "99% accurate &mdash; block it!" Your instinct is wrong.</strong></p>
+          <p style="font-size: 14pt; margin-top: 10px; color: var(--muted-color);"><strong>D</strong> subtracts the wrong complement: &ldquo;no six ever&rdquo; is \((5/6)^4\), not \((1/6)^4\).</p>
+        </div>
+        <aside class="notes">1 min. The seven-rolls line is the one to deliver slowly &mdash; it converts "you made an arithmetic slip" into "you violated an axiom," which is much more memorable.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: simulate the die -->
+    <section id="sim-die" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-code-compare" style="color: var(--secondary-color);"></i> Check It by Simulation &mdash; and Notice the Miss</h2>
+      <div class="content">
+        <pre style="background: #f8f6f3; border-radius: 10px; padding: 14px 20px; font-size: 13pt; line-height: 1.5;"><code>rng   = np.random.default_rng(seed=42)
+rolls = rng.integers(1, 7, size=(100_000, 4))
+print(np.any(rolls == 6, axis=1).mean())   # 0.5157</code></pre>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color);">0.5157</p>
+            <p style="font-size: 12.5pt;">simulated</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--success-color);">0.5177</p>
+            <p style="font-size: 12.5pt;">exact</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 10px; padding: 14px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--accent-color);">1.3 SE</p>
+            <p style="font-size: 12.5pt;">how far apart that is</p>
           </div>
         </div>
-        <aside class="notes">Pause after the three stats. Let students absorb. Then reveal the "your instinct is wrong" line. This creates cognitive dissonance that motivates Bayes' Theorem.</aside>
-      </section>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px;">The simulation missed by 0.0020. Its own standard error is <strong>0.00158</strong>. <em>That is ordinary.</em> Hold that thought &mdash; we make it a rule in Section 4.</p>
+      </div>
+      <aside class="notes">3 min. This is the first plant of the spine. Do not explain the SE formula yet. Just establish the habit: whenever a simulated number appears next to an exact one, somebody in this room should be asking "how far apart is that, in standard errors?"</aside>
+    </section>
 
-      <!-- BAYES FORMULA -->
-      <section id="bayes-formula">
-        <h2><i class="fa-solid fa-arrows-rotate" style="color: var(--secondary-color);"></i> Bayes' Theorem: The Learning Rule</h2>
-        <div class="content">
-          <div style="text-align: center; margin-bottom: 15px;">
-            <img src="figures/figure_005_bayes_flow.png" alt="Bayes' Theorem flow: Prior times Likelihood divided by Evidence equals Posterior" style="max-height: 260px; border-radius: 8px;">
+    <!-- DIVIDER 2 -->
+    <section id="divider-2" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; Bayes and the Base Rate</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Why a 99%-accurate model is wrong 95% of the time it fires.</p>
+      <aside class="notes">16 minutes. Ends at minute 31. This section runs long if you let the Fed box expand &mdash; keep it to three minutes.</aside>
+    </section>
+
+    <!-- SLIDE: fraud setup -->
+    <section id="fraud-setup" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-credit-card" style="color: var(--danger-color);"></i> You Work at a Card Issuer. The Model Flags a Transaction.</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 10px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">0.1%</p>
+            <p style="font-size: 13pt; margin-top: 8px;">of transactions are actually fraud &mdash; the <strong>base rate</strong></p>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-              <p style="font-size: 14pt;"><strong>Step 1:</strong> Total probability of being flagged</p>
-              <p style="font-size: 14pt;">\(P(\text{Flag}) = 0.99 \times 0.001 + 0.02 \times 0.999 = 0.021\)</p>
-            </div>
-            <div>
-              <p style="font-size: 14pt;"><strong>Step 2:</strong> Apply Bayes'</p>
-              <p style="font-size: 14pt;">\(P(\text{Fraud}|\text{Flag}) = \frac{0.99 \times 0.001}{0.021} = \mathbf{0.047}\)</p>
-            </div>
+          <div style="background: #eef5ee; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--success-color); line-height: 1;">99%</p>
+            <p style="font-size: 13pt; margin-top: 8px;">of real fraud gets flagged &mdash; <strong>sensitivity</strong></p>
           </div>
-          <div class="fragment fade-up" style="background: #fdf0f0; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--danger-color); margin-top: 12px; text-align: center;">
-            <p style="font-size: 16pt; margin: 0;"><strong>Only 4.7% of flagged transactions are fraud.</strong> 95% are false alarms.</p>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color); line-height: 1;">2%</p>
+            <p style="font-size: 13pt; margin-top: 8px;">of legitimate transactions get flagged too &mdash; <strong>false positive rate</strong></p>
           </div>
         </div>
-        <aside class="notes">Work this on the board in three steps. After 0.047, pause. Students expect ~99%. The surprise is the pedagogical payoff. Then: "A 99% accurate algorithm produces 95% false alarms when the base rate is low."</aside>
-      </section>
+        <p style="font-size: 16pt; margin-top: 26px; text-align: center; color: var(--primary-color);">Your instinct says: <em>&ldquo;99% accurate &mdash; block it.&rdquo;</em> <span style="color: var(--danger-color); font-weight: 600;">Your instinct is about to be wrong.</span></p>
+      </div>
+      <aside class="notes">2 min. Read the three numbers out loud and let the 0.1% sit for a second. Then straight into the poll &mdash; do not let anyone start computing.</aside>
+    </section>
 
-      <!-- BASE RATE FALLACY VISUAL -->
-      <section id="base-rate-visual">
-        <h2><i class="fa-solid fa-eye" style="color: var(--accent-color);"></i> The Base Rate Fallacy, Visualized</h2>
-        <div class="content" style="text-align: center;">
-          <img src="figures/figure_004_base_rate_fallacy.png" alt="1000 dots: 1 red (true fraud), 20 orange (false positives), 979 green (true negatives). Visual proof that 99% accuracy yields only 4.7% precision when fraud is rare." style="max-height: 400px; border-radius: 8px;">
-          <p style="font-size: 14pt; color: var(--muted-color); margin-top: 10px;">1,000 transactions: <span style="color: #d62728; font-weight: 700;">1 true fraud</span> &bull; <span style="color: #ff7f0e; font-weight: 700;">~20 false alarms</span> &bull; <span style="color: #2ca02c; font-weight: 700;">~979 legitimate</span></p>
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 2 &mdash; Before Any Arithmetic</h2>
+        <p class="text-lg" style="margin-bottom: 4px;">The model flags a transaction. <strong>What is the probability it is actually fraud?</strong></p>
+        <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 6px;">base rate 0.1% &bull; sensitivity 99% &bull; false positive rate 2%</p>
+        <div class="poll-grid" data-poll-id="ch05-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) about 99%</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) about 50%</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) about 5%</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) about 0.1%</div>
         </div>
-        <aside class="notes">This visual makes the math tangible. "Find the red dot." Point out how it's buried in green. "The algorithm lights up 21 dots. Only 1 is red."</aside>
+        <aside class="notes">1 min. Gut poll. Expect a large A and a scattering of B. The whole value is in how wrong the room is about to discover it was &mdash; so make everybody vote before you move on.</aside>
       </section>
-
-      <!-- DISCUSSION 1 -->
-      <section id="discussion-fraud">
-        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: What Do You Recommend?</h2>
-        <div class="content" style="text-align: center;">
-          <div style="background: #f0f7fa; padding: 25px; border-radius: 12px; max-width: 800px; margin: 0 auto;">
-            <p class="text-xl" style="font-weight: 600;">"Your fraud algorithm flags 21 of 1,000 transactions. Only 1 is real fraud. Keep it or replace it?"</p>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px; max-width: 800px; margin-left: auto; margin-right: auto;">
-            <div style="padding: 15px; border: 2px solid var(--success-color); border-radius: 8px;">
-              <p style="font-weight: 600; color: var(--success-color);">Think about:</p>
-              <p style="font-size: 14pt;">What's the cost of missing real fraud vs. annoying a customer?</p>
-            </div>
-            <div style="padding: 15px; border: 2px solid var(--accent-color); border-radius: 8px;">
-              <p style="font-weight: 600; color: var(--accent-color);">Consider:</p>
-              <p style="font-size: 14pt;">Could a two-stage system help? High sensitivity first, then high precision?</p>
-            </div>
-          </div>
-          <p style="margin-top: 15px;">
-            <span style="display: inline-block; background: var(--secondary-color); color: #FFFFFF; font-size: 11pt; font-weight: 500; padding: 6px 16px; border-radius: 20px;"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 2 min share</span>
-          </p>
-        </div>
-        <aside class="notes">Listen for: "Replace it" → ask about cost-benefit. "Lower threshold" → what happens to catch rate? "Two-stage system" → "Exactly! First pass: high sensitivity. Second pass: high precision. We formalize this in Ch18." "It depends on costs" → "Bingo. You just invented decision thresholds."</aside>
-      </section>
-
-      <!-- ============ SECTION 3: DISTRIBUTIONS ============ -->
-      <section id="divider-distributions" class="section-divider" data-state="is-section-divider">
-        <h1 style="font-size: 36pt; color: var(--primary-color);">The Normal Distribution Lies</h1>
-        <p class="text-xl" style="color: var(--muted-color); margin-top: 15px;">Fat tails and the shape of real uncertainty</p>
-      </section>
-
-      <!-- S&P 500 SHOCK -->
-      <section id="sp500-shock">
-        <h2><i class="fa-solid fa-chart-line" style="color: var(--danger-color);"></i> When "Never" Happens on Tuesday</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center;">
-            <div>
-              <p style="font-size: 16pt; line-height: 1.7;">Under a normal distribution, a <strong>5% daily S&P 500 drop</strong> should occur once every <span style="color: var(--secondary-color); font-weight: 700;">14,000 years</span>.</p>
-              <p class="fragment fade-up" style="font-size: 16pt; line-height: 1.7; margin-top: 15px;">In reality, it happened <span style="color: var(--danger-color); font-weight: 700;">six times</span> between 2000 and 2024.</p>
-              <p class="fragment fade-up" style="font-size: 16pt; line-height: 1.7; margin-top: 15px;">That's a <strong>600&times; discrepancy</strong>. The normal distribution systematically underestimates extreme events.</p>
-            </div>
-            <div style="text-align: center;">
-              <p style="font-size: 14pt; color: var(--muted-color); margin-bottom: 10px;">Normal prediction vs. reality</p>
-              <div style="display: grid; grid-template-rows: 1fr 1fr; gap: 15px;">
-                <div style="background: #f0f7fa; padding: 20px; border-radius: 8px; text-align: center;">
-                  <p style="font-size: 36pt; font-weight: 700; color: var(--secondary-color);">1</p>
-                  <p style="font-size: 13pt; color: var(--muted-color);">time in 14,000 years<br>(normal predicts)</p>
-                </div>
-                <div style="background: #fdf0f0; padding: 20px; border-radius: 8px; text-align: center;">
-                  <p style="font-size: 36pt; font-weight: 700; color: var(--danger-color);">6</p>
-                  <p style="font-size: 13pt; color: var(--muted-color);">times in 24 years<br>(reality)</p>
-                </div>
-              </div>
-            </div>
+      <section id="poll-2-reveal" data-poll-results="ch05-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; 4.7%</h2>
+        <div class="poll-results-chart" data-poll-id="ch05-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.55;">A 99%-accurate model produces <strong>95% false alarms</strong> &mdash; not because the model is bad, but because fraud is rare, and rarity beats accuracy.</p>
+          <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); padding: 12px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is the interesting wrong answer.</strong> It says the flag tells you nothing. It does &mdash; the flag moved you from 0.1% to 4.7%, a <strong>47-fold</strong> update. It just did not move you anywhere near certainty.</p>
           </div>
         </div>
-        <aside class="notes">"A 5% daily drop should happen once every 14,000 years." Pause. "It happened six times since 2000." Let the contradiction land. "When the model says 'never' and reality says 'Tuesday,' the model is wrong."</aside>
+        <aside class="notes">1 min. Let the bar chart fill before you speak. The 47-fold line rescues the students who over-corrected into cynicism.</aside>
       </section>
+    </section>
 
-      <!-- NORMAL VS FAT TAILS -->
-      <section id="normal-vs-fat">
-        <h2><i class="fa-solid fa-bell" style="color: var(--secondary-color);"></i> Normal vs. Fat-Tailed Distributions</h2>
-        <div class="content" style="text-align: center;">
-          <img src="figures/figure_001_normal_vs_fat_tails.png" alt="Normal distribution vs Student-t distribution — the t-distribution has heavier tails making extreme values much more likely" style="max-height: 360px; border-radius: 8px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 12px; max-width: 700px; margin-left: auto; margin-right: auto;">
-            <div style="background: #f0f7fa; padding: 10px 14px; border-radius: 6px; border-left: 3px solid var(--secondary-color);">
-              <p style="font-size: 14pt;"><strong>Normal:</strong> Thin tails. Extreme values are "impossible."</p>
-            </div>
-            <div style="background: #fdf0f0; padding: 10px 14px; border-radius: 6px; border-left: 3px solid var(--danger-color);">
-              <p style="font-size: 14pt;"><strong>Student-t:</strong> Fat tails. Extreme values happen regularly.</p>
-            </div>
+    <!-- SLIDE: conditional probability -->
+    <section id="conditional" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-filter" style="color: var(--secondary-color);"></i> Conditional Probability</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 12px 26px; text-align: center;">
+          $$P(A \mid B) = \frac{P(A \cap B)}{P(B)}, \qquad P(B) > 0$$
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; line-height: 1.55;"><em>In plain language:</em> conditioning <strong>shrinks the sample space</strong>. You stop asking one question and start asking a completely different one.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="padding: 15px 20px; border: 2px solid var(--muted-color); border-radius: 10px;">
+            <p style="font-size: 14.5pt; color: var(--muted-color);">What share of <strong>all</strong> transactions are fraud?</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--muted-color); margin-top: 6px;">0.1%</p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid var(--accent-color); border-radius: 10px;">
+            <p style="font-size: 14.5pt; color: var(--accent-color);">What share of <strong>flagged</strong> transactions are fraud?</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color); margin-top: 6px;">the real question</p>
           </div>
         </div>
-        <aside class="notes">Don't derive the PDF formula. Students need to recognize the shape, not reproduce the math. Key message: "Always plot before assuming normality."</aside>
-      </section>
+      </div>
+      <aside class="notes">2 min. The two boxes are the whole idea. Students who confuse P(A|B) with P(B|A) are confusing these two boxes, every time.</aside>
+    </section>
 
-      <!-- POLL 2 -->
-      <section>
-        <section id="poll-2">
-          <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Class Poll</h2>
-          <div class="content" style="justify-content: center;">
-            <p class="text-xl" style="text-align: center; margin-bottom: 20px;"><strong>Under a normal distribution, a 5% daily stock drop should occur once every:</strong></p>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 900px; margin: 0 auto;">
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #f0f7fa; border: 2px solid var(--secondary-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">A</p>
-                <p style="font-size: 15pt;">14 trading days</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #fdf5ec; border: 2px solid var(--accent-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">B</p>
-                <p style="font-size: 15pt;">140 years</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #edf7ee; border: 2px solid var(--success-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">C</p>
-                <p style="font-size: 15pt;">14,000 years</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #f8f6f3; border: 2px solid var(--muted-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--muted-color);">D</p>
-                <p style="font-size: 15pt;">It should never happen</p>
-              </div>
-            </div>
+    <!-- SLIDE: Bayes -->
+    <section id="bayes" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--accent-color);"></i> Bayes&rsquo; Theorem Inverts the Conditioning</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 8px 26px; text-align: center;">
+          $$P(H \mid E) = \frac{P(E \mid H)\, P(H)}{P(E)}$$
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>\(P(H)\) &mdash; the prior.</strong> What you believed before.</p>
           </div>
-          <aside class="notes">Let them commit. Most pick B or C. The answer is C — but we just showed it happened 6 times in 24 years.</aside>
-        </section>
-        <section id="poll-2-reveal">
-          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; 14,000 Years</h2>
-          <div class="content">
-            <p style="font-size: 15pt; line-height: 1.7;">The normal distribution predicts ~14,000 years. But it happened <strong>6 times in 24 years</strong> &mdash; a 600&times; discrepancy.</p>
-            <div style="background: #fdf0f0; border-left: 4px solid var(--danger-color); padding: 16px 20px; border-radius: 8px; margin: 16px 0;">
-              <p style="font-size: 14pt; margin: 0;"><strong>This is why financial regulators moved from VaR (assumes normality) to Expected Shortfall (doesn't).</strong> The fat tails of real data make rare events far more common than the bell curve predicts.</p>
-            </div>
-            <p style="font-size: 14pt;"><strong>Rule:</strong> "When the model says 'never' and reality says 'Tuesday,' the model is wrong."</p>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>\(P(E \mid H)\) &mdash; the likelihood.</strong> How well the evidence fits.</p>
           </div>
-        </section>
-      </section>
-
-      <!-- ============ SECTION 4: MONTE CARLO ============ -->
-      <section id="divider-montecarlo" class="section-divider" data-state="is-section-divider">
-        <h1 style="font-size: 36pt; color: var(--primary-color);">Monte Carlo Simulation</h1>
-        <p class="text-xl" style="color: var(--muted-color); margin-top: 15px;">When equations fail, simulate</p>
-      </section>
-
-      <!-- MC CONCEPT -->
-      <section id="mc-concept">
-        <h2><i class="fa-solid fa-dice-d20" style="color: var(--secondary-color);"></i> What Is Monte Carlo Simulation?</h2>
-        <div class="content">
-          <p class="text-lg" style="margin-bottom: 12px;">When math is intractable, generate thousands of synthetic outcomes and count results.</p>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 10px;">
-            <div style="background: #f0f7fa; padding: 16px; border-radius: 8px; text-align: center;">
-              <p style="font-size: 28pt; color: var(--secondary-color);"><i class="fa-solid fa-landmark"></i></p>
-              <p style="font-size: 15pt; font-weight: 600;">Federal Reserve</p>
-              <p style="font-size: 13pt; color: var(--muted-color);">250,000 draws for bank stress tests</p>
-            </div>
-            <div style="background: #fdf5ec; padding: 16px; border-radius: 8px; text-align: center;">
-              <p style="font-size: 28pt; color: var(--accent-color);"><i class="fa-solid fa-umbrella"></i></p>
-              <p style="font-size: 15pt; font-weight: 600;">Swiss Re</p>
-              <p style="font-size: 13pt; color: var(--muted-color);">Hurricane simulations for catastrophe insurance</p>
-            </div>
-            <div style="background: #edf7ee; padding: 16px; border-radius: 8px; text-align: center;">
-              <p style="font-size: 28pt; color: var(--success-color);"><i class="fa-solid fa-globe"></i></p>
-              <p style="font-size: 15pt; font-weight: 600;">Climate Economists</p>
-              <p style="font-size: 13pt; color: var(--muted-color);">Damage function uncertainty for Social Cost of Carbon</p>
-            </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>\(P(E)\) &mdash; the marginal.</strong> How often that evidence turns up at all.</p>
           </div>
-          <div class="fragment fade-up" style="background: #f8f6f3; padding: 14px 20px; border-radius: 8px; margin-top: 15px;">
-            <p style="font-size: 14pt;"><i class="fa-solid fa-book" style="color: var(--accent-color);"></i> <strong>Origin:</strong> Named after the Monte Carlo Casino. In the 1940s, physicists Ulam and von Neumann estimated nuclear physics integrals by random sampling instead of solving equations.</p>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt;"><strong>\(P(H \mid E)\) &mdash; the posterior.</strong> What you believe after.</p>
           </div>
         </div>
-      </section>
+        <p style="font-size: 15pt; margin-top: 14px;"><em>In plain language:</em> Bayes is a <strong>learning rule</strong>. Start with a belief, look at evidence, end with a revised belief. The denominator only rescales, so the answer is still a proper probability.</p>
+      </div>
+      <aside class="notes">3 min. Name all four out loud in the fraud example before moving on: prior = 0.001, likelihood = 0.99, marginal = the number we are about to compute, posterior = what the poll got wrong.</aside>
+    </section>
 
-      <!-- LLN -->
-      <section id="lln-convergence">
-        <h2><i class="fa-solid fa-arrow-trend-up" style="color: var(--success-color);"></i> The Law of Large Numbers</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start;">
-            <div>
-              <p style="font-size: 15pt; line-height: 1.7;">Monte Carlo works because of <strong>LLN</strong>: as independent draws grow, the sample mean converges to the expected value.</p>
-              <p style="font-size: 16pt; text-align: center; margin: 15px 0;">\(\bar{X}_n \xrightarrow{n \to \infty} E[X]\)</p>
-              <div style="background: #fdf5ec; padding: 12px 16px; border-radius: 8px; border-left: 3px solid var(--accent-color);">
-                <p style="font-size: 14pt;"><strong>Convergence rate:</strong> Error \(\propto 1/\sqrt{n}\)</p>
-                <p style="font-size: 13pt; color: var(--muted-color);">To halve error &rarr; 4&times; simulations. Slow &mdash; but works in any dimension.</p>
-              </div>
-            </div>
-            <div style="text-align: center;">
-              <img src="figures/figure_002_lln_convergence.png" alt="Running estimate of pi converges as Monte Carlo samples increase, showing O(1/sqrt(n)) convergence" style="max-height: 300px; border-radius: 8px;">
-              <p style="font-size: 12pt; color: var(--muted-color); margin-top: 5px;">Monte Carlo estimate of &pi; converges to true value</p>
-            </div>
+    <!-- SLIDE: two steps -->
+    <section id="bayes-worked" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i> Two Steps, on the Board</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; font-weight: 600; color: var(--secondary-color);">Step 1 &mdash; how often does the model fire at all?</p>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 6px 22px; text-align: center;">
+          $$P(\text{Flag}) = \underbrace{0.99 \times 0.001}_{0.00099 \ \text{real}} + \underbrace{0.02 \times 0.999}_{0.01998 \ \text{false}} = 0.02097$$
+        </div>
+        <p style="font-size: 14pt; margin-top: 8px; color: var(--danger-color);"><i class="fa-solid fa-triangle-exclamation"></i> Look where the mass is. <strong>The false alarms outnumber the catches twenty to one</strong> before you compute anything else.</p>
+        <p class="fragment fade-up" style="font-size: 14.5pt; font-weight: 600; color: var(--accent-color); margin-top: 12px;">Step 2 &mdash; invert.</p>
+        <div class="fragment fade-up" style="background: #eef5ee; border-radius: 10px; padding: 6px 22px; text-align: center; border-left: 5px solid var(--success-color);">
+          $$P(\text{Fraud} \mid \text{Flag}) = \frac{0.00099}{0.02097} = 0.0472$$
+        </div>
+      </div>
+      <aside class="notes">3 min. Do this on the board, not by clicking. The under-braces in Step 1 are the whole explanation &mdash; once students see 0.00099 next to 0.01998 they do not need Step 2 to know the answer is small.</aside>
+    </section>
+
+    <!-- SLIDE: base rate figure -->
+    <section id="base-rate-figure" style="padding: 26px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-braille" style="color: var(--danger-color);"></i> 1,000 Transactions. 21 Flags Fire. One Is Real.</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_001_base_rate.png" alt="One thousand dots representing transactions: a single large rosewood dot marks the one real fraud, twenty terracotta dots are false alarms scattered through the grid, and 979 pale grey dots are correctly cleared transactions" style="max-height: 470px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 8px; color: var(--primary-color);">Precision <strong>4.7%</strong>. High accuracy is not high precision when the base rate is low.</p>
+      </div>
+      <aside class="notes">1 min. Say nothing for the first five seconds; let them find the single rosewood dot. The picture does the work that the algebra could not.</aside>
+    </section>
+
+    <!-- SLIDE: sim agrees -->
+    <section id="bayes-sim" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-circle-notch" style="color: var(--secondary-color);"></i> The Simulation Agrees &mdash; and Here Is by How Much</h2>
+      <div class="content">
+        <pre style="background: #f8f6f3; border-radius: 10px; padding: 12px 20px; font-size: 13pt; line-height: 1.5;"><code># simulate 1,000,000 transactions, then look only at the flagged ones
+# Simulated: 993 / 20,931 = 0.0474        Analytic: 0.0472</code></pre>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 23pt; font-weight: 700; color: var(--secondary-color);">0.0002</p>
+            <p style="font-size: 12.5pt;">the gap</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 23pt; font-weight: 700; color: var(--accent-color);">0.0015</p>
+            <p style="font-size: 12.5pt;">Monte Carlo SE</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 23pt; font-weight: 700; color: var(--success-color);">0.16 SE</p>
+            <p style="font-size: 12.5pt;">distance apart</p>
           </div>
         </div>
-        <aside class="notes">"This chart is LLN in action. The estimate is noisy at first but converges. Notice the 1/sqrt(n) rate — the wiggles get smaller, but slowly." Connect: "The random_state=42 you've been setting since Ch1 is the seed for this engine."</aside>
-      </section>
+        <p style="font-size: 15pt; margin-top: 16px;">The simulation and the algebra agree <em>as closely as random draws allow</em>. That sentence is only sayable because we computed the middle box.</p>
+      </div>
+      <aside class="notes">2 min. Second plant of the spine. Point at the middle box and say: "without that number, the left box is uninterpretable. 0.0002 is not big or small until you know what small means here."</aside>
+    </section>
 
-      <!-- VAR VS ES -->
-      <section id="var-vs-es">
-        <h2><i class="fa-solid fa-shield-halved" style="color: var(--danger-color);"></i> VaR vs. Expected Shortfall</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start;">
-            <div>
-              <div style="background: #fdf5ec; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
-                <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">Value at Risk (VaR)</p>
-                <p style="font-size: 14pt;">"Maximum loss at X% confidence"</p>
-                <p style="font-size: 14pt; margin-top: 8px;">\(\text{VaR}_q = -F^{-1}(1-q)\)</p>
-                <p style="font-size: 13pt; color: var(--danger-color); margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Tells you the door, not what's behind it</p>
-              </div>
-              <div style="background: #edf7ee; padding: 16px; border-radius: 8px;">
-                <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">Expected Shortfall (ES)</p>
-                <p style="font-size: 14pt;">"Average loss when things go badly"</p>
-                <p style="font-size: 14pt; margin-top: 8px;">\(\text{ES}_q = -E[R \mid R \leq -\text{VaR}_q]\)</p>
-                <p style="font-size: 13pt; color: var(--success-color); margin-top: 8px;"><i class="fa-solid fa-check-circle"></i> Captures tail shape &mdash; Basel III standard since Jan 2025</p>
-              </div>
-            </div>
-            <div style="text-align: center;">
-              <img src="figures/figure_003_var_vs_es.png" alt="Portfolio return distribution showing VaR as vertical threshold line and ES as average of the shaded tail beyond VaR" style="max-height: 320px; border-radius: 8px;">
-            </div>
+    <!-- SLIDE: misconception -->
+    <section id="misconception-accuracy" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Misconception: &ldquo;A 99%-Accurate Test Is 99% Reliable&rdquo;</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 5px solid var(--danger-color); border-radius: 10px; padding: 20px 28px;">
+          <p class="text-lg" style="line-height: 1.55;"><strong>Accuracy is a property of the test.</strong> What you actually need is a property of <em>the result</em>: given a positive, how likely is the condition?</p>
+        </div>
+        <div style="background: #eef5ee; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 20px 28px; margin-top: 18px;">
+          <p class="text-lg" style="line-height: 1.55;">When the base rate is low, the answer is low <em>no matter how good the test is</em>. There is no accuracy figure that rescues you from a rare event.</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 22px; text-align: center; color: var(--accent-color); font-weight: 600;">Always ask for the base rate. It is the number nobody puts in the press release.</p>
+      </div>
+      <aside class="notes">1 min. This recurs in Chapter 18 as precision. Do not use the word precision today &mdash; you will spend three minutes defining it and it is not this lecture's job.</aside>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: So Do You Block It?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 17px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">You are on the fraud team. Blocking a flagged transaction is right 4.7% of the time.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Do you block it, or do something else? Name the something else.</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">What <strong>number</strong> would you need to know before you could decide?</p>
           </div>
         </div>
-        <aside class="notes">Draw on board: histogram, vertical line = VaR, shade the tail = ES. "VaR tells you the door; ES tells you what's behind it." Basel FRTB: "In January 2025, the EU/UK made ES the standard. US follows in 2025-2026."</aside>
-      </section>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4 for the timer. Debrief line to have ready: "notice nobody fixed this by improving the model. Every workable answer was a threshold, a cost ratio, or a human review queue." Then hand it forward &mdash; that is Chapter 18's job, and saying so out loud stops the twenty-minute tangent.</aside>
+    </section>
 
-      <!-- POLL 3 -->
-      <section>
-        <section id="poll-3">
-          <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Class Poll</h2>
-          <div class="content" style="justify-content: center;">
-            <p class="text-xl" style="text-align: center; margin-bottom: 20px;"><strong>To halve Monte Carlo error, you need ___ times the simulations:</strong></p>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 900px; margin: 0 auto;">
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #f0f7fa; border: 2px solid var(--secondary-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">A</p>
-                <p style="font-size: 16pt;">2&times;</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #fdf5ec; border: 2px solid var(--accent-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">B</p>
-                <p style="font-size: 16pt;">4&times;</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #edf7ee; border: 2px solid var(--success-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">C</p>
-                <p style="font-size: 16pt;">8&times;</p>
-              </div>
-              <div style="padding: 20px; border-radius: 10px; text-align: center; background: #f8f6f3; border: 2px solid var(--muted-color);">
-                <p style="font-size: 20pt; font-weight: 700; color: var(--muted-color);">D</p>
-                <p style="font-size: 16pt;">16&times;</p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section id="poll-3-reveal">
-          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; 4&times;</h2>
-          <div class="content">
-            <p style="font-size: 15pt; line-height: 1.7;">Error \(\propto 1/\sqrt{n}\). To cut error in half: \(n \times 4\).</p>
-            <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 16px 20px; border-radius: 8px; margin: 16px 0;">
-              <p style="font-size: 14pt; margin: 0;"><strong>Diminishing returns:</strong> 10,000 sims &rarr; ~1% error. Getting to 0.5% needs 40,000. The Fed uses 250,000 because billion-dollar capital decisions demand precision.</p>
-            </div>
-          </div>
-        </section>
-      </section>
-
-      <!-- ============ DISCUSSION 2 + WRAP ============ -->
-      <section id="divider-wrapup" class="section-divider" data-state="is-section-divider">
-        <h1 style="font-size: 36pt; color: var(--primary-color);">Putting It Together</h1>
-        <p class="text-xl" style="color: var(--muted-color); margin-top: 15px;">When is 10,000 simulations enough?</p>
-      </section>
-
-      <!-- DISCUSSION 2 -->
-      <section id="discussion-precision">
-        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: How Much Precision?</h2>
-        <div class="content" style="text-align: center;">
-          <div style="background: #f0f7fa; padding: 25px; border-radius: 12px; max-width: 800px; margin: 0 auto;">
-            <p class="text-xl" style="font-weight: 600;">"The Fed runs 250K simulations. A hedge fund runs 10K. A startup runs 1K. Who's right?"</p>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; max-width: 800px; margin-left: auto; margin-right: auto;">
-            <div style="padding: 14px; background: #f0f7fa; border-radius: 8px; text-align: center;">
-              <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color);">250K</p>
-              <p style="font-size: 13pt; color: var(--muted-color);">Federal Reserve<br>$472B at stake</p>
-            </div>
-            <div style="padding: 14px; background: #fdf5ec; border-radius: 8px; text-align: center;">
-              <p style="font-size: 24pt; font-weight: 700; color: var(--accent-color);">10K</p>
-              <p style="font-size: 13pt; color: var(--muted-color);">Hedge Fund<br>Daily VaR</p>
-            </div>
-            <div style="padding: 14px; background: #edf7ee; border-radius: 8px; text-align: center;">
-              <p style="font-size: 24pt; font-weight: 700; color: var(--success-color);">1K</p>
-              <p style="font-size: 13pt; color: var(--muted-color);">Startup<br>Cash flow projection</p>
-            </div>
-          </div>
-          <p style="margin-top: 15px;">
-            <span style="display: inline-block; background: var(--secondary-color); color: #FFFFFF; font-size: 11pt; font-weight: 500; padding: 6px 16px; border-radius: 20px;"><i class="fa-solid fa-clock"></i> 3 min discussion &rarr; 2 min share</span>
-          </p>
+    <!-- SLIDE: Fed -->
+    <section id="fed" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-building-columns" style="color: var(--secondary-color);"></i> Economist at Work: The Fed&rsquo;s Stress Tests</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">In the <strong>2025</strong> cycle, 22 banks were projected to absorb roughly <strong>$472 billion</strong> in losses under the severely adverse scenario &mdash; commercial real estate down 30%, house prices down 33%, unemployment near 10%. Those projections set capital requirements.</p>
+        <div style="background: #fdf0ea; border-left: 5px solid var(--danger-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 14.5pt; line-height: 1.55;"><strong>But read what the Fed actually does.</strong> Its operational-risk projections are not a simulation engine drawing from fitted heavy-tailed distributions &mdash; the published methodology <em>averages a linear regression with a historical simulation</em>. And the severely adverse scenario is a <strong>single specified path</strong>, one trajectory per variable, with no probability attached to it at all.</p>
         </div>
-        <aside class="notes">Key insight: precision is a resource allocation problem. More draws = more precision, but diminishing returns (1/sqrt(n)). The right number depends on stakes, complexity, and computational budget.</aside>
-      </section>
+        <p style="font-size: 15pt; margin-top: 14px;"><em>&ldquo;Here is a bad scenario&rdquo;</em> and <em>&ldquo;here is the distribution of outcomes and its 99th percentile&rdquo;</em> are different objects. Section 5 returns to this.</p>
+      </div>
+      <aside class="notes">3 min, and hold the line at 3. This is the slide students quote back in office hours. The transferable skill is reading a headline risk number and asking what kind of object it is &mdash; a scenario, or a quantile of a distribution.</aside>
+    </section>
 
-      <!-- KEY TAKEAWAYS -->
-      <section id="key-takeaways">
-        <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f7fa; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--secondary-color);">
-              <p style="font-size: 20pt;"><i class="fa-solid fa-chart-pie" style="color: var(--secondary-color);"></i></p>
-              <p style="font-size: 14pt;"><strong>Distributions formalize uncertainty.</strong> Every statistic assumes a distribution. Making it explicit lets you reason about risk.</p>
-            </div>
-            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #fdf5ec; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--accent-color);">
-              <p style="font-size: 20pt;"><i class="fa-solid fa-arrows-rotate" style="color: var(--accent-color);"></i></p>
-              <p style="font-size: 14pt;"><strong>Bayes' Theorem is a learning rule.</strong> 99% accurate &ne; 99% reliable. Always check the base rate.</p>
-            </div>
-            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #edf7ee; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--success-color);">
-              <p style="font-size: 20pt;"><i class="fa-solid fa-dice" style="color: var(--success-color);"></i></p>
-              <p style="font-size: 14pt;"><strong>Monte Carlo replaces intractable math.</strong> LLN guarantees convergence at \(O(1/\sqrt{n})\). Trade elegance for computation.</p>
-            </div>
-            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #fdf0f0; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
-              <p style="font-size: 20pt;"><i class="fa-solid fa-shield-halved" style="color: var(--danger-color);"></i></p>
-              <p style="font-size: 14pt;"><strong>ES replaced VaR</strong> because VaR ignores tail severity. Basel III FRTB made ES the global standard (Jan 2025).</p>
-            </div>
+    <!-- DIVIDER 3 -->
+    <section id="divider-3" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; Distributions Are Assumptions</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Two numbers commit you to a claim about every value you have never seen.</p>
+      <aside class="notes">10 minutes. Ends at minute 41. Keep Bernoulli and Poisson brisk &mdash; the normal and its failure are what matter.</aside>
+    </section>
+
+    <!-- SLIDE: histogram to distribution -->
+    <section id="hist-to-dist" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--secondary-color);"></i> The Histogram Was an Estimate All Along</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 8px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 14px; text-align: center;">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--muted-color);">100</p>
+            <p style="font-size: 13pt;">lumpy and irregular</p>
           </div>
-          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin-top: 14px; text-align: center; border-left: 4px solid #7C3A5F;">
-            <p style="font-size: 15pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>The normal distribution is a useful lie.</strong> Always plot before assuming normality.</p>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 14px; text-align: center;">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">1,000</p>
+            <p style="font-size: 13pt;">the lumps smooth out</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 14px; text-align: center;">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">1,000,000</p>
+            <p style="font-size: 13pt;">approaches a curve</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 18px 14px; text-align: center; border: 2px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">the limit</p>
+            <p style="font-size: 13pt;"><strong>the distribution</strong></p>
           </div>
         </div>
-      </section>
+        <p style="font-size: 16pt; margin-top: 26px; line-height: 1.6;">That limiting curve is the probability distribution. Every observation you have ever plotted is <strong>one draw from it</strong>. The histogram was your estimate; the distribution is what you were estimating.</p>
+      </div>
+      <aside class="notes">2 min. This is the Chapter 3 bridge and it lands well &mdash; several students visibly reinterpret three weeks of work here. Do not rush it.</aside>
+    </section>
 
-      <!-- EXIT TICKET -->
-      <section id="exit-ticket">
-        <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
-        <div class="content" style="justify-content: center; text-align: center;">
-          <div style="background: #f0f7fa; padding: 30px 40px; border-radius: 12px; max-width: 700px; margin: 0 auto;">
-            <p class="text-2xl" style="font-weight: 600; color: var(--primary-color);">"Name one real-world situation where you'd use Monte Carlo simulation instead of solving an equation."</p>
-            <p class="text-lg" style="color: var(--muted-color); margin-top: 15px;">In one sentence, explain why the equation approach fails.</p>
+    <!-- SLIDE: Bernoulli + Poisson -->
+    <section id="discrete" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> Two Discrete Workhorses</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f8f6f3; border-radius: 12px; padding: 16px 20px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-weight: 700; color: var(--secondary-color); font-size: 15pt;">Bernoulli &mdash; one trial, two outcomes</p>
+            <p style="text-align: center; font-size: 13pt;">$$P(X = 1) = p, \quad P(X = 0) = 1-p$$</p>
+            <p style="font-size: 13.5pt;"><em>Every binary outcome in economics: employed or not, default or repay, click or no click. \(n\) independent ones make a Binomial.</em></p>
           </div>
-          <p style="margin-top: 20px;">
-            <span style="display: inline-block; background: var(--secondary-color); color: #FFFFFF; font-size: 11pt; font-weight: 500; padding: 6px 16px; border-radius: 20px;"><i class="fa-solid fa-clock"></i> 2 minutes</span>
-          </p>
-          <div style="margin-top: 20px;">
-            <p style="font-size: 14pt; color: var(--muted-color);"><strong>Next class:</strong> Chapter 6 &mdash; Sampling &amp; Bias. "Today, LLN worked because every draw was equally likely. What if some observations are more likely to end up in your dataset?"</p>
+          <div style="background: #f8f6f3; border-radius: 12px; padding: 16px 20px; border-top: 4px solid var(--accent-color);">
+            <p style="font-weight: 700; color: var(--accent-color); font-size: 15pt;">Poisson &mdash; counts of rare events</p>
+            <p style="text-align: center; font-size: 13pt;">$$P(X = k) = \frac{e^{-\mu}\mu^{k}}{k!}$$</p>
+            <p style="font-size: 13.5pt;"><em>How many times does a rare thing happen this month? Claims, earthquakes, arrivals at a help desk.</em></p>
           </div>
         </div>
-        <aside class="notes">Collect responses. Good answers: "VaR with fat tails," "startup cash flow with correlated inputs," "climate damage with uncertain sensitivity." Plant the Ch6 seed: "LLN guaranteed convergence because every draw was equally likely. What happens when they're not?"</aside>
+        <p style="font-size: 14.5pt; margin-top: 16px; color: var(--muted-color);">Banks&rsquo; own operational-risk models pair a <strong>Poisson count</strong> of loss events with a <strong>heavy-tailed severity</strong> distribution &mdash; how many, times how bad.</p>
+      </div>
+      <aside class="notes">2 min. Brisk. They need to know these exist and to recognise the shape of the question each one answers. No derivations.</aside>
+    </section>
+
+    <!-- SLIDE: normal -->
+    <section id="normal" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-chart-area" style="color: var(--secondary-color);"></i> The Normal, and Its Two Parameters</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 4px 22px; text-align: center;">
+          $$f(x) = \frac{1}{\sqrt{2\pi\sigma^{2}}}\exp\!\left(-\frac{(x-\mu)^{2}}{2\sigma^{2}}\right)$$
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 10px;"><em>In plain language:</em> \(\mu\) says where the bell sits, \(\sigma\) says how wide it is. Nothing else. <strong>Two numbers commit you to a claim about how likely every possible value is</strong> &mdash; including the ones you have never observed.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+            <p style="text-align: center; font-size: 13pt;">$$E[X] = \sum_x x\,P(X=x)$$</p>
+            <p style="font-size: 13.5pt;">\(\bar{x}\) from Ch 2 <em>estimates</em> this.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="text-align: center; font-size: 13pt;">$$\mathrm{Var}(X) = E\big[(X - E[X])^{2}\big]$$</p>
+            <p style="font-size: 13.5pt;">\(s^{2}\) from Ch 4 <em>estimates</em> this.</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px; text-align: center; color: var(--accent-color);">The statistic is what you have. The parameter is what you want. Chapters 6 and 7 are about that gap.</p>
+      </div>
+      <aside class="notes">3 min. The sample-versus-population distinction is the single most important thing on this slide and it is worth saying twice. It is the whole reason Chapter 6 exists.</aside>
+    </section>
+
+    <!-- SLIDE: normal vs t figure -->
+    <section id="fat-tails-figure" style="padding: 26px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-water" style="color: var(--danger-color);"></i> Same Bell. Very Different Tails.</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_002_normal_vs_fat_tails.png" alt="Normal and Student-t densities overlaid, with the region worse than minus three standard deviations shaded under both curves; the fat-tailed curve puts 2.88 percent of its mass there against the normal's 0.13 percent" style="max-height: 450px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 8px; color: var(--primary-color);">Beyond &minus;3 s.d. the fat-tailed curve is about <strong>21 times</strong> more likely to land. Same centre. Same general shape.</p>
+      </div>
+      <aside class="notes">1 min. Do not get drawn into what degrees of freedom means. If asked: "a dial for how fat the tails are; three is very fat." That is enough for this course.</aside>
+    </section>
+
+    <!-- SLIDE: never on a Tuesday -->
+    <section id="never-tuesday" style="padding: 34px 58px;">
+      <h2><i class="fa-solid fa-bell" style="color: var(--danger-color);"></i> When &ldquo;Never&rdquo; Happens on a Tuesday</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 10px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 24px 20px; text-align: center; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 15pt; color: var(--muted-color);">A normal fitted to S&amp;P 500 daily returns says a <strong>5% single-day loss</strong> should happen</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--secondary-color); margin-top: 12px;">once every<br>14,000 years</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 12px; padding: 24px 20px; text-align: center; border-left: 5px solid var(--danger-color);">
+            <p style="font-size: 15pt; color: var(--muted-color);">Between <strong>2000 and 2024</strong>, it happened</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--danger-color); margin-top: 12px;">six times<br>in 24 years</p>
+          </div>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 22px; text-align: center;">Financial returns, income, wealth, city sizes, firm sizes &mdash; all fat-tailed. In Ch 4, mean US household net worth ($1.06M) was <strong>five times</strong> the median ($192,700).</p>
+      </div>
+      <aside class="notes">2 min. Deliver the 14,000 years and then pause before the fragment. This is the emotional peak of Section 3 and it sets up the discussion.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: So What Do You Actually Do?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 17px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">Your model says once per 14,000 years. Reality says six times in 24.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Name <strong>two different things</strong> a risk team could do about it.</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--danger-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">What does each one still <strong>assume</strong>?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">3 min, press 3. The two live answers: fit a fatter distribution (imposes a shape and extrapolates past your data), or stop fitting and resample the actual history (assumes the next decade resembles the last). Debrief sentence: there is no assumption-free option &mdash; only a choice of which assumption you can defend to a regulator.</aside>
+    </section>
+
+    <!-- SLIDE: lottery -->
+    <section id="lottery" style="padding: 34px 58px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Data Snapshot: The Massachusetts State Lottery</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 28pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">$5.963B</p>
+            <p style="font-size: 13pt; margin-top: 8px;">FY2025 total revenue</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 28pt; font-weight: 700; color: var(--accent-color); line-height: 1;">74.1%</p>
+            <p style="font-size: 13pt; margin-top: 8px;">record prize payout &mdash; the player&rsquo;s expected value</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 28pt; font-weight: 700; color: var(--success-color); line-height: 1;">$1.067B</p>
+            <p style="font-size: 13pt; margin-top: 8px;">net profit &mdash; not luck</p>
+          </div>
+        </div>
+        <p style="font-size: 16pt; margin-top: 24px; text-align: center; line-height: 1.55;">74.1% means the average return on a dollar is <strong>74.1 cents</strong>. The state&rsquo;s margin is a mathematical certainty across millions of independent tickets. <strong>The house does not gamble. It computes.</strong></p>
+      </div>
+      <aside class="notes">1 min. This is the bridge into Section 4 &mdash; the mechanism that turns 74.1 cents per dollar into a guaranteed billion is the Law of Large Numbers, which is the next thing we name.</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-4" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; Monte Carlo &mdash; and How Wrong It Is</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">When the maths is intractable, stop solving and start counting.</p>
+      <aside class="notes">19 minutes, the longest section. Ends at minute 60. If you are behind, cut the Ulam and von Neumann history, not the standard error block.</aside>
+    </section>
+
+    <!-- SLIDE: what MC is -->
+    <section id="what-mc" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-dice" style="color: var(--accent-color);"></i> What Monte Carlo Is</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Draw thousands of random scenarios from your distributions, then <strong>count what happened</strong>. You trade mathematical elegance for compute, and it works.</p>
+        <p style="font-size: 14.5pt; margin-top: 14px; color: var(--muted-color);">Named after the casino. In the 1940s Stanislaw Ulam and John von Neumann, working at Los Alamos, realised they could estimate hard integrals by random sampling instead of solving them.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>The Fed</strong> &mdash; 250,000 draws for stress tests</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>Swiss Re</strong> &mdash; hundreds of thousands of simulated hurricane seasons</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>Climate economists</strong> &mdash; sampling damage-function uncertainty</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The framing that lands: "you already know how to do this. You have been calling it a for-loop."</aside>
+    </section>
+
+    <!-- SLIDE: pi -->
+    <section id="pi" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--secondary-color);"></i> Estimating \(\pi\) by Throwing Darts</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Inscribe a circle of radius 1 in a 2&times;2 square. The circle&rsquo;s area is \(\pi\); the square&rsquo;s is 4. Drop points uniformly &mdash; the fraction inside converges to \(\pi/4\).</p>
+        <pre style="background: #f8f6f3; border-radius: 10px; padding: 13px 20px; font-size: 13pt; line-height: 1.5; margin-top: 12px;"><code>rng = np.random.default_rng(seed=42)
+x = rng.uniform(-1, 1, 1_000_000)
+y = rng.uniform(-1, 1, 1_000_000)
+pi_hat = 4 * ((x**2 + y**2) &lt;= 1.0).mean()   # 3.14178</code></pre>
+        <p style="font-size: 15pt; margin-top: 14px;">No geometry. No integral. <strong>Just counting.</strong> That is the whole method &mdash; and it scales to problems where no formula exists at all.</p>
+      </div>
+      <aside class="notes">2 min. Mention default_rng rather than np.random.seed and say why in one sentence: default_rng gives you an isolated generator, so nothing else in your program can quietly consume your draws. They will use it all term.</aside>
+    </section>
+
+    <!-- SLIDE: pi figure -->
+    <section id="pi-figure" style="padding: 26px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> What &ldquo;the Simulation Is Working&rdquo; Looks Like</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_004_pi_convergence.png" alt="Running Monte Carlo estimate of pi against number of draws on a logarithmic scale, wandering inside a narrowing plus-or-minus two standard error envelope and settling on the true value of 3.14159" style="max-height: 450px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 8px; color: var(--primary-color);">3.14178 against a true 3.14159. The estimate stays inside its own <strong>&plusmn;2 SE envelope</strong> essentially throughout.</p>
+      </div>
+      <aside class="notes">1 min. Point at the shaded funnel. That shape is the picture of this entire lecture &mdash; it is the same shape as the cover slide, and it is what an error bar looks like when you watch it shrink.</aside>
+    </section>
+
+    <!-- SLIDE: LLN -->
+    <section id="lln" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-infinity" style="color: var(--accent-color);"></i> The Law of Large Numbers</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 8px 26px; text-align: center;">
+          $$\bar{X}_n = \frac{1}{n}\sum_{i=1}^{n} X_i \ \longrightarrow \ E[X] \quad \text{as } n \to \infty$$
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; line-height: 1.55;"><em>In plain language:</em> average enough independent draws and you get arbitrarily close to the true expected value. <strong>The LLN is the guarantee that simulation works at all.</strong></p>
+        <div style="background: #eef5ee; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 15px 24px; margin-top: 16px;">
+          <p style="font-size: 14.5pt; margin: 0;">It is also why the Massachusetts Lottery&rsquo;s $1.067 billion is not a gamble. Across millions of independent tickets, the payout <em>must</em> converge to 74.1 cents on the dollar.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Callback to Lab 5 Part 1 Q3: the sample proportion IS a sample mean, and the mean is the non-robust statistic they distrusted in Chapter 4. Why does LLN still work? Because non-robust does not mean biased &mdash; it means sensitive to individual points, and the LLN is a statement about what happens when no individual point matters any more.</aside>
+    </section>
+
+    <!-- SLIDE: LLN figure -->
+    <section id="lln-figure" style="padding: 24px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-chart-simple" style="color: var(--secondary-color);"></i> Lab 5, Part 1: 10,000 Coin Flips</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_003_lln_coin.png" alt="Running proportion of heads over ten thousand simulated coin flips on a logarithmic scale, very noisy at first and settling toward one half inside a narrowing plus-or-minus two standard error band" style="max-height: 430px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 6px; color: var(--primary-color);">4,985 heads in 10,000 (0.4985). But the running proportion does not settle permanently inside &plusmn;1% until <strong>flip 6,455</strong>.</p>
+      </div>
+      <aside class="notes">2 min. The 6,455 is the number to dwell on. "Converges" is a statement about the limit &mdash; it is not a promise about your sample size. Students who expect stability by flip 100 need to see this before they run the lab.</aside>
+    </section>
+
+    <!-- SLIDE: Monty Hall -->
+    <section id="monty" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Monty Hall &mdash; Lab 5, Part 2</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Three doors, one car. You pick one. The host &mdash; who knows what is behind each door &mdash; opens a <em>different</em> door showing a goat. Switch or stay?</p>
+        <table style="width: 100%; margin-top: 14px; font-size: 15pt; border-collapse: collapse;">
+          <tr style="border-bottom: 2px solid var(--line-color);">
+            <th style="text-align: left; padding: 8px 12px; color: var(--muted-color); font-size: 13.5pt;">Strategy</th>
+            <th style="text-align: right; padding: 8px 12px; color: var(--muted-color); font-size: 13.5pt;">Wins</th>
+            <th style="text-align: right; padding: 8px 12px; color: var(--muted-color); font-size: 13.5pt;">Rate</th>
+            <th style="text-align: right; padding: 8px 12px; color: var(--muted-color); font-size: 13.5pt;">Theory</th>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--line-color);">
+            <td style="padding: 10px 12px;">Always stay</td>
+            <td style="text-align: right; padding: 10px 12px;">3,306</td>
+            <td style="text-align: right; padding: 10px 12px; font-weight: 700; color: var(--secondary-color);">0.3306</td>
+            <td style="text-align: right; padding: 10px 12px; color: var(--muted-color);">0.3333</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 12px;">Always switch</td>
+            <td style="text-align: right; padding: 10px 12px;">6,694</td>
+            <td style="text-align: right; padding: 10px 12px; font-weight: 700; color: var(--accent-color);">0.6694</td>
+            <td style="text-align: right; padding: 10px 12px; color: var(--muted-color);">0.6667</td>
+          </tr>
+        </table>
+        <p style="font-size: 14pt; margin-top: 12px; color: var(--muted-color);">10,000 games each, seed 42 &mdash; the numbers your own notebook will print on Thursday.</p>
+      </div>
+      <aside class="notes">2 min. Do not explain WHY switching wins &mdash; that is a lab interpretation question and it is better discovered. Ask instead whether the simulation agrees with theory, and let them look hard at 0.6694 against 0.6667 before the poll.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 3 &mdash; Is Your Simulation Wrong?</h2>
+        <p class="text-lg" style="margin-bottom: 4px;">Your simulation of 10,000 games says switching wins <strong>66.94%</strong>. Theory says <strong>66.67%</strong>.</p>
+        <div class="poll-grid" data-poll-id="ch05-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Yes &mdash; it is off by 0.27 points</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) No &mdash; that gap is inside the simulation&rsquo;s own noise</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Yes &mdash; 10,000 games is too few</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cannot say without re-running it</div>
+        </div>
+        <aside class="notes">1 min. This is the most important poll in the lecture. Make everyone commit. A is the careful, conscientious student's answer &mdash; which is exactly why it is worth taking seriously out loud rather than dismissing.</aside>
       </section>
+      <section id="poll-3-reveal" data-poll-results="ch05-econ3916-poll-3" style="padding: 28px 45px;">
+        <h2 style="font-size: 26pt;"><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; the Gap Is 0.58 SE</h2>
+        <div class="poll-results-chart" data-poll-id="ch05-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:135px; margin:8px 60px 16px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.55;">The Monte Carlo standard error here is \(\sqrt{(2/3)(1/3)/10{,}000} = 0.0047\). The gap of 0.0027 is <strong>0.58 of one standard error</strong>. Re-run it with a different seed and it will miss by about that much again, in some direction.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); padding: 12px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>D deserves credit.</strong> Re-running with different seeds is exactly the right instinct &mdash; and in Section 5 we do precisely that. But you do not have to: the standard error tells you the answer <em>without</em> re-running anything.</p>
+          </div>
+        </div>
+        <aside class="notes">1 min. Then straight into the formula slide while the reveal is still on their minds.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: SE formula -->
+    <section id="mc-se" style="padding: 30px 58px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--danger-color);"></i> Every Monte Carlo Number Has a Standard Error</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 6px 26px; text-align: center;">
+          $$\mathrm{SE} = \sqrt{\frac{p(1-p)}{n}} \qquad \text{for a proportion out of } n \text{ draws}$$
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 14px; line-height: 1.55;"><em>In plain language:</em> run the same simulation again with a different seed and you get a different answer. The standard error says <strong>how much different</strong> &mdash; it is the typical distance between one run&rsquo;s answer and the truth.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;">About <strong>two-thirds</strong> of runs land within <strong>1 SE</strong> of the truth.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;">About <strong>95%</strong> land within <strong>2 SE</strong>.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the payload of the lecture. Write the formula on the board too &mdash; they will need it in Lab 5 Part 4 and it is not printed in the notebook.</aside>
+    </section>
+
+    <!-- SLIDE: honest table -->
+    <section id="honest-table" style="padding: 28px 50px;">
+      <h2 style="font-size: 26pt;"><i class="fa-solid fa-file-invoice" style="color: var(--secondary-color);"></i> Everything We Computed Today, Stated Honestly</h2>
+      <div class="content">
+        <table style="width: 100%; font-size: 14.5pt; border-collapse: collapse;">
+          <tr style="border-bottom: 2px solid var(--line-color);">
+            <th style="text-align: left; padding: 7px 10px; color: var(--muted-color); font-size: 13pt;">Simulated</th>
+            <th style="text-align: right; padding: 7px 10px; color: var(--muted-color); font-size: 13pt;">Exact</th>
+            <th style="text-align: right; padding: 7px 10px; color: var(--muted-color); font-size: 13pt;">MC SE</th>
+            <th style="text-align: right; padding: 7px 10px; color: var(--muted-color); font-size: 13pt;">Distance</th>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 10px;">Die, \(P(\geq\) one six\()\) &nbsp; 0.5157</td><td style="text-align: right; padding: 8px 10px;">0.5177</td><td style="text-align: right; padding: 8px 10px;">0.00158</td><td style="text-align: right; padding: 8px 10px; font-weight: 700; color: var(--accent-color);">1.30 SE</td></tr>
+          <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 10px;">Coin, 10,000 flips &nbsp; 0.4985</td><td style="text-align: right; padding: 8px 10px;">0.5000</td><td style="text-align: right; padding: 8px 10px;">0.00500</td><td style="text-align: right; padding: 8px 10px; font-weight: 700; color: var(--accent-color);">0.30 SE</td></tr>
+          <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 10px;">Monty Hall switch &nbsp; 0.6694</td><td style="text-align: right; padding: 8px 10px;">0.6667</td><td style="text-align: right; padding: 8px 10px;">0.00471</td><td style="text-align: right; padding: 8px 10px; font-weight: 700; color: var(--accent-color);">0.58 SE</td></tr>
+          <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 10px;">Fraud posterior &nbsp; 0.0474</td><td style="text-align: right; padding: 8px 10px;">0.0472</td><td style="text-align: right; padding: 8px 10px;">0.00150</td><td style="text-align: right; padding: 8px 10px; font-weight: 700; color: var(--accent-color);">0.16 SE</td></tr>
+          <tr><td style="padding: 8px 10px;">\(\pi\) &nbsp; 3.14178</td><td style="text-align: right; padding: 8px 10px;">3.14159</td><td style="text-align: right; padding: 8px 10px;">0.00164</td><td style="text-align: right; padding: 8px 10px; font-weight: 700; color: var(--accent-color);">0.11 SE</td></tr>
+        </table>
+        <p style="font-size: 16pt; margin-top: 16px; text-align: center; color: var(--danger-color); font-weight: 600;">Not one of those gaps is real.</p>
+      </div>
+      <aside class="notes">2 min. Read the last line slowly. Every gap they have squinted at today was noise, and now they can prove it in one column of arithmetic.</aside>
+    </section>
+
+    <!-- SLIDE: monty figure -->
+    <section id="monty-figure" style="padding: 24px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-chart-column" style="color: var(--accent-color);"></i> The Same Result, with Its Error Bars On</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_005_monty_hall.png" alt="Bar chart of simulated Monte Carlo win rates for the stay and switch strategies with plus-or-minus two standard error bars, each error bar straddling its theoretical one-third or two-thirds line" style="max-height: 430px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 6px; color: var(--primary-color);">Both bars&rsquo; error bars straddle the theoretical line. The simulation <strong>confirms</strong> the theory &mdash; it does not correct it.</p>
+      </div>
+      <aside class="notes">1 min. "Confirms, does not correct" is the sentence. Students routinely report simulated results as though they have improved on the algebra.</aside>
+    </section>
+
+    <!-- SLIDE: the rule -->
+    <section id="the-rule" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-pen-ruler" style="color: var(--danger-color);"></i> The Rule to Take Away</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #fdf0ea, #f8e6dc); border-radius: 12px; padding: 26px 32px; border-left: 6px solid var(--danger-color);">
+          <p class="text-xl" style="line-height: 1.5;">Report the <strong>standard error</strong> beside every simulated number. And <strong>refuse to rank</strong> two simulated numbers that sit within about two standard errors of each other &mdash; the simulation has not told you which is larger.</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 22px; line-height: 1.6;">This is not pedantry. <em>&ldquo;Method A beat method B by 0.3 points&rdquo;</em> is a claim about the world. If 0.3 is half a standard error, you have not reported a finding &mdash; <strong>you have reported your seed.</strong></p>
+      </div>
+      <aside class="notes">2 min. This is the slide to photograph. Tell them so. It is also the grading criterion for Lab 5 Part 4 &mdash; be explicit about that now rather than in the rubric.</aside>
+    </section>
+
+    <!-- SLIDE: price of precision -->
+    <section id="price" style="padding: 34px 58px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i> The Price of Precision</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 14px 26px; text-align: center;">
+          <p style="font-size: 22pt; color: var(--primary-color); margin: 0;">Monte Carlo error falls at \(O(1/\sqrt{n})\)</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; line-height: 1.55;"><em>In plain language:</em> you need <strong>four times</strong> the draws to halve the error. Going from 10,000 to 20,000 buys a 29% reduction, not 50%.</p>
+        <div style="background: #eef5ee; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>The redeeming feature.</strong> That rate does not depend on how many dimensions the problem has. Grid methods die in high dimensions; Monte Carlo does not notice. That is why a slow method survives.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The dimension-independence line is what makes Monte Carlo worth teaching rather than a curiosity. It also explains why the Fed can simulate a bank's whole balance sheet.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 4 &mdash; How Much Compute Do You Need?</h2>
+        <p class="text-lg" style="margin-bottom: 4px;">You have run <strong>10,000</strong> simulations. You want to <strong>halve</strong> your standard error. How many simulations do you need?</p>
+        <div class="poll-grid" data-poll-id="ch05-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) 20,000</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) 40,000</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) 100,000</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) 1,000,000</div>
+        </div>
+        <aside class="notes">1 min. A is the linear intuition and it is worth naming as such when you reveal.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch05-econ3916-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; 40,000</h2>
+        <div class="poll-results-chart" data-poll-id="ch05-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:145px; margin:10px 60px 18px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.55;">Error falls as \(1/\sqrt{n}\), so halving it needs \(2^{2} = 4\) times the draws.</p>
+          <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); padding: 12px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;">This is the chapter&rsquo;s own warning: <em>&ldquo;more simulations always means better results&rdquo;</em> is true but wildly oversold. At some point compute costs more than the precision is worth. 10,000&ndash;100,000 covers most economic applications; the Fed uses 250,000 because billion-dollar capital decisions turn on it.</p>
+          </div>
+        </div>
+        <aside class="notes">1 min.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: convergence rate figure -->
+    <section id="rate-figure" style="padding: 24px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Lab 5&rsquo;s Extension Measures It</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_008_convergence_rate.png" alt="Log-log plot of average absolute error against number of Monte Carlo draws, tracking a dashed reference line of slope minus one half, with a fitted slope of minus 0.532 labelled on the plot" style="max-height: 420px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 6px; color: var(--primary-color);">Fitted slope <strong>&minus;0.532</strong> against a theoretical &minus;0.500. And yes &mdash; <em>that</em> gap is itself a Monte Carlo result, from 50 trials per point.</p>
+      </div>
+      <aside class="notes">2 min. The joke in the caption is a real teaching point: even your measurement of the convergence rate is a simulation with its own noise. Someone always asks whether &minus;0.532 disproves the theory. It does not.</aside>
+    </section>
+
+    <!-- DIVIDER 5 -->
+    <section id="divider-5" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; Value at Risk and Expected Shortfall</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Where a Monte Carlo standard error becomes a sentence in a memo.</p>
+      <aside class="notes">12 minutes. Ends at minute 72.</aside>
+    </section>
+
+    <!-- SLIDE: VaR -->
+    <section id="var" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-landmark" style="color: var(--danger-color);"></i> Value at Risk</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 8px 26px; text-align: center;">
+          $$\mathrm{VaR}_q = -F^{-1}(1-q)$$
+          <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 2px;">\(F^{-1}\) is the quantile function of portfolio returns</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; line-height: 1.55;"><em>In plain language:</em> at 95% confidence, VaR is the loss you expect to <strong>exceed on about one day in twenty</strong>.</p>
+        <div style="background: #fdf0ea; border-left: 5px solid var(--danger-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 15pt; margin: 0;"><strong>It is a cut-off, not a worst case.</strong> A book with a 95% VaR of $19,494 could have a worst day of $25,000 or of $250,000. VaR reports both identically.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The cut-off-versus-worst-case confusion is the single most common misreading of a risk report, and it appears verbatim in Lab 5 Part 4 Question 4.</aside>
+    </section>
+
+    <!-- SLIDE: parametric VaR -->
+    <section id="parametric-var" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--secondary-color);"></i> By Hand First, Assuming Normality</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Mean daily return \(\mu = 0.04\%\), standard deviation \(\sigma = 1.2\%\):</p>
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 6px 26px; margin-top: 10px; text-align: center;">
+          $$\mathrm{VaR}_{0.95} = -(\mu - 1.645\,\sigma) = -(0.0004 - 1.645 \times 0.012) = 0.01934$$
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--success-color);">$19,338</p>
+            <p style="font-size: 13pt;">on a $1,000,000 portfolio</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px; display: flex; align-items: center;">
+            <p style="font-size: 14.5pt;">Clean, instant &mdash; and it is entirely a consequence of the words <em>&ldquo;assuming normality.&rdquo;</em> Monte Carlo removes that &ldquo;if.&rdquo;</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Hold onto $19,338. It is the reference point for the whole rest of the section.</aside>
+    </section>
+
+    <!-- SLIDE: lab results -->
+    <section id="lab-results" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-file-invoice" style="color: var(--accent-color);"></i> Lab 5, Part 4 &mdash; What Your Own Screen Will Say</h2>
+      <div class="content">
+        <p style="font-size: 14pt; color: var(--muted-color);">10,000 simulated days &bull; $1,000,000 portfolio &bull; seed 42</p>
+        <table style="width: 100%; margin-top: 12px; font-size: 15.5pt; border-collapse: collapse;">
+          <tr style="border-bottom: 2px solid var(--line-color);">
+            <th style="text-align: left; padding: 8px 14px; color: var(--muted-color); font-size: 13.5pt;">Measure</th>
+            <th style="text-align: right; padding: 8px 14px; color: var(--muted-color); font-size: 13.5pt;">Percentage</th>
+            <th style="text-align: right; padding: 8px 14px; color: var(--muted-color); font-size: 13.5pt;">Dollars</th>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 9px 14px;">95% VaR</td><td style="text-align: right; padding: 9px 14px;">1.9494%</td><td style="text-align: right; padding: 9px 14px; font-weight: 700; color: var(--accent-color);">$19,494</td></tr>
+          <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 9px 14px;">95% ES</td><td style="text-align: right; padding: 9px 14px;">2.4230%</td><td style="text-align: right; padding: 9px 14px; font-weight: 700; color: var(--danger-color);">$24,230</td></tr>
+          <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 9px 14px;">99% VaR</td><td style="text-align: right; padding: 9px 14px;">2.7046%</td><td style="text-align: right; padding: 9px 14px; font-weight: 700; color: var(--accent-color);">$27,046</td></tr>
+          <tr><td style="padding: 9px 14px;">99% ES</td><td style="text-align: right; padding: 9px 14px;">3.1221%</td><td style="text-align: right; padding: 9px 14px; font-weight: 700; color: var(--danger-color);">$31,221</td></tr>
+        </table>
+        <p style="font-size: 14.5pt; margin-top: 12px; color: var(--primary-color);">Notice ES is larger than VaR on both rows. That is not a coincidence &mdash; it is a theorem.</p>
+      </div>
+      <aside class="notes">2 min. Say plainly that these are the exact numbers their notebook prints, so they can check their own work against this slide. Then ask the question the next slide answers: 19,494 against 19,338 &mdash; did we just learn something?</aside>
+    </section>
+
+    <!-- SLIDE: var vs es figure -->
+    <section id="var-es-figure" style="padding: 24px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-chart-area" style="color: var(--danger-color);"></i> VaR Is the Edge. ES Is the Average Beyond It.</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_006_var_vs_es.png" alt="Histogram of ten thousand simulated daily profit-and-loss outcomes on a one million dollar portfolio, with the worst five percent of days shaded in rosewood and vertical lines marking the VaR cut-off at 19,494 dollars and the deeper Expected Shortfall average at 24,230 dollars" style="max-height: 430px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 6px; color: var(--primary-color);">The shaded region is 500 of the 10,000 days. VaR names its edge; ES averages everything inside it.</p>
+      </div>
+      <aside class="notes">1 min. Trace the shaded region with your hand and ask: "how bad does it get in here?" That gesture is the definition of Expected Shortfall and it is worth more than the formula.</aside>
+    </section>
+
+    <!-- SLIDE: is it real -->
+    <section id="is-it-real" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> $19,494 vs $19,338 &mdash; Did We Learn Something?</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">$156</p>
+            <p style="font-size: 12.5pt;">the gap at 95%</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">$254</p>
+            <p style="font-size: 12.5pt;">Monte Carlo SE</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 15px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">0.62 SE</p>
+            <p style="font-size: 12.5pt;">distance apart</p>
+          </div>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px;"><strong>No.</strong> The simulation did not discover that true risk is higher than the formula says. It landed 0.62 standard errors away, which is where estimates land.</p>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-left: 5px solid var(--secondary-color); border-radius: 10px; padding: 15px 24px; margin-top: 14px;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>And at 99% it went the other way.</strong> Simulated $27,046 against an exact $27,516 &mdash; <em>below</em>, by 1.05 SE. Two gaps, opposite directions, both noise.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The opposite-directions point is what kills the "simulation is conservative" story before a student invents it. Note the SE of a simulated quantile is not the simple proportion formula &mdash; if asked, say it is the same idea scaled by how dense the returns are at the cut-off, and that the next slide shows it empirically instead.</aside>
+    </section>
+
+    <!-- SLIDE: seed spread figure -->
+    <section id="seed-spread" style="padding: 22px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-braille" style="color: var(--accent-color);"></i> Do Not Take the Formula on Faith &mdash; Change the Seed</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_007_var_seed_spread.png" alt="Twenty estimates of the 95 percent Value at Risk, one per random seed, scattered between roughly 18,900 and 19,800 dollars around the exact value inside a shaded plus-or-minus two standard error band" style="max-height: 405px; width: auto; border-radius: 6px;">
+        <p style="font-size: 14pt; margin-top: 4px; color: var(--primary-color);">Same portfolio, same 10,000 days. Mean <strong>$19,301</strong>, standard deviation <strong>$229</strong> &mdash; against the <strong>$254</strong> the formula predicted. Range: <strong>$18,899 to $19,770</strong>.</p>
+      </div>
+      <aside class="notes">2 min. Nothing changed but the seed. If a student's Lab 5 answer differs from the slide by a few hundred dollars, this is why &mdash; and it is not a bug in their notebook. Say that explicitly; it saves four office-hours emails.</aside>
+    </section>
+
+    <!-- SLIDE: ES -->
+    <section id="es" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-water" style="color: var(--danger-color);"></i> Expected Shortfall</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 8px 26px; text-align: center;">
+          $$\mathrm{ES}_q = -E\big[R \mid R \leq -\mathrm{VaR}_q\big]$$
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; line-height: 1.55;"><em>In plain language:</em> if the day goes badly, <strong>how badly on average?</strong> ES averages every loss past the cut-off, so it sees the <em>shape</em> of the tail instead of one point on it.</p>
+        <div style="background: #eef5ee; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 15pt; margin: 0;">ES is <strong>always</strong> larger than VaR &mdash; it is an average of numbers that are all worse than the cut-off. On our book: $24,230 against $19,494.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. If a student's ES ever comes out below their VaR, they have a sign error or they have selected the wrong tail. Say that now; it is the single most common Lab 5 Part 4 bug.</aside>
+    </section>
+
+    <!-- SLIDE: why switched -->
+    <section id="why-es" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--secondary-color);"></i> Why the Regulators Switched</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 16px 22px; border-top: 4px solid var(--danger-color);">
+            <p style="font-weight: 700; color: var(--danger-color); font-size: 15pt; margin-bottom: 6px;">1. VaR ignores severity</p>
+            <p style="font-size: 14pt;">A book with a 95% VaR of $19,494 could have a worst day of $25,000 or of $250,000. VaR reports them identically. ES does not.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 16px 22px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-weight: 700; color: var(--secondary-color); font-size: 15pt; margin-bottom: 6px;">2. VaR is not sub-additive</p>
+            <p style="font-size: 14pt;">Combine two portfolios and measured VaR can come out <em>higher</em> than the sum of the separate VaRs &mdash; so the measure can penalise diversification. ES cannot do that.</p>
+          </div>
+        </div>
+        <div style="background: #eef5ee; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 15px 24px; margin-top: 18px;">
+          <p style="font-size: 15pt; margin: 0;">Basel III&rsquo;s Fundamental Review of the Trading Book made ES the standard for bank trading books in the EU and UK from <strong>1 January 2025</strong>. The US is phasing it in over 2025&ndash;26. <em>Banks are implementing this right now.</em></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Expect "why not use ES from the start?" Answer: VaR was simpler to compute and to explain, and it took the 2008 crisis plus fifteen years of regulatory revision to move. Do not state the coherence axioms &mdash; sub-additivity in one sentence is the right depth for this course.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: What Goes in the Memo?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 16px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">You are the risk analyst. Your simulation says <strong>95% VaR = $19,494</strong>, and you know the Monte Carlo standard error is <strong>$254</strong>. The committee wants one number.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 15px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">What <em>exactly</em> do you write?</p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--danger-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">A colleague&rsquo;s model gives <strong>$19,700</strong> and calls it &ldquo;more conservative.&rdquo; What do you say?</p>
+          </div>
+        </div>
+        <p style="margin-top: 14px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">5 min, press 5. Debrief for B: $206 is under one standard error &mdash; the two models have not been distinguished, and calling one more conservative is reporting a seed. Debrief for A, delivered slowly: a range is not a hedge. It is the finding. That is the sentence to end the lecture's argument on.</aside>
+    </section>
+
+    <!-- SLIDE: takeaways -->
+    <section id="takeaways" style="padding: 28px 52px;">
+      <h2 style="font-size: 26pt;"><i class="fa-solid fa-graduation-cap" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>1.</strong> A probability distribution is an <strong>assumption made explicit</strong>. Two numbers commit you to a claim about every value you have never seen.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>2.</strong> Bayes is a <strong>learning rule</strong>, and the <strong>base rate</strong> does most of the work. 99% accuracy on a 0.1% base rate gives you 4.7%.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>3.</strong> Monte Carlo replaces intractable maths with <strong>counting</strong>. The LLN says it works; \(O(1/\sqrt{n})\) is the price.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>4.</strong> <strong>Every simulated number carries a standard error. Report it, and do not rank inside the noise.</strong></p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>5.</strong> <strong>Expected Shortfall replaced VaR</strong> because VaR names a cut-off and ignores how bad things get past it.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Number 4 is the one that is not in the textbook. Say so, and say it is on the exam.</aside>
+    </section>
+
+    <!-- SLIDE: exit ticket -->
+    <section id="exit-ticket" style="padding: 28px 52px;">
+      <h2 style="font-size: 26pt;"><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Exit Ticket &mdash; Canvas, Before the Lab</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 20px;">
+            <p style="font-size: 14.5pt;"><strong>1.</strong> What is the sample space for &ldquo;the probability of a US recession in 2027&rdquo; &mdash; and which interpretation of probability are you using?</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 20px;">
+            <p style="font-size: 14.5pt;"><strong>2.</strong> A test is 95% sensitive; the condition affects 1% of people. You test positive. Roughly what is the probability you have it &mdash; and which single number drives that answer?</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 12px 20px;">
+            <p style="font-size: 14.5pt;"><strong>3.</strong> Your simulation of 10,000 draws returns 0.5140 for something whose true value is 0.5000. The Monte Carlo SE is 0.0050. <strong>Has your simulation found something?</strong></p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 20px;">
+            <p style="font-size: 14.5pt;"><strong>4.</strong> Your team reports a 99% VaR of $27,046. Write the one sentence you would add before it goes to a committee.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Q3 is deliberately at 2.8 SE &mdash; unlike everything on the honest-numbers table, this one probably IS real. Students who have learned "gaps are always noise" get caught, which is the point.</aside>
+    </section>
+
+    <!-- SLIDE: lab preview -->
+    <section id="lab-preview" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-road" style="color: var(--secondary-color);"></i> Lab 5, and Where This Goes</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 16px 24px;">
+          <p style="font-size: 15pt;"><strong>Lab 5 &mdash; Monte Carlo Engine.</strong> 35 min core, 15 min extension. Coin-flip convergence &bull; Monty Hall (you fill in the switch logic) &bull; Bayes on disease screening &bull; VaR and ES (you fill in the percentile calls) &bull; measure the \(1/\sqrt{n}\) rate yourself.</p>
+          <p style="font-size: 14.5pt; margin-top: 10px; color: var(--danger-color);"><strong>One addition to the notebook&rsquo;s own instructions:</strong> alongside every risk number you report in Part 4, state its Monte Carlo standard error.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 13.5pt;"><strong>Ch 6 &mdash; Sampling.</strong> A train/test split is random sampling. Selection bias is a sample that is not a draw from the population you meant.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 13.5pt;"><strong>Ch 7 &mdash; Bootstrapping.</strong> Monte Carlo pointed at your own data, to get the sampling distribution of any statistic.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13.5pt;"><strong>Ch 8 &mdash; Hypothesis testing.</strong> A p-value is a probability computed under an assumed distribution.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 13.5pt;"><strong>Ch 18 &mdash; Evaluation metrics.</strong> Where Discussion 1&rsquo;s threshold question finally gets answered.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. End on the Chapter 7 line: the bootstrap is this same machinery pointed at their own data, and it is two weeks away. Then dismiss.</aside>
+    </section>
 
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
   <script>
     Reveal.initialize({
       width: 1280,
@@ -592,7 +1130,80 @@
       autoAnimateDuration: 0.6,
       autoAnimateEasing: 'ease-out',
       pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
     });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
   </script>
 </body>
 </html>

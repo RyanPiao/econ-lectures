@@ -12,565 +12,1238 @@
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <!-- MathJax for equations -->
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
   <!-- Custom styles -->
   <link rel="stylesheet" href="styles.css">
 
   <!-- Chart.js for data visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax 3 (tex-svg). Inline delimiters are \( \) — NOT $...$ — so that a line
+       holding two currency figures ("from $4.82 to $5.79") is never typeset as maths. -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
   <div class="reveal">
     <div class="slides">
 
-      <!-- ====== COVER SLIDE ====== -->
-      <section id="cover" class="section-divider" data-state="is-section-divider">
-        <div style="display: grid; grid-template-columns: 55% 45%; height: 100%; align-items: center;">
-          <div style="padding: 30px 50px; display: flex; flex-direction: column; justify-content: center;">
-            <p style="font-size: 13pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">ECON 3916 &mdash; Chapter 1 of 26</p>
-            <h1 style="font-size: 34pt; line-height: 1.15; margin-bottom: 12px;">The Data Portfolio:<br>The Economic Lens</h1>
-            <p style="font-size: 13pt; color: var(--muted-color); margin-top: auto; padding-top: 20px;">Dr. Richeng Piao<br>Department of Economics<br>Northeastern University</p>
-          </div>
-          <div style="height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-            <img src="figures/cover-ch01-econ3916-the-data-portfolio-the-economic-lens.jpg" alt="Abstract illustration of data structures and economic measurement" style="max-height: 100%; max-width: 100%; object-fit: cover; border-radius: 0 0 0 0;" onerror="this.style.display='none'">
-          </div>
-        </div>
-        <aside class="notes">Welcome students. This is the first lecture — everything builds from here.</aside>
-      </section>
-
-      <!-- ====== LEARNING OBJECTIVES ====== -->
-      <section id="learning-objectives">
-        <h2><i class="fa-solid fa-bullseye" style="color: var(--secondary-color);"></i> Learning Objectives</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
-            <div style="border-left: 4px solid var(--secondary-color); padding: 14px 18px; background: #f8f9fa; border-radius: var(--box-radius);">
-              <span style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); display: block; margin-bottom: 4px;">1</span>
-              <span style="font-size: 13pt;"><strong>Understand</strong> three data structures &mdash; cross-sectional, time series, panel &mdash; and how each constrains analysis</span>
-            </div>
-            <div style="border-left: 4px solid var(--accent-color); padding: 14px 18px; background: #f8f9fa; border-radius: var(--box-radius);">
-              <span style="font-size: 24pt; font-weight: 700; color: var(--accent-color); display: block; margin-bottom: 4px;">2</span>
-              <span style="font-size: 13pt;"><strong>Apply</strong> pandas to load real data and compute PPP exchange rates</span>
-            </div>
-            <div style="border-left: 4px solid var(--success-color); padding: 14px 18px; background: #f8f9fa; border-radius: var(--box-radius);">
-              <span style="font-size: 24pt; font-weight: 700; color: var(--success-color); display: block; margin-bottom: 4px;">3</span>
-              <span style="font-size: 13pt;"><strong>Analyze</strong> missing data patterns &mdash; classify as MCAR, MAR, or MNAR</span>
-            </div>
-            <div style="border-left: 4px solid var(--danger-color); padding: 14px 18px; background: #f8f9fa; border-radius: var(--box-radius);">
-              <span style="font-size: 24pt; font-weight: 700; color: var(--danger-color); display: block; margin-bottom: 4px;">4</span>
-              <span style="font-size: 13pt;"><strong>Evaluate</strong> whether a dataset is fit for a given analytical purpose</span>
-            </div>
+    <!-- ============ 1. COVER ============ -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Topic 1</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">The Data Portfolio:<br>The Economic Lens</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Data is not a given. It is a product of measurement decisions &mdash; and those decisions cap what you can ever learn.</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
           </div>
         </div>
-        <aside class="notes">Four learning objectives spanning Bloom's levels 2-5. Every one gets assessed today through polls, discussions, or the exit ticket.</aside>
-      </section>
-
-      <!-- ====== SECTION DIVIDER: Data Structures ====== -->
-      <section id="divider-structures" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Section 1</p>
-        <h1>Three Data Structures</h1>
-        <p style="font-size: 16pt; color: var(--muted-color);">The Economist's Taxonomy</p>
-      </section>
-
-      <!-- OPENING HOOK -->
-      <section>
-        <section id="hook">
-          <h2><i class="fa-solid fa-bolt" style="color: var(--accent-color);"></i> When the Data Breaks</h2>
-          <div class="content">
-            <div style="background: #fef3ee; border-left: 4px solid var(--accent-color); padding: 20px 24px; border-radius: var(--box-radius); margin-bottom: 16px;">
-              <p style="font-size: 15pt; margin: 0;"><strong>January 2025:</strong> The UK Office for National Statistics admits its most important economic indicator might be <em>wrong</em>.</p>
-            </div>
-            <ul style="font-size: 14pt; line-height: 1.8;">
-              <li>Labour Force Survey response rates: <strong>97.5% &rarr; 83.6%</strong> in three years</li>
-              <li>Bank of England may have <strong>delayed rate cuts</strong> based on biased wage data</li>
-              <li>If non-respondents are disproportionately high-income: <strong>wage growth overstated</strong></li>
-            </ul>
-            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 16px;"><i class="fa-solid fa-circle-info"></i> We'll diagnose exactly what went wrong at the end of this lecture.</p>
-          </div>
-          <aside class="notes">Deliver with gravity. This is a real institutional crisis. Promise: by the end of today, students will diagnose this as MNAR. Save the punchline for Section 4.</aside>
-        </section>
-
-        <!-- DATA STRUCTURES: Photo/Movie/Grid -->
-        <section id="structures-analogy">
-          <h2>Three Ways to See the World</h2>
-          <div class="content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 12px;">
-              <div class="fragment" style="text-align: center; padding: 20px 16px; border: 2px solid var(--secondary-color); border-radius: var(--box-radius);">
-                <i class="fa-solid fa-camera" style="font-size: 28pt; color: var(--secondary-color); margin-bottom: 8px;"></i>
-                <h3 style="font-size: 16pt; margin: 8px 0 4px;">Photograph</h3>
-                <p style="font-size: 13pt; color: var(--muted-color);">Many subjects, one instant</p>
-                <p style="font-size: 18pt; color: var(--secondary-color); font-style: italic; margin-top: 12px;">\(y_i\)</p>
-                <p style="font-size: 12pt; margin-top: 4px;"><strong>Cross-Sectional</strong></p>
-              </div>
-              <div class="fragment" style="text-align: center; padding: 20px 16px; border: 2px solid var(--accent-color); border-radius: var(--box-radius);">
-                <i class="fa-solid fa-film" style="font-size: 28pt; color: var(--accent-color); margin-bottom: 8px;"></i>
-                <h3 style="font-size: 16pt; margin: 8px 0 4px;">Movie</h3>
-                <p style="font-size: 13pt; color: var(--muted-color);">One subject, across time</p>
-                <p style="font-size: 18pt; color: var(--accent-color); font-style: italic; margin-top: 12px;">\(y_t\)</p>
-                <p style="font-size: 12pt; margin-top: 4px;"><strong>Time Series</strong></p>
-              </div>
-              <div class="fragment" style="text-align: center; padding: 20px 16px; border: 2px solid var(--success-color); border-radius: var(--box-radius);">
-                <i class="fa-solid fa-table-cells" style="font-size: 28pt; color: var(--success-color); margin-bottom: 8px;"></i>
-                <h3 style="font-size: 16pt; margin: 8px 0 4px;">Surveillance Grid</h3>
-                <p style="font-size: 13pt; color: var(--muted-color);">Same subjects, over time</p>
-                <p style="font-size: 18pt; color: var(--success-color); font-style: italic; margin-top: 12px;">\(y_{it}\)</p>
-                <p style="font-size: 12pt; margin-top: 4px;"><strong>Panel</strong></p>
-              </div>
-            </div>
-            <p class="fragment" style="font-size: 13pt; text-align: center; color: var(--muted-color); margin-top: 16px;">Panel data is the gold standard &mdash; it enables causal identification (Chapters 10-14)</p>
-          </div>
-          <aside class="notes">Progressive reveal. Point at each: Photo = cross-sectional. Movie = time series. Grid = panel. Ask: what does the i give you that y_t doesn't? Comparison across units. What does t give you? Change over time. Both = panel.</aside>
-        </section>
-
-        <!-- DATA STRUCTURES: Figure -->
-        <section id="structures-figure">
-          <h2>Data Structure Notation</h2>
-          <div class="content" style="display: flex; flex-direction: column; align-items: center;">
-            <img src="figures/figure_003_data_structures_taxonomy.png" alt="Three-panel diagram showing cross-sectional (y_i with unit boxes), time series (y_t with timeline), and panel (y_it with grid of units across periods)" style="max-height: 380px; margin: 12px 0;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; width: 100%; font-size: 12pt; text-align: center;">
-              <div><strong>Subscript tells you what varies:</strong></div>
-              <div>\(y_i\) &mdash; unit varies, time fixed</div>
-              <div>\(y_{it}\) &mdash; both vary simultaneously</div>
-            </div>
-          </div>
-          <aside class="notes">This notation recurs throughout the entire course. y_i in chapters 12-13 for cross-sectional OLS. y_it in chapters 10-14 for panel methods.</aside>
-        </section>
-      </section>
-
-      <!-- ====== POLL 1 ====== -->
-      <section id="divider-poll1" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Concept Check</p>
-        <h1><i class="fa-solid fa-chart-bar"></i> Poll</h1>
-      </section>
-
-      <section>
-        <section id="poll-1">
-          <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Class Poll</h2>
-          <div class="content">
-            <p style="font-size: 16pt; font-weight: 600; margin-bottom: 20px;">A researcher has GDP data for 50 countries in 2023.<br>What data structure is this?</p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-              <div style="padding: 16px 20px; background: #e3f2fd; border-radius: var(--box-radius); font-size: 14pt; border: 2px solid transparent;"><strong>A.</strong> Cross-sectional</div>
-              <div style="padding: 16px 20px; background: #fff3e0; border-radius: var(--box-radius); font-size: 14pt; border: 2px solid transparent;"><strong>B.</strong> Time series</div>
-              <div style="padding: 16px 20px; background: #e8f5e9; border-radius: var(--box-radius); font-size: 14pt; border: 2px solid transparent;"><strong>C.</strong> Panel</div>
-              <div style="padding: 16px 20px; background: #fce4ec; border-radius: var(--box-radius); font-size: 14pt; border: 2px solid transparent;"><strong>D.</strong> Depends on the variable</div>
-            </div>
-            <p style="font-size: 11pt; color: var(--muted-color); margin-top: 16px;"><i class="fa-solid fa-clock"></i> 30 seconds</p>
-          </div>
-          <aside class="notes">Option D is the trap — sounds sophisticated but wrong. Structure depends on observation design, not variable choice. If many pick D, explain the distinction.</aside>
-        </section>
-
-        <section id="poll-1-reveal">
-          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: A &mdash; Cross-Sectional</h2>
-          <div class="content">
-            <p style="font-size: 15pt; line-height: 1.7;">Many units (50 countries), one point in time (2023).</p>
-            <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); padding: 16px 20px; border-radius: var(--box-radius); margin: 16px 0;">
-              <p style="font-size: 14pt; margin: 0;"><strong>Option D is tempting</strong> &mdash; but structure depends on the observation design, not which variable you measure. If you add 2022 data for the <em>same</em> 50 countries, now it's panel.</p>
-            </div>
-            <p style="font-size: 14pt;"><strong>Key insight:</strong> The structure changed &mdash; not because you measured something different, but because you added the time dimension.</p>
-          </div>
-          <aside class="notes">If most got it right, move on quickly. If many picked D, spend an extra minute: the variable doesn't determine structure — the observation grid does.</aside>
-        </section>
-      </section>
-
-      <!-- ====== DISCUSSION 1 ====== -->
-      <section id="divider-discussion1" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Think-Pair-Share</p>
-        <h1><i class="fa-solid fa-comments"></i> Discussion</h1>
-      </section>
-
-      <section>
-        <section id="discussion-1">
-          <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> In-Class Discussion</h2>
-          <div class="content" style="text-align: center;">
-            <div style="background: #f0f5f8; padding: 30px; border-radius: var(--box-radius); margin: 20px 0;">
-              <p style="font-size: 18pt; font-weight: 600; margin: 0;">Which data structure would you need to answer:<br><em>"Did COVID permanently change remote work patterns?"</em></p>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
-              <div style="padding: 14px; background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 13pt; color: var(--muted-color); margin: 0 0 4px;"><i class="fa-solid fa-brain"></i> Think about</p>
-                <p style="font-size: 13pt; margin: 0;">What is the unit of observation?<br>Workers? Firms? Cities?</p>
-              </div>
-              <div style="padding: 14px; background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 13pt; color: var(--muted-color); margin: 0 0 4px;"><i class="fa-solid fa-magnifying-glass"></i> Consider</p>
-                <p style="font-size: 13pt; margin: 0;">Do you need the <strong>same</strong> units<br>tracked over time?</p>
-              </div>
-            </div>
-            <span class="timer-badge" style="display: inline-block; margin-top: 16px; padding: 6px 16px; background: var(--secondary-color); color: white; border-radius: 20px; font-size: 12pt;"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span>
-          </div>
-          <aside class="notes">Walk among pairs. Listen for students who suggest just surveying remote workers now — that's cross-sectional thinking. In debrief: if you only survey 2024, you're taking a photograph. You need the movie — the same workers tracked before, during, and after COVID.</aside>
-        </section>
-
-        <section id="discussion-1-debrief">
-          <h2><i class="fa-solid fa-arrows-spin" style="color: var(--secondary-color);"></i> Debrief</h2>
-          <div class="content">
-            <p style="font-size: 15pt; line-height: 1.7;">You need <strong>panel data</strong> &mdash; the same workers observed before, during, and after COVID.</p>
-            <ul style="font-size: 14pt; line-height: 1.8;">
-              <li>A cross-section of remote workers in 2024 can't tell you if they <em>switched</em> because of COVID</li>
-              <li>Only \(y_{it}\) identifies the <strong>change</strong></li>
-              <li>This is why LinkedIn runs 400+ A/B experiments daily &mdash; tracking the <em>same users</em> over time</li>
-            </ul>
-            <div class="fragment" style="background: #e8f5e9; padding: 14px 20px; border-radius: var(--box-radius); margin-top: 16px;">
-              <p style="font-size: 13pt; margin: 0;"><strong>Takeaway:</strong> The question dictates the structure. "Did X change Y?" requires tracking units across time.</p>
-            </div>
-          </div>
-          <aside class="notes">Transition: Now let's use a panel dataset — the Big Mac Index.</aside>
-        </section>
-      </section>
-
-      <!-- ====== SECTION DIVIDER: Big Mac PPP ====== -->
-      <section id="divider-ppp" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Section 2</p>
-        <h1>The Big Mac Index</h1>
-        <p style="font-size: 16pt; color: var(--muted-color);">Purchasing Power Parity in Practice</p>
-      </section>
-
-      <section>
-        <section id="ppp-intuition">
-          <h2>Purchasing Power Parity</h2>
-          <div class="content">
-            <p style="font-size: 15pt; line-height: 1.7;">If a Big Mac costs <strong>$5.79</strong> in the US and <strong>CHF 6.90</strong> in Switzerland, what should the exchange rate be?</p>
-            <div class="fragment" style="background: #f8f9fa; padding: 20px 24px; border-radius: var(--box-radius); margin: 16px 0; text-align: center;">
-              <p style="font-size: 18pt; margin: 0;">\[\text{Implied PPP} = \frac{P_{\text{domestic}}}{P_{\text{US}}} = \frac{6.90}{5.79} = 1.19 \text{ CHF/\$}\]</p>
-            </div>
-            <div class="fragment">
-              <p style="font-size: 14pt;">Actual spot rate: <strong>0.87 CHF/$</strong></p>
-              <p style="font-size: 14pt;">Implied &gt; Spot &rarr; Swiss franc is <strong style="color: var(--secondary-color);">overvalued</strong></p>
-            </div>
-            <div class="fragment" style="text-align: center; margin-top: 12px;">
-              <p style="font-size: 16pt;">\[\text{Valuation} = \frac{1.19 - 0.87}{0.87} \times 100 = \mathbf{+37\%}\]</p>
-            </div>
-          </div>
-          <aside class="notes">Work this by hand on the board. 6.90 / 5.79 = 1.19. If markets were perfect, 1 dollar buys 1.19 francs. But it actually buys 0.87. The franc buys more than it should — overvalued by 37%.</aside>
-        </section>
-
-        <section id="ppp-table">
-          <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> Worked Example: Three Countries</h2>
-          <div class="content">
-            <table style="font-size: 13pt; width: 100%; border-collapse: collapse; margin-top: 12px;">
-              <thead>
-                <tr style="border-bottom: 2px solid var(--primary-color);">
-                  <th style="text-align: left; padding: 8px;">Country</th>
-                  <th>Local Price</th>
-                  <th>US Price</th>
-                  <th>Implied PPP</th>
-                  <th>Spot Rate</th>
-                  <th>Valuation</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="border-bottom: 1px solid var(--line-color);">
-                  <td style="text-align: left; padding: 8px;"><strong>Switzerland</strong></td>
-                  <td>CHF 6.90</td>
-                  <td>$5.79</td>
-                  <td>1.19</td>
-                  <td>0.87</td>
-                  <td style="color: var(--secondary-color); font-weight: 700;">+37.0%</td>
-                </tr>
-                <tr style="border-bottom: 1px solid var(--line-color);">
-                  <td style="text-align: left; padding: 8px;"><strong>Japan</strong></td>
-                  <td>&yen;450</td>
-                  <td>$5.79</td>
-                  <td>77.72</td>
-                  <td>155.60</td>
-                  <td style="color: var(--danger-color); font-weight: 700;">&minus;50.1%</td>
-                </tr>
-                <tr>
-                  <td style="text-align: left; padding: 8px;"><strong>Brazil</strong></td>
-                  <td>R$22.90</td>
-                  <td>$5.79</td>
-                  <td>3.95</td>
-                  <td>5.07</td>
-                  <td style="color: var(--danger-color); font-weight: 700;">&minus;22.1%</td>
-                </tr>
-              </tbody>
-            </table>
-            <p class="fragment" style="font-size: 13pt; color: var(--muted-color); margin-top: 16px;"><strong>Why the differences?</strong> Non-tradeable inputs: rent, wages, utilities, taxes. Swiss Big Macs are expensive because Swiss labor is expensive &mdash; not because the franc is 37% too strong.</p>
-          </div>
-          <aside class="notes">After working Switzerland, show Japan: 450/5.79 = 77.72 implied but actual 155.60. Yen deeply undervalued. Ask: why is Switzerland expensive and Japan cheap?</aside>
-        </section>
-      </section>
-
-      <!-- ====== POLL 2 ====== -->
-      <section id="poll-2">
-        <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Class Poll</h2>
-        <div class="content">
-          <p style="font-size: 15pt; font-weight: 600; margin-bottom: 20px;">Switzerland: CHF 6.90, US: $5.79, Spot: 0.87 CHF/$.<br>The Swiss franc is:</p>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-            <div style="padding: 16px 20px; background: #e3f2fd; border-radius: var(--box-radius); font-size: 14pt;"><strong>A.</strong> Overvalued by ~37%</div>
-            <div style="padding: 16px 20px; background: #fff3e0; border-radius: var(--box-radius); font-size: 14pt;"><strong>B.</strong> Undervalued by ~37%</div>
-            <div style="padding: 16px 20px; background: #e8f5e9; border-radius: var(--box-radius); font-size: 14pt;"><strong>C.</strong> Fairly valued</div>
-            <div style="padding: 16px 20px; background: #fce4ec; border-radius: var(--box-radius); font-size: 14pt;"><strong>D.</strong> Can't tell without GDP data</div>
-          </div>
-          <p style="font-size: 11pt; color: var(--muted-color); margin-top: 16px;"><i class="fa-solid fa-calculator"></i> 30 seconds to compute</p>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch01-econ3916-the-data-portfolio-the-economic-lens.png" alt="Abstract illustration of two interlocking lattices of dots and lines, one blue and one terracotta, dissolving into flowing ribbons on aged paper" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
-        <aside class="notes">Computation poll. Students should get 37% from the board work. If many get wrong, re-derive.</aside>
-      </section>
+      </div>
+      <aside class="notes">First class of the semester. Do not start with the syllabus. Start here, hold this slide while the room settles, then go straight to the next one and tell them what the course is for. Total welcome block: 7 minutes, no more.</aside>
+    </section>
 
-      <!-- ====== VALUATION CHART ====== -->
-      <section id="valuation-chart">
-        <h2>Big Mac Currency Valuations</h2>
-        <div class="content" style="display: flex; flex-direction: column; align-items: center;">
-          <img src="figures/figure_001_bigmac_valuation.png" alt="Horizontal bar chart showing top 5 overvalued currencies (Switzerland, Norway near +37%) and top 5 undervalued currencies (Egypt, Indonesia near -60% to -70%)" style="max-height: 420px; margin: 8px 0;">
-          <p style="font-size: 12pt; color: var(--muted-color);">Source: The Economist Big Mac Index, January 2025</p>
-        </div>
-        <aside class="notes">Point out: overvalued = expensive labor markets (Switzerland, Norway). Undervalued = emerging markets with cheap labor. The Big Mac captures this in one number.</aside>
-      </section>
-
-      <!-- ====== DISCUSSION 2 ====== -->
-      <section id="divider-discussion2" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Open Discussion</p>
-        <h1><i class="fa-solid fa-comments"></i> Why PPP Fails</h1>
-      </section>
-
-      <section>
-        <section id="discussion-2">
-          <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion</h2>
-          <div class="content" style="text-align: center;">
-            <div style="background: #f0f5f8; padding: 30px; border-radius: var(--box-radius); margin: 20px 0;">
-              <p style="font-size: 18pt; font-weight: 600; margin: 0;">Why doesn't absolute PPP hold perfectly?<br>What makes Swiss burgers expensive?</p>
-            </div>
-            <p style="font-size: 14pt; color: var(--muted-color);">The Big Mac isn't purely a tradeable good. What local factors affect its price?</p>
-            <span class="timer-badge" style="display: inline-block; margin-top: 16px; padding: 6px 16px; background: var(--secondary-color); color: white; border-radius: 20px; font-size: 12pt;"><i class="fa-solid fa-clock"></i> 3 min open discussion</span>
+    <!-- ============ 2. WELCOME ============ -->
+    <section id="welcome" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-door-open" style="color: var(--secondary-color);"></i> Welcome to ECON 3916</h2>
+      <div class="content">
+        <p style="font-size: 16pt; line-height: 1.6;">This is not a statistics course with Python bolted on. It is a course about the <strong>gap between a number and the thing it is supposed to measure</strong> &mdash; and the tools that let you work in that gap professionally.</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px;">
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 13pt; font-weight: 700; color: var(--secondary-color);">Topics 1&ndash;4</p>
+            <p style="font-size: 13pt;">Describe it</p>
           </div>
-          <aside class="notes">Cold-call if needed: What's the most expensive input in a fast-food restaurant? Not beef — real estate. Swiss commercial rents, minimum wages, utilities all feed into the price.</aside>
-        </section>
-
-        <section id="discussion-2-debrief">
-          <h2><i class="fa-solid fa-arrows-spin" style="color: var(--secondary-color);"></i> PPP Breaks Because&hellip;</h2>
-          <div class="content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-              <div style="padding: 14px 18px; border-left: 3px solid var(--accent-color); background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-building" style="color: var(--accent-color);"></i> <strong>Rent</strong><br>Commercial real estate in Zurich vs. Lagos</p>
-              </div>
-              <div style="padding: 14px 18px; border-left: 3px solid var(--secondary-color); background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-user-tie" style="color: var(--secondary-color);"></i> <strong>Wages</strong><br>Swiss minimum wage is among world's highest</p>
-              </div>
-              <div style="padding: 14px 18px; border-left: 3px solid var(--success-color); background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-scale-balanced" style="color: var(--success-color);"></i> <strong>Taxes &amp; Regulation</strong><br>VAT, food safety, agricultural policy</p>
-              </div>
-              <div style="padding: 14px 18px; border-left: 3px solid var(--danger-color); background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-truck" style="color: var(--danger-color);"></i> <strong>Supply Chain</strong><br>Swiss dairy is expensive due to subsidies</p>
-              </div>
-            </div>
-            <div class="fragment" style="background: #fff8e1; padding: 14px 20px; border-radius: var(--box-radius); margin-top: 16px;">
-              <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-color);"></i> <strong>Lesson:</strong> Every measurement instrument has embedded assumptions. The Big Mac Index assumes all inputs are tradeable &mdash; they aren't.</p>
-            </div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 13pt; font-weight: 700; color: var(--accent-color);">Topics 5&ndash;9</p>
+            <p style="font-size: 13pt;">Reason under uncertainty</p>
           </div>
-          <aside class="notes">Connect to chapter theme: data is a product of measurement decisions. Transition to pandas: You've computed PPP by hand. Now let's do it in code.</aside>
-        </section>
-      </section>
-
-      <!-- ====== SECTION DIVIDER: Pandas ====== -->
-      <section id="divider-pandas" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Section 3</p>
-        <h1>Pandas Fundamentals</h1>
-        <p style="font-size: 16pt; color: var(--muted-color);">The Economist's Workbench</p>
-      </section>
-
-      <section>
-        <section id="pandas-core">
-          <h2>DataFrames: Spreadsheets with Rules</h2>
-          <div class="content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-              <div>
-                <p style="font-size: 14pt; line-height: 1.7;"><strong>Like a spreadsheet:</strong> rows and columns</p>
-                <p style="font-size: 14pt; line-height: 1.7;"><strong>Unlike a spreadsheet:</strong></p>
-                <ul style="font-size: 13pt; line-height: 1.8;">
-                  <li>Enforces <strong>types</strong> (prices can't contain names)</li>
-                  <li>Operations are <strong>reproducible</strong> (code, not clicks)</li>
-                  <li>Handles <strong>millions</strong> of rows</li>
-                </ul>
-              </div>
-              <div style="background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: var(--box-radius); font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.6;">
-                <span style="color: #569cd6;"># Label-based selection</span><br>
-                swiss = latest.<span style="color: #dcdcaa;">loc</span>[<br>
-                &nbsp;&nbsp;latest["name"] == "Switzerland",<br>
-                &nbsp;&nbsp;"dollar_price"<br>
-                ]<br><br>
-                <span style="color: #569cd6;"># Position-based selection</span><br>
-                first3 = latest.<span style="color: #dcdcaa;">iloc</span>[:3, :5]
-              </div>
-            </div>
-            <div class="fragment" style="background: #e8f5e9; padding: 12px 18px; border-radius: var(--box-radius); margin-top: 16px;">
-              <p style="font-size: 12pt; margin: 0;"><strong>Key Concept &mdash; Tidy Data</strong> (Wickham 2014): each variable = column, each observation = row. If your data isn't tidy, reshape first.</p>
-            </div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13pt; font-weight: 700; color: var(--success-color);">Topics 12&ndash;19</p>
+            <p style="font-size: 13pt;">Predict with it</p>
           </div>
-          <aside class="notes">.loc uses names, .iloc uses numbers. Hammer this distinction — it's the #1 pandas confusion for beginners. More in lab.</aside>
-        </section>
-
-        <section id="decision-scenario">
-          <h2><i class="fa-solid fa-hand-pointer" style="color: var(--accent-color);"></i> Decision Scenario</h2>
-          <div class="content" style="text-align: center;">
-            <p style="font-size: 15pt; font-weight: 600; margin-bottom: 20px;">Your boss hands you a spreadsheet: countries as columns, years as rows.<br>Before any analysis, what's your first move?</p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-              <div style="padding: 16px 20px; background: #fce4ec; border-radius: var(--box-radius); font-size: 14pt;"><strong>A.</strong> Run a regression</div>
-              <div style="padding: 16px 20px; background: #e3f2fd; border-radius: var(--box-radius); font-size: 14pt;"><strong>B.</strong> Reshape to tidy format</div>
-              <div style="padding: 16px 20px; background: #fff3e0; border-radius: var(--box-radius); font-size: 14pt;"><strong>C.</strong> Make a chart</div>
-              <div style="padding: 16px 20px; background: #e8f5e9; border-radius: var(--box-radius); font-size: 14pt;"><strong>D.</strong> Check for missing data</div>
-            </div>
-            <div class="fragment" style="background: #e3f2fd; padding: 14px 20px; border-radius: var(--box-radius); margin-top: 16px; text-align: left;">
-              <p style="font-size: 13pt; margin: 0;"><strong>B first, then D.</strong> Countries-as-columns = wide format. <code>melt()</code> to tidy, then diagnose missing values. Option A is the most dangerous &mdash; regression on untidy data gives garbage.</p>
-            </div>
-          </div>
-          <aside class="notes">This tests LO4. Option A is dangerous. Establish the reflex: reshape → diagnose → analyze. We'll do reshaping in lab.</aside>
-        </section>
-      </section>
-
-      <!-- ====== SECTION DIVIDER: Missing Data ====== -->
-      <section id="divider-missing" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Section 4</p>
-        <h1>Missing Data</h1>
-        <p style="font-size: 16pt; color: var(--muted-color);">When Gaps Tell a Story</p>
-      </section>
-
-      <section>
-        <section id="russia-mnar">
-          <h2><i class="fa-solid fa-eye-slash" style="color: var(--danger-color);"></i> Russia Disappears</h2>
-          <div class="content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-              <div>
-                <p style="font-size: 14pt; line-height: 1.7;">Filter the Big Mac Index for Russia:</p>
-                <ul style="font-size: 13pt; line-height: 1.8;">
-                  <li><strong>2000&ndash;2022:</strong> complete data</li>
-                  <li class="fragment"><strong>Feb 2022:</strong> invasion of Ukraine</li>
-                  <li class="fragment"><strong>Post-2022:</strong> <span style="color: var(--danger-color); font-weight: 700;">nothing</span></li>
-                </ul>
-                <div class="fragment" style="background: #fce4ec; padding: 12px 16px; border-radius: var(--box-radius); margin-top: 16px;">
-                  <p style="font-size: 13pt; margin: 0;">The disappearance <strong>correlates</strong> with the event that affects exchange rates &mdash; the very variable we're measuring.</p>
-                </div>
-              </div>
-              <div style="background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: var(--box-radius); font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.6;">
-                <span style="color: #569cd6;"># When did Russia leave?</span><br>
-                russia = df.loc[<br>
-                &nbsp;&nbsp;df["name"] == "Russia"<br>
-                ]<br>
-                print(russia["date"].max())<br>
-                <span style="color: #6a9955;"># 2022-01-01</span><br>
-                <span style="color: #6a9955;"># After Feb 2022 → MNAR</span>
-              </div>
-            </div>
-          </div>
-          <aside class="notes">Draw timeline on board: 2000 → 2022 = data. 2022 → now = gone. Ask: Is this random? No. It's the invasion. And the invasion changed exchange rates — the variable we're measuring. The missingness is informative.</aside>
-        </section>
-
-        <section id="missing-typology">
-          <h2>Rubin's Three Mechanisms (1976)</h2>
-          <div class="content">
-            <div style="display: grid; grid-template-rows: auto auto auto; gap: 14px; margin-top: 8px;">
-              <div class="fragment" style="padding: 16px 20px; border-left: 4px solid var(--success-color); background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 14pt; margin: 0;"><strong style="color: var(--success-color);">MCAR</strong> &mdash; Missing Completely At Random</p>
-                <p style="font-size: 12pt; color: var(--muted-color); margin: 4px 0 0;">Server crash deletes responses. Unrelated to any variable. <strong>Safe</strong> to drop.</p>
-              </div>
-              <div class="fragment" style="padding: 16px 20px; border-left: 4px solid var(--accent-color); background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 14pt; margin: 0;"><strong style="color: var(--accent-color);">MAR</strong> &mdash; Missing At Random</p>
-                <p style="font-size: 12pt; color: var(--muted-color); margin: 4px 0 0;">Young people skip salary surveys, but conditional on age, missingness is unrelated to salary. <strong>Addressable</strong> by conditioning.</p>
-              </div>
-              <div class="fragment" style="padding: 16px 20px; border-left: 4px solid var(--danger-color); background: #f8f9fa; border-radius: var(--box-radius);">
-                <p style="font-size: 14pt; margin: 0;"><strong style="color: var(--danger-color);">MNAR</strong> &mdash; Missing Not At Random</p>
-                <p style="font-size: 12pt; color: var(--muted-color); margin: 4px 0 0;">High earners refuse to report salary <em>because</em> it's high. The value itself determines missingness. <strong>Dangerous</strong> &mdash; bias cannot be fully corrected.</p>
-              </div>
-            </div>
-          </div>
-          <aside class="notes">Concrete anchors: MCAR = dog ate the survey. MAR = young people threw it away but we know who's young. MNAR = rich people threw it away BECAUSE they're rich — and richness is what we're measuring.</aside>
-        </section>
-      </section>
-
-      <!-- ====== MISSING DATA HEATMAP ====== -->
-      <section id="heatmap">
-        <h2>Missing Data Patterns</h2>
-        <div class="content" style="display: flex; flex-direction: column; align-items: center;">
-          <img src="figures/figure_002_missing_data_heatmap.png" alt="Heatmap showing country-date presence matrix for 15 Big Mac Index countries — Russia shows data present until 2022 then missing (red), Venezuela and Argentina show sporadic gaps" style="max-height: 420px; margin: 8px 0;">
-          <p style="font-size: 12pt; color: var(--muted-color);">Green = data present, Red = data missing. Note Russia's abrupt cutoff post-2022.</p>
-        </div>
-        <aside class="notes">Point at Russia: clean break at 2022. That's MNAR — geopolitical signal. Venezuela and Argentina have sporadic gaps — different mechanism (likely economic crises). Each gap tells a story.</aside>
-      </section>
-
-      <!-- ====== ONS CALLBACK ====== -->
-      <section id="ons-callback">
-        <h2><i class="fa-solid fa-rotate-left" style="color: var(--accent-color);"></i> Back to the ONS Crisis</h2>
-        <div class="content">
-          <div style="background: #fef3ee; border-left: 4px solid var(--accent-color); padding: 20px 24px; border-radius: var(--box-radius); margin-bottom: 16px;">
-            <p style="font-size: 15pt; margin: 0;">Response rates: 97.5% &rarr; 83.6%</p>
-            <p style="font-size: 15pt; margin: 8px 0 0;"><strong>Is this MCAR, MAR, or MNAR?</strong></p>
-          </div>
-          <div class="fragment">
-            <p style="font-size: 14pt; line-height: 1.7;">If non-respondents are disproportionately high-income workers who value privacy&hellip;</p>
-            <p style="font-size: 14pt; line-height: 1.7;">And the survey measures employment and wages&hellip;</p>
-            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color); margin-top: 12px;">This is MNAR.</p>
-            <p style="font-size: 14pt;">Published wage growth was likely <strong>overstated</strong>. The Bank of England may have kept interest rates too high, too long.</p>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 13pt; font-weight: 700; color: #7C3A5F;">Topics 20&ndash;26</p>
+            <p style="font-size: 13pt;">Decide with it</p>
           </div>
         </div>
-        <aside class="notes">This is the narrative payoff. The hook from minute 4 resolves here. Pause for effect after revealing MNAR. The measurement failure didn't produce a footnote — it may have altered the trajectory of an economy.</aside>
-      </section>
+        <div style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 15px 22px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 15pt;"><i class="fa-solid fa-code-branch" style="color: #7C3A5F;"></i> <strong>Every topic has a lab, and every lab lands in a public GitHub repository under your own name.</strong> By December you do not have a transcript line. You have a portfolio.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say the portfolio line slowly &mdash; it is the single sentence that changes how seriously students take the labs. Mention that Lab 1 tonight creates repo econ3916-lab01-data-portfolio and that by week 14 there are 20-odd of them. Do NOT walk the syllabus here; point at Canvas.</aside>
+    </section>
 
-      <!-- ====== POLL 3 ====== -->
-      <section id="poll-3">
-        <h2><i class="fa-solid fa-chart-bar" style="color: var(--secondary-color);"></i> Class Poll</h2>
-        <div class="content">
-          <p style="font-size: 15pt; font-weight: 600; margin-bottom: 20px;">A university surveys graduates about starting salaries.<br>Graduates earning above $200K are least likely to respond. This is:</p>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-            <div style="padding: 16px 20px; background: #e8f5e9; border-radius: var(--box-radius); font-size: 14pt;"><strong>A.</strong> MCAR &mdash; random</div>
-            <div style="padding: 16px 20px; background: #fff3e0; border-radius: var(--box-radius); font-size: 14pt;"><strong>B.</strong> MAR &mdash; depends on year</div>
-            <div style="padding: 16px 20px; background: #fce4ec; border-radius: var(--box-radius); font-size: 14pt;"><strong>C.</strong> MNAR &mdash; value determines missingness</div>
-            <div style="padding: 16px 20px; background: #f3e5f5; border-radius: var(--box-radius); font-size: 14pt;"><strong>D.</strong> Not enough information</div>
+    <!-- ============ 3. LEARNING OBJECTIVES ============ -->
+    <section id="learning-objectives" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">1.1</p>
+            <p style="font-size: 15pt;">Distinguish <strong>cross-sectional</strong>, <strong>time series</strong> and <strong>panel</strong> data &mdash; and say what each one stops you asking</p>
           </div>
-          <div class="fragment" style="background: #fce4ec; padding: 14px 20px; border-radius: var(--box-radius); margin-top: 16px;">
-            <p style="font-size: 13pt; margin: 0;"><strong>C &mdash; MNAR.</strong> The probability of responding depends on the salary itself. Any published "average starting salary" is biased downward.</p>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">1.2</p>
+            <p style="font-size: 15pt;">Load a real economic dataset into a <strong>pandas DataFrame</strong> and compute PPP exchange rates with column arithmetic</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">1.3</p>
+            <p style="font-size: 15pt;">Diagnose missing data in a panel and classify it <strong>MCAR</strong>, <strong>MAR</strong> or <strong>MNAR</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">1.4</p>
+            <p style="font-size: 15pt;">Judge whether a dataset's <strong>measurement architecture</strong> is fit for the purpose someone has in mind</p>
           </div>
         </div>
-        <aside class="notes">Most should get this right by now. If they do, the concept landed.</aside>
-      </section>
+      </div>
+      <aside class="notes">1 min. Flag 1.4 as the one that never goes away &mdash; it is the question every later topic re-asks in a harder form. 1.3 is today's assessed skill; it is on the exit ticket and in Part 3 of the lab.</aside>
+    </section>
 
-      <!-- ====== SECTION DIVIDER: Takeaways ====== -->
-      <section id="divider-takeaways" class="section-divider" data-state="is-section-divider">
-        <p style="font-size: 14pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Wrap-Up</p>
-        <h1><i class="fa-solid fa-key"></i> Key Takeaways</h1>
-      </section>
+    <!-- ============ 4. HOOK: ONS ============ -->
+    <section id="hook-ons" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> A Country Stopped Publishing Its Own Unemployment Rate</h2>
+      <div class="content">
+        <p style="font-size: 17pt; line-height: 1.6;">October 2023. The UK's <strong>Office for National Statistics</strong> did something a national statistical institute almost never does. It <strong>stopped publishing</strong> the country's headline labour market statistics.</p>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 16px 24px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The <strong>Labour Force Survey</strong> is the source of the unemployment rate, wage growth, and the numbers the Bank of England sets interest rates on. Response rates had fallen so far that the ONS judged its own estimates unfit to publish.</p>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">A replacement returned in February 2024 &mdash; carrying the label <strong>&ldquo;official statistics in development&rdquo;</strong>. A formal downgrade from accredited national statistics, and an unusually public admission that the numbers were provisional.</p>
+      </div>
+      <aside class="notes">2 min. Let the first sentence land before adding anything. Ask the room: "what would have to go wrong for a government to stop publishing its own unemployment rate?" Take one or two answers, do not correct them, then advance.</aside>
+    </section>
 
-      <!-- ====== KEY TAKEAWAYS ====== -->
-      <section id="takeaways">
-        <h2><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> Key Takeaways</h2>
-        <div class="content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div style="padding: 14px 18px; border-left: 3px solid var(--secondary-color); background: #f8f9fa; border-radius: var(--box-radius);">
-              <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-hammer" style="color: var(--secondary-color);"></i> <strong>Data is built, not given.</strong> Every dataset reflects measurement decisions.</p>
-            </div>
-            <div style="padding: 14px 18px; border-left: 3px solid var(--accent-color); background: #f8f9fa; border-radius: var(--box-radius);">
-              <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> <strong>Three structures.</strong> Cross-section compares. Time series tracks. Panel does both.</p>
-            </div>
-            <div style="padding: 14px 18px; border-left: 3px solid var(--success-color); background: #f8f9fa; border-radius: var(--box-radius);">
-              <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-burger" style="color: var(--success-color);"></i> <strong>PPP is computable.</strong> Big Mac Index turns theory into a pandas exercise.</p>
-            </div>
-            <div style="padding: 14px 18px; border-left: 3px solid var(--danger-color); background: #f8f9fa; border-radius: var(--box-radius);">
-              <p style="font-size: 13pt; margin: 0;"><i class="fa-solid fa-eye-slash" style="color: var(--danger-color);"></i> <strong>Missing data = information.</strong> MCAR/MAR/MNAR determines if your analysis is biased.</p>
-            </div>
+    <!-- ============ 5. HOOK: THE NUMBERS ============ -->
+    <section id="hook-numbers" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-chart-line-down" style="color: var(--danger-color);"></i> The Scale of the Collapse</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 6px;">
+          <div style="background: #f0f5f8; padding: 20px 24px; border-radius: 10px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--danger-color); margin: 0;">~20%</p>
+            <p style="font-size: 14pt; margin-top: 6px;">overall response rate by late 2024</p>
           </div>
-          <div style="padding: 14px 18px; border: 2px solid var(--secondary-color); background: #f0f5f8; border-radius: var(--box-radius); margin-top: 14px; text-align: center;">
-            <p style="font-size: 14pt; margin: 0;"><i class="fa-solid fa-code" style="color: var(--secondary-color);"></i> <strong>Reproducibility is non-negotiable.</strong> Set <code>random_state=42</code>. Document your code. Make it verifiable.</p>
+          <div style="background: #f0f5f8; padding: 20px 24px; border-radius: 10px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--danger-color); margin: 0;">~13%</p>
+            <p style="font-size: 14pt; margin-top: 6px;">by the survey's fifth wave</p>
           </div>
         </div>
-        <aside class="notes">Read each takeaway aloud. These are the five sentences students should remember from today.</aside>
-      </section>
-
-      <!-- ====== EXIT TICKET ====== -->
-      <section id="exit-ticket">
-        <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
-        <div class="content" style="text-align: center;">
-          <div style="background: #f0f5f8; padding: 30px; border-radius: var(--box-radius); margin: 20px auto; max-width: 700px;">
-            <p style="font-size: 16pt; margin: 0 0 16px;"><strong>1.</strong> Name the three missing data mechanisms and give one real-world example of MNAR <em>(different from Russia or the ONS)</em></p>
-            <p style="font-size: 16pt; margin: 0;"><strong>2.</strong> One thing from today you want to explore further</p>
-          </div>
-          <span class="timer-badge" style="display: inline-block; margin-top: 12px; padding: 6px 16px; background: var(--secondary-color); color: white; border-radius: 20px; font-size: 12pt;"><i class="fa-solid fa-clock"></i> 2 minutes</span>
-          <p style="font-size: 12pt; color: var(--muted-color); margin-top: 16px;">Next time: Chapter 2 &mdash; Measurement &amp; Indexes: Is a \$5.79 Big Mac really more expensive than a \$2.50 Big Mac?</p>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 18px;">The Bank of England, setting rates for <strong>67 million people</strong>, leaned instead on HMRC payroll records and other sources with their own, different blind spots.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.6;">During 2024 the Bank <strong>delayed rate cuts</strong>, partly because official wage growth suggested inflation pressure remained elevated. If the surviving respondents skewed high-income, wage growth was overstated &mdash; and borrowing costs may have been held too high, for too long.</p>
         </div>
-        <aside class="notes">Collect or have students submit digitally. Good MNAR examples: wealthy taxpayers underreporting income, patients dropping out of drug trials due to side effects, companies not disclosing breaches.</aside>
-      </section>
+      </div>
+      <aside class="notes">2 min. The fragment is the punchline: a measurement failure may have altered the trajectory of an entire economy. Do not name the mechanism yet &mdash; "non-random non-response" is Poll 1's answer and it is worth more if they reach it themselves. Anticipated question: "did the ONS say the numbers were wrong?" No &mdash; it said it could not quantify the bias, which is worse.</aside>
+    </section>
 
+    <!-- ============ 6. HOOK: NOT JUST BRITAIN ============ -->
+    <section id="hook-not-britain" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-globe" style="color: var(--accent-color);"></i> This Is Not a British Problem</h2>
+      <div class="content">
+        <p style="font-size: 16pt; line-height: 1.6;">The <strong>US Federal Statistical System</strong> &mdash; 13 agencies covering labour, health, economic and agricultural data &mdash; faces a parallel deterioration as public trust declines and survey fatigue sets in.</p>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 16px 24px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>September 2025:</strong> the US Department of Agriculture halted its annual survey on <strong>food insecurity</strong> for funding reasons &mdash; leaving researchers unable to track household hunger through a period of elevated grocery prices.</p>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 18px;">When the data governments need stops being collected &mdash; or stops being representative &mdash; the consequences run from central bank boardrooms to kitchen tables.</p>
+      </div>
+      <aside class="notes">1 min. Keep this brisk. The point is only that the ONS is an instance, not an anomaly. If someone asks about the US census, say Ch 6 handles sampling frames properly.</aside>
+    </section>
+
+    <!-- ============ 7. HOOK: PRIVATE SECTOR ============ -->
+    <section id="hook-private" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-money-bill-trend-up" style="color: var(--danger-color);"></i> And the Private Sector Is Worse</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+          <div style="background: #f0f5f8; padding: 16px 18px; border-radius: 10px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color); margin: 0;">$3.1T</p>
+            <p style="font-size: 13pt; margin-top: 6px;">annual cost of poor data quality to US business (IBM)</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 16px 18px; border-radius: 10px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--accent-color); margin: 0;">$12.9M</p>
+            <p style="font-size: 13pt; margin-top: 6px;">average loss per organization per year (Gartner)</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 16px 18px; border-radius: 10px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--danger-color); margin: 0;">37%</p>
+            <p style="font-size: 13pt; margin-top: 6px;">Unity's stock collapse, 11 May 2022</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 16px 24px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 15pt; line-height: 1.65;"><strong>Unity Technologies, Q1 2022.</strong> Corrupted data from one large customer flowed into the ad-targeting machine learning models. Result: <strong>$110 million</strong> in lost revenue &mdash; roughly 8% of full-year revenue &mdash; and the stock collapse above.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; text-align: center;"><em>One bad pipeline destroyed more value in a quarter than most startups raise in a lifetime.</em></p>
+      </div>
+      <aside class="notes">2 min. Unity is the slide the ML-curious students remember. The model was not wrong; the input was. Point forward: this is exactly why Topic 18 spends a whole session on evaluation and why nobody in industry trusts a metric they cannot trace to a pipeline.</aside>
+    </section>
+
+    <!-- ============ 8. THESIS ============ -->
+    <section id="thesis" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 30pt; line-height: 1.3;">Data is not a given.<br>It is a product of measurement decisions.</h1>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic; margin-top: 18px;">Every number in an economics dataset was once a raw observation that someone collected, cleaned, structured and validated before it became a statistic.</p>
+      <aside class="notes">30 seconds. Say it, do not gloss it. This is the sentence the whole course hangs on; it comes back on the takeaways slide at the end of the hour.</aside>
+    </section>
+
+    <!-- ============ 9-10. POLL 1 ============ -->
+    <section>
+      <section id="poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Actually Went Wrong?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 16pt; line-height: 1.6;">The Bank of England held interest rates high in 2024 partly on wage-growth figures from a survey with a <strong>~20% response rate</strong>.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What is the single biggest risk in that?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch01-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The sample is too small, so the estimate is noisy</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The people who stopped answering differ from those who kept answering</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The survey questions were poorly worded</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) No real risk &mdash; 20% of a large survey is still thousands of people</div>
+        </div>
+        <aside class="notes">2 min. FIRST THING THEY DO IN THIS COURSE. Say out loud: "open the deck link on your phone, tap an answer, results appear on the next slide." Deliberately answerable with zero background &mdash; it is a judgment call, not a recall question, so nobody can be wrong in a way that stings on day one. Expect a real D share.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch01-econ3916-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Who Is Missing, Not How Many</h2>
+        <div class="poll-results-chart" data-poll-id="ch01-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">A 20% response rate on a large survey still yields plenty of observations, so noise is not the binding problem. The problem is <strong>who</strong> the 20% are. If the workers who stopped responding differ systematically on the very thing being measured &mdash; employment and wages &mdash; the estimate is <strong>biased</strong>, and extra sample size does not fix bias.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting:</strong> every &ldquo;n = 1,000 is enough&rdquo; example you have seen assumes the sample is <em>random</em>. A collapsing response rate destroys exactly that assumption.</p>
+          </div>
+        </div>
+        <aside class="notes">Debrief line to say verbatim: "Hold on to B. In forty minutes it gets a name &mdash; MNAR &mdash; and by the end of this course it is the thing you check before you trust anyone's number, including your own." That callback is Poll 4.</aside>
+      </section>
+    </section>
+
+    <!-- ============ 11. DIVIDER 1 ============ -->
+    <section id="divider-structures" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; Three Ways to See the World</h1>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">The structure of your data decides which questions you are allowed to ask</p>
+      <aside class="notes">16-minute block. Objective 1.1.</aside>
+    </section>
+
+    <!-- ============ 12. ANALOGY ============ -->
+    <section id="analogy" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-camera" style="color: var(--secondary-color);"></i> Photograph, Movie, Surveillance Grid</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 6px;">
+          <div style="background: #f0f5f8; padding: 18px 20px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);"><i class="fa-solid fa-image"></i> Photograph</p>
+            <p style="font-size: 14pt; margin-top: 8px; line-height: 1.55;">Many subjects, one instant. 54 countries' Big Mac prices on 1 January 2025.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 18px 20px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);"><i class="fa-solid fa-film"></i> Movie</p>
+            <p style="font-size: 14pt; margin-top: 8px; line-height: 1.55;">One subject, frame by frame. US GDP, quarter by quarter, since 1947.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 18px 20px; border-radius: 10px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);"><i class="fa-solid fa-table-cells"></i> Surveillance grid</p>
+            <p style="font-size: 14pt; margin-top: 8px; line-height: 1.55;">Both at once. The same 57 countries, every six months, for 25 years.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 15px 22px; border-radius: 8px; margin-top: 20px;">
+          <p style="font-size: 16pt;">A photograph <strong>compares</strong> but cannot show change. A movie shows <strong>change</strong> but cannot compare. Only the grid does both.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Draw the three shapes on the board while you talk &mdash; students copy them and the analogy sticks for the whole semester. The fragment is the line to write under all three.</aside>
+    </section>
+
+    <!-- ============ 13. DEFINITIONS ============ -->
+    <section id="definitions" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--accent-color);"></i> The Three Structures, Named</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px;">
+          <div style="background: #f0f5f8; padding: 15px 22px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt;"><strong>Cross-sectional data</strong> &mdash; many units, observed at a single point in time.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 15px 22px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt;"><strong>Time series data</strong> &mdash; a single unit, observed across many time periods.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 15px 22px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt;"><strong>Panel data</strong> (also: longitudinal) &mdash; the <em>same</em> units, observed across many time periods.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 14px 22px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 15pt;"><strong>The word doing the work in the third one is &ldquo;same&rdquo;.</strong> A survey repeated every year with <em>different</em> respondents each round is a <em>pooled cross-section</em>, not a panel.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The pooled cross-section distinction is the most common question from a sharp student and it is Poll 2's distractor D. Get it on the record here so the poll is fair.</aside>
+    </section>
+
+    <!-- ============ 14. FIGURE: TAXONOMY ============ -->
+    <section id="fig-taxonomy" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-diagram-project" style="color: var(--secondary-color);"></i> One Picture, Three Shapes</h2>
+      <div class="content">
+        <img src="figures/figure_003_data_structures_taxonomy.png" alt="Three panels: cross-sectional data drawn as four stacked units at one time labelled y sub i; time series as one unit across four periods labelled y sub t; panel as a three-by-four grid of units by periods labelled y sub i t" style="width: 100%; max-height: 470px; object-fit: contain; margin-top: 4px;">
+        <p style="font-size: 14pt; text-align: center; color: var(--muted-color); margin-top: 8px;">Count the directions the data can move in. One, one, or two.</p>
+      </div>
+      <aside class="notes">1 min. Hold on the third panel. The whole reason panel data is the gold standard is that you can hold the unit fixed and watch it change &mdash; which is what every later identification strategy needs.</aside>
+    </section>
+
+    <!-- ============ 15. NOTATION ============ -->
+    <section id="notation" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-subscript" style="color: var(--accent-color);"></i> Notation You Will Use All Semester</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 24px; text-align: center;">
+          <p style="font-size: 20pt; margin: 0;">\( y_i \qquad y_t \qquad y_{it} \)</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+          <div style="background: #f8f6f3; padding: 11px 15px; border-radius: 6px; border-left: 3px solid var(--secondary-color);">
+            <p style="font-size: 14pt;">\( y \) &mdash; what you measured (a burger price in dollars)</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 11px 15px; border-radius: 6px; border-left: 3px solid var(--accent-color);">
+            <p style="font-size: 14pt;">\( i \) &mdash; indexes the unit (a country), \( i = 1,\ldots,n \)</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 11px 15px; border-radius: 6px; border-left: 3px solid var(--success-color);">
+            <p style="font-size: 14pt;">\( t \) &mdash; indexes the period (a semester), \( t = 1,\ldots,T \)</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 11px 15px; border-radius: 6px; border-left: 3px solid #7C3A5F;">
+            <p style="font-size: 14pt;">\( n, T \) &mdash; how many units, how many periods</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 15px 22px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><strong>Read it aloud:</strong> <em>the subscripts tell you what varies.</em> One subscript, one direction of variation. Two subscripts, a two-dimensional observation space &mdash; and everything in Topics 12&ndash;13 depends on which of those you brought.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Never present this notation bare &mdash; the fragment IS the interpretation and it is the only part students need to retain. Write y_it on the board and leave it there for the rest of the hour.</aside>
+    </section>
+
+    <!-- ============ 16. CAPABILITY MATRIX ============ -->
+    <section id="capability-matrix" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-table-list" style="color: var(--secondary-color);"></i> What Each Structure Lets You Ask</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%; margin-top: 6px;">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Question</th>
+              <th>Cross-section \( y_i \)</th>
+              <th>Time series \( y_t \)</th>
+              <th>Panel \( y_{it} \)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: left;">Which country has the dearest burger <em>today</em>?</td>
+              <td style="text-align: center; color: var(--success-color); font-weight: 700;">Yes</td>
+              <td style="text-align: center; color: var(--danger-color); font-weight: 700;">No</td>
+              <td style="text-align: center; color: var(--success-color); font-weight: 700;">Yes</td>
+            </tr>
+            <tr>
+              <td style="text-align: left;">Has Switzerland's burger got dearer since 2015?</td>
+              <td style="text-align: center; color: var(--danger-color); font-weight: 700;">No</td>
+              <td style="text-align: center; color: var(--success-color); font-weight: 700;">Yes</td>
+              <td style="text-align: center; color: var(--success-color); font-weight: 700;">Yes</td>
+            </tr>
+            <tr>
+              <td style="text-align: left;">Did countries that devalued see burgers get cheaper?</td>
+              <td style="text-align: center; color: var(--danger-color); font-weight: 700;">No</td>
+              <td style="text-align: center; color: var(--danger-color); font-weight: 700;">No</td>
+              <td style="text-align: center; color: var(--success-color); font-weight: 700;">Yes</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 15pt; margin-top: 16px; text-align: center;">The third row is the one only a panel can reach &mdash; it needs variation <em>within</em> a country <em>and</em> comparison <em>across</em> countries.</p>
+      </div>
+      <aside class="notes">2 min. Walk the third row slowly. Say: "the reason the tech firms build panels is that almost every question worth money is shaped like row three."</aside>
+    </section>
+
+    <!-- ============ 17. TECH PANELS ============ -->
+    <section id="tech-panels" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-flask-vial" style="color: var(--accent-color);"></i> Why Every Tech Firm Runs on Panels</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 4px;">
+          <div style="background: #f0f5f8; padding: 16px 18px; border-radius: 10px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">LinkedIn</p>
+            <p style="font-size: 14pt; margin-top: 6px; line-height: 1.5;">Over <strong>400 concurrent A/B experiments a day</strong>, each tracking the same users over time.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 16px 18px; border-radius: 10px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Microsoft</p>
+            <p style="font-size: 14pt; margin-top: 6px; line-height: 1.5;">The Experimentation Platform runs <strong>thousands of online tests a month</strong> on panel structures.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 16px 18px; border-radius: 10px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">Amazon</p>
+            <p style="font-size: 14pt; margin-top: 6px; line-height: 1.5;">Evaluates how <strong>fee changes</strong> move third-party seller behaviour across marketplaces.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 15pt; line-height: 1.6;">In every case validity rests on the <strong>structure</strong>: the same units observed repeatedly over the same periods. Without it you cannot separate the effect of the change from seasonality, or from who the users happen to be. Decisions worth hundreds of millions ride on that distinction.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Forward pointer: Topic 9 is the whole session on A/B testing, and it starts from the structure you are looking at now. Do not explain randomization here.</aside>
+    </section>
+
+    <!-- ============ 18. BIG MAC SHAPE ============ -->
+    <section id="bigmac-shape" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-burger" style="color: var(--accent-color);"></i> Our Dataset for the Semester Is a Panel</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">The Economist's <strong>Big Mac Index</strong> &mdash; free, transparent, and the recurring thread of this book. Figures below verified against the live index on 5 September 2026.</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px;">
+          <div style="background: #f0f5f8; padding: 14px 16px; border-radius: 8px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); margin: 0;">57</p>
+            <p style="font-size: 13pt; margin-top: 4px;">countries appear (54 reported in Jan 2025)</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 16px; border-radius: 8px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--accent-color); margin: 0;">45</p>
+            <p style="font-size: 13pt; margin-top: 4px;">semi-annual periods</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 16px; border-radius: 8px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--success-color); margin: 0;">2,056</p>
+            <p style="font-size: 13pt; margin-top: 4px;">country-period observations</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 16px; border-radius: 8px; text-align: center; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 20pt; font-weight: 700; color: #7C3A5F; margin: 0;">2000&ndash;2026</p>
+            <p style="font-size: 13pt; margin-top: 4px;">April 2000 to July 2026</p>
+          </div>
+        </div>
+        <pre style="font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 10px; overflow: hidden; margin-top: 14px;"><code>import pandas as pd
+url = ("https://raw.githubusercontent.com/TheEconomist/big-mac-data/"
+       "master/output-data/big-mac-full-index.csv")
+df = pd.read_csv(url, parse_dates=["date"])
+df["name"].nunique(), df["date"].nunique(), len(df)   # 57, 45, 2056</code></pre>
+      </div>
+      <aside class="notes">2 min. 57 x 45 = 2,565, but there are only 2,056 rows. Ask the room to spot that gap &mdash; it is the unbalanced panel, and it is the hinge into the missing-data block at the end of the hour. Do not resolve it now; say "hold that."</aside>
+    </section>
+
+    <!-- ============ 19. SLICING CODE ============ -->
+    <section id="slicing" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i> One Dataset, Three Structures</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">You do not need three datasets. A panel contains the other two &mdash; slice it into whichever the question needs.</p>
+        <pre style="font-size: 13pt; background: #1e1e1e; color: #d4d4d4; padding: 16px 20px; border-radius: 10px; overflow: hidden; margin-top: 12px;"><code>df_cross = df[df["date"] == "2024-07-01"]     # cross-section: 54 countries, 1 period
+df_ts    = df[df["name"] == "Switzerland"]    # time series:   1 country, 45 periods
+df                                            # panel:         57 x 45, unbalanced</code></pre>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 15pt;">The arrow only points one way. You can <strong>collapse</strong> a panel into a cross-section or a time series. You can never <strong>build</strong> a panel out of a cross-section you already have.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. This is Part 1 of tonight's lab, cell for cell. Tell them so &mdash; recognising the code lowers the activation energy of opening the notebook.</aside>
+    </section>
+
+    <!-- ============ 20. MISCONCEPTION: SIZE ============ -->
+    <section id="misconception-size" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 18px 24px; border-radius: 8px;">
+          <p style="font-size: 17pt; font-style: italic;">&ldquo;More data always means better analysis.&rdquo;</p>
+        </div>
+        <p style="font-size: 16pt; line-height: 1.65; margin-top: 18px;">A million rows of cross-sectional data cannot answer a question that requires time variation. Adding more countries to a single snapshot does not help you measure how exchange rates <em>change</em>.</p>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 16px 24px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 17pt;"><strong>Structure beats size.</strong> A well-built panel of 57 countries over 25 years is more powerful than a cross-section of 10,000 countries at one moment &mdash; because only the panel lets you hold the unit fixed and watch it move.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. This is the sentence Poll 2 tests. Say it, then go straight to the poll without a bridge.</aside>
+    </section>
+
+    <!-- ============ 21-22. POLL 2 ============ -->
+    <section>
+      <section id="poll-2" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Do You Actually Have?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 16pt; line-height: 1.6;">You want to know whether raising the minimum wage in a city changed employment <em>in that city</em>. A colleague hands you a survey of <strong>200,000 workers across 400 cities, all interviewed in March 2026</strong>.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What structure is that?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch01-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Panel &mdash; 400 cities is plenty of units</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Time series &mdash; March 2026 is a time period</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Cross-section &mdash; many units, one moment</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Panel &mdash; each worker was asked about several past jobs</div>
+        </div>
+        <aside class="notes">1 min. D is the productive error and it should get real votes. Do not signal.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch01-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Many Units, One Moment</h2>
+        <div class="poll-results-chart" data-poll-id="ch01-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">200,000 rows and 400 cities, all from one instant. Adding units does not add time variation, and the question &mdash; did employment <em>change</em> &mdash; is a change question.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is the interesting wrong answer:</strong> retrospective questions inside one interview <em>feel</em> like time. They are recall, not repeated observation. Panel requires the same units <strong>measured again</strong>. Same reason a survey repeated yearly with different respondents is a pooled cross-section, not a panel.</p>
+          </div>
+        </div>
+        <aside class="notes">1 min. Debrief line: "you cannot fix a structural shortfall with sample size &mdash; that is the whole lesson of the last fifteen minutes." Then straight into Discussion 1, which is the first time they talk to each other.</aside>
+      </section>
+    </section>
+
+    <!-- ============ 23. DISCUSSION 1 ============ -->
+    <section id="discussion-1" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Classify Something You Actually Care About</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 24px; border-radius: 12px;">
+          <p class="text-xl" style="font-weight: 600;">Turn to the person next to you. Introduce yourself first &mdash; you will be doing this all semester.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Name a dataset you personally care about &mdash; a game's match history, Spotify Wrapped, your gym app, a team's box scores. What are its <strong>units</strong>? What is its <strong>time dimension</strong>?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">Which of the three structures is it? And name one question about it that your structure <strong>cannot</strong> answer.</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">5 min, press 5 for the timer. This is the community-building beat &mdash; on day one the introduction matters as much as the answer. Sort the shared answers into three bins on the board. Expect: personal apps are usually panel (you, repeatedly) or time series (one account over time); public leaderboards are cross-sections. Debrief line to land: "the structure was decided by whoever built the collection, not by you &mdash; and it caps what you can ever learn from it."</aside>
+    </section>
+
+    <!-- ============ 24. DIVIDER 2 ============ -->
+    <section id="divider-ppp" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; The Big Mac Index</h1>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">An economic theory you can compute in two lines of pandas</p>
+      <aside class="notes">18-minute block. Objective 1.2. This is the spine of the chapter and the thread that returns in Topic 2.</aside>
+    </section>
+
+    <!-- ============ 25. PPP INTUITION ============ -->
+    <section id="ppp-intuition" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--secondary-color);"></i> Purchasing Power Parity, In One Burger</h2>
+      <div class="content">
+        <p style="font-size: 16pt; line-height: 1.6;">A Big Mac costs <strong>$5.79</strong> in the United States and <strong>CHF 7.20</strong> in Switzerland. If goods markets worked perfectly &mdash; no tariffs, no transport costs, no local wage differences &mdash; what <em>should</em> the exchange rate be?</p>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 24px; margin-top: 16px; text-align: center;">
+          <p style="font-size: 17pt;">The rate that makes the two burgers cost the same: <strong>7.20 / 5.79 = 1.24 francs per dollar</strong></p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; line-height: 1.6; margin-top: 16px;">The actual market rate in January 2025 was about <strong>0.90</strong> francs per dollar. The franc buys more burger than it &ldquo;should&rdquo;. It is <strong>overvalued</strong>.</p>
+        <p style="font-size: 14pt; color: var(--muted-color); margin-top: 14px;">That is the whole theory: exchange rates should adjust until identical goods cost the same everywhere. <em>The Economist</em> built the index on it in 1986. Not a precision instrument &mdash; but the data is free, the arithmetic is transparent, and the intuition is immediate.</p>
+      </div>
+      <aside class="notes">2 min. Resist naming the formula until the next slide. The arithmetic first, the notation second &mdash; students who see 7.20/5.79 before they see P_domestic/P_US never find the formula intimidating.</aside>
+    </section>
+
+    <!-- ============ 26. EQUATIONS ============ -->
+    <section id="ppp-equations" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-divide" style="color: var(--accent-color);"></i> Two Equations, and What They Say Out Loud</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 24px; text-align: center;">
+          <p style="font-size: 17pt; margin: 0;">\[ \text{Implied PPP} = \frac{P_{\text{domestic}}}{P_{\text{US}}} \qquad\qquad \text{Valuation}\,(\%) = \frac{\text{Implied PPP} - \text{Spot}}{\text{Spot}} \times 100 \]</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="padding: 15px 20px; border: 2px solid var(--secondary-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--secondary-color); font-size: 15pt;">The first one asks</p>
+            <p style="font-size: 15pt; margin-top: 6px;"><em>What exchange rate would make these two burgers cost the same?</em></p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">The second one asks</p>
+            <p style="font-size: 15pt; margin-top: 6px;"><em>How far is the real world from that rate, in percent?</em></p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 14px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 15pt;"><strong>Sign convention:</strong> positive means the local currency is <strong>overvalued</strong> &mdash; the burger is dear relative to what exchange rates would predict. Negative means <strong>undervalued</strong> &mdash; the burger is cheap. \( P_{\text{domestic}} \) is in local currency; Spot is local currency per US dollar.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Every symbol gets glossed on this slide &mdash; do not move on until the sign convention is said out loud, because it is the thing Poll 3 checks and the thing students get backwards on the exam.</aside>
+    </section>
+
+    <!-- ============ 27. WORKED BY HAND ============ -->
+    <section id="ppp-worked" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-pen-to-square" style="color: var(--secondary-color);"></i> Do It By Hand First: Switzerland, January 2025</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 24px; text-align: center;">
+          <p style="font-size: 18pt; margin: 0;">\[ \text{Implied PPP} = \frac{7.20}{5.79} = 1.2435 \ \text{CHF per USD} \]</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-radius: 10px; padding: 18px 24px; text-align: center; margin-top: 14px;">
+          <p style="font-size: 18pt; margin: 0;">\[ \text{Valuation} = \frac{1.2435 - 0.9009}{0.9009} \times 100 = +38.0\% \]</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; line-height: 1.6; margin-top: 16px;">The Swiss franc is <strong>38% overvalued</strong> against the dollar on this measure. Swiss burgers are dear because Swiss rents, wages and service costs are high &mdash; which is a hint we will pick up in ten minutes.</p>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--muted-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 14pt;"><strong>Where the inputs come from:</strong> CHF 7.20 and $5.79 are the January 2025 rows of <code>local_price</code> and the US <code>dollar_price</code>. The 0.9009 is <code>dollar_ex</code> &mdash; francs per dollar, the actual market rate that period. Nothing here is a modelling choice; all three are columns.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Make them compute 7.20/5.79 themselves before you advance the fragment. Phones out is fine. Only after they have a number do you show that pandas does the same arithmetic on 54 rows at once. Verified: spot 0.9009 on 2025-01-01, valuation +38.04%.</aside>
+    </section>
+
+    <!-- ============ 28. THREE COUNTRIES ============ -->
+    <section id="ppp-table" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> Three Countries, January 2025</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%; margin-top: 4px;">
+          <thead>
+            <tr><th style="text-align: left;">Country</th><th>Local price</th><th>US price</th><th>Implied PPP</th><th>Spot rate</th><th>Valuation</th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="text-align: left;">Switzerland</td><td style="text-align: center;">CHF 7.20</td><td style="text-align: center;">$5.79</td><td style="text-align: center;">1.24</td><td style="text-align: center;">0.90</td><td style="text-align: center; color: var(--secondary-color); font-weight: 700;">+38.0%</td></tr>
+            <tr><td style="text-align: left;">Japan</td><td style="text-align: center;">&yen;480</td><td style="text-align: center;">$5.79</td><td style="text-align: center;">82.90</td><td style="text-align: center;">154.35</td><td style="text-align: center; color: var(--danger-color); font-weight: 700;">&minus;46.3%</td></tr>
+            <tr><td style="text-align: left;">Brazil</td><td style="text-align: center;">R$23.90</td><td style="text-align: center;">$5.79</td><td style="text-align: center;">4.13</td><td style="text-align: center;">5.94</td><td style="text-align: center; color: var(--danger-color); font-weight: 700;">&minus;30.5%</td></tr>
+          </tbody>
+        </table>
+        <pre style="font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 10px; overflow: hidden; margin-top: 14px;"><code>latest = df[df["date"] == "2025-01-01"].copy()
+us_price = latest.loc[latest["iso_a3"] == "USA", "dollar_price"].values[0]   # 5.79
+latest["implied_ppp"]   = latest["local_price"] / us_price
+latest["valuation_pct"] = (latest["implied_ppp"] - latest["dollar_ex"]) / latest["dollar_ex"] * 100</code></pre>
+      </div>
+      <aside class="notes">2 min. Four lines replace 54 hand calculations &mdash; that is the argument for pandas, made by demonstration rather than assertion. Japan at -46.3% reflects prolonged low inflation and competitive labour costs; Brazil sits in between.</aside>
+    </section>
+
+    <!-- ============ 29. FIGURE: VALUATION BAR ============ -->
+    <section id="fig-valuation" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-chart-simple" style="color: var(--secondary-color);"></i> The Whole Cross-Section, Ranked</h2>
+      <div class="content">
+        <img src="figures/figure_001_bigmac_valuation.png" alt="Horizontal bar chart of the five most overvalued and five most undervalued currencies against the US dollar in January 2025: Switzerland plus 38 percent at the top, Taiwan minus 59 percent at the bottom" style="width: 100%; max-height: 440px; object-fit: contain; margin-top: 4px;">
+        <p style="font-size: 14pt; text-align: center; color: var(--muted-color); margin-top: 6px;">January 2025 &bull; blue = overvalued vs the dollar, red = undervalued &bull; 54 countries reporting, top and bottom five shown</p>
+      </div>
+      <aside class="notes">1 min. Note out loud that only 6 of the 54 countries sit above the US line. Ask why that might be &mdash; do not answer; it is Discussion 2's territory and Poll 3 is next.</aside>
+    </section>
+
+    <!-- ============ 30-31. POLL 3 ============ -->
+    <section>
+      <section id="poll-3" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Read the Number</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Taiwan's January 2025 valuation is <strong>&minus;59%</strong>.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What does that number actually mean?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch01-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) A Big Mac costs 59% less in Taiwan than in the US at market rates</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The Taiwan dollar should appreciate 59% for burger prices to match</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The spot rate sits 59% below the rate that would equalise burger prices</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Taiwan's inflation has run 59% below US inflation</div>
+        </div>
+        <aside class="notes">1 min. A is the near-miss and it will lead the vote. That is fine &mdash; the reveal is where the distinction gets made.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch01-econ3916-poll-3" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; It Is a Statement About Exchange Rates</h2>
+        <div class="poll-results-chart" data-poll-id="ch01-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The valuation compares the <strong>actual spot rate</strong> with the <strong>implied PPP rate</strong>. It is not a claim about inflation, and it is not quite the price gap either.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is nearly right and still wrong:</strong> the valuation is computed against <code>dollar_ex</code>, not against the price difference. Taiwan's dollar Big Mac price was $2.28 against $5.79 &mdash; a 61% price gap, not 59%. Related, not equal. <strong>B</strong> reverses the direction and turns a deviation into a forecast.</p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. Debrief line: "the index measures a deviation, not a forecast. Nothing here says the gap will close." That sets up Discussion 2 exactly.</aside>
+      </section>
+    </section>
+
+    <!-- ============ 32. DISCUSSION 2 ============ -->
+    <section id="discussion-2" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Would You Put the Trade On?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 24px; border-radius: 12px;">
+          <p class="text-xl" style="font-weight: 600;">You run a currency desk. The chart says the Taiwan dollar is 59% cheap and the Swiss franc 38% dear.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Do you buy the Taiwan dollar and sell the franc? What would have to be <strong>true</strong> for that trade to pay?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">Name <strong>three things</strong> inside a Big Mac's price that have nothing to do with exchange rates.</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">5 min, press 5. Prompt B is the one that produces the answer; Prompt A is the hook that makes them care. Collect the Prompt B answers on the board &mdash; you will have most of the next slide written by the students themselves.</aside>
+    </section>
+
+    <!-- ============ 33. WHY PPP FAILS ============ -->
+    <section id="why-ppp-fails" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-arrows-spin" style="color: var(--danger-color);"></i> PPP Breaks Because a Burger Is Mostly Non-Tradeable</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 4px;">
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--danger-color);"><p style="font-size: 14pt;">Restaurant <strong>rent</strong></p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--danger-color);"><p style="font-size: 14pt;">Local <strong>wages</strong></p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--danger-color);"><p style="font-size: 14pt;"><strong>Utilities</strong></p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--danger-color);"><p style="font-size: 14pt;">Taxes and <strong>regulation</strong></p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--danger-color);"><p style="font-size: 14pt;">Market power, <strong>franchise structure</strong></p></div>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">None of these arbitrage across borders, and they vary enormously for structural reasons. A Swiss burger is dear because <strong>Switzerland is expensive to operate in</strong> &mdash; not because the franc is 38% &ldquo;too strong&rdquo;.</p>
+        <div style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 16pt;"><strong>Common misconception:</strong> &ldquo;the Big Mac Index proves currencies are misvalued.&rdquo; It illustrates PPP logic. It is a <strong>pedagogical tool, not a trading signal</strong>. Pakko &amp; Pollard (2003) is the academic treatment of why these deviations persist.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Anticipated question, and a good one: "why not use something standardised like an iPhone?" The CFR's Mini Mac Index does exactly that with iPads and finds PPP holds better &mdash; precisely because electronics are tradeable and burgers are not. That answer is worth giving; it shows the framework generalises.</aside>
+    </section>
+
+    <!-- ============ 34. PANEL PAYOFF ============ -->
+    <section id="panel-payoff" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-timeline" style="color: var(--accent-color);"></i> The Panel Pays Off: Valuations Move</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px;">
+          <div style="background: #f0f5f8; padding: 16px 20px; border-radius: 10px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color); margin: 0;">$4.82 &rarr; $5.79</p>
+            <p style="font-size: 14pt; margin-top: 6px;">US Big Mac price, January 2020 to January 2025</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 16px 20px; border-radius: 10px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color); margin: 0;">+20.1%</p>
+            <p style="font-size: 14pt; margin-top: 6px;">over those five years</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">Meanwhile many emerging-market currencies depreciated against the dollar. Their burgers grew <em>cheaper</em> in dollar terms even as the US burger grew dearer. Countries that read as fairly valued in 2019 read as significantly undervalued by 2024 &mdash; <strong>not because their burgers changed, but because their exchange rates did.</strong></p>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 16pt;">A single cross-section would have shown you none of that. <strong>This is the concrete payoff of panel structure</strong> &mdash; and it is the question Topic 2 opens with.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Topic 2 hook, say it explicitly: "is a $5.79 burger in 2025 really dearer than a $4.82 burger in 2020, or did the dollar change? That needs price indexes and deflation, and it is the next session." Also worth 20 seconds: Uber's surge pricing is dynamic PPP, and Uber's economists model surge multipliers on panels of geographic zones across thousands of 15-minute intervals &mdash; with one snapshot you cannot separate surge from location, weather or hour.</aside>
+    </section>
+
+    <!-- ============ 35. FIGURE: OVER TIME ============ -->
+    <section id="fig-over-time" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i> Twenty-Six Years of Deviation</h2>
+      <div class="content">
+        <img src="figures/figure_004_valuation_over_time.png" alt="Line chart of Big Mac PPP valuation from 2000 to 2026 for Switzerland, Japan, Brazil and China: Switzerland stays well above zero throughout, peaking above 120 percent in 2011; Japan drifts from positive in 2000 to about minus 50 percent by 2026; Brazil swings widely; China stays below minus 25 percent" style="width: 100%; max-height: 430px; object-fit: contain; margin-top: 4px;">
+        <p style="font-size: 14pt; text-align: center; color: var(--muted-color); margin-top: 6px;">The dashed line is PPP holding exactly. Nobody sits on it for long.</p>
+      </div>
+      <aside class="notes">1.5 min. Two things to point at. (1) Switzerland is never once undervalued in 26 years &mdash; a persistent deviation, which is exactly what Pakko and Pollard explain and what a "the gap will close" trader would have lost money on for a quarter-century. (2) The Swiss line runs from about +30% to +121%, so beware any summary that calls it "consistently 30-40% overvalued" &mdash; check the range before you write a claim like that in a README. This is the same computation as the Extension cell of tonight's lab.</aside>
+    </section>
+
+    <!-- ============ 36. CAREERS ============ -->
+    <section id="careers" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-briefcase" style="color: #7C3A5F;"></i> Economist at Work: Who Pays for This</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Amazon employs over <strong>150 PhD economists</strong>. Airbnb, Uber, Meta, Microsoft, Wayfair, Zillow, DraftKings and HubSpot all run dedicated economics teams. Four archetypes:</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 12px;">
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>1. Centralized research.</strong> Corporate labs mirroring academic departments (Microsoft Research, Meta).</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>2. Product-attached.</strong> Embedded in product teams &mdash; the fastest-growing category (Wayfair's Long Term Impact Science).</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>3. External-facing and policy.</strong> Defending the firm to regulators, shaping public discourse (Zillow).</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 14pt;"><strong>4. Internal strategy and litigation.</strong> Forecasting, capital allocation, antitrust defence.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+          <p style="font-size: 14.5pt;"><strong>Entry-level PhD in tech: ~$140,000 base. Principal at Amazon or Wayfair: $204,000&ndash;$275,000 base, total comp $330,000&ndash;$679,000.</strong> The skill that separates them from generic data scientists is not fancier models &mdash; it is rigorous reasoning about messy data. <span style="color: var(--muted-color);">(Piao 2026)</span></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Day-one motivation, delivered once and not repeated. The honest caveat if a student asks: these are PhD-track numbers. The BA/MS path into the same teams goes through exactly the portfolio this course builds &mdash; which is the point.</aside>
+    </section>
+
+    <!-- ============ 37. DIVIDER 3 ============ -->
+    <section id="divider-pandas" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; The Economist's Workbench</h1>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">pandas, and why a spreadsheet cannot do this job</p>
+      <aside class="notes">12-minute block. Objective 1.2. Keep moving &mdash; the lab is where they actually learn this; the lecture's job is to name the pieces so the notebook is not alien.</aside>
+    </section>
+
+    <!-- ============ 38. WHY PYTHON ============ -->
+    <section id="why-python" style="padding: 30px 55px;">
+      <h2><i class="fa-brands fa-python" style="color: var(--secondary-color);"></i> Why Python, Specifically</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">Tech economist job postings converge on five technical competencies:</p>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px;">
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--secondary-color);"><p style="font-size: 13.5pt;">Production <strong>Python</strong> or R</p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--accent-color);"><p style="font-size: 13.5pt;">Expert <strong>SQL</strong> <span style="color: var(--muted-color);">(Topic 11)</span></p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--success-color);"><p style="font-size: 13.5pt;"><strong>scikit-learn</strong> and ML libraries</p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid #7C3A5F;"><p style="font-size: 13.5pt;"><strong>Cloud</strong> infrastructure</p></div>
+          <div style="background: #f0f5f8; padding: 13px 12px; border-radius: 8px; text-align: center; border-left: 3px solid var(--danger-color);"><p style="font-size: 13.5pt;"><strong>Communicating</strong> to non-technical people</p></div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); padding: 15px 22px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Python spans all five. Excel does none of them at scale &mdash; and caps out around a million rows. Stata and R handle 1&ndash;3 and struggle with 4&ndash;5. Python is the one language that runs the whole stack: pandas, statsmodels, scikit-learn, and deployment.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Do not turn this into a language war. The honest framing: R is excellent and widely used; you learn Python here because it is the only one that also does items 4 and 5, and because it is what the job postings ask for.</aside>
+    </section>
+
+    <!-- ============ 39. DATAFRAME RULES ============ -->
+    <section id="dataframe-rules" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-table" style="color: var(--accent-color);"></i> A DataFrame Is a Spreadsheet With Rules</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 6px; align-items: start;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Rule 1: it enforces types</p>
+            <p style="font-size: 15pt; margin-top: 6px;">A price column cannot quietly contain a country name. A spreadsheet lets that happen and says nothing.</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Rule 2: every step is written down</p>
+            <p style="font-size: 15pt; margin-top: 6px;">Filtering, grouping and transforming happen in reproducible code, not manual clicks.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 15px 22px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 16pt;">Another analyst &mdash; or you, in eight months, defending a number to a regulator &mdash; can rerun your script and get the same answer. <strong>No spreadsheet gives you that guarantee.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. The "you in eight months" framing lands harder than "reproducibility" as an abstraction. If anyone pushes back with "Excel has audit trails", concede the point and note it does not survive a copy-paste.</aside>
+    </section>
+
+    <!-- ============ 40. TIDY DATA ============ -->
+    <section id="tidy-data" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-broom" style="color: var(--success-color);"></i> Key Concept: Tidy Data</h2>
+      <div class="content">
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 18px 24px; border-radius: 8px;">
+          <p style="font-size: 16pt; line-height: 1.65;">A dataset is <strong>tidy</strong> when: (1) each <strong>variable</strong> is a column, (2) each <strong>observation</strong> is a row, and (3) each type of observational unit is its own <strong>table</strong>. <span style="color: var(--muted-color);">(Wickham 2014)</span></p>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">The Big Mac Index is tidy: one row per country-date, one column per measured variable &mdash; <code>local_price</code>, <code>dollar_ex</code>, <code>dollar_price</code>.</p>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--accent-color); padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 15pt;">Tidy is not an aesthetic preference. It is the shape pandas, R and every modern tool are optimised for. <strong>If your data is not tidy, reshaping it is your first task &mdash; not optional cleanup.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Wickham's paper is short and readable; recommend it to anyone who asks for extra reading in week one. This concept is load-bearing for Topics 2-4.</aside>
+    </section>
+
+    <!-- ============ 41. LOC / ILOC ============ -->
+    <section id="loc-iloc" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-crosshairs" style="color: var(--secondary-color);"></i> Selection: <code>.loc</code> vs <code>.iloc</code></h2>
+      <div class="content">
+        <pre style="font-size: 13pt; background: #1e1e1e; color: #d4d4d4; padding: 16px 20px; border-radius: 10px; overflow: hidden;"><code># .loc  — LABEL-based: select by name, or by boolean condition
+swiss = latest.loc[latest["name"] == "Switzerland", "dollar_price"]
+
+# .iloc — POSITION-based: select by integer position
+latest.iloc[:3, :5]
+
+# boolean filtering: which burgers cost more than $7?
+expensive = latest.loc[latest["dollar_price"] > 7, ["name", "dollar_price"]]</code></pre>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 15px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 16pt;"><strong>The rule to memorise:</strong> <code>.loc</code> takes <em>labels</em>. <code>.iloc</code> takes <em>positions</em>. Almost every pandas error a beginner hits is one of these used where the other belonged.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. If you have a live Colab open, run these and have students predict each output before you hit shift-enter. Prediction-then-check is worth three times the passive read.</aside>
+    </section>
+
+    <!-- ============ 42. GROUPBY ============ -->
+    <section id="groupby" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> Aggregation and Derived Columns</h2>
+      <div class="content">
+        <pre style="font-size: 13pt; background: #1e1e1e; color: #d4d4d4; padding: 16px 20px; border-radius: 10px; overflow: hidden;"><code>df["year"]  = df["date"].dt.year
+yearly_avg  = df.groupby("year")["dollar_price"].mean()
+
+df_us = df.loc[df["iso_a3"] == "USA"].sort_values("date").copy()
+df_us["pct_change"] = df_us["dollar_price"].pct_change() * 100</code></pre>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); padding: 15px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 16pt;"><code>groupby</code> is <strong>split&ndash;apply&ndash;combine</strong>: split the rows into groups, apply a function to each group, combine the answers into one object. It is the single most-used verb in applied work.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Say split-apply-combine out loud and write it on the board. Students who hold that three-word phrase never get lost in groupby syntax.</aside>
+    </section>
+
+    <!-- ============ 43. DIAGNOSTICS ============ -->
+    <section id="diagnostics" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-stethoscope" style="color: var(--success-color);"></i> Run These Before Anything Else</h2>
+      <div class="content">
+        <pre style="font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 15px 20px; border-radius: 10px; overflow: hidden;"><code>df.info()      # columns, dtypes, non-null counts.  Fewer non-nulls than rows = missing data
+df.dtypes      # are prices numbers, or strings that merely look like numbers?
+df.describe()  # min/max outliers, impossible negatives, suspicious zeros
+df.groupby("date")["name"].nunique()   # if min &lt;&lt; max, the panel is unbalanced</code></pre>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 15px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 16pt;">This is the economist's equivalent of checking your instruments before an experiment. <strong>Three minutes here saves hours downstream.</strong> Make it reflexive &mdash; every dataset, every time, before a line of analysis.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. The last line is the one that pays off at the end of the hour &mdash; it is how you discover the panel is unbalanced, which is how you discover Russia is gone.</aside>
+    </section>
+
+    <!-- ============ 44. RESHAPE ============ -->
+    <section id="reshape" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-right-left" style="color: var(--secondary-color);"></i> Reshaping: <code>melt()</code> and <code>pivot_table()</code></h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Real economic data rarely arrives tidy. Statistical agencies publish <strong>wide</strong> tables &mdash; countries as columns, years as rows &mdash; with nested headers and footnotes embedded as data.</p>
+        <pre style="font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 15px 20px; border-radius: 10px; overflow: hidden; margin-top: 12px;"><code>df_wide = df.pivot_table(index="name", columns="date",
+                         values="dollar_price", aggfunc="first")     # long -> wide
+
+df_long = (df_wide.reset_index()
+                  .melt(id_vars="name", var_name="date", value_name="dollar_price")
+                  .dropna(subset=["dollar_price"]))                  # wide -> long (tidy)</code></pre>
+        <p style="font-size: 15pt; margin-top: 14px;"><code>pivot_table()</code> spreads a variable across columns &mdash; good for display and heatmaps. <code>melt()</code> gathers columns back into rows &mdash; required for analysis. You will lean on both in Topics 2&ndash;4 with FRED, World Bank and BLS series, all of which ship wide.</p>
+      </div>
+      <aside class="notes">1.5 min. Worth saying: the heatmap you will see in ten minutes is a pivot_table. The reshape is not busywork; it is what makes the picture possible.</aside>
+    </section>
+
+    <!-- ============ 45. MISCONCEPTION: SHAPE ============ -->
+    <section id="misconception-shape" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 18px 24px; border-radius: 8px;">
+          <p style="font-size: 17pt; font-style: italic;">&ldquo;I can just analyse the data in whatever shape I receive it.&rdquo;</p>
+        </div>
+        <p style="font-size: 16pt; line-height: 1.65; margin-top: 18px;">Try <code>groupby("date")</code> on a frame whose dates are <em>column headers</em>. It fails &mdash; there is no <code>date</code> column to group on. Wide format breaks most pandas operations, silently or loudly.</p>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 16px 24px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 17pt;">When your <code>groupby</code> or <code>merge</code> is not working, the first question is always: <strong>is my data tidy?</strong></p>
+        </div>
+      </div>
+      <aside class="notes">1 min. This is the single most common help-hours question in weeks 2-4. Planting it now saves everyone time.</aside>
+    </section>
+
+    <!-- ============ 46. FITNESS CHECKLIST ============ -->
+    <section id="fitness" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-plane-departure" style="color: var(--accent-color);"></i> Fitness for Purpose: The Pre-Flight Checklist</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 4px;">
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;"><strong>Structure.</strong> Does it match the question? To measure <em>change</em> you need time variation.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 15pt;"><strong>Measurement.</strong> Right level? The index is in local <em>nominal</em> currency. Constant dollars need deflation &mdash; Topic 2.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">3</p>
+            <p style="font-size: 15pt;"><strong>Coverage.</strong> Representative? The index covers ~54 countries where McDonald's operates and reports &mdash; excluding most of Sub-Saharan Africa, Central Asia and the Pacific.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; text-align: center;">Thirty seconds of checklist prevents an analysis built on data that cannot support its own conclusion.</p>
+      </div>
+      <aside class="notes">1.5 min. Point 3 is the uncomfortable one: the regions the index excludes are often the ones where PPP comparisons matter most for policy. Say that.</aside>
+    </section>
+
+    <!-- ============ 47. DISCUSSION 3 ============ -->
+    <section id="discussion-3" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-hand-pointer" style="color: var(--danger-color);"></i> Decision Scenario: Say No Usefully</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 24px; border-radius: 12px;">
+          <p class="text-xl" style="font-weight: 600;">Your manager: <em>&ldquo;Which currencies are most likely to appreciate next year? Use the Big Mac Index &mdash; we already have it.&rdquo;</em></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Run the three-question checklist out loud. Which of the three does this request <strong>fail</strong>?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">What do you say <em>back</em>, in one sentence, that is both <strong>honest</strong> and <strong>useful</strong>?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4. Debrief: structure PASSES (a panel supports a time question). Measurement FAILS &mdash; the index measures a deviation from PPP, not a forecast, and much of the deviation is non-tradeable cost that will still be there next year. Coverage FAILS &mdash; the currencies most likely to move sharply are often in countries the index does not cover. Model answer for Prompt B, say it verbatim: "The index tells you where prices are out of line, not where rates are going; I can give you today's deviations, and I'd want an interest-rate differential and a current-account series before saying anything about next year." That sentence is the professional skill this whole block is for.</aside>
+    </section>
+
+    <!-- ============ 48. DIVIDER 4 ============ -->
+    <section id="divider-missing" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; When Missing Data Tells a Story</h1>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">The question is never how much is missing. It is what made it missing.</p>
+      <aside class="notes">11-minute block. Objective 1.3 &mdash; today's assessed skill, and the callback to Poll 1.</aside>
+    </section>
+
+    <!-- ============ 49. RUSSIA ============ -->
+    <section id="russia" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-eye-slash" style="color: var(--danger-color);"></i> Russia Disappears</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px;">
+          <div style="background: #f0f5f8; padding: 16px 20px; border-radius: 10px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); margin: 0;">36</p>
+            <p style="font-size: 14pt; margin-top: 5px;">observations, 2000 to 2022</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 16px 20px; border-radius: 10px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--danger-color); margin: 0;">Jan 2022</p>
+            <p style="font-size: 14pt; margin-top: 5px;">last appearance &mdash; then nothing</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">Russia did not stop having a currency or a burger price. Russia left the dataset because Western firms withdrew after the February 2022 invasion of Ukraine. McDonald's sold its <strong>850 Russian restaurants</strong> to a local operator, rebranded &ldquo;Vkusno i Tochka&rdquo; &mdash; <em>Tasty and That's It</em>.</p>
+        <div class="fragment fade-up" style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 16pt;"><strong>That disappearance is not random.</strong> It correlates directly with the geopolitical event that also moved exchange rates, sanctions, and the very outcomes the index measures.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Draw the timeline on the board: complete through Jan 2022, gone after. Then ask the room "is that random?" and wait. The answer they give in their own words is the definition you are about to formalise.</aside>
+    </section>
+
+    <!-- ============ 50. NOT JUST RUSSIA ============ -->
+    <section id="not-just-russia" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-repeat" style="color: var(--accent-color);"></i> This Pattern Is Everywhere</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 4px; align-items: start;">
+          <div style="padding: 16px 20px; border: 2px solid var(--secondary-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--secondary-color); font-size: 15pt;">US Census Bureau, 2020</p>
+            <p style="font-size: 15pt; margin-top: 6px;">Withheld the standard one-year <strong>American Community Survey</strong> products &mdash; the most widely used socioeconomic dataset in the country &mdash; because non-response bias had compromised the data's integrity. The non-respondents differed systematically in income, housing and demographics.</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--danger-color); font-size: 15pt;">A retailer's AI scheduler, 6,000 stores</p>
+            <p style="font-size: 15pt; margin-top: 6px;">Trained on historical staffing data that never captured the informal shift swaps managers made by hand. Store managers manually overrode <strong>84%</strong> of the generated shifts. The algorithm was fine. <strong>The data was not.</strong></p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; text-align: center;">Publishing the 2020 ACS would have misled every researcher, policymaker and analyst who relied on it. Withholding it was the honest choice &mdash; and an expensive one.</p>
+      </div>
+      <aside class="notes">1.5 min. Two very different institutions, one mechanism. Link back to Unity from the hook if time allows: three cases now where the model was blameless and the input was not.</aside>
+    </section>
+
+    <!-- ============ 51. RUBIN TYPOLOGY ============ -->
+    <section id="typology" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-sitemap" style="color: var(--secondary-color);"></i> Three Mechanisms &mdash; MCAR, MAR, MNAR</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%; margin-top: 2px; font-size: 14pt;">
+          <thead>
+            <tr><th style="text-align: left;">Mechanism</th><th style="text-align: left;">Missingness depends on</th><th style="text-align: left;">Example</th><th style="text-align: left;">How bad</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: left;"><strong>MCAR</strong><br><span style="font-size: 12pt; color: var(--muted-color);">missing completely at random</span></td>
+              <td style="text-align: left;">nothing</td>
+              <td style="text-align: left;">a server crash drops responses</td>
+              <td style="text-align: left; color: var(--success-color);"><strong>Benign.</strong> Less power, no bias.</td>
+            </tr>
+            <tr>
+              <td style="text-align: left;"><strong>MAR</strong><br><span style="font-size: 12pt; color: var(--muted-color);">missing at random</span></td>
+              <td style="text-align: left;"><em>observed</em> variables only</td>
+              <td style="text-align: left;">younger people answer less often, but within an age group answering is unrelated to salary</td>
+              <td style="text-align: left; color: var(--accent-color);"><strong>Addressable.</strong> Condition on what you observe.</td>
+            </tr>
+            <tr>
+              <td style="text-align: left;"><strong>MNAR</strong><br><span style="font-size: 12pt; color: var(--muted-color);">missing not at random</span></td>
+              <td style="text-align: left;">the <em>unobserved value itself</em></td>
+              <td style="text-align: left;">high earners refuse to state a salary <em>because</em> it is high</td>
+              <td style="text-align: left; color: var(--danger-color);"><strong>Dangerous.</strong> No amount of observed data fully fixes it.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+          <p style="font-size: 15pt;"><strong>Read it aloud:</strong> MCAR costs you <em>precision</em>. MAR costs you a <em>modelling step</em>. MNAR costs you the ability to know <em>how wrong you are</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">2.5 min. The bottom line is the one to repeat twice. Anticipated question: "can't we just impute?" &mdash; yes, and imputation assumes MAR; under MNAR it can increase bias while making the output look cleaner. Topic 6 comes back to this as selection bias.</aside>
+    </section>
+
+    <!-- ============ 52. CLASSIFICATION DRILL ============ -->
+    <section id="drill" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--success-color);"></i> Classify These Three</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px; margin-top: 4px;">
+          <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;">A country's early rows are absent because <em>The Economist</em> only began surveying it in 2011. <span class="fragment fade-in" style="font-weight: 700; color: var(--success-color);">&rarr; MCAR with respect to valuation &mdash; the start date has nothing to do with the price.</span></p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;">Venezuela's gaps during hyperinflation, when a dollar price was not meaningfully measurable. <span class="fragment fade-in" style="font-weight: 700; color: var(--danger-color);">&rarr; MNAR &mdash; the gap is caused by the extreme value it would have held.</span></p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;">Russia, after February 2022. <span class="fragment fade-in" style="font-weight: 700; color: var(--danger-color);">&rarr; MNAR &mdash; the cause of the gap is the thing the data measures.</span></p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; text-align: center;">You can never see the missing values. You can always reason about <strong>how the data came to be</strong> &mdash; and that reasoning is the job.</p>
+      </div>
+      <aside class="notes">2 min. Take each one cold before revealing the fragment. The Venezuela case is the hardest and the most useful: the value is missing precisely because it was extreme, which is the cleanest MNAR intuition students will get.</aside>
+    </section>
+
+    <!-- ============ 53. FIGURE: HEATMAP ============ -->
+    <section id="fig-heatmap" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-grip" style="color: var(--danger-color);"></i> The Gaps Have Structure</h2>
+      <div class="content">
+        <img src="figures/figure_002_missing_data_heatmap.png" alt="Presence and absence grid for fifteen countries from 2000 to 2026: most rows are continuous green, Russia's row turns red after early 2022, and India and Venezuela show multi-year red gaps" style="width: 100%; max-height: 425px; object-fit: contain; margin-top: 2px;">
+        <p style="font-size: 14pt; text-align: center; color: var(--muted-color); margin-top: 4px;">Green = observed, terracotta = missing. Russia's row is bracketed in white.</p>
+      </div>
+      <aside class="notes">1.5 min. Note that this picture is a pivot_table &mdash; the reshape from ten minutes ago is what makes it possible. India's long early gap and Venezuela's two gaps have different stories; ask the room to guess, then move on.</aside>
+    </section>
+
+    <!-- ============ 54. UNBALANCED ============ -->
+    <section id="unbalanced" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i> 32 of 57 Countries Have Incomplete Panels</h2>
+      <div class="content">
+        <pre style="font-size: 13pt; background: #1e1e1e; color: #d4d4d4; padding: 15px 20px; border-radius: 10px; overflow: hidden;"><code>max_periods = df["date"].nunique()                 # 45
+counts      = df.groupby("name")["date"].count()
+incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code></pre>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">Remember 57 &times; 45 = 2,565 possible rows against 2,056 actual ones. This is where those 509 missing cells live.</p>
+        <div class="fragment fade-up" style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 16pt;">Drop every incomplete country and you are left with the economies that a Western fast-food chain has covered continuously for 25 years. That is <strong>not a random sample of the world</strong> &mdash; it biases every average you compute toward stable, open, high-income markets.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the payoff of the "hold that" from the Big Mac shape slide. The fragment is the important half: dropping incomplete cases is not neutral, and "I dropped the NaNs" is not a methods section.</aside>
+    </section>
+
+    <!-- ============ 55-56. POLL 4 ============ -->
+    <section>
+      <section id="poll-4" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Name the Mechanism</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Back to the ONS. Workers with two jobs and long hours are the <strong>least likely</strong> to answer a labour force survey &mdash; and they are also the workers whose <strong>hours and earnings</strong> the survey is trying to measure.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Which mechanism is that?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch01-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) MCAR &mdash; missing completely at random</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) MAR &mdash; missing at random</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) MNAR &mdash; missing not at random</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cannot be classified without seeing the missing values</div>
+        </div>
+        <aside class="notes">1 min. This is Poll 1 again with a name attached. Watch whether the B share is large &mdash; if so, spend the extra thirty seconds on the "observed vs unobserved" distinction in the reveal.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch01-econ3916-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; MNAR</h2>
+        <div class="poll-results-chart" data-poll-id="ch01-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The probability of a response depends on the very quantity the survey measures. That is the definition, and it is why the regulator downgraded the series rather than correcting it &mdash; the ONS could acknowledge the risk but could not quantify the bias.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why B is the near miss:</strong> if &ldquo;works two jobs&rdquo; were an <em>observed</em> variable you could condition on it and be in MAR territory. But these people never answered, so it is not observed for them. <strong>Why D is tempting and wrong:</strong> you can never see the missing values &mdash; yet you can always reason about the mechanism from how the data came to be.</p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. Say the callback out loud: "this is Poll 1, forty minutes later, with a name." That closure is what makes the hook feel like teaching rather than theatre. It is also exactly what the exit ticket asks for.</aside>
+      </section>
+    </section>
+
+    <!-- ============ 57. STRATEGIES ============ -->
+    <section id="strategies" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-ranking-star" style="color: var(--success-color);"></i> Three Strategies, In Order of Intellectual Honesty</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 4px;">
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">1</p>
+            <p style="font-size: 15pt;"><strong>Flag and document</strong> (preferred). Record which observations are missing and why; keep a <code>missingness_note</code> column. The gap carries information &mdash; do not erase it.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 15pt;"><strong>Forward-fill</strong> (cautious). Carry the last observed value forward. Defensible for slow-moving variables like annual GDP. <strong>Never</strong> for exchange rates or prices.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--danger-color);">3</p>
+            <p style="font-size: 15pt;"><strong>Drop and document</strong> (simplest). Acceptable only if you can <em>demonstrate</em> MCAR &mdash; which requires testing, not assertion.</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 15pt;">And the fourth thing people actually do, which is not on the list: <strong>impute silently</strong>. Imputation assumes MAR. Under MNAR it can <em>increase</em> bias while making the output look cleaner.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. "Intellectual honesty" is the ordering principle, not convenience &mdash; say that. Topic 6 formalises the fourth item as selection bias.</aside>
+    </section>
+
+    <!-- ============ 58. SURVIVORSHIP ============ -->
+    <section id="survivorship" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-user-slash" style="color: var(--danger-color);"></i> Survivorship Bias &mdash; MNAR's Cousin</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">March 2026: Anthropic published its <strong>AI Economic Index</strong>, tracking how users interacted with Claude across task types. High-tenure users looked disproportionately successful at complex, high-value tasks.</p>
+        <div class="fragment fade-up" style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 16pt;">But new users who failed to get value <strong>abandoned the tool and vanished from the active panel</strong>. Analysing only the survivors dramatically overstated the productivity gain for the general population.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="padding: 14px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>Mutual fund returns.</strong> Failed funds are liquidated and leave the index, so the surviving average looks better than the experience of investing.</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>Clinical trial dropout.</strong> Patients with side effects leave the study, so the treatment looks safer than it is.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Same mechanism, three domains. If a student names the WWII bomber armour story, take it &mdash; it is the canonical version and it makes the pattern permanent.</aside>
+    </section>
+
+    <!-- ============ 59. REPRODUCIBILITY ============ -->
+    <section id="reproducibility" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-rotate" style="color: var(--secondary-color);"></i> Reproducibility Is Not a Luxury</h2>
+      <div class="content">
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 16px 24px; border-radius: 8px;">
+          <p style="font-size: 16pt;">Whenever a computation involves randomness &mdash; sampling, splitting, bootstrapping &mdash; set <code>random_state=42</code>. It is this course's convention and it appears in every lab.</p>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.55; margin-top: 16px;">Brodeur, Mikola &amp; Cook (2024) tried to reproduce <strong>110 papers</strong> from leading economics and political science journals across <strong>5,511 re-analyses</strong>:</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; margin-top: 12px;">
+          <div style="background: #f0f5f8; padding: 13px 14px; border-radius: 8px; text-align: center; border-left: 3px solid var(--success-color);"><p style="font-size: 20pt; font-weight: 700; color: var(--success-color); margin: 0;">85%</p><p style="font-size: 12.5pt; margin-top: 4px;">computationally reproducible &mdash; the code ran</p></div>
+          <div style="background: #f0f5f8; padding: 13px 14px; border-radius: 8px; text-align: center; border-left: 3px solid var(--danger-color);"><p style="font-size: 20pt; font-weight: 700; color: var(--danger-color); margin: 0;">25%</p><p style="font-size: 12.5pt; margin-top: 4px;">contained coding errors</p></div>
+          <div style="background: #f0f5f8; padding: 13px 14px; border-radius: 8px; text-align: center; border-left: 3px solid var(--accent-color);"><p style="font-size: 20pt; font-weight: 700; color: var(--accent-color); margin: 0;">~70%</p><p style="font-size: 12.5pt; margin-top: 4px;">of results survived robustness checks</p></div>
+          <div style="background: #f0f5f8; padding: 13px 14px; border-radius: 8px; text-align: center; border-left: 3px solid #7C3A5F;"><p style="font-size: 20pt; font-weight: 700; color: #7C3A5F; margin: 0;">52%</p><p style="font-size: 12.5pt; margin-top: 4px;">of re-analysed effects were <em>smaller</em></p></div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px; text-align: center;">The gap between <em>&ldquo;the code runs&rdquo;</em> and <em>&ldquo;the conclusions hold&rdquo;</em> is wide. That gap is your job.</p>
+      </div>
+      <aside class="notes">2 min. Land the last line and stop. This is also the standard the labs are graded against &mdash; a notebook that runs is the floor, not the deliverable.</aside>
+    </section>
+
+    <!-- ============ 60. DIVIDER 5 ============ -->
+    <section id="divider-close" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; Where This Leaves You</h1>
+      <aside class="notes">Final 8 minutes. Do not rush the lab slides &mdash; they are the ones that determine whether 40 students open a notebook tonight.</aside>
+    </section>
+
+    <!-- ============ 61. TAKEAWAYS ============ -->
+    <section id="takeaways" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px;">
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-hammer" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>Data is built, not given.</strong> Measurement decisions cap what you can ever learn from a dataset.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-table-cells" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>Three structures, three capabilities.</strong> Cross-sections compare, time series track change, panels do both. Structure beats size.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-burger" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>PPP is a theory you can compute.</strong> Implied PPP = local price / US price; valuation is the distance from the market rate. Switzerland, Jan 2025: +38.0%.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-eye-slash" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>Missing data is information.</strong> MCAR costs precision, MAR costs a modelling step, MNAR costs you knowing how wrong you are.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 13px; text-align: center; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Look behind the table before you trust the number.</strong> That habit is the whole course, and it starts tonight with <code>random_state=42</code>.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Read the capstone line and let it be the last conceptual thing you say.</aside>
+    </section>
+
+    <!-- ============ 62. EXIT TICKET ============ -->
+    <section id="exit-ticket" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket (2 min)</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 24px;">
+          <p style="font-size: 16pt; line-height: 1.65;"><strong>1.</strong> In one sentence: name a dataset you use, and say which of the three structures it is.</p>
+          <p style="font-size: 16pt; line-height: 1.65; margin-top: 12px;"><strong>2.</strong> In one sentence: give an example of <strong>MNAR</strong> missingness that is <em>not</em> Russia and <em>not</em> the ONS.</p>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-calendar-day" style="color: var(--danger-color);"></i> Submit with <strong>Topic 1 Attendance</strong> on Canvas &mdash; due <strong>Thursday 10 September</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Both questions map directly onto objectives 1.1 and 1.3. Question 2 is the one that shows whether MNAR transferred or was just memorised. Say the due date out loud &mdash; it is the first deadline of the semester and nobody has built the habit yet.</aside>
+    </section>
+
+    <!-- ============ 63. LAB 0 ============ -->
+    <section id="lab-zero" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-seedling" style="color: var(--success-color);"></i> Tonight, First: Lab 0 &mdash; the Python Primer</h2>
+      <div class="content">
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 18px 24px; border-radius: 8px;">
+          <p style="font-size: 17pt; line-height: 1.6;">If any code on these slides looked like noise, <strong>start with <code>lab-ch00-python-primer.ipynb</code></strong>. It assumes nothing.</p>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">It names and demonstrates every Python construct Lab 1 uses: f-strings, boolean masks, double-bracket column selection, <code>.groupby()</code>, list comprehensions with a ternary. Lab 1 points back at it construct by construct.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--accent-color); padding: 15px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 16pt;">Doing Lab 0 first is the difference between a <strong>45-minute Lab 1</strong> and a <strong>three-hour one</strong>. There is no grade attached and no reason not to.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Say this without hedging. Some students in this room have never written a line of Python and will not raise a hand to say so on day one; this slide is how you reach them without asking anyone to self-identify.</aside>
+    </section>
+
+    <!-- ============ 64. LAB 1 ============ -->
+    <section id="lab-one" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> Then: Lab 1 &mdash; The Data Portfolio</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px;">
+          <div style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>Parts 1&ndash;2 &mdash; guided.</strong> Run as written, interpret the output. Extract all three structures from one dataset; compute PPP for every country.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>Part 3 &mdash; your task.</strong> Fill the blanks. Diagnose the incomplete panels and classify each country's missingness.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>Extension &mdash; optional.</strong> Plot valuation over time. You have already seen the answer &mdash; it is the chart from twenty minutes ago.</p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 14.5pt;"><strong>Then it ships.</strong> The lab packages your work into a public repo: <code>econ3916-lab01-data-portfolio</code>. Entry one of the portfolio.</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> <strong>Check every number in your README against your own printed output before you publish it.</strong> The notebook gives you a draft; the draft is not always right. It goes out under your name.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The red box is not boilerplate &mdash; the lab's own README prompt currently suggests summary claims that the notebook's printed output does not support (for one, it describes Switzerland as "consistently 30-40% overvalued" when the series runs to +121%). Tell them to treat any AI-drafted summary as a claim to check, and they will get the lesson twice.</aside>
+    </section>
+
+    <!-- ============ 65. LOOKING AHEAD ============ -->
+    <section id="looking-ahead" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-road" style="color: var(--secondary-color);"></i> Where This Goes Next</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 2px;">
+          <div style="display: grid; grid-template-columns: 118px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Topic 2</p>
+            <p style="font-size: 14.5pt;">Measurement, indexes, nominal vs real. The Big Mac returns: is a $5.79 burger in 2025 really dearer than a $4.82 one in 2020, or did the dollar change?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 118px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Topic 3</p>
+            <p style="font-size: 14.5pt;">EDA and the ethics of visualization. How do you draw today's structures &mdash; and can the drawing itself mislead?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 118px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">Topic 6</p>
+            <p style="font-size: 14.5pt;">Sampling and bias. Today's missingness becomes formal selection bias &mdash; and <code>random_state=42</code> starts earning its keep.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 118px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 15pt; font-weight: 700; color: #7C3A5F;">Topic 11</p>
+            <p style="font-size: 14.5pt;">SQL for economists &mdash; the second of the five competencies on that job-posting slide.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 118px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">Topics 12&ndash;13</p>
+            <p style="font-size: 14.5pt;">OLS prediction, then multivariate OLS &mdash; where \( y_{it} \) stops being notation and starts being a regression.</p>
+          </div>
+        </div>
+        <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; text-align: center;">References: Brodeur, Mikola &amp; Cook (2024) &bull; Little &amp; Rubin (2019) &bull; McKinney (2012) &bull; Pakko &amp; Pollard (2003) &bull; Piao (2026) &bull; Varian (2014) &bull; Wickham (2014)</p>
+      </div>
+      <aside class="notes">1.5 min. Close by pointing at Topic 2 specifically &mdash; the unanswered question from the panel-payoff slide is the cleanest possible cliffhanger, and it makes the Big Mac thread feel like a spine rather than a running gag.</aside>
+    </section>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
   <script>
     Reveal.initialize({
       width: 1280,
@@ -585,8 +1258,81 @@
       center: false,
       autoAnimateDuration: 0.6,
       autoAnimateEasing: 'ease-out',
-      pdfSeparateFragments: false
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
     });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
   </script>
 </body>
 </html>
