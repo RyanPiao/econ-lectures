@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multivariate OLS: Controlling for Confounders</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css?v=20260905a">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax 3 (tex-svg). Inline math is \( ... \) deliberately: with $...$ as an
+       inline delimiter, any text node holding two currency figures gets everything
+       between them typeset as mathematics. Leave plain $ for dollars. -->
+  <script>
+    MathJax = {
+      tex: {inlineMath: [['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']]},
+      svg: {fontCache: 'global'}
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+        <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 13</p>
+            <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Multivariate OLS:<br>Controlling for Confounders</h1>
+            <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 0;"></div>
+            <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; margin-top: 22px; line-height: 1.6;">Adding a variable takes one keystroke.<br>Deciding what belongs is a claim about the world.</p>
+            <div style="margin-top: auto; padding-bottom: 15px;">
+              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+              <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+            </div>
+          </div>
+          <div style="overflow: hidden;">
+            <img src="figures/cover-ch13-multivariate-ols.png" alt="Abstract editorial illustration: a translucent blue plane fitted through a scattered cloud of orange data points suspended above a faint grid, with a second green plane tilted at a different angle beside it" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+        <aside class="notes">75 minutes. Chapter 13, and the last content session before Quiz 1 (cumulative Ch 1 to 13). Say that out loud at the start — attendance and attention both improve.</aside>
+      </section>
+
+      <section id="learning-objectives" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+        <div class="content">
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">13.1</p>
+              <p style="font-size: 15pt;">Explain a coefficient as a <strong>partial effect</strong> &mdash; and why it differs from its bivariate counterpart.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">13.2</p>
+              <p style="font-size: 15pt;">Fit and read multivariate regressions, avoid the <strong>dummy variable trap</strong>, compute <strong>VIF</strong>.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">13.3</p>
+              <p style="font-size: 15pt;">Predict the <strong>direction of omitted variable bias</strong> before you have the data, then verify it.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">13.4</p>
+              <p style="font-size: 15pt;">Decide whether a control is a <strong>confounder or a mediator</strong> &mdash; and defend it by the question asked, not by model fit.</p>
+            </div>
+          </div>
+          <p style="font-size: 13pt; color: var(--muted-color); margin-top: 16px; font-style: italic;">Objectives 13.1 and 13.4 are the ones you will still be using in ten years. 13.2 is the part the software does for you.</p>
+        </div>
+        <aside class="notes">Do not linger. Read 13.1 and 13.4 slowly and the other two quickly — they are the two that matter and the deck is built around them. Total 90 seconds.</aside>
+      </section>
+
+      <section id="retrieval" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-rotate-left" style="color: var(--secondary-color);"></i> Before We Start &mdash; Two Recalls</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 8px;">
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 22px 24px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 12pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">Chapter 12</p>
+              <p style="font-size: 16pt; line-height: 1.6;">We regressed California house values on median income alone and got a slope of <strong>0.4179</strong>.</p>
+              <p style="font-size: 16pt; line-height: 1.6; margin-top: 10px; font-weight: 600;">In one sentence &mdash; what question does that number answer?</p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 24px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 12pt; color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">Chapter 10</p>
+              <p style="font-size: 16pt; line-height: 1.6;">You sorted variables into <strong>confounders</strong>, <strong>mediators</strong> and <strong>colliders</strong> on a graph.</p>
+              <p style="font-size: 16pt; line-height: 1.6; margin-top: 10px; font-weight: 600;">Which of the three must <em>never</em> be controlled for?</p>
+            </div>
+          </div>
+          <div class="key-result" style="margin-top: 24px;">
+            <p style="font-size: 16pt;"><strong>Both answers land on today.</strong> Chapter 12 gave you a number. Chapter 10 gave you a rule. Today the rule starts costing the number dollars.</p>
+          </div>
+        </div>
+        <aside class="notes">2 minutes, cold call two students. Write 0.4179 in the corner of the board — you will move that number twice in the next fifteen minutes and the class should watch it happen. Answer to the Ch 10 question is the collider.</aside>
+      </section>
+
+      <section id="hook-two-analysts" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--danger-color);"></i> Two Analysts, One Payroll</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.65;">Two analysts get the <strong>same payroll data</strong> from the same set of Greater Boston employers. Both are competent. Neither makes an error, alters a number, or runs anything the other could object to.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 24px; border-left: 4px solid var(--secondary-color); text-align: center;">
+              <p style="font-size: 15pt; color: var(--secondary-color); font-weight: 600;">Analyst A reports</p>
+              <p style="font-size: 26pt; font-weight: 700; color: var(--primary-color); margin-top: 8px; line-height: 1.25;">a large gender pay gap</p>
+            </div>
+            <div class="fragment fade-up" style="background: #f9f0ee; border-radius: 10px; padding: 20px 24px; border-left: 4px solid var(--danger-color); text-align: center;">
+              <p style="font-size: 15pt; color: var(--danger-color); font-weight: 600;">Analyst B reports</p>
+              <p style="font-size: 26pt; font-weight: 700; color: var(--primary-color); margin-top: 8px; line-height: 1.25;">a gap under a third the size</p>
+            </div>
+          </div>
+          <p class="fragment fade-up text-xl" style="margin-top: 22px; text-align: center; font-weight: 600;">The only difference: <span style="color: var(--accent-color);">Analyst B controlled for job title.</span></p>
+        </div>
+        <aside class="notes">4-minute hook, this slide takes 2. Reveal the second box, pause, then the punchline. Do NOT resolve the tension here — you resolve it at 0:46 in Discussion 2, and the mild annoyance is exactly what makes that discussion work.</aside>
+      </section>
+
+      <section id="hook-two-questions" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-circle-question" style="color: var(--accent-color);"></i> Neither Is Wrong &mdash; That Is the Problem</h2>
+        <div class="content">
+          <p class="text-lg">They answered two different questions that sound identical in English:</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 12px;">
+            <div style="border: 2px solid var(--secondary-color); border-radius: 10px; padding: 16px 20px;">
+              <p style="font-size: 16pt; font-weight: 600; color: var(--secondary-color);">Are men and women at these firms paid equally?</p>
+              <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 8px;">The total earnings difference between two people who walked in the same door on the same day.</p>
+            </div>
+            <div style="border: 2px solid var(--danger-color); border-radius: 10px; padding: 16px 20px;">
+              <p style="font-size: 16pt; font-weight: 600; color: var(--danger-color);">Are they paid equally <em>for the same role</em>?</p>
+              <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 8px;">Equal pay for equal work, inside a pay band. A narrower claim.</p>
+            </div>
+          </div>
+          <div class="misconception fragment fade-up" style="margin-top: 16px;">
+            <p><strong>If women are promoted less often than men with the same experience</strong> &mdash; and the Boston Women's Workforce Council's data shows women holding a far smaller share of senior positions than of the workforce &mdash; then job title is not neutral background. It is <strong>part of what you are trying to measure.</strong></p>
+          </div>
+          <p class="fragment fade-up text-lg" style="margin-top: 14px; text-align: center;">Adding a variable takes one keystroke. <strong>Deciding what belongs is a claim about how the world works.</strong></p>
+        </div>
+        <aside class="notes">2 minutes. The BWWC is a real Boston institution and you come back to it at 0:50 — flag it now so the callback lands. Transition line: "so let us find out what the machinery actually does, because the machinery is the easy part."</aside>
+      </section>
+      <section id="divider-1" class="section-divider" data-state="is-section-divider">
+        <h1>From a Line to a Plane</h1>
+        <p class="subtitle">Section 1 &nbsp;&bull;&nbsp; LO 13.1, 13.2 &nbsp;&bull;&nbsp; 13 min</p>
+      </section>
+
+      <section id="partial-effect" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-arrows-left-right-to-line" style="color: var(--secondary-color);"></i> What 0.4179 Actually Says</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt;"><strong>Chapter 12's model.</strong> Compare two block groups whose incomes differ by $10,000 &mdash; how much do their house values differ? It bundles in <em>everything that travels with income</em>: newer houses, more rooms, better locations, different densities.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f9f3ee; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--accent-color); margin-top: 14px;">
+            <p style="font-size: 15.5pt;"><strong>Add average rooms.</strong> The income coefficient now answers a different question: compare two block groups whose incomes differ by $10,000 <strong>but which have the same average number of rooms.</strong></p>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 16px;">
+            <p style="font-size: 17pt;"><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> <strong>A multivariate coefficient is a partial effect.</strong> Not &ldquo;the effect of income&rdquo; &mdash; the effect of income <em>holding the other variables in this particular model fixed</em>. Change the model and you change what the coefficient means.</p>
+          </div>
+        </div>
+        <aside class="notes">3 minutes. This is the single most important sentence in the chapter and everything else follows from it. Say the key-result box twice, once fast and once slow. Note that we have not written a single equation yet — intuition before formalism is deliberate.</aside>
+      </section>
+
+      <section id="line-to-plane" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-cube" style="color: var(--accent-color);"></i> The Geometry Changes</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 26px; align-items: start;">
+            <img class="figure" src="figures/figure_001_line_to_plane.png" alt="Schematic three-dimensional scatter of points with an OLS plane fitted through them; the plane tilts upward along the first predictor axis and downward along the second, illustrating that two predictors fit a surface rather than a line" style="width: 100%; max-height: 465px; object-fit: contain;">
+            <div>
+              <p style="font-size: 15pt; line-height: 1.65;"><strong>One</strong> predictor fits a <strong>line</strong> through a 2-D scatter. That was Chapter 12.</p>
+              <p style="font-size: 15pt; line-height: 1.65; margin-top: 12px;"><strong>Two</strong> predictors fit a <strong>plane</strong> through a 3-D cloud.</p>
+              <p style="font-size: 15pt; line-height: 1.65; margin-top: 12px;"><strong>Ten</strong> predictors fit a ten-dimensional hyperplane, which nobody can picture &mdash; and which behaves exactly like the plane in every way that matters.</p>
+              <div class="misconception" style="margin-top: 16px;">
+                <p style="font-size: 14pt;">The mathematics does not care how many dimensions you use. <strong>Your ability to check the result by looking at it does.</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">2 minutes. Draw the plane on the board too — students need to see it built once, even though it stops being drawable immediately afterwards. Point at the figure and say: reading the income slope means walking along one floor axis with your foot fixed on the other.</aside>
+      </section>
+
+      <section id="the-formalism" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> The Formalism, Once</h2>
+        <div class="content">
+          <p style="font-size: 20pt; text-align: center; margin: 4px 0;">\[ y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \cdots + \beta_p x_{ip} + \varepsilon_i \]</p>
+          <p style="font-size: 14.5pt; text-align: center; color: var(--muted-color); font-style: italic;">Same line as Chapter 12, more slopes. Each \(\beta_j\) is one predictor's own slope.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px; align-items: start;">
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px;">
+              <p style="font-size: 19pt; text-align: center; margin: 2px 0;">\[ \mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon} \]</p>
+              <p style="font-size: 13.5pt; margin-top: 8px;"><strong>X is the design matrix</strong> &mdash; a spreadsheet. One row per block group, one column per predictor, plus a leading column of ones for the intercept.</p>
+            </div>
+            <div style="background: #f9f3ee; border-radius: 10px; padding: 14px 20px;">
+              <p style="font-size: 19pt; text-align: center; margin: 2px 0;">\[ \boldsymbol{\hat{\beta}} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y} \]</p>
+              <p style="font-size: 13.5pt; margin-top: 8px;">Minimises the <em>same</em> sum of squared residuals as Ch 12. The inverse is what &ldquo;solve for all the slopes at once&rdquo; looks like. You will never compute it by hand.</p>
+            </div>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 14px;">
+            <p style="font-size: 15.5pt;"><strong>Watch the inverse.</strong> It exists only if no column of \(\mathbf{X}\) is an exact linear combination of the others. That condition is about to matter twice &mdash; <em>exactly</em>, on the next slide, and <em>nearly</em>, in Section 6.</p>
+          </div>
+        </div>
+        <aside class="notes">3 minutes. Every equation gets its plain-language line and none of them gets manipulated. Do not prove anything. The only thing to land is that the inverse can fail, because that sets up both the dummy trap and multicollinearity.</aside>
+      </section>
+
+      <section id="dummy-trap" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> The Dummy Variable Trap</h2>
+        <div class="content">
+          <p class="text-lg">Most real controls are categorical &mdash; a zip code, an industry, a job level. A \(k\)-level category becomes \(k\) binary indicator columns, and you may include <strong>only \(k-1\)</strong> of them.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px;">
+            <div style="background: #f9f0ee; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Why, mechanically</p>
+              <p style="font-size: 14.5pt; line-height: 1.6;">All \(k\) indicators sum to a column of ones for every row &mdash; which <strong>is</strong> the intercept column. \(\mathbf{X}'\mathbf{X}\) becomes singular. No unique solution exists.</p>
+              <p style="font-size: 13.5pt; margin-top: 8px; font-style: italic; color: var(--muted-color);">Not a convention. An arithmetic impossibility.</p>
+            </div>
+            <div style="background: #eef2f0; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 13pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">The fix</p>
+              <p style="font-size: 14.5pt; line-height: 1.6;">Drop one level. It becomes the <strong>reference category</strong>, and every remaining coefficient is a <em>difference from that baseline</em> &mdash; never an absolute level.</p>
+              <p style="font-size: 13.5pt; margin-top: 8px; font-family: var(--code-font, monospace);">statsmodels: <strong>C(gender)</strong><br>sklearn: <strong>OneHotEncoder(drop='first')</strong></p>
+            </div>
+          </div>
+          <div class="misconception" style="margin-top: 14px;">
+            <p><strong>Version gotcha.</strong> <code>sparse_output</code>, not <code>sparse</code>. The old argument now <em>raises</em> rather than warning, so every tutorial written before the change fails outright on your machine.</p>
+          </div>
+        </div>
+        <aside class="notes">2 minutes and no more. "The matrix is singular" is a satisfying, concrete reason and a guaranteed interview question — that is why it earns 2 minutes. Do NOT put encoder code on the board. Flag the sparse_output change out loud; students will hit old tutorials this week.</aside>
+      </section>
+
+      <section>
+        <section id="poll-1" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll 1: Commit Before You See It</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px; margin-top: 12px;">
+            <p style="font-size: 15.5pt; line-height: 1.65;">Chapter 12's model <code>MedHouseVal ~ MedInc</code> gives a slope of <strong>0.4179</strong>. We now add <code>AveRooms</code> to the model.</p>
+            <p style="font-size: 16.5pt; font-weight: 600; margin-top: 10px;">What happens to the coefficient on <code>MedInc</code>?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch13-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) It <strong>falls</strong> &mdash; the new variable takes credit income was getting</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) It <strong>rises</strong></div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) It stays at 0.4179 &mdash; adding variables does not move existing coefficients</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Impossible to say without seeing the data</div>
+          </div>
+          <aside class="notes">Students click to vote on their phones. Do not let anyone shout an answer. Take 60 seconds of votes then advance.</aside>
+        </section>
+        <section id="poll-1-reveal" data-poll-results="ch13-econ3916-poll-1" style="padding: 34px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: D in principle &mdash; and then B</h2>
+          <div class="poll-results-chart" data-poll-id="ch13-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px;"></div>
+          <div style="padding: 6px 40px;">
+            <p style="font-size: 15pt; line-height: 1.6;"><strong>D first:</strong> nothing in the algebra fixes the direction. Anyone who <em>knew</em> the answer was guessing. <strong>Then run it: the coefficient rises to 0.4342</strong>, and with three controls to <strong>0.4433</strong>.</p>
+            <div class="misconception" style="margin-top: 12px;">
+              <p><strong>Why A is the majority answer:</strong> the intuition &ldquo;controls shrink coefficients toward zero&rdquo; is common and simply wrong. Here the controls were <em>suppressing</em> the income relationship; removing their influence strengthens it.</p>
+              <p style="margin-top: 8px;"><strong>C is the beginner's model of regression</strong> &mdash; a bag of independent bivariate slopes. That model is what today destroys.</p>
+            </div>
+          </div>
+          <aside class="notes">If the room voted mostly A, say so out loud — being wrong together is the point of the poll. The reveal that the coefficient went UP is worth a pause.</aside>
+        </section>
+      </section>
+
+      <section id="california-table" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-house" style="color: var(--secondary-color);"></i> The California Model, Extended</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1.08fr; gap: 24px; align-items: start;">
+            <div>
+              <table class="table-standard">
+                <thead><tr><th>Specification</th><th style="text-align:right;">MedInc coef</th><th style="text-align:right;">R&sup2;</th></tr></thead>
+                <tbody>
+                  <tr><td><code>MedInc</code> alone</td><td style="text-align:right;">0.4179</td><td style="text-align:right;">0.4734</td></tr>
+                  <tr><td>+ <code>AveRooms</code></td><td style="text-align:right;">0.4342</td><td style="text-align:right;">0.4794</td></tr>
+                  <tr><td>+ <code>HouseAge</code> + <code>AveOccup</code></td><td style="text-align:right;"><strong>0.4433</strong></td><td style="text-align:right;">0.5137</td></tr>
+                </tbody>
+              </table>
+              <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">20,640 census block groups. <code>MedInc</code> in $10,000s, value in $100,000s. Every VIF here is near 1 &mdash; these four features barely correlate.</p>
+              <div class="key-result" style="margin-top: 10px;">
+                <p style="font-size: 14.5pt;">Out of sample the controls earn their place too: test RMSE <strong>0.8421 &rarr; 0.8379 &rarr; 0.8108</strong>. A 3.7% improvement on Chapter 12.</p>
+              </div>
+            </div>
+            <img class="figure" src="figures/figure_002_california_path.png" alt="Left panel: the MedInc coefficient rising across three nested specifications from 0.4179 to 0.4342 to 0.4433. Right panel: the AveRooms coefficient shown as a bar below zero at minus 0.0381" style="width: 100%; max-height: 425px; object-fit: contain;">
+          </div>
+          <p style="font-size: 14.5pt; margin-top: 8px;"><strong>Prediction just answered a question the coefficients cannot.</strong> Whether the variables <em>belong</em> is a different question from what any of them <em>means</em>.</p>
+        </div>
+        <aside class="notes">2 minutes. Two things to read here and the second is the more interesting — the AveRooms coefficient is negative and the next slide is entirely about it. Do not explain it yet, just let them see the bar pointing down.</aside>
+      </section>
+
+      <section id="negative-coefficient" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-arrow-trend-down" style="color: var(--danger-color);"></i> More Rooms, Lower Value?</h2>
+        <div class="content">
+          <p class="text-xl" style="text-align: center;">Holding income constant, block groups with more rooms per household have <strong style="color: var(--danger-color);">lower</strong> median house values. The coefficient is <strong>&minus;0.0381</strong>.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+            <div style="background: #f9f0ee; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Read literally</p>
+              <p style="font-size: 15pt;">Absurd. Nobody pays <em>less</em> for a bigger house.</p>
+            </div>
+            <div style="background: #eef2f0; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 13pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Read as a partial effect</p>
+              <p style="font-size: 15pt;">Among neighbourhoods at the <em>same median income</em>, the ones with more rooms per household are the more rural, less dense, cheaper-land areas.</p>
+            </div>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 16px;">
+            <p style="font-size: 16pt;"><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> <strong>Write this down.</strong> A partial effect is not a <em>ceteris paribus</em> experiment unless you can hold the other variables fixed <strong>in the world</strong>, not just in the model. You cannot add a room to a house without changing what kind of neighbourhood it is.</p>
+          </div>
+        </div>
+        <aside class="notes">2 minutes. This is the single most common misreading of regression output in professional work. The coefficient is not telling you what a bedroom is worth — it is telling you what a neighbourhood with more rooms at the same income is worth, and those are different questions.</aside>
+      </section>
+
+      <section id="discussion-1" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 1: Is the Model Broken?</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; padding: 20px 26px; border-radius: 12px;">
+            <p class="text-xl" style="font-weight: 600;">A colleague looks at &minus;0.0381 and says: &ldquo;the sign is wrong, drop the variable.&rdquo;</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+            <div class="discussion-prompt" style="border-left-color: var(--success-color);">
+              <p class="bloom-level" style="color: var(--success-color);">Think about &mdash; L2 Understand</p>
+              <p>What is being held constant when you read that coefficient, and is holding it constant <strong>physically possible</strong>?</p>
+            </div>
+            <div class="discussion-prompt">
+              <p class="bloom-level">Consider &mdash; L4 Analyze</p>
+              <p>Give your colleague <strong>one sentence</strong> back. What population does the coefficient actually describe?</p>
+            </div>
+          </div>
+          <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+        </div>
+        <aside class="notes">4 min. Assesses LO 13.1. The sentence you are fishing for: "the sign is only wrong if you think the model is describing a renovation." Push one group to name the population out loud — block groups matched on income — because that phrase IS learning objective 1. Press 4 to start the timer.</aside>
+      </section>
+      <section id="divider-2" class="section-divider" data-state="is-section-divider">
+        <h1>Omitted Variable Bias</h1>
+        <p class="subtitle">Section 2 &nbsp;&bull;&nbsp; LO 13.3 &nbsp;&bull;&nbsp; 10 min</p>
+      </section>
+
+      <section id="ovb-mechanism" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-magnet" style="color: var(--danger-color);"></i> What a Missing Variable Does</h2>
+        <div class="content">
+          <p class="text-lg">Leave out a variable that matters and <strong>the variables you did include absorb its effect.</strong></p>
+          <p style="font-size: 15.5pt; line-height: 1.65; margin-top: 10px;">If tenure raises wages, and men in your sample have longer tenure, then a regression of wages on gender <em>alone</em> attributes part of the tenure story to gender. There is nothing else in the model to hold it.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 13pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Condition 1</p>
+              <p style="font-size: 16pt;">The omitted variable must <strong>affect the outcome</strong>.</p>
+            </div>
+            <div style="background: #f9f3ee; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 13pt; color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Condition 2</p>
+              <p style="font-size: 16pt;">It must be <strong>correlated with the predictor you care about</strong>.</p>
+            </div>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 16px;">
+            <p style="font-size: 16pt;"><strong>Both must hold.</strong> Fail either and there is no bias &mdash; which is why not every unmeasured variable is a threat. Students over-correct after Chapter 10 and start treating every missing column as fatal. Most are not.</p>
+          </div>
+        </div>
+        <aside class="notes">2 minutes. The reassurance in the key-result box matters as much as the warning — this course has spent a chapter making them afraid of unmeasured confounders and the two-condition test is what makes the fear operational instead of paralysing.</aside>
+      </section>
+
+      <section id="ovb-formula" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> The Formula &mdash; and Why It Is Useful</h2>
+        <div class="content">
+          <p style="font-size: 14.5pt; color: var(--muted-color);">True model \(y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \varepsilon_i\). You estimate the <strong>short</strong> regression, omitting \(x_2\). Then:</p>
+          <p style="font-size: 26pt; text-align: center; margin: 10px 0 4px 0;">\[ \hat{\beta}_1^{\text{short}} \;\xrightarrow{\;p\;}\; \beta_1 + \underbrace{\beta_2\,\delta}_{\text{bias}} \]</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 12px;">
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px;">
+              <p style="font-size: 15pt;"><strong>\(\beta_2\)</strong> &mdash; how much the omitted variable <em>matters to the outcome</em>.</p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px;">
+              <p style="font-size: 15pt;"><strong>\(\delta\)</strong> &mdash; how strongly it <em>travels with your predictor</em> (slope of the omitted variable on the included one).</p>
+            </div>
+          </div>
+          <div class="key-result" style="margin-top: 14px;">
+            <p style="font-size: 16.5pt;"><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> <strong>Two signs multiply.</strong> So you can predict the <em>direction</em> of your error before you have the data &mdash; from an argument about the world alone.</p>
+          </div>
+        </div>
+        <aside class="notes">2 minutes. Interpret every symbol out loud. Then immediately go to the poll — do NOT show the numbers first. This is the chapter's own instruction and it works: the room votes wrong.</aside>
+      </section>
+
+      <section>
+        <section id="poll-2" style="padding: 38px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll 2: Sign It Before You See It</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 10px;">
+            <p style="font-size: 15pt; line-height: 1.6;">Women in this simulated Greater Boston workforce have <strong>shorter tenure</strong>. Tenure <strong>raises pay</strong>. We regress wage on <code>female</code> alone, omitting tenure.</p>
+            <p style="font-size: 16.5pt; font-weight: 600; margin-top: 10px;">The measured gender gap will look &mdash;</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch13-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) <strong>Smaller</strong> than the truth &mdash; some of the &ldquo;gap&rdquo; is really tenure, and leaving tenure out lets the model take credit for it</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) <strong>Larger</strong> than the truth</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Unchanged &mdash; tenure is not part of the gender effect</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Larger or smaller &mdash; the formula cannot sign it</div>
+          </div>
+          <aside class="notes">Count the votes out loud before advancing. The chapter records that most rooms say "smaller". Ask one A-voter to defend it before the reveal — their reasoning is worth hearing, because it is a real intuition and not a straw man.</aside>
+        </section>
+        <section id="poll-2-reveal" data-poll-results="ch13-econ3916-poll-2" style="padding: 32px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Larger</h2>
+          <div class="poll-results-chart" data-poll-id="ch13-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px;"></div>
+          <div style="padding: 4px 40px;">
+            <p style="font-size: 16pt; text-align: center;">Estimate <strong>&minus;8,412</strong> against a truth of <strong>&minus;6,000</strong>.</p>
+            <p style="font-size: 15pt; margin-top: 8px;"><strong>Sign it:</strong> \(\beta_2 > 0\) (tenure raises wages) and \(\delta < 0\) (women have less tenure), so \(\beta_2\delta < 0\) &mdash; the bias pushes the coefficient <em>down</em>, i.e. more negative, i.e. a <strong>bigger</strong> apparent gap.</p>
+            <div class="misconception" style="margin-top: 10px;">
+              <p><strong>A is the majority answer in most rooms.</strong> Students assume omitted variables always <em>flatter</em> a result &mdash; that a real effect shrinks once you control properly. It goes whichever way the two signs send it.</p>
+              <p style="margin-top: 6px;"><strong>D is wrong for a specific reason:</strong> the formula signs the bias perfectly <em>once you commit to the two signs</em>. What you cannot do is sign it without an argument about the world.</p>
+            </div>
+          </div>
+          <aside class="notes">Name the misconception explicitly. This is the assessment moment for LO 13.3 — if the room votes A and then can re-derive B from the two signs, the objective is met.</aside>
+        </section>
+      </section>
+
+      <section id="ovb-verified" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-equals" style="color: var(--secondary-color);"></i> The Bias <em>Is</em> the Formula</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px; align-items: start;">
+            <img class="figure" src="figures/figure_003_ovb.png" alt="Bar chart of the female coefficient under three labels: short regression omitting tenure at minus 8,412, long regression including tenure at minus 5,907, and the true built-in value at minus 6,000, with a vertical bracket marking the 2,505 dollar bias between short and long" style="width: 100%; max-height: 470px; object-fit: contain;">
+            <div>
+              <p style="font-size: 14pt; color: var(--muted-color);">Simulated Greater Boston payroll, n = 5,000. Built with a true gender effect of &minus;$6,000 and tenure worth $1,800 a year.</p>
+              <div style="background: #f9f3ee; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--accent-color); margin-top: 12px;">
+                <p style="font-size: 14pt;">\(\beta_2 \times \delta\)</p>
+                <p style="font-size: 16pt; margin-top: 4px;">\(= 1802.5 \times (-1.3899)\)</p>
+                <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color); margin-top: 4px;">\(= -2{,}505\)</p>
+                <p style="font-size: 14pt; margin-top: 8px;">short &minus; long <strong>= &minus;2,505</strong></p>
+              </div>
+              <div class="key-result" style="margin-top: 12px;">
+                <p style="font-size: 15pt;">They agree <strong>exactly</strong>. The bias is not roughly the formula &mdash; it <em>is</em> the formula. This is an identity, not a rule of thumb.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">2 minutes. The exactness surprises people; let it. Note that the long regression lands on minus 5,907 against a truth of minus 6,000 — that residual gap is ordinary sampling noise, not bias, and it is worth naming so nobody thinks the "long" model is also broken.</aside>
+      </section>
+
+      <section id="think-like-economist" style="padding: 38px 50px;">
+        <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Think Like an Economist</h2>
+        <div class="content">
+          <div style="background: #f9f3ee; border-left: 4px solid var(--accent-color); padding: 22px 28px; border-radius: 10px;">
+            <p class="text-lg" style="line-height: 1.7;">Before running a regression, list the variables you <strong>cannot measure</strong>. For each, ask the two questions: <em>does it affect the outcome?</em> and <em>does it correlate with my predictor?</em></p>
+            <p class="text-lg" style="line-height: 1.7; margin-top: 12px;">If both are yes, <strong>you already know which way you will be wrong.</strong></p>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 18px;">
+            <p style="font-size: 16.5pt;">Write that prediction down <strong>in advance and in writing</strong>. An analyst who predicted upward bias and then observed a large positive coefficient has learned much less than they think. One who predicted it correctly has a real argument to make.</p>
+          </div>
+          <p style="font-size: 14.5pt; color: var(--muted-color); font-style: italic; margin-top: 16px; text-align: center;">Chapter 10 called this a backdoor path. This is the same thing written as algebra instead of as a graph.</p>
+        </div>
+        <aside class="notes">1 minute. Transition to Section 3: "we have said 'holding tenure fixed' about nine times now. Let us find out what that phrase actually means, because it turns out to be a literal three-step operation you can run."</aside>
+      </section>
+      <section id="divider-3" class="section-divider" data-state="is-section-divider">
+        <h1>What &ldquo;Controlling For&rdquo; Actually Does</h1>
+        <p class="subtitle">Section 3 &nbsp;&bull;&nbsp; Frisch&ndash;Waugh&ndash;Lovell &nbsp;&bull;&nbsp; 8 min</p>
+      </section>
+
+      <section id="fwl-procedure" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i> A Phrase Everyone Uses and Few Can Define</h2>
+        <div class="content">
+          <p class="text-lg">Here is what &ldquo;controlling for tenure&rdquo; is, as a procedure you can actually run:</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+            <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">1</p>
+              <p style="font-size: 15pt;">Take the part of <strong>wages</strong> that tenure cannot explain &mdash; the residuals from <code>wage ~ tenure</code>.</p>
+            </div>
+            <div class="fragment fade-up" style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f9f3ee; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">2</p>
+              <p style="font-size: 15pt;">Take the part of <strong>gender</strong> that tenure cannot explain &mdash; the residuals from <code>female ~ tenure</code>.</p>
+            </div>
+            <div class="fragment fade-up" style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #eef2f0; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">3</p>
+              <p style="font-size: 15pt;">Regress <strong>leftover on leftover</strong>.</p>
+            </div>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 16px;">
+            <p style="font-size: 16.5pt;">That <em>is</em> the multivariate coefficient. Exactly, not approximately. This is the <strong>Frisch&ndash;Waugh&ndash;Lovell theorem</strong> (1933, 1963), and it turns a vague phrase into a three-line procedure.</p>
+          </div>
+        </div>
+        <aside class="notes">2.5 min. Reveal the three steps one at a time, then the theorem. In lab you will run exactly these three lines. Say the words "strip out, strip out, relate what is left" — students remember the rhythm.</aside>
+      </section>
+
+      <section id="fwl-plot" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-chart-scatter" style="color: var(--accent-color);"></i> The Same Number, Two Routes</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: start;">
+            <img class="figure" src="figures/figure_004_fwl_partial.png" alt="Partial regression plot: residualised wage on the vertical axis against the residualised female indicator on the horizontal axis, with a fitted line whose slope is annotated as minus 5,906.5163, identical to the multivariate coefficient" style="width: 100%; max-height: 460px; object-fit: contain;">
+            <div>
+              <table class="table-standard">
+                <thead><tr><th>Route</th><th style="text-align:right;"><code>female</code> coef</th></tr></thead>
+                <tbody>
+                  <tr><td>FWL two-step</td><td style="text-align:right;">&minus;5,906.5163</td></tr>
+                  <tr><td>Full regression</td><td style="text-align:right;">&minus;5,906.5163</td></tr>
+                  <tr><td>Difference</td><td style="text-align:right;"><strong>0.00e+00</strong></td></tr>
+                </tbody>
+              </table>
+              <div class="key-result" style="margin-top: 12px;">
+                <p style="font-size: 15pt;"><strong>This is a partial regression plot.</strong> You cannot plot a multivariate relationship directly &mdash; too many dimensions. But you <em>can</em> plot the two residual series, and the slope of that scatter <em>is</em> the multivariate coefficient.</p>
+              </div>
+              <p style="font-size: 14pt; color: var(--muted-color); margin-top: 10px;">The only honest visual check of a controlled relationship. Chapter 3's rule &mdash; plot before you trust &mdash; applies with full force.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">2 min. The two clumps in the scatter are the two genders after tenure has been partialled out; each is a cloud rather than a point because tenure does not fully predict gender. Identical to machine precision — not similar, the same number.</aside>
+      </section>
+
+      <section>
+        <section id="poll-3" style="padding: 40px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll 3: What About the Standard Error?</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px; margin-top: 12px;">
+            <p style="font-size: 15.5pt; line-height: 1.65;">FWL reproduced the coefficient to <strong>machine precision</strong>.</p>
+            <p style="font-size: 16.5pt; font-weight: 600; margin-top: 10px;">What about the <strong>standard error</strong> from that two-step route?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch13-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Also identical &mdash; same coefficient, same data, same uncertainty</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Too <strong>large</strong> &mdash; the two-step throws information away</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Too <strong>small</strong> &mdash; the second stage does not know a variable was partialled out first</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Undefined &mdash; you cannot get a standard error from a residual regression</div>
+          </div>
+          <aside class="notes">60 seconds. A is the natural inference from "the coefficient matched exactly" and that is exactly the trap.</aside>
+        </section>
+        <section id="poll-3-reveal" data-poll-results="ch13-econ3916-poll-3" style="padding: 32px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; Too Small</h2>
+          <div class="poll-results-chart" data-poll-id="ch13-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px;"></div>
+          <div style="padding: 4px 40px;">
+            <p style="font-size: 17pt; text-align: center;">SE from FWL <strong>258.33</strong> &nbsp;&bull;&nbsp; SE from the full regression <strong>258.38</strong></p>
+            <p style="font-size: 15pt; margin-top: 10px;">The second-stage regression does not know a variable was already used up, so it never adjusts its degrees of freedom for it &mdash; and reports slightly <strong>more confidence than the data supports</strong>. With one control, trivial. With fifty, not.</p>
+            <div class="key-result" style="margin-top: 12px;">
+              <p style="font-size: 16pt;"><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> <strong>Multi-step estimators transfer point estimates faithfully and standard errors carelessly.</strong> Use FWL to <em>understand</em> your model. Use the full regression to <em>report</em>.</p>
+            </div>
+          </div>
+          <aside class="notes">Write the principle on the board — it recurs throughout applied econometrics and it is the identical failure mode as a hand-rolled two-stage least squares in the graduate track. Assessment moment for LO 13.2.</aside>
+        </section>
+      </section>
+
+      <section id="fwl-why-matters" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-diagram-project" style="color: var(--secondary-color);"></i> Why FWL Matters Beyond the Algebra</h2>
+        <div class="content">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: grid; grid-template-columns: 50px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 20pt;"><i class="fa-solid fa-wrench" style="color: var(--secondary-color);"></i></p>
+              <p style="font-size: 15pt;"><strong>It makes &ldquo;controlling for&rdquo; operational.</strong> You can stop treating it as a magic phrase, and you can say exactly which variation the estimate is using.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 50px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 20pt;"><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i></p>
+              <p style="font-size: 15pt;"><strong>It explains the partial regression plot</strong> &mdash; the only honest way to <em>look at</em> a relationship you have controlled for.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 50px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 20pt;"><i class="fa-solid fa-robot" style="color: var(--success-color);"></i></p>
+              <p style="font-size: 15pt;"><strong>It is the foundation of Double Machine Learning (Ch 24).</strong> DML is exactly this procedure with the two first-stage regressions replaced by flexible ML models. Residualise both sides, then regress the leftovers. <em>The logic does not change at all.</em></p>
+            </div>
+          </div>
+          <div class="key-result" style="margin-top: 16px;">
+            <p style="font-size: 16pt;"><strong>&ldquo;Holding constant&rdquo; means using only the variation in \(x_j\) that the other variables cannot account for.</strong> If they account for nearly all of it, there is very little left to work with &mdash; which is exactly Section 6.</p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. Say the Chapter 24 line clearly — it is a forward seed the causal ML lecture depends on, and 3916 is the only track that ever sees FWL developed. Then transition: "so far every control has been a good one. Now the uncomfortable part."</aside>
+      </section>
+      <section id="divider-4" class="section-divider" data-state="is-section-divider">
+        <h1>Good Controls and Bad Controls</h1>
+        <p class="subtitle">Section 4 &nbsp;&bull;&nbsp; LO 13.4 &nbsp;&bull;&nbsp; the centre of the chapter &nbsp;&bull;&nbsp; 10 min</p>
+      </section>
+
+      <section id="confounder-vs-mediator" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-code-branch" style="color: var(--accent-color);"></i> Chapter 10's Taxonomy, Priced in Dollars</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 6px;">
+            <div style="background: #eef2f0; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 13pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Confounder</p>
+              <p style="font-size: 16pt; line-height: 1.6;">Causes <strong>both</strong> the treatment and the outcome.</p>
+              <p style="font-size: 16pt; line-height: 1.6; margin-top: 10px;">Control it. That <strong>removes bias</strong>.</p>
+            </div>
+            <div style="background: #f9f0ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Mediator</p>
+              <p style="font-size: 16pt; line-height: 1.6;">Sits <strong>on the causal path</strong> from treatment to outcome.</p>
+              <p style="font-size: 16pt; line-height: 1.6; margin-top: 10px;">Control it and you remove the part of the effect that travels through it. That is <strong>not a correction</strong>.</p>
+            </div>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 18px;">
+            <p style="font-size: 17pt;"><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> Controlling for a mediator is <strong>a change of question</strong>, not a fix.</p>
+          </div>
+          <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 14px; text-align: center;">The hook is exactly this case. If being a woman reduces the chance of promotion, and promotion raises pay, then <strong>job level is a mediator.</strong></p>
+        </div>
+        <aside class="notes">2 min. Before advancing, build the data-generating process on the board: a direct penalty of 3,000 dollars, plus a promotion penalty of 0.80 job levels at 9,000 dollars a level. Make the class compute the total themselves — 3,000 + 7,200 = 10,200 — BEFORE any code runs. That participation is what makes the next slide land.</aside>
+      </section>
+
+      <section id="mediator-demo" style="padding: 24px 50px;">
+        <h2><i class="fa-solid fa-money-bill-trend-up" style="color: var(--danger-color);"></i> Watching It Happen</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 0.85fr; gap: 22px; align-items: start;">
+            <img class="figure" src="figures/figure_005_mediator.png" alt="Top: a causal diagram in which female points to job level with minus 0.80 levels, job level points to wage at 9,000 dollars per level, and female points directly to wage with a minus 3,000 dollar penalty. Bottom: two bars, the total effect at minus 10,133 without controlling for job level and the direct effect at minus 2,746 with it, bracketed as 7,386 dollars removed" style="width: 100%; max-height: 500px; object-fit: contain;">
+            <div>
+              <p style="font-size: 14pt; color: var(--muted-color);">Simulated payroll, n = 5,000, with discrimination built in through <strong>two channels</strong>.</p>
+              <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; margin-top: 10px;">
+                <p style="font-size: 14.5pt;">Direct penalty &nbsp;&nbsp;<strong>&minus;3,000</strong></p>
+                <p style="font-size: 14.5pt; margin-top: 4px;">Promotion channel<br>&nbsp;&nbsp;&minus;0.80 levels &times; 9,000 = <strong>&minus;7,200</strong></p>
+                <p style="font-size: 15.5pt; margin-top: 8px; border-top: 1px solid var(--line-color); padding-top: 8px;"><strong>Total effect = &minus;10,200</strong></p>
+              </div>
+              <div class="key-result" style="margin-top: 12px;">
+                <p style="font-size: 15pt;">One control removed <strong>$7,386</strong> of measured pay gap &mdash; and <strong>every dollar of it was real discrimination</strong>, operating through promotion.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">2.5 min. Reveal the two bars and let the room work out which is which before you say it. We built the data, so we know the truth: the uncontrolled regression recovers the total effect and the controlled one recovers roughly the direct effect. Neither estimate is wrong.</aside>
+      </section>
+
+      <section id="two-questions-table" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-table-columns" style="color: var(--secondary-color);"></i> The Slide to Photograph</h2>
+        <div class="content">
+          <table class="table-standard" style="font-size: 15pt;">
+            <thead><tr><th>Specification</th><th>Estimates</th><th>Answers the question</th></tr></thead>
+            <tbody>
+              <tr><td>Without <code>job_level</code><br><strong style="font-size: 19pt;">&minus;10,133</strong></td><td><strong>Total effect</strong></td><td>&ldquo;Are women paid less at this firm?&rdquo;</td></tr>
+              <tr><td>With <code>job_level</code><br><strong style="font-size: 19pt;">&minus;2,746</strong></td><td><strong>Direct effect</strong></td><td>&ldquo;Are women paid less <em>for the same job</em>?&rdquo;</td></tr>
+            </tbody>
+          </table>
+          <p class="text-lg" style="margin-top: 14px; text-align: center;"><strong>Neither regression is wrong.</strong> They estimate different things.</p>
+          <div class="misconception" style="margin-top: 12px;">
+            <p><strong>A firm reporting only the second number is not lying.</strong> It is answering the narrower question and letting the reader assume it answered the broader one. Recognising that move &mdash; in others' work and in your own &mdash; is the professional skill this chapter exists to build.</p>
+          </div>
+          <div class="misconception" style="margin-top: 10px; background: #f9f0ee;">
+            <p><strong>Misconception: &ldquo;more controls means more rigorous.&rdquo;</strong> It means <em>more conditional</em>, which is a different thing. Every control narrows the question. The number of variables is not a measure of quality, and a referee asking &ldquo;why did you control for that?&rdquo; is asking the right question.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Tell them literally to photograph this table — it is the one thing from today they will use in a job. Then the BWWC slide gives them the professional standard for handling it.</aside>
+      </section>
+
+      <section id="bwwc" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-user-shield" style="color: var(--accent-color);"></i> Economist at Work: A Gap Nobody Can See</h2>
+        <div class="content">
+          <p style="font-size: 15pt; line-height: 1.6;">The <strong>Boston Women's Workforce Council</strong> faces a problem before it faces a regression: employers will not hand over payroll data. Compensation is commercially sensitive, and no firm wants its numbers identifiable in a public report.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 12px;">
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 13pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">The data problem &mdash; solved cryptographically</p>
+              <p style="font-size: 14.5pt; line-height: 1.55;">With BU's Software &amp; Application Innovation Lab, the BWWC uses <strong>secure multi-party computation</strong>. Employers secret-share their payroll; the Council receives only aggregates and the university sees neither inputs nor outputs. <strong>Nobody holds a readable copy of any firm's payroll.</strong> Running since 2015, covering roughly one in six Greater Boston employees.</p>
+            </div>
+            <div style="background: #f9f3ee; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 13pt; color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Then today's problem starts</p>
+              <p style="font-size: 14.5pt; line-height: 1.55;">Employers argue the analysis should control for job category &mdash; otherwise you are comparing executives to entry-level staff. That argument is <strong>entirely reasonable</strong>, and it is <strong>the mediator problem</strong>.</p>
+            </div>
+          </div>
+          <div class="key-result" style="margin-top: 14px;">
+            <p style="font-size: 16.5pt;"><i class="fa-solid fa-star" style="color: var(--secondary-color);"></i> <strong>The Council's response is the one to copy: report both.</strong> One regression without job title, one with it, published side by side and labelled with what each answers. That converts a methodological dispute into an informative pair of numbers &mdash; and denies everyone the ability to quote whichever figure suits them without the other.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. This is a real Boston organisation and several students will have interned at participating firms. The takeaway is a professional norm, not a statistical result: publish both, label the estimand of each in words.</aside>
+      </section>
+
+      <section id="discussion-2" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 2: Which Number Does the Firm Publish?</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+            <p class="text-xl" style="font-weight: 600;">Your employer will publish <strong>one</strong> figure in its diversity report. You have both: <span style="color: var(--secondary-color);">&minus;10,133</span> and <span style="color: var(--accent-color);">&minus;2,746</span>.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+            <div class="discussion-prompt" style="border-left-color: var(--secondary-color);">
+              <p class="bloom-level" style="color: var(--secondary-color);">You are the analyst &mdash; L5 Evaluate</p>
+              <p>Which number, and what <strong>exactly</strong> must the footnote say?</p>
+            </div>
+            <div class="discussion-prompt">
+              <p class="bloom-level">You are the journalist &mdash; L4 Analyze</p>
+              <p>What <strong>single question</strong> do you ask that exposes which number you were handed?</p>
+            </div>
+          </div>
+          <p style="margin-top: 14px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min take a side &rarr; 3 min argue &rarr; 1 min debrief</span></p>
+          <p style="font-size: 13.5pt; color: var(--muted-color); font-style: italic; margin-top: 10px; text-align: center;">Large section? Run it as a spectrum &mdash; stand on the side of the room matching your number; anyone who moves after hearing an argument says why.</p>
+        </div>
+        <aside class="notes">5 min, the longest interactive block. Assesses LO 13.4. Let the argument run — "it depends what you are claiming" is an answer students reach faster by arguing than by being told. Land it on the BWWC standard. The journalist's question you want out loud is: "is job title in the model?" If the room can generate that question, LO 13.4 is met. Press 5 for the timer.</aside>
+      </section>
+      <section id="divider-5" class="section-divider" data-state="is-section-divider">
+        <h1>Interactions</h1>
+        <p class="subtitle">Section 5 &nbsp;&bull;&nbsp; when the effect depends on who you are &nbsp;&bull;&nbsp; 6 min</p>
+      </section>
+
+      <section id="interaction-model" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-xmark" style="color: var(--accent-color);"></i> One Effect for Everybody?</h2>
+        <div class="content">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Every model so far assumed each predictor has <strong>one</strong> effect, the same for everyone. Suppose the return to experience differs by group. A single tenure slope cannot represent that &mdash; it fits <em>one compromise slope</em> through both groups and reports it as though it described either.</p>
+          <p style="font-size: 19pt; text-align: center; margin: 12px 0 6px 0;">\[ y_i = \beta_0 + \beta_1 t_i + \beta_2 f_i + \beta_3 (t_i \times f_i) + \varepsilon_i \]</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 16px;">
+              <p style="font-size: 15pt;"><strong>\(\beta_1\)</strong> &mdash; the return to tenure for the <strong>reference group</strong> (men, coded zero).</p>
+            </div>
+            <div style="background: #f9f3ee; border-radius: 8px; padding: 12px 16px;">
+              <p style="font-size: 15pt;"><strong>\(\beta_2\)</strong> &mdash; the gap <strong>at tenure zero</strong>. Not the average gap.</p>
+            </div>
+            <div style="background: #eef2f0; border-radius: 8px; padding: 12px 16px;">
+              <p style="font-size: 15pt;"><strong>\(\beta_3\)</strong> &mdash; how much the return to tenure <em>differs</em> for women.</p>
+            </div>
+          </div>
+          <div class="key-result" style="margin-top: 14px;">
+            <p style="font-size: 16pt;">The return to tenure is \(\beta_1\) for men and \(\beta_1 + \beta_3\) for women. And the pay gap becomes <strong>\(\beta_2 + \beta_3 \times \text{tenure}\)</strong> &mdash; a <em>function</em>, not a number.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. CUT POINT: if you are behind at 0:56, skip this whole section and go straight to multicollinearity. Nothing downstream depends on it and Ch 14 picks interactions up again.</aside>
+      </section>
+
+      <section id="interaction-figure" style="padding: 26px 50px;">
+        <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> There Is No Single Pay Gap</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; align-items: start;">
+            <img class="figure" src="figures/figure_006_interaction.png" alt="Two fitted wage-tenure lines: a steeper blue line for men at 1,530 dollars per year and a flatter orange line for women at 1,123 dollars per year, with the vertical gap between them marked as minus 2,018 at zero tenure and minus 10,159 at twenty years" style="width: 100%; max-height: 445px; object-fit: contain;">
+            <div>
+              <table class="table-standard" style="font-size: 13.5pt;">
+                <thead><tr><th>Term</th><th style="text-align:right;">Estimate</th><th style="text-align:right;">SE</th></tr></thead>
+                <tbody>
+                  <tr><td><code>tenure</code></td><td style="text-align:right;">1,530.0</td><td style="text-align:right;">39.8</td></tr>
+                  <tr><td><code>female</code></td><td style="text-align:right;">&minus;2,017.7</td><td style="text-align:right;">500.7</td></tr>
+                  <tr><td><code>tenure:female</code></td><td style="text-align:right;">&minus;407.0</td><td style="text-align:right;">55.9</td></tr>
+                </tbody>
+              </table>
+              <p style="font-size: 13pt; color: var(--muted-color); margin-top: 4px;">Simulated with true values 1,500 / &minus;2,000 / &minus;400. All three recovered.</p>
+              <div class="key-result" style="margin-top: 10px;">
+                <p style="font-size: 14.5pt;">A gap that starts near <strong>$2,000</strong> and widens past <strong>$10,000</strong> across a career, because women accumulate less wage growth per year served.</p>
+              </div>
+              <div class="misconception" style="margin-top: 10px;">
+                <p style="font-size: 13.5pt;">Drop the interaction and the model reports a tenure slope of <strong>1,324</strong> &mdash; a data-weighted compromise describing <em>neither</em> group &mdash; and a gender coefficient of <strong>&minus;5,270</strong>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">2 min. Not wrong exactly, but a summary of something that should not have been summarised. Point at the two arrows and say: a model without the interaction reports one number and conceals the entire structure.</aside>
+      </section>
+
+      <section id="interaction-misconception" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Reading an Interaction Without Getting It Wrong</h2>
+        <div class="content">
+          <div class="misconception">
+            <p style="font-size: 16pt;"><strong>Misconception: &ldquo;the coefficient on <code>female</code> is the gender pay gap.&rdquo;</strong></p>
+            <p style="font-size: 15.5pt; margin-top: 8px;">In a model containing <code>tenure:female</code> it is the gap <strong>at tenure = 0</strong>. If nobody in your data has zero tenure, <em>that number describes nobody.</em></p>
+            <p style="font-size: 15pt; margin-top: 8px;"><strong>Fix:</strong> evaluate \(\beta_2 + \beta_3 \bar{t}\) at mean tenure, or <strong>centre</strong> the interacting variable before fitting &mdash; the same centring trick Chapter 12 used on the intercept, one level up.</p>
+          </div>
+          <p style="font-size: 14pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px; margin-top: 16px;">Three cautions, one line each</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px;">
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--secondary-color);">
+              <p style="font-size: 14pt;"><strong>Power.</strong> You are estimating a <em>difference</em> in slopes. A null interaction is weak evidence of homogeneity, not proof of it.</p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--accent-color);">
+              <p style="font-size: 14pt;"><strong>Common support.</strong> The model extrapolates freely. If almost no women have 20 years, &minus;10,159 is arithmetic, not observation.</p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--danger-color);">
+              <p style="font-size: 14pt;"><strong>Functional form.</strong> A product term tests one very specific shape &mdash; that the effect changes <em>linearly</em> in the moderator.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">2 min. The centring trick is the practical takeaway — most students will need it in the capstone. Transition: "one last failure mode, and it is the one that shows you what your data can and cannot answer."</aside>
+      </section>
+
+      <section id="divider-6" class="section-divider" data-state="is-section-divider">
+        <h1>Multicollinearity</h1>
+        <p class="subtitle">Section 6 &nbsp;&bull;&nbsp; LO 13.2 &nbsp;&bull;&nbsp; 9 min</p>
+      </section>
+
+      <section id="multicollinearity-intuition" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-clone" style="color: var(--accent-color);"></i> When the Others Explain Almost All of It</h2>
+        <div class="content">
+          <p style="font-size: 15.5pt; line-height: 1.6;">FWL said the multivariate coefficient uses <strong>only the variation a predictor has that the others cannot explain.</strong> So what happens when they can explain almost all of it? You are left estimating an effect from a <em>sliver</em> of residual variation &mdash; and slivers are noisy.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 22px; margin-top: 14px; align-items: start;">
+            <div>
+              <p style="font-size: 14.5pt; margin-bottom: 8px;">Add a near-duplicate of tenure &mdash; <code>yrs_at_firm</code>, &ldquo;years at this firm,&rdquo; which here is just tenure plus a little measurement noise. <strong>Nothing genuinely new has entered the model.</strong></p>
+              <table class="table-standard" style="font-size: 14pt;">
+                <thead><tr><th>Variable</th><th style="text-align:right;">VIF</th></tr></thead>
+                <tbody>
+                  <tr><td><code>female</code></td><td style="text-align:right;">1.33</td></tr>
+                  <tr><td><code>tenure</code></td><td style="text-align:right;"><strong>48.82</strong></td></tr>
+                  <tr><td><code>job_level</code></td><td style="text-align:right;">2.12</td></tr>
+                  <tr><td><code>yrs_at_firm</code></td><td style="text-align:right;"><strong>47.78</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p style="font-size: 18pt; text-align: center; margin: 2px 0;">\[ \mathrm{VIF}_j = \frac{1}{1 - R_j^2} \]</p>
+              <p style="font-size: 14pt; color: var(--muted-color); text-align: center; font-style: italic;">where \(R_j^2\) comes from regressing \(x_j\) on all the other predictors</p>
+              <div class="key-result" style="margin-top: 10px;">
+                <p style="font-size: 15pt;"><strong>Plain language:</strong> &ldquo;how much of this variable do the other variables already know?&rdquo; VIF = 1 means orthogonal &mdash; nothing is shared. Conventional thresholds flag 5 or 10 as serious. Tenure and its twin sit near <strong>48</strong>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">2.5 min. Note that female and job_level are barely affected — a high VIF is a statement about specific columns, not about the model as a whole. That distinction is the poll in four slides.</aside>
+      </section>
+
+      <section id="multicollinearity-figure" style="padding: 22px 50px;">
+        <h2><i class="fa-solid fa-scale-unbalanced-flip" style="color: var(--danger-color);"></i> What It Wrecks, and What It Does Not</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 22px; align-items: start;">
+            <img class="figure" src="figures/figure_007_multicollinearity.png" alt="Top panel: the standard error on tenure rising from 28.1 alone to 147.2 once a near-duplicate predictor with VIF 48.82 joins the model. Bottom panel: R-squared identical at 0.80622 and the female coefficient identical at minus 2,746 both with and without the duplicate" style="width: 100%; max-height: 525px; object-fit: contain;">
+            <div>
+              <div style="background: #f9f0ee; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--danger-color);">
+                <p style="font-size: 14.5pt;"><strong>1. The standard error exploded.</strong> 28.1 &rarr; 147.2, five times wider. The classic signature: a model that is clearly working, made of coefficients that individually look like nothing.</p>
+              </div>
+              <div style="background: #f9f3ee; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--accent-color); margin-top: 10px;">
+                <p style="font-size: 14.5pt;"><strong>2. The coefficients split arbitrarily.</strong> Tenure keeps 820.7, the twin takes 45.8 &mdash; and that division is essentially noise. Resample and it shifts, possibly changing signs.</p>
+              </div>
+              <div class="fragment fade-up" style="background: #eef2f0; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--success-color); margin-top: 10px;">
+                <p style="font-size: 14.5pt;"><strong>3. R&sup2; is identical to five decimal places.</strong> 0.80622 both ways. The predictions did not move. Neither did the coefficient on gender &mdash; which is what we actually cared about.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">3 min. Show the VIF table, then the SE explosion, then — LAST, and slowly — the identical R-squared. Give that reveal space; it is the moment of the section. Ask which model a forecaster should use and which an economist should use, and make the class notice they are the same model.</aside>
+      </section>
+
+      <section>
+        <section id="poll-4" style="padding: 38px 50px;">
+          <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll 4: What Actually Moved?</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 10px;">
+            <p style="font-size: 15pt; line-height: 1.6;">We add <code>yrs_at_firm</code>, a near-duplicate of <code>tenure</code> (VIF 48.8), to a model whose real target is the <code>female</code> coefficient.</p>
+            <p style="font-size: 16.5pt; font-weight: 600; margin-top: 10px;">What moved?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch13-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The standard error on <code>tenure</code>, and nothing else</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The standard error on <code>tenure</code>, <strong>and R&sup2; fell</strong> because the model is now redundant</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Everything &mdash; a VIF of 48 corrupts the whole fit</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 13px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Nothing that matters here &mdash; <code>female</code> and R&sup2; are unchanged; only <code>tenure</code>'s precision was wrecked</div>
+          </div>
+          <aside class="notes">60 seconds. A and D are close; the distinction is that A is silent about whether R-squared and female moved. D is the complete answer.</aside>
+        </section>
+        <section id="poll-4-reveal" data-poll-results="ch13-econ3916-poll-4" style="padding: 32px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: D</h2>
+          <div class="poll-results-chart" data-poll-id="ch13-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px;"></div>
+          <div style="padding: 4px 40px;">
+            <p style="font-size: 16.5pt; text-align: center;">SE on <code>tenure</code> <strong>28.1 &rarr; 147.2</strong> &nbsp;&bull;&nbsp; R&sup2; <strong>0.80622 &rarr; 0.80622</strong> &nbsp;&bull;&nbsp; <code>female</code> <strong>&minus;2,746 &rarr; &minus;2,746</strong></p>
+            <div class="misconception" style="margin-top: 12px;">
+              <p><strong>B is the tempting one</strong> &mdash; &ldquo;redundant variable&rdquo; sounds like it should cost you fit. But adding <em>any</em> column can only weakly <em>increase</em> in-sample R&sup2;, never decrease it. That was Chapter 12.</p>
+              <p style="margin-top: 6px;"><strong>C is the panic answer</strong>, and it is exactly why people delete variables they should keep. The right reading of a high VIF is narrow: <em>this particular coefficient</em> is now unanswerable with this data.</p>
+            </div>
+          </div>
+          <aside class="notes">Assessment moment for LO 13.2. If C got votes, that is the deletion reflex and the next slide addresses it head on.</aside>
+        </section>
+      </section>
+
+      <section id="multicollinearity-key" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> Fatal for One Job, Harmless for the Other</h2>
+        <div class="content">
+          <div class="key-result">
+            <p style="font-size: 17pt;"><strong>Multicollinearity is not a data-quality problem or a modelling error.</strong> It is a statement about <em>which questions your data can answer</em>. Correlated predictors leave little independent variation, so individual coefficients destabilise and their standard errors inflate. Aggregate fit is untouched, because the model still knows the combined relationship &mdash; it simply cannot <strong>attribute</strong> it.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+            <div style="background: #eef2f0; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--success-color); text-align: center;">
+              <p style="font-size: 15pt; color: var(--success-color); font-weight: 600;">Want to PREDICT wages?</p>
+              <p style="font-size: 18pt; margin-top: 6px;">The model is <strong>fine</strong>.</p>
+            </div>
+            <div style="background: #f9f0ee; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color); text-align: center;">
+              <p style="font-size: 15pt; color: var(--danger-color); font-weight: 600;">Want to say what a year of tenure is worth?</p>
+              <p style="font-size: 18pt; margin-top: 6px;">Now <strong>useless</strong>.</p>
+            </div>
+          </div>
+          <p class="text-lg fragment fade-up" style="text-align: center; margin-top: 14px;"><strong>The same fitted object is simultaneously both.</strong> This is Chapter 12's explain-versus-predict distinction cashing out in one table.</p>
+          <div class="misconception" style="margin-top: 12px;">
+            <p><strong>&ldquo;A high VIF means drop the variable.&rdquo;</strong> Only if you need <em>that variable's</em> coefficient. Predicting? Drop nothing &mdash; regularization (Ch 16) handles redundancy far more gracefully than deletion, and dropping a correlated predictor throws away real information. <strong>A high VIF on a variable you do not care about is not your concern.</strong></p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. Forward seed to Ch 16: ridge shrinks correlated predictors TOGETHER rather than forcing the model to choose between them, which is why the VIF table is a diagnostic and not a verdict. Then transition to the last section: "all of that was mechanics. Here is the procedure."</aside>
+      </section>
+      <section id="divider-7" class="section-divider" data-state="is-section-divider">
+        <h1>Choosing What Goes In</h1>
+        <p class="subtitle">Section 7 &nbsp;&bull;&nbsp; LO 13.4 &nbsp;&bull;&nbsp; the part you will actually use &nbsp;&bull;&nbsp; 6 min</p>
+      </section>
+
+      <section id="question-first" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-signs-post" style="color: var(--accent-color);"></i> Start From the Question, Not the Data</h2>
+        <div class="content">
+          <p class="text-lg">Write down, in <strong>one sentence</strong>, what you are trying to estimate. Then decide which of two kinds of question it is.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px;">
+            <div style="background: #eef2f0; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 13pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">A prediction question</p>
+              <p style="font-size: 15.5pt; font-style: italic;">&ldquo;What will this house sell for?&rdquo;</p>
+              <p style="font-size: 15pt; margin-top: 10px;">Easy: include whatever improves out-of-sample error and evaluate on a test set. Confounders, mediators and colliders are <strong>all fair game</strong> &mdash; you are not claiming any coefficient means anything.</p>
+            </div>
+            <div style="background: #f9f0ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">A causal question</p>
+              <p style="font-size: 15.5pt; font-style: italic;">&ldquo;Does this programme raise wages?&rdquo;</p>
+              <p style="font-size: 15pt; margin-top: 10px;">Now every variable needs a justification &mdash; and the justification is <strong>structural</strong>, not statistical. Nothing in the output will tell you whether you got it right.</p>
+            </div>
+          </div>
+          <div class="misconception fragment fade-up" style="margin-top: 16px;">
+            <p style="font-size: 16pt;"><strong>The single most common error in applied work:</strong> running the second kind of analysis with the first kind of variable selection &mdash; picking controls by what improves fit, then interpreting a coefficient causally.</p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. The misconception box is the sentence to repeat twice. Students will do exactly this in the capstone unless they hear it named.</aside>
+      </section>
+
+      <section id="classification-table" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-table-list" style="color: var(--secondary-color);"></i> Classify Every Candidate Variable</h2>
+        <div class="content">
+          <table class="table-standard" style="font-size: 14.5pt;">
+            <thead><tr><th>Pattern</th><th>What it is</th><th>Include?</th></tr></thead>
+            <tbody>
+              <tr><td>Causes <strong>both</strong> treatment and outcome</td><td><strong>Confounder</strong></td><td style="color: var(--success-color); font-weight: 600;">Yes</td></tr>
+              <tr><td>Caused by treatment, causes outcome</td><td><strong>Mediator</strong></td><td style="color: var(--danger-color); font-weight: 600;">No &mdash; unless you want the direct effect, and say so</td></tr>
+              <tr><td>Caused by <strong>both</strong> treatment and outcome</td><td><strong>Collider</strong></td><td style="color: var(--danger-color); font-weight: 600;">No &mdash; never</td></tr>
+              <tr style="background: rgba(106,142,107,0.14);"><td>Causes the <strong>outcome only</strong></td><td><strong>Precision covariate</strong></td><td style="color: var(--success-color); font-weight: 600;">Optional &mdash; tightens SEs, no bias either way</td></tr>
+              <tr><td>Causes the <strong>treatment only</strong></td><td><strong>Instrument-like</strong></td><td style="color: var(--danger-color); font-weight: 600;">No &mdash; inflates variance without reducing bias</td></tr>
+            </tbody>
+          </table>
+          <div class="key-result" style="margin-top: 14px;">
+            <p style="font-size: 16pt;"><i class="fa-solid fa-hand-point-right" style="color: var(--secondary-color);"></i> <strong>Row 4 is the one people forget.</strong> A variable that affects only the outcome is safe <em>and helpful</em>. Not every control is a risk &mdash; after forty minutes of being made afraid of controls, leave calibrated rather than paralysed.</p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. Spend the most time on row 4 — the chapter's own instruction, and the correction to the fear this lecture has been building. This table alone on a slide is deliberate.</aside>
+      </section>
+
+      <section id="the-procedure" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-list-check" style="color: var(--accent-color);"></i> The Procedure, for a Causal Question</h2>
+        <div class="content">
+          <div style="display: flex; flex-direction: column; gap: 9px;">
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 3px solid var(--secondary-color);">
+              <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1</p>
+              <p style="font-size: 14.5pt;"><strong>Draw the graph before you open the data.</strong> Drawing it after seeing results is how motivated reasoning gets in.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 3px solid var(--accent-color);">
+              <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">2</p>
+              <p style="font-size: 14.5pt;"><strong>Classify every candidate</strong> with the table you just saw.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 3px solid var(--success-color);">
+              <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">3</p>
+              <p style="font-size: 14.5pt;"><strong>Apply the timing screen.</strong> Anything measured <em>after</em> treatment is a mediator or a collider. Necessary, not sufficient (Ch 10's M-bias) &mdash; but it catches most real errors cheaply.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f9f0ee; border-radius: 8px; padding: 11px 18px; border-left: 3px solid var(--danger-color);">
+              <p style="font-size: 17pt; font-weight: 700; color: var(--danger-color);">4</p>
+              <p style="font-size: 14.5pt;"><strong>Decide before you look at the coefficient.</strong> An analyst who adds and removes controls while watching a coefficient move is <em>searching</em> &mdash; and the resulting standard errors do not account for the search.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #eef2f0; border-radius: 8px; padding: 11px 18px; border-left: 3px solid #7C3A5F;">
+              <p style="font-size: 17pt; font-weight: 700; color: #7C3A5F;">5</p>
+              <p style="font-size: 14.5pt;"><strong>Report the alternatives anyway.</strong> The BWWC standard. A table of specifications with each estimand stated <em>in words</em> beats one number &mdash; and removes the suspicion that you chose the flattering one.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. Step 4 will get pushback — the honest response is that everyone is tempted, which is exactly why you write the justification down first. It costs nothing and it is the difference between an analysis and an argument for a foregone conclusion.</aside>
+      </section>
+
+      <section id="cannot-measure" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-eye-slash" style="color: var(--danger-color);"></i> When You Cannot Measure the Confounder</h2>
+        <div class="content">
+          <p class="text-lg">Ability in a wage regression. Management quality in a firm regression. Three honest responses, in ascending order of effort:</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 15.5pt; font-weight: 600; color: var(--secondary-color);">Sign the bias</p>
+              <p style="font-size: 14pt; margin-top: 8px; line-height: 1.55;">Use Section 2's formula. Argue the omitted variable raises both, and your estimate becomes an <strong>upper bound</strong>. A bounded claim is a real contribution.</p>
+            </div>
+            <div style="background: #f9f3ee; border-radius: 10px; padding: 16px 18px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 15.5pt; font-weight: 600; color: var(--accent-color);">Bound the magnitude</p>
+              <p style="font-size: 14pt; margin-top: 8px; line-height: 1.55;">Chapter 10's sensitivity analysis: how strong would the unmeasured confounder have to be to overturn the result? Converts an unfalsifiable objection into <strong>a number your reader can judge</strong>.</p>
+            </div>
+            <div style="background: #eef2f0; border-radius: 10px; padding: 16px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 15.5pt; font-weight: 600; color: var(--success-color);">Change the design</p>
+              <p style="font-size: 14pt; margin-top: 8px; line-height: 1.55;">Find a natural experiment &mdash; a policy that changed at a point in time, an arbitrary threshold, variation unrelated to the outcome.</p>
+            </div>
+          </div>
+          <div class="key-result fragment fade-up" style="margin-top: 18px;">
+            <p style="font-size: 17pt; text-align: center;"><strong>Better identification beats better controls, every time.</strong></p>
+          </div>
+        </div>
+        <aside class="notes">1 min. That last line is why the graduate track spends three whole chapters on design. Say it and move — the discussion is next and it needs its four minutes.</aside>
+      </section>
+
+      <section id="discussion-3" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 3: Classify Four Controls</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; padding: 14px 22px; border-radius: 12px;">
+            <p class="text-lg" style="font-weight: 600;">Causal question: <em>does a job-training programme raise participants' wages one year later?</em></p>
+          </div>
+          <p style="font-size: 14.5pt; margin-top: 10px;">Classify each candidate control &mdash; and say <strong>what happens if you get it wrong</strong>.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--secondary-color);">
+              <p style="font-size: 14.5pt;"><strong>1.</strong> Years of prior education <span style="color: var(--muted-color);">(measured before)</span></p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--accent-color);">
+              <p style="font-size: 14.5pt;"><strong>2.</strong> Found a job <em>through</em> the programme <span style="color: var(--muted-color);">(after)</span></p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--success-color);">
+              <p style="font-size: 14.5pt;"><strong>3.</strong> Local unemployment rate in the participant's county</p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 3px solid var(--danger-color);">
+              <p style="font-size: 14.5pt;"><strong>4.</strong> Whether the participant was later promoted <span style="color: var(--muted-color);">(after)</span></p>
+            </div>
+          </div>
+          <p style="margin-top: 12px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 3 min in groups of 3 &rarr; 1 min, one classification called out per group</span></p>
+        </div>
+        <aside class="notes">4 min. Assesses LO 13.4. Answers: 1 = confounder, include. 2 = mediator; excluding it gives the total effect, almost certainly what you want. 3 = precision covariate (moves wages, not who enrols) — optional and helpful, and it is row 4 of the table. 4 = mediator, and arguably a collider if promotion also depends on wages — leave it out. Make groups say the CONSEQUENCE of getting each wrong, not just the label. Press 3 for the timer.</aside>
+      </section>
+
+      <section id="key-takeaways" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px;">
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-crosshairs" style="color: var(--secondary-color);"></i></p>
+              <p style="font-size: 14.5pt;"><strong>A coefficient is a partial effect.</strong> It has no meaning independent of the model it sits in. Same variable, different specification, different number &mdash; and none is correct in the abstract.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f9f3ee; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i></p>
+              <p style="font-size: 14.5pt;"><strong>OVB = \(\beta_2\delta\), exactly.</strong> Two signs multiply, so you can predict the direction of your error before you have the data &mdash; and you should write that prediction down first.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f9f0ee; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-shuffle" style="color: var(--danger-color);"></i></p>
+              <p style="font-size: 14.5pt;"><strong>Controlling for a mediator changes the question.</strong> Today it removed $7,386 of a $10,200 gap &mdash; and every dollar removed was real discrimination travelling through promotion.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #eef2f0; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-clone" style="color: var(--success-color);"></i></p>
+              <p style="font-size: 14.5pt;"><strong>Multicollinearity is fatal for explanation and harmless for prediction.</strong> The same fitted model, the same output, is broken for one purpose and fine for the other.</p>
+            </div>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 14px; text-align: center; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 16.5pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Every control you add is a claim about how the world works. The software will never ask you to defend it. Your reader should.</strong></p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. Read the capstone line slowly and stop. That is the sentence the chapter exists to install.</aside>
+      </section>
+
+      <section id="exit-ticket" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket</h2>
+        <div class="content">
+          <p class="text-lg">On a card, <strong>one sentence each</strong>:</p>
+          <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+            <div style="display: grid; grid-template-columns: 48px 1fr; align-items: center; background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">1</p>
+              <p style="font-size: 16.5pt; line-height: 1.6;">Name a variable you would <strong>refuse</strong> to control for in a study of whether a college degree raises earnings &mdash; and say <em>which row of the classification table</em> it sits in.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 48px 1fr; align-items: center; background: #f9f3ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">2</p>
+              <p style="font-size: 16.5pt; line-height: 1.6;">Your regression of wages on a training programme omits <strong>motivation</strong>. <strong>Sign the bias</strong>, and say which <em>two facts about the world</em> you used.</p>
+            </div>
+          </div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; margin-top: 18px; text-align: center;">Question 1 assesses LO 13.4. Question 2 assesses LO 13.3. Both take under a minute if today worked.</p>
+        </div>
+        <aside class="notes">2 min. Collect the cards — a stack of question 2s that get the sign backwards tells you to reopen OVB at the top of Ch 14, and Quiz 1 is next session.</aside>
+      </section>
+
+      <section id="looking-ahead" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-forward" style="color: var(--accent-color);"></i> Looking Ahead</h2>
+        <div class="content">
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            <div style="display: grid; grid-template-columns: 130px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Chapter 14</p>
+              <p style="font-size: 14.5pt;"><strong>OLS Diagnostics.</strong> What breaks: non-constant error variance, non-linear functional form, influential observations, and measurement error in the controls &mdash; a real concern once you are adding a lot of them.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 130px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Chapter 16</p>
+              <p style="font-size: 14.5pt;"><strong>Regularization.</strong> The principled answer to today's Section 6. Ridge handles correlated predictors by shrinking them <em>together</em> rather than forcing a choice &mdash; which is why the VIF table is a diagnostic, not a verdict.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 130px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">Chapter 24</p>
+              <p style="font-size: 14.5pt;"><strong>Causal ML.</strong> Double Machine Learning is today's FWL with the two first-stage regressions replaced by ML models. That is what makes it possible to control for hundreds of variables at once.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 130px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid #7C3A5F;">
+              <p style="font-size: 15pt; font-weight: 700; color: #7C3A5F;">Lab 13</p>
+              <p style="font-size: 14.5pt;">Verify the OVB formula against a known truth, run FWL by hand, watch a <strong>collider</strong> control manufacture an effect out of nothing, and fit an interaction on union status.</p>
+            </div>
+          </div>
+          <div class="misconception" style="margin-top: 14px; background: #f9f0ee;">
+            <p style="font-size: 15.5pt;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> <strong>Quiz 1 follows this chapter</strong> &mdash; cumulative over Chapters 1&ndash;13, 25&ndash;30 questions, Lockdown Browser.</p>
+          </div>
+        </div>
+        <aside class="notes">1 min. Flag Quiz 1 clearly and remind them the lab is where the collider demonstration lives — it is on the quiz and it is not in this deck.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

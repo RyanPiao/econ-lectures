@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predictive Modeling: OLS as the Line of Best Fit</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax 3 (tex-svg). create-presentation.js does NOT include this.
+       Inline math is \\( ... \\) on purpose: with $...$ as an inline delimiter,
+       any text node holding two currency figures gets everything between them
+       typeset as mathematics. This deck is full of dollar amounts. -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 12</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Predictive Modeling: OLS as the Line of Best Fit</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">The same algebra, a different scorecard &mdash; and the one number that can see a failure from outside the sample</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch12-ols.png" alt="Abstract illustration: a straight orange line running cleanly through a dense cloud of data points, then continuing past the edge of the data where several wild curves fan away from it" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">12.1</p>
+            <p style="font-size: 15pt;">Distinguish the two jobs a regression can do &mdash; <strong>estimating a parameter</strong> and <strong>generating a prediction</strong> &mdash; and say why they are scored differently</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">12.2</p>
+            <p style="font-size: 15pt;">Fit OLS in <code>scikit-learn</code> and <code>statsmodels</code>, split train/test, and compute \(R^2\) and RMSE on each</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">12.3</p>
+            <p style="font-size: 15pt;">Diagnose <strong>overfitting</strong>, and explain why in-sample fit is <em>guaranteed</em> to improve when a predictor is added</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">12.4</p>
+            <p style="font-size: 15pt;">Judge whether an RMSE is <em>good</em>, and tell a <strong>confidence interval</strong> from a <strong>prediction interval</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 12.3 as today's centre of gravity. Say out loud that 12.2 is exposure here and mastery in Lab 12 &mdash; nobody types code in this room today.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; margin-bottom: 14px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 10.</strong> You controlled for a mediator in a causal model and it destroyed your estimate. Say in one sentence why.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 6.</strong> What is <em>data leakage</em>, and what does it do to a reported error?</p>
+        </div>
+        <p style="margin-top: 18px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Hold both. Today one becomes <strong>irrelevant</strong> and the other becomes <strong>the entire point</strong>.</p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. QC1 target: it blocked part of the causal path being measured. QC2 target: information from held-out data influenced fitting, so the reported error is optimistic about data the model has genuinely never seen. Do not resolve which is which yet &mdash; that tension carries the first ten minutes.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The Model That Never Broke</h1>
+      <p class="subtitle">Okun's Law, 2023</p>
+    </section>
+
+    <!-- SLIDE 5: Hook 1 -->
+    <section id="hook-okun" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> As Close as Macro Gets to a Law</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Unemployment and output move against each other, with a coefficient stable enough that we have taught it to undergraduates for <strong>sixty years</strong>.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 14px;">Fit it on data through 2019 and it looks superb: a tight relationship, a coefficient in the range everyone expects, an \(R^2\) that would make a referee happy.</p>
+        <div class="fragment fade-up key-result" style="margin-top: 24px;">
+          <p style="font-size: 18pt;">Now use that fitted line to predict what happened to <strong>European employment in 2023</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">90 sec. Do not editorialise. Set it up as the thing everyone believes, then advance.</aside>
+    </section>
+
+    <!-- SLIDE 6: Hook 2 -->
+    <section id="hook-number" style="padding: 40px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> You Are Wrong By</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 330px 1fr; gap: 30px; align-items: center; margin-top: 6px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 26px; text-align: center;">
+            <p style="font-size: 44pt; font-weight: 700; color: var(--accent-color); line-height: 1;">3.2M</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 8px;">jobs, of Europe's 169 million</p>
+          </div>
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">Since 2022, employment growth has outpaced GDP growth by a wide margin. The conventional employment elasticity of output sits near <strong>0.2 to 0.5</strong>; through the post-pandemic recovery it ran at roughly <strong>double</strong> that.</p>
+            <p style="font-size: 15pt; line-height: 1.6; margin-top: 12px;">The ECB attributes much of the gap to <strong>labour hoarding</strong> &mdash; firms burned by the 2021 hiring shortages holding on to workers through a slowdown they expected to be temporary.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px; text-align: center;"><p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); line-height: 1.1;">~30%</p><p style="font-size: 12pt; color: var(--muted-color);">ECB labour hoarding indicator, 2022 Q3 peak</p></div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px; text-align: center;"><p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); line-height: 1.1;">~13%</p><p style="font-size: 12pt; color: var(--muted-color);">its pre-pandemic average</p></div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px; text-align: center;"><p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); line-height: 1.1;">22.2%</p><p style="font-size: 12pt; color: var(--muted-color);">still elevated, early 2024</p></div>
+        </div>
+        <p class="footnote" style="font-size: 11pt; color: var(--muted-color); margin-top: 14px; font-style: italic;">European Central Bank, "Explaining the resilience of the euro area labour market between 2022 and 2024," <em>Economic Bulletin</em>; SUERF (2025).</p>
+      </div>
+      <aside class="notes">2 min. Say "three point two million jobs" and pause. About 2% of European employment cannot be accounted for by GDP growth at all. Then advance without resolving it.</aside>
+    </section>
+
+    <!-- SLIDE 7: Hook 3 -->
+    <section id="hook-nothing-broke" style="padding: 40px 60px;">
+      <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--danger-color);"></i> Here Is What Should Bother You</h2>
+      <div class="content">
+        <p class="text-2xl" style="color: var(--primary-color); font-weight: 600; margin-bottom: 18px;">Nothing in the regression broke.</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px; border-left: 4px solid var(--success-color);"><p style="font-size: 15pt;">The coefficient is still statistically significant.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px; border-left: 4px solid var(--success-color);"><p style="font-size: 15pt;">The \(R^2\) on the historical sample is exactly what it always was.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px; border-left: 4px solid var(--success-color);"><p style="font-size: 15pt;">Every diagnostic you would run on the fitted model still passes.</p></div>
+        </div>
+        <div class="fragment fade-up misconception" style="margin-top: 20px;">
+          <p style="font-size: 16pt;">Because every one of those diagnostics is computed on <strong>the data the model was fitted to</strong> &mdash; and the model fits that data beautifully. It always did.</p>
+        </div>
+        <p class="fragment fade-up text-xl" style="margin-top: 18px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> The failure is invisible from inside the sample. Today is about the one number that can see it: <strong>the error your model makes on data it has never seen.</strong></p>
+      </div>
+      <aside class="notes">90 sec. This is the thesis of the entire lecture and of Chapters 15 through 19. Deliver the last line slowly and write "out-of-sample error" on the board; leave it there all class.</aside>
+    </section>
+
+    <!-- SLIDE 8: Concept Extension Bridge -->
+    <section id="bridge" style="padding: 38px 60px;">
+      <h2><i class="fa-solid fa-bridge" style="color: var(--secondary-color);"></i> The Bridge</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.65;">You have seen regression as a tool for estimating a parameter you care about &mdash; <strong>the coefficient IS the answer</strong>. Today we use the identical machinery for a different job: producing a number for an observation we have not seen.</p>
+        <div class="key-result" style="margin-top: 20px;">
+          <p style="font-size: 20pt; font-weight: 600;">Nothing about the algebra changes. What changes is <em>the scorecard</em>.</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.65; margin-top: 18px;">Chapter 10 was about the first job: if the coefficient is the answer, which variables you condition on decides whether the answer is right, and a DAG tells you which. This chapter is the second job, where that <strong>entire apparatus becomes beside the point</strong>.</p>
+        <p class="text-lg" style="line-height: 1.65; margin-top: 12px;">When you only want a good \(\hat{y}\), you do not care whether a predictor is a confounder, a mediator, or a collider. You care whether it <em>helps you predict</em>.</p>
+      </div>
+      <aside class="notes">1 min. Transition line: "So the first question in applied work is never which method. It is which job." Then advance to Section 1.</aside>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Two Jobs, One Machine</h1>
+      <p class="subtitle">Section 12.1</p>
+    </section>
+
+    <!-- SLIDE 10: The two questions -->
+    <section id="two-questions" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--accent-color);"></i> Every Regression Answers One of Two Questions</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">"What is the effect of \(X\) on \(Y\)?"</p>
+            <p style="font-size: 14.5pt; margin-top: 10px; line-height: 1.55;">A number attached to a <strong>variable</strong>. Does an extra year of schooling raise earnings, and by how much?</p>
+            <p style="font-size: 14.5pt; margin-top: 10px; line-height: 1.55;">The coefficient <strong>is</strong> the deliverable. Randomisation, backdoor paths, adjustment sets &mdash; all of Chapters 9 and 10 exists to make that one number trustworthy.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">"What will \(Y\) be?"</p>
+            <p style="font-size: 14.5pt; margin-top: 10px; line-height: 1.55;">A number attached to an <strong>observation</strong>. What will this house sell for? Will this loan default? What is GDP this quarter, given the official figure arrives in thirty days?</p>
+            <p style="font-size: 14.5pt; margin-top: 10px; line-height: 1.55;">No coefficient matters. Only the predicted value does.</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px; font-size: 14.5pt; line-height: 1.6;">Shmueli (2010) named it &mdash; <em>to explain or to predict</em>. Mullainathan &amp; Spiess (2017) brought it to economists as a \(\hat{\beta}\) problem versus a \(\hat{y}\) problem. Kleinberg et al. (2015) made the policy case: <strong>many consequential decisions are prediction problems wearing causal clothing.</strong></p>
+        <p style="margin-top: 10px; font-size: 15pt; color: var(--primary-color);">Whether to replace a roof before it fails is a prediction problem. Whether a subsidy caused a firm to hire is not.</p>
+      </div>
+      <aside class="notes">3 min. The roof/subsidy pair is the fastest way in &mdash; give it and let it sit. Resist starting on metrics; that is two sections away.</aside>
+    </section>
+
+    <!-- SLIDE 11: The table -->
+    <section id="two-jobs-table" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-table-columns" style="color: var(--secondary-color);"></i> The Consequences Run Deep</h2>
+      <div class="content">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14.5pt;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--line-color);">
+              <th style="text-align: left; padding: 9px 12px;"></th>
+              <th style="text-align: left; padding: 9px 12px; color: var(--secondary-color);">Explanation &nbsp;(\(\hat{\beta}\))</th>
+              <th style="text-align: left; padding: 9px 12px; color: var(--accent-color);">Prediction &nbsp;(\(\hat{y}\))</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 12px; font-weight: 600;">Deliverable</td><td style="padding: 8px 12px;">A coefficient</td><td style="padding: 8px 12px;">A predicted value</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 12px; font-weight: 600;">Which variables?</td><td style="padding: 8px 12px;">Whatever the DAG requires</td><td style="padding: 8px 12px;">Whatever predicts well</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color); background: #fdf0ea;"><td style="padding: 8px 12px; font-weight: 700;">Post-treatment variables</td><td style="padding: 8px 12px; font-weight: 700; color: var(--danger-color);">Forbidden (Ch 10)</td><td style="padding: 8px 12px; font-weight: 700; color: var(--success-color);">Fine, if available at prediction time</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 12px; font-weight: 600;">Success metric</td><td style="padding: 8px 12px;">Unbiasedness, correct standard errors</td><td style="padding: 8px 12px;">Out-of-sample error</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 12px; font-weight: 600;">Evaluated on</td><td style="padding: 8px 12px;">The sample you have</td><td style="padding: 8px 12px;">Data the model has not seen</td></tr>
+            <tr><td style="padding: 8px 12px; font-weight: 600;">Is a \(p\)-value central?</td><td style="padding: 8px 12px;">Yes</td><td style="padding: 8px 12px;">Largely irrelevant</td></tr>
+          </tbody>
+        </table>
+        <div class="fragment fade-up key-result" style="margin-top: 16px;">
+          <p style="font-size: 16pt;"><strong>Row three.</strong> In Ch 10 a mediator blocked the causal path you were measuring. In a prediction problem a mediator is often your <em>best</em> predictor &mdash; it sits close to the outcome and carries a lot of information about it. <strong>Nothing about the variable changed. The question changed.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">4 min &mdash; and spend most of it on row three, which connects straight to last week's collider material. Walk the other rows fast. Then advance to the misconception.</aside>
+    </section>
+
+    <!-- SLIDE 12: Misconception 1 -->
+    <section id="misconception-1" style="padding: 40px 60px;">
+      <h2><i class="fa-solid fa-circle-xmark" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 19pt; font-weight: 600;">"A model that predicts well must have found real causal relationships."</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.65; margin-top: 18px;">Prediction requires only a <strong>stable statistical association</strong> between features and outcome. It does not require, and does not establish, that intervening on a feature would change the outcome.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">A model can forecast hospital costs superbly using variables that are <strong>consequences of the illness</strong> rather than causes of the cost &mdash; and be <strong>worthless</strong> for deciding what treatment to fund.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 18px;">Chapter 10's whole apparatus exists because these are different questions. Today's job is to make you fluent in the second one <em>without forgetting the first</em>.</p>
+      </div>
+      <aside class="notes">2 min. Sets up Poll 1 directly &mdash; the poll is the hospital example turned into a decision. Do not spoil it.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 1 &mdash; Does It Go In the Model?</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.6;">A hospital wants to know <strong>which admitted patients will run up the highest costs</strong>, so it can staff accordingly. An analyst proposes including <em>"number of specialist consultations ordered"</em> as a predictor. That variable is a <strong>consequence</strong> of how sick the patient is.</p>
+          <div class="poll-grid" data-poll-id="ch12-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) No &mdash; it is post-treatment, and Ch 10 forbids it</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Yes &mdash; if it is observable at prediction time and it predicts well</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) No &mdash; it will bias the coefficient on severity</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Only after adjusting for the collider it creates</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students vote on their devices; results appear on the next slide. Expect a large A share &mdash; that is the productive error and it is exactly what last week taught them.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch12-econ3916-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Yes, If It Is Available in Time</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">This is a \(\hat{y}\) problem. Nobody is going to <em>intervene</em> on consultation counts; the hospital wants a good number for a patient. A post-treatment variable is only forbidden when <strong>the coefficient is the deliverable</strong>.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>A and C are the productive errors</strong> &mdash; correct sentences about a <em>different</em> job. Press the room: what would have to change about the hospital's question to make A right? <em>(If they asked: does ordering more consultations reduce costs?)</em></p>
+          </div>
+          <div style="background: #f9f0ee; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 10px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>One caveat that is doing real work:</strong> "available at prediction time." If the consultations are ordered on day three and the forecast is needed on day one, the variable is useless no matter how predictive it looks in your historical file.</p>
+          </div>
+        </div>
+        <aside class="notes">1 min. The caveat is the part students forget and the part that breaks production models. Say it twice.</aside>
+      </section>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Sort Your Own Life</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 6px;">
+          <div style="padding: 18px 22px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt; line-height: 1.55;">Name a decision <em>you</em> face this term where somebody is producing a number for you. Is it a \(\hat{\beta}\) problem or a \(\hat{y}\) problem?</p>
+          </div>
+          <div style="padding: 18px 22px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt; line-height: 1.55;">For your example: name one variable that belongs in the model for <strong>one</strong> job and would be a mistake in the other.</p>
+          </div>
+        </div>
+        <p style="margin-top: 20px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4 for the timer. Expect: will I get this internship (prediction) vs does the internship raise starting salary (estimation); Netflix recommendations, insurance premiums, credit limits &mdash; all prediction, all routinely mistaken for causal claims by the people receiving them. Debrief line: "Every one of you produced a pair where the same data supports both jobs and the right model is different. That is why the first question is never which method &mdash; it is which job."</aside>
+    </section>
+
+    <!-- DIVIDER 3 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The Line of Best Fit</h1>
+      <p class="subtitle">Section 12.2</p>
+    </section>
+
+    <!-- SLIDE: Best is a choice -->
+    <section id="best-is-a-choice" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-ruler-combined" style="color: var(--accent-color);"></i> "Best" Needs a Definition &mdash; and the Definition Is a Choice</h2>
+      <div class="content">
+        <p class="text-lg">You have a scatterplot and you want a line through it. <strong>Infinitely many</strong> lines are available. OLS makes a specific choice: minimise the sum of the <strong>squared vertical distances</strong>.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 18px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px;"><p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">Vertical</p><p style="font-size: 14pt; margin-top: 6px; line-height: 1.5;">Error in the outcome only, not perpendicular distance &mdash; we predict \(y\) from \(x\), and errors in \(x\) are a different problem.</p></div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px;"><p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">Squared</p><p style="font-size: 14pt; margin-top: 6px; line-height: 1.5;">So positives and negatives cannot cancel &mdash; and so large errors are penalised disproportionately.</p></div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px;"><p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">Sum</p><p style="font-size: 14pt; margin-top: 6px; line-height: 1.5;">Total error across the sample, not any single point.</p></div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 18px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;"><strong>Ch 4 callback.</strong> Moving the line to reduce a distance of 10 saves 100 units of penalty; reducing a distance of 1 saves 1. That is exactly why the arithmetic mean has a breakdown point of \(1/n\). <strong>OLS is the mean's approach to fitting a line, and it is fragile in the same way and for the same reason.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Draw two candidate lines on the board through three points and ask which is better before defining anything. The point is that "best" was never obvious; we chose.</aside>
+    </section>
+
+    <!-- SLIDE: California fit -->
+    <section id="california-fit" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-house" style="color: var(--secondary-color);"></i> Numbers Before Algebra &mdash; California Housing</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px;">
+          <div>
+<pre style="background: #f8f6f3; border-radius: 8px; padding: 14px 16px; font-size: 11.5pt; line-height: 1.45; overflow: hidden;"><code>housing = fetch_california_housing(as_frame=True)
+df = housing.frame
+X = df[["MedInc"]]        <span style="color:#8C8580;"># in $10,000s</span>
+y = df["MedHouseVal"]     <span style="color:#8C8580;"># in $100,000s</span>
+
+model = LinearRegression().fit(X, y)</code></pre>
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 13px 16px; font-size: 12pt; line-height: 1.5; margin-top: 10px;"><code>Intercept (beta_0 hat): 0.4509
+Slope     (beta_1 hat): 0.4179</code></pre>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 20px;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 2px; text-transform: uppercase;">Data Snapshot</p>
+            <p style="font-size: 13.5pt; line-height: 1.55; margin-top: 8px;"><strong>20,640</strong> census block groups, 1990 US Census. Median house value is the target, <strong>capped at &#36;500,001</strong>. You met this dataset in Chapter 4 and found it right-skewed with geographic outliers.</p>
+            <p style="font-size: 13.5pt; line-height: 1.55; margin-top: 8px;"><code>sklearn.datasets.fetch_california_housing()</code></p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p style="font-size: 16pt;"><strong>Read the slope in units.</strong> <code>MedInc</code> is in tens of thousands; <code>MedHouseVal</code> in hundreds of thousands. So a <strong>&#36;10,000 rise in block-group median income is associated with a &#36;41,790 rise in median house value.</strong></p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 10px;">Note <em>associated</em>. Single-variable regression on observational data &mdash; income and house value share obvious common causes. For a causal effect you would need a graph, an adjustment set, and a better design. <strong>For a prediction problem you need none of that.</strong></p>
+      </div>
+      <aside class="notes">4 min. Do the unit conversion slowly on the board: 0.4179 x $100,000 = $41,790 per $10,000 of income. A student who cannot state a coefficient in dollars cannot sanity-check anything later this term.</aside>
+    </section>
+
+    <!-- SLIDE: Figure 1 -->
+    <section id="fig-california" style="padding: 26px 40px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-chart-scatter" style="color: var(--secondary-color);"></i> The Fit, and What the Fit Already Tells You</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_001_california_fit.png" alt="Two panels. Left: 20,640 California block groups plotted as median house value against median income with the fitted OLS line y-hat equals 0.4509 plus 0.4179 x running through them, and a dense horizontal band of points at the $500,001 cap. Right: residuals against fitted values, showing a cloud that fans wider as the prediction rises and a sharp diagonal edge formed by the capped observations." style="max-height: 480px; width: auto;">
+        <p style="font-size: 13pt; color: var(--muted-color); margin-top: 8px; font-style: italic;">Chapter 3's rule: a regression coefficient is a summary statistic, so plot it before you trust it.</p>
+      </div>
+      <aside class="notes">1 min. Point at the band of dots along the top of panel A. Ask what it is before telling them. Somebody will say "the cap" &mdash; that is the hook into Section 3's residual work.</aside>
+    </section>
+
+    <!-- SLIDE: the algebra -->
+    <section id="ols-algebra" style="padding: 24px 55px;">
+      <h2><i class="fa-solid fa-square-root-variable" style="color: var(--accent-color);"></i> Now the Algebra That Produced It</h2>
+      <div class="content">
+        <p style="text-align: center; font-size: 16pt; margin: 2px 0;">$$y_i = \beta_0 + \beta_1 x_i + \varepsilon_i$$</p>
+        <div class="key-result" style="margin: 4px 0 8px; padding: 12px 20px;">
+          <p style="font-size: 14.5pt;"><strong>Reading:</strong> outcome equals a line, plus everything the line does not capture. \(\beta_0\) intercept, \(\beta_1\) true slope, \(\varepsilon_i\) the error, \(n\) the number of observations.</p>
+        </div>
+        <p style="text-align: center; font-size: 16pt; margin: 2px 0;">$$(\hat{\beta}_0, \hat{\beta}_1) = \arg\min_{b_0, b_1} \sum_{i=1}^{n} \left(y_i - b_0 - b_1 x_i\right)^2$$</p>
+        <div class="key-result" style="margin: 4px 0 8px; padding: 12px 20px;">
+          <p style="font-size: 14.5pt;"><strong>Reading:</strong> out of every line you could draw, take the one whose squared vertical misses add to the least. The <em>hat</em> means "estimated from data"; \(\beta\) without a hat is the unknown truth. \(b_0, b_1\) are candidates being searched over.</p>
+        </div>
+        <p style="text-align: center; font-size: 16pt; margin: 2px 0;">$$\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1 x_i, \qquad e_i = y_i - \hat{y}_i$$</p>
+        <div class="misconception" style="margin: 4px 0 0; padding: 12px 20px;">
+          <p style="font-size: 14.5pt;"><strong>Say this out loud &mdash; it is a standard interview question.</strong> The <strong>error</strong> \(\varepsilon_i\) is the unobservable population quantity. The <strong>residual</strong> \(e_i\) is what you can actually compute once you have estimates. Different objects, and conflating them is a reliable way to confuse yourself later.</p>
+        </div>
+      </div>
+      <aside class="notes">4 min. Every equation gets its sentence before you move on &mdash; never leave math bare on this slide. The error/residual distinction is the one students blur every single year; make them say it back.</aside>
+    </section>
+
+    <!-- SLIDE: closed form -->
+    <section id="closed-form" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-equals" style="color: var(--secondary-color);"></i> The Closed Form</h2>
+      <div class="content">
+        <p style="text-align: center; font-size: 18pt; margin: 8px 0 4px;">$$\hat{\beta}_1 = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^n (x_i - \bar{x})^2}, \qquad \hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x}$$</p>
+        <div class="key-result" style="margin-top: 12px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;"><strong>Reading:</strong> the slope is how much \(x\) and \(y\) move <em>together</em>, divided by how much \(x\) moves <em>on its own</em> &mdash; covariance over variance. The intercept is then whatever it takes to drag the line through \((\bar{x}, \bar{y})\).</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 16px 22px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 17pt; font-weight: 600;">Key Concept &mdash; the OLS line always passes through the sample means.</p>
+          <p style="font-size: 14.5pt; margin-top: 8px; line-height: 1.55;">Among all straight lines, OLS picks the one whose squared vertical gaps sum to the least. Squaring makes large errors dominate, which is why OLS inherits the outlier sensitivity you diagnosed in the sample mean in Chapter 4.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 14px;"><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> <strong>In Lab 12 this week:</strong> Part 1 recovers these exact coefficients three ways &mdash; the closed form above, <code>statsmodels</code>, and <code>scikit-learn</code> &mdash; and asserts they agree to six decimals. <em>There is one line, not three methods.</em></p>
+      </div>
+      <aside class="notes">3 min. Derive from the first-order condition only if the room can take it; otherwise state it and stress covariance-over-variance. Transition: "So we have a line. How good is it?"</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Measuring Fit &mdash; and Why It Is Not Enough</h1>
+      <p class="subtitle">Section 12.3</p>
+    </section>
+
+    <!-- SLIDE: R2 vs RMSE -->
+    <section id="r2-vs-rmse" style="padding: 30px 52px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--accent-color);"></i> Two Answers, Two Different Questions</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">\(R^2\) &mdash; a <em>relative</em> question</p>
+            <p style="font-size: 14pt; margin-top: 7px; line-height: 1.5;">How much better is this than the dumbest possible model &mdash; the one that ignores \(x\) and predicts \(\bar{y}\) for everybody? Unitless; between 0 and 1 for any model with an intercept.</p>
+            <p style="font-size: 15pt; margin-top: 8px; font-weight: 600;">"Better than nothing?"</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">RMSE &mdash; an <em>absolute</em> question</p>
+            <p style="font-size: 14pt; margin-top: 7px; line-height: 1.5;">On average, by how much is the model wrong? Measured in the outcome's own units &mdash; dollars, if you are predicting dollars &mdash; with no upper bound.</p>
+            <p style="font-size: 15pt; margin-top: 8px; font-weight: 600;">"Wrong by how much?"</p>
+          </div>
+        </div>
+        <p style="text-align: center; font-size: 16pt; margin: 14px 0 4px;">$$\text{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2, \qquad \text{RMSE} = \sqrt{\text{MSE}} \qquad\qquad R^2 = 1 - \frac{\sum_{i=1}^n (y_i - \hat{y}_i)^2}{\sum_{i=1}^n (y_i - \bar{y})^2}$$</p>
+        <div class="key-result" style="margin-top: 8px;">
+          <p style="font-size: 14.5pt; line-height: 1.6;"><strong>Reading:</strong> MSE is the average squared miss; square-root it and you are back in the outcome's units. \(R^2\) is your squared error divided by the dumb baseline's, subtracted from one. \(R^2 = 0.5\) means half the baseline's squared error; \(R^2 = 0\) means no better than the mean. <strong>On <em>test</em> data \(R^2\) can go negative</strong> &mdash; which sounds impossible until you meet an overfitted model.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. When someone reports one of these and you need the other, ask. Then the pivot line: "MSE is the sum of squared residuals divided by n &mdash; so OLS is BY CONSTRUCTION the linear model that minimises in-sample MSE. Hold that; it explains what is about to go wrong."</aside>
+    </section>
+
+    <!-- SLIDE: California in-sample -->
+    <section id="in-sample-numbers" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--secondary-color);"></i> How Good Is Our Line?</h2>
+      <div class="content">
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 16px 20px; font-size: 14pt; line-height: 1.6;"><code>In-sample RMSE: 0.8373  (= $83,734)
+In-sample R^2:  0.4734</code></pre>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 18px;">
+          <div class="stat-highlight" style="background: #f0f5f8; border-radius: 10px; padding: 14px;"><p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color); line-height: 1.1;">47%</p><p style="font-size: 13pt; color: var(--muted-color); margin-top: 4px;">of the variation in block-group house values, from median income alone</p></div>
+          <div class="stat-highlight" style="background: #fdf0ea; border-radius: 10px; padding: 14px;"><p style="font-size: 26pt; font-weight: 700; color: var(--accent-color); line-height: 1.1;">&#36;83,700</p><p style="font-size: 13pt; color: var(--muted-color); margin-top: 4px;">the typical miss</p></div>
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 10px; padding: 14px;"><p style="font-size: 26pt; font-weight: 700; color: var(--primary-color); line-height: 1.1;">&#36;180,000</p><p style="font-size: 13pt; color: var(--muted-color); margin-top: 4px;">the median house value it is missing by that much</p></div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 18px;">
+          <p style="font-size: 16pt;">That is a <strong>large</strong> error. Whether it is an <em>acceptable</em> error depends entirely on what you plan to do with the prediction &mdash; which is a question <strong>no statistic answers for you</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Convert to dollars on the board; students under-appreciate error magnitude when it is expressed in units of $100,000. The last line is the seed for Discussion 3.</aside>
+    </section>
+
+    <!-- SLIDE: misconception 2 -->
+    <section id="misconception-2" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-circle-xmark" style="color: var(--danger-color);"></i> Misconception That Will Bite You This Week</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 17pt; font-weight: 600;"><code>mean_squared_error(y, y_pred, squared=False)</code> gives you RMSE.</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 16px;">It did, for years. It appears in thousands of tutorials and in most of what a language model has read.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f9f0ee; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt;"><strong>Deprecated</strong> in scikit-learn <strong>1.4</strong><br><strong>REMOVED</strong> in <strong>1.6</strong></p>
+            <p style="font-size: 14pt; margin-top: 8px;">In any current version that call <strong>raises a <code>TypeError</code></strong>. It does not warn you.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;">Use instead:</p>
+            <p style="font-size: 14.5pt; margin-top: 8px;"><code>from sklearn.metrics import<br>&nbsp;&nbsp;&nbsp;&nbsp;root_mean_squared_error</code></p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 16px;">
+          <p style="font-size: 16pt;">A small thing, and a concrete instance of what this whole course is about: <strong>code you were handed &mdash; by a tutorial, a colleague, or a model &mdash; is a claim to be checked, not a fact.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Worth the airtime: they will hit this in Lab 12 and in every AI-assisted cell they write for the rest of the term.</aside>
+    </section>
+
+    <!-- SLIDE: R2 cannot decrease -->
+    <section id="r2-cannot-decrease" style="padding: 36px 58px;">
+      <h2><i class="fa-solid fa-arrow-trend-up" style="color: var(--danger-color);"></i> The Fact That Motivates Everything Else</h2>
+      <div class="content">
+        <div class="key-result" style="border-left-color: var(--danger-color);">
+          <p style="font-size: 20pt; font-weight: 700;">Adding <em>any</em> predictor to a regression cannot decrease \(R^2\).</p>
+          <p style="font-size: 16pt; margin-top: 6px;">Not "usually does not." <strong>Cannot.</strong></p>
+        </div>
+        <p class="fragment fade-up text-lg" style="line-height: 1.65; margin-top: 18px;"><strong>The proof is one line.</strong> OLS minimises squared error over a set of candidate models. Adding a variable strictly <em>enlarges</em> that set &mdash; the old model is still available, with a coefficient of zero on the new variable. <strong>The minimum over a larger set cannot be larger.</strong> So \(R^2\) weakly increases.</p>
+        <p class="fragment fade-up text-lg" style="line-height: 1.65; margin-top: 14px;">This holds whether the new predictor is median income, the price of tea, or a column of random numbers. Add enough random columns and \(R^2\) climbs toward 1.</p>
+        <div class="fragment fade-up misconception" style="margin-top: 16px;">
+          <p style="font-size: 17pt; font-weight: 600;">A criterion that improves when you add noise is not a criterion. It is a description of how flexibly the model can trace the data you handed it.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Say the proof AS a proof, out loud, in one breath &mdash; it lands far harder than an assertion. Then set up the poll: "adjusted R-squared exists precisely to penalise this. What do you think it does?"</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 2 &mdash; What Does Adjusted \(R^2\) Do?</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.6;">We take the California training data, bolt on <strong>20 columns of pure random numbers</strong>, and refit. In-sample \(R^2\) rises from <strong>0.47699</strong> to <strong>0.47788</strong> &mdash; it has to.</p>
+          <p class="text-lg" style="line-height: 1.6; margin-top: 10px;">Now: what does <strong>adjusted</strong> \(R^2\) do? It exists precisely to penalise extra parameters.</p>
+          <div class="poll-grid" data-poll-id="ch12-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Falls &mdash; that is what the penalty is for</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Stays essentially flat</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Rises too</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cannot be computed with random regressors</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. A is the answer the textbook definition invites and most of the room will pick it. Let them commit before revealing.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch12-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; It Rises Too, 0.47696 &rarr; 0.47722</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:8px 60px 16px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The penalty for twenty useless parameters was <strong>not large enough</strong> to overcome the spurious gain from twenty useless parameters.</p>
+          <div style="background: #f9f0ee; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14.5pt; margin: 0;">Adjusted \(R^2\) <strong>is</strong> a real improvement over raw \(R^2\), and it is <strong>not</strong> a solution. It is a within-sample correction applied to a within-sample quantity &mdash; and the question a prediction problem asks is not answerable within the sample at all.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. A is the productive error. Then go to the lab's version on the next slide, which pushes it to 100 columns and shows the non-monotonicity.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: figure 2 -->
+    <section id="fig-noise" style="padding: 24px 42px;">
+      <h2 style="font-size: 23pt;"><i class="fa-solid fa-dice" style="color: var(--danger-color);"></i> Lab 12, Part 2 &mdash; Pushed to 100 Columns of Noise</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; align-items: center;">
+        <img src="figures/figure_002_noise_r2.png" alt="R-squared climbing monotonically from 0.4734 to 0.4758 as 0, 1, 5, 20 and 100 columns of pure random noise are added, while adjusted R-squared wobbles up and down and ends at 0.4732, below where it started" style="max-height: 430px; width: 100%; object-fit: contain;">
+        <div>
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 12px 14px; font-size: 11pt; line-height: 1.5;"><code>noise  R-squared  adjusted
+    0     0.4734    0.4734
+    1     0.4735    0.4734
+    5     0.4736    0.4735
+   20     0.4739    0.4734
+  100     0.4758    0.4732</code></pre>
+          <p style="font-size: 14pt; line-height: 1.55; margin-top: 12px;">\(R^2\) climbs with <strong>every</strong> column. Adjusted \(R^2\) wobbles &mdash; <strong>up</strong> at 5 columns, down by 100.</p>
+          <p style="font-size: 14pt; line-height: 1.55; margin-top: 8px; color: var(--danger-color); font-weight: 600;">It is not monotone and it is not a safe selection rule. From inside the sample you cannot tell which direction it should have gone.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Run it live if the room is warm &mdash; it is one np.random.normal column and an OLS refit. Numbers here are the lab's actual executed output, so the students' own notebooks will reproduce them exactly.</aside>
+    </section>
+
+    <!-- SLIDE: residuals, mean and cap -->
+    <section id="residuals-cap" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-wave-square" style="color: var(--secondary-color);"></i> Residuals: What the Numbers Do Not Show You</h2>
+      <div class="content">
+        <p class="text-lg">Chapter 3 taught that summary statistics hide shape. <strong>A regression coefficient is a summary statistic</strong>, and it hides shape exactly the way Anscombe's Quartet warned.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1.25fr; gap: 20px; margin-top: 16px;">
+          <div>
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 12px 15px; font-size: 12pt; line-height: 1.5;"><code>mean residual: 3.01e-17</code></pre>
+            <div class="misconception" style="margin-top: 10px;">
+              <p style="font-size: 14.5pt;"><strong>That is arithmetic, not evidence.</strong> OLS forces it. A zero mean residual tells you the optimiser worked and nothing whatsoever about whether the model is right.</p>
+            </div>
+          </div>
+          <div>
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 12px 15px; font-size: 11.5pt; line-height: 1.5;"><code>observations at the cap: 786 of 16512 (4.8%)
+mean residual at the cap:  +1.261
+mean residual elsewhere:   -0.063</code></pre>
+            <p style="font-size: 14.5pt; margin-top: 10px; line-height: 1.55;">Nearly five percent of the training data sits <strong>on a wall</strong>, and the model under-predicts every one of those block groups by an average of <strong>&#36;126,000</strong>.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">It cannot do otherwise: the true values were <strong>censored before you ever saw them</strong>, so no linear function of income can reach them. A <em>measurement</em> artifact &mdash; Chapter 1's point that data is a product of measurement decisions &mdash; surfacing as a <em>modelling</em> failure eleven chapters later.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Ask what happens to the residual if the truth was $900,000 and the record says $500,001. They will get there. The cap is the take-home Challenge in Lab 12, so flag it.</aside>
+    </section>
+
+    <!-- SLIDE: heteroscedasticity -->
+    <section id="residual-spread" style="padding: 30px 44px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-chart-column" style="color: var(--accent-color);"></i> And the Spread Is Not Constant</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_003_residual_structure.png" alt="Left panel: residual standard deviation by quintile of predicted value, rising from 0.715 in the cheapest neighbourhoods to 0.910 in the most expensive, a 27 percent increase. Right panel: mean residual of plus 1.261 for the 786 block groups at the $500,001 cap against minus 0.063 for the other 15,726." style="max-height: 400px; width: auto;">
+        <div class="fragment fade-up key-result" style="margin-top: 10px; text-align: left;">
+          <p style="font-size: 15pt; line-height: 1.55;">Variability grows by about <strong>27%</strong> from the cheapest neighbourhoods to the most expensive. <strong>Expensive areas are harder to predict</strong>, so a single RMSE for the whole dataset <em>overstates accuracy where the stakes are largest</em>. The phenomenon has a name &mdash; <strong>heteroscedasticity</strong> &mdash; and Chapter 14 handles it properly. Today's narrower and more important lesson: <strong>report error by segment, not just in aggregate.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. "A model that is accurate on average can be unusable exactly where it matters." That sentence returns in Discussion 3. Do NOT go into robust standard errors &mdash; that is Ch 14 and it is a different lecture.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Wall at &#36;500,001</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 16px 24px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">786 of 16,512 training block groups sit exactly at the cap. The model under-predicts them by &#36;126,000 on average.</p>
+          <p style="font-size: 14.5pt; margin-top: 6px; color: var(--muted-color);">A colleague proposes: <em>drop them and refit &mdash; they are corrupted data.</em></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt; line-height: 1.5;">What does dropping them <strong>assume</strong>, and who is the resulting model now a model <strong>of</strong>?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt; line-height: 1.5;">Your headline RMSE will <em>improve</em> if you drop them. Is that a <strong>better model</strong>, or a <strong>better number</strong>?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4. Expected: it assumes you will never need a prediction for an expensive block group; the model becomes a model of California below $500,001, which is real and possibly useful but must be stated on the tin. RMSE improves because you deleted the hardest cases. Someone will propose a censored-regression model (Tobit) &mdash; acknowledge it exists and say it is out of scope. Debrief: "You just chose between a better model and a better number, and they pointed in opposite directions. The only defence is stating out loud what population your model is for. That is the take-home Challenge in Lab 12."</aside>
+    </section>
+
+    <!-- DIVIDER 5 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The Test Set</h1>
+      <p class="subtitle">Section 12.4 &mdash; the centrepiece</p>
+    </section>
+
+    <!-- SLIDE: the fix -->
+    <section id="the-split" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i> If In-Sample Error Is the Wrong Scorecard</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">The fix is direct: <strong>hold some data back, fit on the rest, and measure error on the part the model never saw.</strong></p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">You have met this. <strong>Chapter 6</strong> introduced the train&ndash;test split as a <em>sampling design decision</em> and warned about leakage as a violation of sample independence. Now it becomes the central instrument of the rest of the book.</p>
+        <div class="key-result" style="margin-top: 16px; border-left-color: var(--danger-color);">
+          <p style="font-size: 16pt;">The data you fit on is the <strong>training set</strong>. The data you hold back is the <strong>test set</strong>. <strong>Nothing from the test set may influence fitting in any way</strong> &mdash; not scaling, not imputation, not feature selection, not your choice of model.</p>
+        </div>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f9f0ee; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14.5pt; line-height: 1.55;">A model that has <strong>memorised</strong> the particular noise in those particular observations does well on them and badly on new draws &mdash; <em>because the noise does not repeat.</em></p></div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--success-color);"><p style="font-size: 14.5pt; line-height: 1.55;">A model that has captured <strong>genuine structure</strong> does about as well on both &mdash; <em>because the structure does repeat.</em></p></div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 14px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> Comparing the two errors therefore tells you which kind of model you have.</p>
+      </div>
+      <aside class="notes">3 min. The two boxes are the whole logic of held-out evaluation; make sure both sentences are said aloud. Then the numbers.</aside>
+    </section>
+
+    <!-- SLIDE: train vs test -->
+    <section id="train-vs-test" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-equals" style="color: var(--success-color);"></i> A Model With Nothing to Hide</h2>
+      <div class="content">
+<pre style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; font-size: 12pt; line-height: 1.5;"><code>X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42)   <span style="color:#8C8580;"># the book's seed convention, Ch 1</span>
+m = LinearRegression().fit(X_train, y_train)</code></pre>
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 16px 20px; font-size: 15pt; line-height: 1.6; margin-top: 12px;"><code>Training RMSE: 0.8361
+Test RMSE:     0.8421</code></pre>
+        <div class="fragment fade-up key-result" style="margin-top: 16px;">
+          <p style="font-size: 16.5pt;"><strong>Essentially identical.</strong> A straight line through one predictor is far too rigid to memorise anything, so it performs the same on both.</p>
+        </div>
+        <p class="fragment fade-up text-xl" style="margin-top: 18px; color: var(--accent-color); font-weight: 600;">Now let us give it something to hide.</p>
+      </div>
+      <aside class="notes">2 min. Deliver the last line as a threat. Then set up the polynomial experiment before the poll.</aside>
+    </section>
+
+    <!-- SLIDE: overfit setup -->
+    <section id="overfit-setup" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-color);"></i> Making a Model Overfit</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Add polynomial terms &mdash; \(x,\ x^2,\ x^3,\ \ldots\) &mdash; increasing flexibility one degree at a time, and watch <strong>both</strong> errors.</p>
+<pre style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; font-size: 11.5pt; line-height: 1.5; margin-top: 12px;"><code>Xs, ys = X_train.iloc[:60], y_train.iloc[:60]   <span style="color:#8C8580;"># a deliberately small sample</span>
+
+for degree in [1, 2, 3, 5, 7, 9]:
+    pipe = make_pipeline(StandardScaler(),
+                         PolynomialFeatures(degree, include_bias=False),
+                         LinearRegression()).fit(Xs, ys)</code></pre>
+        <div class="key-result" style="margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>The 60-row sample is not a cheat.</strong> Overfitting is a <em>relationship</em> between model flexibility and data quantity &mdash; a small sample makes the effect visible quickly. And the <code>StandardScaler</code> is load-bearing: without it the high-degree terms are so ill-conditioned that the solver stops finding the true minimum and the demonstration misleads.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Then poll BEFORE revealing the table. This is the moment of the lecture; do not rush past the vote.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 3 &mdash; Predict the Last Row</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.6;">At <strong>degree 1</strong>, test RMSE is <strong>0.8441</strong> &mdash; about &#36;84,000. We take the same 60 training points up to a <strong>degree-9 polynomial</strong>. Training RMSE falls from 0.6186 to 0.5863, as it must.</p>
+          <p class="text-xl" style="margin-top: 12px; font-weight: 600;">What does <strong>test</strong> RMSE do?</p>
+          <div class="poll-grid" data-poll-id="ch12-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Falls too, to roughly 0.6 &mdash; flexibility helps</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Stays about the same, near 0.85</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Rises somewhat, to about 1.5</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Rises to roughly 45 &mdash; a typical error of &#36;4.5 million</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. B and C are the productive errors: B is what "models overfit a bit" sounds like if you have never watched it happen; C is the answer of someone who has read about overfitting but not seen the magnitude. The gap between C and D is the whole lesson.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch12-econ3916-poll-3" style="padding: 26px 46px;">
+        <h2 style="font-size: 25pt;"><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: D &mdash; 45.0271</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:130px; margin:6px 60px 12px;"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; padding: 0 20px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14.5pt;">
+            <thead><tr style="border-bottom: 2px solid var(--line-color);"><th style="text-align:right; padding: 5px 10px;">degree</th><th style="text-align:right; padding: 5px 10px; color: var(--secondary-color);">train RMSE</th><th style="text-align:right; padding: 5px 10px; color: var(--accent-color);">test RMSE</th></tr></thead>
+            <tbody>
+              <tr><td style="text-align:right; padding: 4px 10px;">1</td><td style="text-align:right; padding: 4px 10px;">0.6186</td><td style="text-align:right; padding: 4px 10px;">0.8441</td></tr>
+              <tr><td style="text-align:right; padding: 4px 10px;">2</td><td style="text-align:right; padding: 4px 10px;">0.6171</td><td style="text-align:right; padding: 4px 10px;">0.8495</td></tr>
+              <tr><td style="text-align:right; padding: 4px 10px;">3</td><td style="text-align:right; padding: 4px 10px;">0.5963</td><td style="text-align:right; padding: 4px 10px;">0.8500</td></tr>
+              <tr class="fragment fade-up"><td style="text-align:right; padding: 4px 10px;">5</td><td style="text-align:right; padding: 4px 10px;">0.5900</td><td style="text-align:right; padding: 4px 10px; color: var(--danger-color); font-weight: 700;">1.5008</td></tr>
+              <tr class="fragment fade-up"><td style="text-align:right; padding: 4px 10px;">7</td><td style="text-align:right; padding: 4px 10px;">0.5876</td><td style="text-align:right; padding: 4px 10px; color: var(--danger-color); font-weight: 700;">7.1108</td></tr>
+              <tr class="fragment fade-up"><td style="text-align:right; padding: 4px 10px; font-weight: 700;">9</td><td style="text-align:right; padding: 4px 10px; font-weight: 700;">0.5863</td><td style="text-align:right; padding: 4px 10px; color: var(--danger-color); font-weight: 700; font-size: 17pt;">45.0271</td></tr>
+            </tbody>
+          </table>
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.55;"><strong>Read the two columns in opposite directions.</strong> Training RMSE falls monotonically &mdash; it <em>has</em> to. This is the "\(R^2\) cannot decrease" result, seen from the other side.</p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">Test RMSE is flat through degree 3, then <strong>detonates</strong>. At degree 9 the typical error is roughly <strong>&#36;4.5 million on houses worth around &#36;180,000</strong>. Predicting the sample mean for every house would have been better by a factor of forty.</p>
+          </div>
+        </div>
+        <aside class="notes">3 min. Build the fragments one row at a time and make the class predict each before revealing. Degree 7 usually produces a reaction; degree 9 seals it. Then ask which model an in-sample criterion would have selected, and let THEM answer.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: figure 4 -->
+    <section id="fig-overfit" style="padding: 24px 42px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-explosion" style="color: var(--danger-color);"></i> Every In-Sample Diagnostic Selects the Worst Model Here</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_004_overfitting.png" alt="Training RMSE and test RMSE against polynomial degree on a logarithmic vertical axis. Training RMSE creeps down from 0.6186 to 0.5863 across degrees 1 to 9, while test RMSE is flat near 0.85 through degree 3 then rises to 1.5008, 7.1108 and finally 45.0271." style="max-height: 440px; width: auto;">
+        <p style="font-size: 14pt; margin-top: 8px; line-height: 1.5;">The high-degree model bends to pass close to each of those 60 training points &mdash; <strong>including the part of each point that is noise</strong>. Noise does not repeat in the test set, so the bends do not help there. They hurt, because a wiggly curve <strong>extrapolates wildly</strong> the moment it meets an \(x\) outside its training range.</p>
+      </div>
+      <aside class="notes">2 min. Note the log axis explicitly or the shape reads wrong. Connect the wild extrapolation back to the cover image.</aside>
+    </section>
+
+    <!-- SLIDE: key concept + do not name it -->
+    <section id="scorecard-key-concept" style="padding: 38px 58px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--success-color);"></i> Key Concept &mdash; Out-of-Sample Error Is the Scorecard</h2>
+      <div class="content">
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 20px 26px; border-radius: 8px;">
+          <p style="font-size: 16pt; line-height: 1.6;"><strong>In-sample error</strong> measures how well a model traces data it has already seen, and it can <em>always</em> be driven down by adding flexibility. <strong>Out-of-sample error</strong> measures how well it generalises, and it cannot be gamed the same way.</p>
+          <p style="font-size: 16pt; line-height: 1.6; margin-top: 10px;">When the two diverge, <strong>the model is memorising rather than learning.</strong></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 18px; text-align: center;"><p style="font-size: 16pt; font-weight: 600; color: var(--primary-color);">Report test error</p></div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 18px; text-align: center;"><p style="font-size: 16pt; font-weight: 600; color: var(--primary-color);">Select models on test error</p></div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 18px; text-align: center;"><p style="font-size: 16pt; font-weight: 600; color: var(--primary-color);">Be suspicious of anything reported only in-sample</p></div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 20px; line-height: 1.6;">You have just watched a real tension play out: <strong>more flexibility buys better in-sample fit and, past some point, worse out-of-sample performance.</strong> Hold on to the <em>shape</em> of those two columns &mdash; it is the single most important picture in applied machine learning.</p>
+      </div>
+      <aside class="notes">2 min. INSTRUCTOR: DO NOT NAME THE BIAS-VARIANCE TRADEOFF. The chapter deliberately withholds it and Ch 15's bridge depends on students having FELT this before it is formalised. Say instead, verbatim: "This has a name and a formal decomposition behind it. You get both in three weeks. Every method in Chapters 15 through 19 is a different response to the shape of those two columns."</aside>
+    </section>
+
+    <!-- SLIDE: GDPNow -->
+    <section id="gdpnow" style="padding: 30px 52px;">
+      <h2><i class="fa-solid fa-building-columns" style="color: var(--secondary-color);"></i> Economist at Work &mdash; GDPNow, Atlanta Fed</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">The BEA publishes its first estimate of quarterly GDP about a month after the quarter ends. For a central bank setting rates, or a desk positioning for a release, a <strong>thirty-day blind spot</strong> is expensive. GDPNow closes it &mdash; and the approach is <em>deliberately unglamorous</em>.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 20px;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">The method</p>
+            <p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">Decompose GDP into <strong>the same 13 subcomponents the BEA itself uses</strong>. Apply <strong>linear bridge equations</strong> &mdash; regressions linking data released at different frequencies &mdash; to map incoming monthly indicators onto each component. Aggregate back up. Recalculate as each release lands, with <strong>no discretionary human adjustment</strong>.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px 20px;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">The transparency</p>
+            <p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">They publish the working paper specifying <strong>every equation</strong>, a document listing <strong>every modification since 2014</strong>, and a spreadsheet with the raw data, the intermediate forecasts, and the release calendar. <strong>You can reproduce the number yourself.</strong></p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.6;">One of the most closely watched macro forecasts in the world is a structured system of <strong>linear regressions</strong>, evaluated relentlessly out-of-sample and published in full. Linear models did not survive into 2026 because nothing better exists. They survived because on noisy, structured, moderately sized economic data <strong>a rigid functional form generalises well, runs in microseconds, and can be explained to a policymaker</strong> &mdash; and the fanciest available model is not automatically the best one.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the counterweight to the degree-9 explosion, and it lands better immediately after it. Students who came in thinking "linear is the boring baseline" should leave this slide corrected.</aside>
+    </section>
+
+    <!-- DIVIDER 6 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>How Wrong, and How Sure?</h1>
+      <p class="subtitle">Section 12.5</p>
+    </section>
+
+    <!-- SLIDE: two uncertainties -->
+    <section id="two-uncertainties" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-arrows-left-right" style="color: var(--accent-color);"></i> A Prediction Without an Uncertainty Statement Is Half a Deliverable</h2>
+      <div class="content">
+        <p class="text-lg">But there are <strong>two</strong> distinct uncertainties, and confusing them is one of the most common errors in applied forecasting.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">"What is the <em>average</em> house value for block groups with median income of &#36;50,000?"</p>
+            <p style="font-size: 14pt; margin-top: 8px; line-height: 1.5;">A question about a <strong>population average</strong>. Your uncertainty comes only from not knowing the line exactly. With enough data it becomes very small.</p>
+            <p style="font-size: 15pt; margin-top: 8px; font-weight: 600;">&rarr; a <strong>confidence interval</strong></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">"What will <em>this particular</em> block group's median house value be?"</p>
+            <p style="font-size: 14pt; margin-top: 8px; line-height: 1.5;">Two things go wrong. You still do not know the line exactly &mdash; and <strong>even if you did</strong>, this block group would scatter around it, because \(\varepsilon_i\) is not zero for individual observations.</p>
+            <p style="font-size: 15pt; margin-top: 8px; font-weight: 600;">&rarr; a <strong>prediction interval</strong></p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 16px;">
+          <p style="font-size: 16pt;">The prediction interval is <strong>always wider</strong>, and it is almost always the one a decision-maker actually needs. <strong>Nobody prices a specific house off the conditional mean.</strong> Same distinction Chapter 7 drew bootstrapping a sample mean: uncertainty about a <em>parameter</em> is not variability in the underlying <em>data</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. statsmodels gives both, which is why it is worth keeping alongside scikit-learn. Say that; it answers the question students always ask about why we teach two libraries.</aside>
+    </section>
+
+    <!-- SLIDE: CI vs PI numbers -->
+    <section id="ci-pi-numbers" style="padding: 32px 52px;">
+      <h2><i class="fa-solid fa-ruler-horizontal" style="color: var(--secondary-color);"></i> Look at the Widths</h2>
+      <div class="content">
+<pre style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; font-size: 11.5pt; line-height: 1.45;"><code>ols  = sm.OLS(y_train, sm.add_constant(X_train)).fit()
+new  = pd.DataFrame({"const": [1.0], "MedInc": [5.0]})   <span style="color:#8C8580;"># $50,000 median income</span>
+pred = ols.get_prediction(new).summary_frame(alpha=0.05)</code></pre>
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 14px 18px; font-size: 13pt; line-height: 1.55; margin-top: 10px;"><code>Point prediction:            $254,129
+95% CI  for the mean:        $252,649 to $255,609
+95% PI  for one block group: $90,218 to $418,040</code></pre>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 18px; text-align: center;"><p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color); line-height: 1.1;">&#36;3,000</p><p style="font-size: 13pt; color: var(--muted-color); margin-top: 4px;">CI width &mdash; we know the average very precisely, from 16,512 training observations</p></div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 18px; text-align: center;"><p style="font-size: 26pt; font-weight: 700; color: var(--accent-color); line-height: 1.1;">&#36;328,000</p><p style="font-size: 13pt; color: var(--muted-color); margin-top: 4px;">PI width &mdash; more than a hundred times wider</p></div>
+        </div>
+        <div class="fragment fade-up misconception" style="margin-top: 14px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;">Report the CI to someone deciding what to pay for a specific property and you have told them you know the price to within &#36;3,000, when your actual predictive uncertainty runs from &#36;90,000 to &#36;418,000. <strong>That is not a rounding error; it is a different claim.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Both intervals are correct. They answer different questions. That is the whole slide.</aside>
+    </section>
+
+    <!-- SLIDE: figure 5 -->
+    <section id="fig-ci-pi" style="padding: 26px 42px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-arrows-left-right-to-line" style="color: var(--accent-color);"></i> The Same Two Intervals, Drawn to Scale</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_005_ci_vs_pi.png" alt="The 95% prediction interval for a single block group drawn as a wide orange bar spanning $90,218 to $418,040, against the 95% confidence interval for the mean drawn as a barely visible blue sliver spanning $252,649 to $255,609, both centred on the point prediction of $254,129" style="max-height: 430px; width: auto;">
+        <div class="fragment fade-up key-result" style="margin-top: 8px; text-align: left;">
+          <p style="font-size: 15pt; line-height: 1.55;">The prediction interval is wide for a reason <strong>no amount of additional data will fix.</strong> It is wide because median income alone does not determine house value. More data shrinks the CI toward zero and leaves the PI essentially where it is. To narrow <em>that</em>, you need better features &mdash; which is <strong>Chapter 13</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. This surprises students every year and it is the cleanest motivation for next week. Then poll.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll 4 &mdash; Which Number Does the Bank Get?</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.6;">A bank asks you for a number to decide <strong>how much to lend against one specific property</strong> in a block group with &#36;50,000 median income. Which do you hand them?</p>
+          <div class="poll-grid" data-poll-id="ch12-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The point prediction, &#36;254,129 &mdash; they asked for a number</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The 95% CI, &#36;252,649 to &#36;255,609 &mdash; the tighter, more useful interval</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The 95% PI, &#36;90,218 to &#36;418,040</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Neither interval &mdash; collect more data first, then the CI</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. B is the expensive wrong answer and D is the second trap. Let them vote before you say either.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch12-econ3916-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; the Prediction Interval</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:8px 60px 16px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The bank is lending against <strong>one property</strong>, not against the average of all block groups with that income. That is the prediction-interval question <em>by definition</em>.</p>
+          <div style="background: #f9f0ee; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>B is the tempting and expensive error</strong> &mdash; a real interval, correctly computed, answering a question nobody asked. <strong>D is the second trap:</strong> more data shrinks the CI and barely touches the PI, so waiting buys you nothing here.</p>
+          </div>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 10px;">
+            <p style="font-size: 14.5pt; margin: 0;">And if C's width makes the loan undecidable &mdash; <strong>that is a finding, not a failure.</strong> It tells the bank this model is not precise enough to price a single property, which is exactly what they needed to know.</p>
+          </div>
+        </div>
+        <aside class="notes">1 min. The last box is the most useful professional habit in the whole lecture. Say it slowly.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: the intercept -->
+    <section id="the-intercept" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-crosshairs" style="color: var(--secondary-color);"></i> What the Intercept Is, and Is Not</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">The California model returned an intercept of <strong>0.4509</strong> &mdash; about <strong>&#36;45,090</strong>. Read literally, that is its prediction for a block group whose median income is exactly <strong>zero</strong>.</p>
+        <div class="misconception" style="margin-top: 14px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;"><strong>No such block group exists.</strong> The lowest median income anywhere in the data is <strong>0.4999</strong> &mdash; about &#36;5,000 &mdash; and the mean is 3.87, roughly &#36;38,700. So &#36;45,090 is not a prediction about any place in California. It is the value the fitted line happens to take when extended back to a point <strong>well outside the range of the data</strong>.</p>
+        </div>
+        <p class="fragment fade-up text-lg" style="line-height: 1.6; margin-top: 14px;">Extrapolating a line beyond where you observed data is <strong>exactly what the degree-9 polynomial did so catastrophically</strong> &mdash; and the intercept is a mild, permanent instance of it sitting in every regression output you will ever read.</p>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.55;"><strong>The standard fix:</strong> <em>centre the feature</em> &mdash; replace \(x_i\) with \(x_i - \bar{x}\) &mdash; and the intercept becomes the predicted outcome at the <em>average</em> income of &#36;38,700, a real interpretable quantity about a kind of place that exists. Nothing else changes: not the slope, not any prediction. It matters more in Chapter 13.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 12px; color: var(--accent-color); font-weight: 600;">Chapter 3's lesson again: a number in your output is not automatically a fact about the world. It is a fact about the <em>model</em>, and translating between the two is your job rather than the software's.</p>
+      </div>
+      <aside class="notes">3 min. Mechanically the intercept is what makes the line pass through the sample means and forces residuals to average to zero; interpretively it is usually a nuisance parameter. It becomes interpretable only when zero is a value the feature actually takes AND you have data near it.</aside>
+    </section>
+
+    <!-- SLIDE: is your RMSE any good -->
+    <section id="rmse-any-good" style="padding: 32px 52px;">
+      <h2><i class="fa-solid fa-question" style="color: var(--accent-color);"></i> Is Your RMSE Any Good?</h2>
+      <div class="content">
+        <p class="text-lg">RMSE has units and no ceiling, so a raw RMSE is <strong>uninterpretable on its own</strong>. Always compare against something.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">Against the naive baseline</p>
+            <p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">Predict \(\bar{y}\) for everyone. If your model cannot beat it, it has no value. This is exactly what \(R^2\) reports &mdash; the honest case for \(R^2\) as a <em>companion</em> to RMSE, not a replacement.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">Against the outcome's spread</p>
+            <p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">RMSE of &#36;83,700 against a standard deviation of &#36;115,000 says the model has absorbed <em>some but not most</em> of the variation.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">Against the decision</p>
+            <p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">The one that matters and the one nobody teaches. If a &#36;50,000 error costs nothing and a &#36;200,000 error is catastrophic, RMSE may be the wrong loss function entirely.</p>
+          </div>
+        </div>
+<pre style="background: #2D2D2D; color: #EDE9E4; border-radius: 8px; padding: 14px 18px; font-size: 13pt; line-height: 1.55; margin-top: 16px;"><code>Naive baseline (predict the mean): 1.1449
+Our model:                         0.8421
+Improvement:                       26.4%</code></pre>
+        <p class="fragment fade-up text-lg" style="margin-top: 12px; font-weight: 600;">A 26% reduction in typical error from a single predictor. <span style="color: var(--muted-color); font-weight: 400;">Worth having, and a long way from solved.</span></p>
+      </div>
+      <aside class="notes">2 min. The third box is the seed for Discussion 3, which comes next. Do not resolve it here.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Lender's Asymmetry</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 16px 24px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">Squared error treats a &#36;100,000 over-prediction and a &#36;100,000 under-prediction as equally bad.</p>
+          <p style="font-size: 14.5pt; margin-top: 6px; color: var(--muted-color);">A lender who <strong>over</strong>-estimates lends too much against a property and is exposed when the borrower defaults. A lender who <strong>under</strong>-estimates loses a customer to a competitor.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt; line-height: 1.5;">Are those costs equal? Which is worse, and roughly by how much?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt; line-height: 1.5;">If they are not equal, what should change &mdash; the <strong>model</strong>, the <strong>metric</strong>, or the <strong>reported quantity</strong>? Name one concrete change.</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4. Over-prediction is far more expensive for a secured lender, so the loss is asymmetric and RMSE optimises for a symmetric world the lender does not live in. Concrete changes they reach: an asymmetric (quantile / pinball) loss; report a low quantile rather than the mean; evaluate only on the segment that will be acted on; report the PI as the deliverable. Someone usually notes that residual spread rises 27% in expensive neighbourhoods so aggregate RMSE hides the errors that matter most for large loans &mdash; take that one and run with it.</aside>
+    </section>
+
+    <!-- SLIDE: misconception 4 + consequences -->
+    <section id="metric-follows-decision" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-circle-xmark" style="color: var(--danger-color);"></i> "A Better Model Is One With Lower RMSE"</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 15.5pt; line-height: 1.55;">Lower RMSE on the same test set with the same loss function is genuinely better. But <strong>RMSE is a choice</strong>, and it encodes an assumption that over- and under-prediction are equally costly and that all observations matter equally. Whenever those assumptions are wrong &mdash; and in economic applications they usually are &mdash; <strong>the model with the lowest RMSE is not the model that produces the best decisions.</strong></p>
+        </div>
+        <p class="text-lg" style="margin-top: 14px; font-weight: 600; color: var(--accent-color);">Choose the metric before you choose the model, and choose it from the decision rather than from habit.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 18px;"><p style="font-size: 15pt; font-weight: 700; color: var(--primary-color);">1. The metric follows the decision</p><p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">Asymmetric costs &rarr; asymmetric loss. Only the top decile acted on &rarr; evaluate the top decile.</p></div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 18px;"><p style="font-size: 15pt; font-weight: 700; color: var(--primary-color);">2. Aggregate error hides what matters</p><p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">The 27% spread rise across quintiles is averaged away by one headline RMSE.</p></div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 18px;"><p style="font-size: 15pt; font-weight: 700; color: var(--primary-color);">3. The interval is often the deliverable</p><p style="font-size: 13.5pt; margin-top: 6px; line-height: 1.5;">"&#36;254,000" invites false confidence. "&#36;254,000, and we would not be surprised by anything between &#36;90,000 and &#36;418,000" is honest &mdash; and more useful.</p></div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; text-align: center; color: var(--success-color); font-weight: 600;">Frequently the prediction is not precise enough to act on &mdash; and discovering that is a real result rather than a failure.</p>
+      </div>
+      <aside class="notes">2 min. Carry these three into every chapter that follows. They are the professional half of the course.</aside>
+    </section>
+
+    <!-- SLIDE: takeaways -->
+    <section id="takeaways" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--success-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1</p><p style="font-size: 14.5pt; line-height: 1.45;">A regression can <strong>estimate a parameter</strong> or <strong>generate a prediction</strong>; the algebra is identical and almost everything else differs &mdash; which variables belong, which metric decides success, what you report.</p></div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">2</p><p style="font-size: 14.5pt; line-height: 1.45;">OLS minimises <strong>squared vertical distances</strong>, which gives it a closed form, forces it through the sample means, and makes it as outlier-sensitive as the arithmetic mean.</p></div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);"><p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">3</p><p style="font-size: 14.5pt; line-height: 1.45;">In-sample \(R^2\) <strong>cannot decrease</strong> when a predictor is added &mdash; not even a column of random noise &mdash; so in-sample fit measures flexibility as much as accuracy. <strong>Adjusted \(R^2\) is not the fix.</strong></p></div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);"><p style="font-size: 17pt; font-weight: 700; color: var(--danger-color);">4</p><p style="font-size: 14.5pt; line-height: 1.45;">Holding out a test set reveals what in-sample error conceals: <strong>training error falls monotonically while test error eventually explodes</strong>, and every in-sample diagnostic will select the worst model in that sequence.</p></div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);"><p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">5</p><p style="font-size: 14.5pt; line-height: 1.45;">A prediction needs an uncertainty statement, and the <strong>prediction interval is far wider than the confidence interval</strong> &mdash; more data shrinks the second and barely touches the first.</p></div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read 3 and 4 aloud; they are the pair the exam will test. Then close on Okun.</aside>
+    </section>
+
+    <!-- SLIDE: close on the hook -->
+    <section id="close-okun" style="padding: 40px 60px;">
+      <h2><i class="fa-solid fa-arrow-rotate-left" style="color: var(--danger-color);"></i> Back Where We Started</h2>
+      <div class="content">
+        <p class="text-xl" style="line-height: 1.6;">Okun's Law fitted beautifully in-sample. Coefficient significant. \(R^2\) exactly as always. Every diagnostic passing.</p>
+        <div style="display: grid; grid-template-columns: 330px 1fr; gap: 30px; align-items: center; margin-top: 22px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 26px; text-align: center;">
+            <p style="font-size: 44pt; font-weight: 700; color: var(--accent-color); line-height: 1;">3.2M</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 8px;">jobs it could not account for</p>
+          </div>
+          <div>
+            <p class="text-xl" style="line-height: 1.6;"><strong>Nothing broke.</strong></p>
+            <p class="text-xl" style="line-height: 1.6; margin-top: 10px;">Nobody was looking at the only number that could have seen it.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 24px; color: var(--accent-color); font-weight: 600; text-align: center;">Report test error. Select on test error. Be suspicious of any result reported only in-sample.</p>
+      </div>
+      <aside class="notes">1 min. Land it and stop talking. Do not add anything after this line except the exit ticket.</aside>
+    </section>
+
+    <!-- SLIDE: exit ticket -->
+    <section id="exit-ticket" style="padding: 40px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <p class="text-lg" style="color: var(--muted-color);">On a card, one sentence each.</p>
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 18px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; line-height: 1.55;"><strong>1.</strong> Name one variable that belongs in a <em>prediction</em> model for a problem you care about and would be a <em>mistake</em> in a causal model of the same thing.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 17pt; line-height: 1.55;"><strong>2.</strong> Your model has training RMSE <strong>0.31</strong> and test RMSE <strong>2.9</strong>. What has happened, and what is your first move?</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Q2 target: it has overfitted; first move is to reduce flexibility or get more training data &mdash; and to stop trusting anything reported in-sample. Collect the cards; the answers to Q1 tell you whether LO 12.1 landed.</aside>
+    </section>
+
+    <!-- SLIDE: looking ahead + lab -->
+    <section id="looking-ahead" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--accent-color);"></i> Looking Ahead &mdash; and Lab 12 This Week</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 13px 18px;"><p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Ch 13 &mdash; Multivariate OLS</p><p style="font-size: 13.5pt; margin-top: 5px; line-height: 1.45;">One predictor becomes many. The prediction interval was wide because median income alone does not determine house value.</p></div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 13px 18px;"><p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Ch 14 &mdash; OLS Diagnostics</p><p style="font-size: 13.5pt; margin-top: 5px; line-height: 1.45;">What breaks: today's 27% non-constant variance, non-linear form, influential observations, measurement error.</p></div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 13px 18px;"><p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Ch 15 &mdash; The ML Shift</p><p style="font-size: 13.5pt; margin-top: 5px; line-height: 1.45;">The name and the formal decomposition for today's two columns. Also: <strong>a single train&ndash;test split is itself a random draw</strong>, so your test RMSE has its own sampling variability.</p></div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 13px 18px;"><p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Ch 16 &mdash; Regularization</p><p style="font-size: 13.5pt; margin-top: 5px; line-height: 1.45;">Once you know why flexibility hurts, constrain it deliberately.</p></div>
+        </div>
+        <div class="key-result" style="margin-top: 14px;">
+          <p style="font-size: 14.5pt; line-height: 1.55;"><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> <strong>Lab 12</strong> <code>lab-ch12-guided.ipynb</code> &mdash; recover the same coefficients three ways; push the noise demo to 100 columns; split before fitting and report both errors. Note that the lab's Part 3 model uses <strong>all eight</strong> features and reaches test RMSE <strong>0.7456</strong> / test \(R^2\) <strong>0.5758</strong>, better than today's single-predictor 0.8421 &mdash; that is Chapter 13 arriving early. Then the take-home Challenge quantifies the &#36;500,001 censoring, and the optional Extension fits Okun's Law on FRED data: <strong>the regression that opened today's class.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Flag explicitly that the lab's eight-feature model is a DIFFERENT model from today's one-predictor model, so its numbers are not comparable line for line. Students conflate them every year.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>
