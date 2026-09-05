@@ -1,0 +1,1307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Causal Inference I: A/B Testing at Scale</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax 3 (tex-svg). Inline math is \\( ... \\) NOT $...$ -->
+  <script>
+    MathJax = {
+      tex: {inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']]},
+      svg: {fontCache: 'global'}
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- 1 COVER -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 58% 42%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 62px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 9</p>
+          <h1 style="font-size: 33pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Causal Inference I:<br>A/B Testing at Scale</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Randomisation buys you one term. Everything after that is sensitivity, validity, and a decision.</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; padding: 40px 45px 40px 10px;">
+          <img src="figures/figure_010_failure_rate.png" alt="Stacked bars: 67% of tested Microsoft ExP features and 92% of Airbnb features show no significant gain" style="width: 100%; border-radius: 8px;">
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 OBJECTIVES -->
+    <section id="objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">9.1</p>
+            <p style="font-size: 15pt;">State the potential-outcomes framework and show <strong>algebraically</strong> which term randomisation kills</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">9.2</p>
+            <p style="font-size: 15pt;">Analyse an experiment without distributional assumptions &mdash; and <strong>reduce its variance with CUPED</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">9.3</p>
+            <p style="font-size: 15pt;">Diagnose <strong>peeking, SRM, metric misspecification and SUTVA violations</strong>, and say what each does to the estimate</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">9.4</p>
+            <p style="font-size: 15pt;">Turn a scorecard into a <strong>ship decision using expected loss</strong>, and defend the randomisation unit</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 9.2 and 9.4 as the graduate-only halves &mdash; CUPED and the Bayesian decision rule are in your chapter and not in the undergraduate edition. 9.3 is the longest section and the one the diagnostic lab drills.</aside>
+    </section>
+
+    <!-- 3 RETRIEVAL -->
+    <section id="retrieval" style="padding: 36px 58px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; margin-bottom: 14px;">
+          <p class="text-lg"><strong>Ch 6.</strong> Selection bias was \(\text{Cov}(R_i, Y_i) \neq 0\). What is \(R_i\), and why does a bigger sample not rescue you?</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; margin-bottom: 14px;">
+          <p class="text-lg"><strong>Ch 7.</strong> Name the three resampling flavours. Which one have we <em>not</em> used yet?</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px;">
+          <p class="text-lg"><strong>Ch 8.</strong> You ran a t-test on Lalonde earnings and got a p-value. What did it <em>not</em> tell you?</p>
+        </div>
+      </div>
+      <div class="footnote">Answer to the second one is today's hinge: Monte Carlo (Ch 5) and the bootstrap (Ch 7) are done. The permutation test is the third &mdash; and it is the one that belongs to a randomised design.</div>
+      <aside class="notes">3 min, cold-call. Do not accept "the selection rule" for \(R_i\) without a concrete example. On Ch 8, the answer you want is "whether the difference was caused by the treatment" &mdash; that is the whole lecture in one sentence.</aside>
+    </section>
+
+    <!-- 4 HOOK -->
+    <section id="hook" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-industry" style="color: var(--secondary-color);"></i> Experimentation Is Infrastructure Now</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 23pt; font-weight: 700; color: var(--secondary-color); margin: 0;">37,000</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin: 4px 0 0;">Microsoft scorecards<br>in September 2024</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 23pt; font-weight: 700; color: var(--secondary-color); margin: 0;">~100,000</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin: 4px 0 0;">Microsoft A/B tests<br>per year</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 23pt; font-weight: 700; color: var(--secondary-color); margin: 0;">25,000</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin: 4px 0 0;">Booking.com<br>experiments per year</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 23pt; font-weight: 700; color: var(--secondary-color); margin: 0;">41,000</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin: 4px 0 0;">simultaneous tests<br>at LinkedIn</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 17px 24px;">
+          <p style="font-size: 16pt; margin: 0;">And roughly <strong>two-thirds</strong> of Microsoft's tested features show no significant improvement. At Airbnb, <strong>92%</strong>.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 16px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> Graduate framing: if most ideas are null and you run 100,000 of them, <em>what you ship is selected on a noisy statistic.</em></p>
+      </div>
+      <div class="footnote">Microsoft ExP (2024); Airbnb; Booking.com; LinkedIn &mdash; Chapter 9 &sect;1.</div>
+      <aside class="notes">2 min. Do not let this land as "wow, big numbers." The point is the selection process: at that volume the shipped set is the extreme tail of a mostly-null distribution, which is why the back half of today is about validity rather than estimation. Plant it; you return to it at the FDR slide.</aside>
+    </section>
+
+    <!-- 5 ROADMAP -->
+    <section id="roadmap" style="padding: 36px 58px;">
+      <h2><i class="fa-solid fa-map" style="color: var(--secondary-color);"></i> Where We Are Going</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;"><strong>Identify.</strong> What a coin flip buys, in one line of algebra</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">2</p>
+            <p style="font-size: 15pt;"><strong>Measure.</strong> Permutation tests, bootstrap intervals, and the sample size you should have committed to</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">3</p>
+            <p style="font-size: 15pt;"><strong>Sharpen.</strong> CUPED &mdash; the same experiment, five times more sensitive</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--danger-color);">4</p>
+            <p style="font-size: 15pt;"><strong>Distrust.</strong> Four ways a <em>correctly estimated</em> experiment still lies</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--success-color);">5</p>
+            <p style="font-size: 15pt;"><strong>Decide.</strong> Expected loss, and why 0.95 is a risk preference rather than a fact</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Sections 3 and 5 are the ones your chapter carries and the 3916 edition does not. Say that out loud &mdash; it tells the room which parts of the reading are theirs alone.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-identify" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; What a Coin Flip Buys</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">One term in one decomposition. Not more, and not less.</p>
+    </section>
+    <!-- 6 COUNTERFACTUAL -->
+    <section id="counterfactual" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i> The Outcome You Cannot Observe</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p style="font-size: 16pt; margin: 0;">Priya sees the new checkout button and buys. In the world where she saw the old one, she does not. The causal effect <em>on Priya</em> is the gap between those two worlds &mdash; and she only ever lives in one.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14.5pt; margin: 0 0 8px; font-weight: 600; color: var(--secondary-color);">Notation for the rest of the term</p>
+            <p style="font-size: 14.5pt; margin: 0; line-height: 1.75;">\(Y_i(1)\) &mdash; outcome if treated<br>\(Y_i(0)\) &mdash; outcome if not<br>\(D_i \in \{0,1\}\) &mdash; treatment indicator</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; display: flex; flex-direction: column; justify-content: center;">
+            <p style="font-size: 19pt; margin: 0; text-align: center;">\[\tau_i = Y_i(1) - Y_i(0)\]</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>In words:</strong> the effect on one person is the gap between two versions of the same person at the same moment. One of them is never recorded, so \(\tau_i\) is not hard to estimate &mdash; it is <em>missing by construction</em>.</p>
+        </div>
+      </div>
+      <div class="footnote">Holland (1986), the Fundamental Problem of Causal Inference &mdash; Chapter 9 &sect;4.1.</div>
+      <aside class="notes">2.5 min. Write \(Y_i(1)\) and \(Y_i(0)\) on the board and leave them there all lecture; every method after today is a different answer to "how do I get at the one I cannot see." Insist that a potential outcome is defined for everyone, treated or not &mdash; that is what makes the notation do work.</aside>
+    </section>
+
+    <!-- 7 ATE -->
+    <section id="ate" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-users" style="color: var(--secondary-color);"></i> The Retreat to the Average</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 22px 26px; text-align: center;">
+          <p style="font-size: 21pt; margin: 0;">\[\tau = E[Y_i(1) - Y_i(0)] = E[Y_i(1)] - E[Y_i(0)]\]</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>In words:</strong> we give up on any individual's effect and ask for the population average instead. Averaging is what converts an impossible quantity into one that a difference between two group means can reach.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Note what the retreat costs. \(\tau\) says nothing about <em>who</em> benefits. A treatment that helps half the users and harms the other half by the same amount has \(\tau = 0\) &mdash; and a scorecard that reports only \(\tau\) will call it a non-event.</p>
+        </div>
+      </div>
+      <div class="footnote">Heterogeneity is Chapter 24's problem &mdash; Double ML estimates conditional effects, not just the average.</div>
+      <aside class="notes">2 min. The last box is the graduate addition. Ask: "what experiment would you run to detect that cancellation?" &mdash; answer is pre-registered subgroups or a CATE model, and that is where Ch 24 goes.</aside>
+    </section>
+
+    <!-- 8 DECOMPOSITION -->
+    <section id="decomposition" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-equals" style="color: var(--danger-color);"></i> What a Naive Comparison Actually Measures</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 20px;">
+          <p style="font-size: 16.5pt; margin: 0; text-align: center;">\[E[Y_i \mid D_i = 1] - E[Y_i \mid D_i = 0] = \underbrace{E[Y_i(1) - Y_i(0)]}_{\text{what you want}} + \underbrace{E[Y_i(0) \mid D_i=1] - E[Y_i(0) \mid D_i=0]}_{\text{selection bias}}\]</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 15px 24px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>In words:</strong> the number you compute is the number you want <em>plus</em> a term asking how the two groups would have differed had nobody been treated.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 24px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;">That second term is <strong>not measurement error</strong>. It has no \(1/\sqrt{n}\) in it. Ten million observations estimate a biased quantity very precisely &mdash; which is exactly Meng's data-defect result from Chapter 6.</p>
+        </div>
+      </div>
+      <div class="footnote">Chapter 9 &sect;4.2. The bias term is the reason Chapters 10&ndash;13 exist.</div>
+      <aside class="notes">3 min. Derive it on the board rather than reading it: add and subtract \(E[Y_i(0)\mid D_i=1]\). Students who have seen this in econometrics still get value from watching the potential-outcomes version, because here the added-and-subtracted term is a counterfactual rather than an algebraic convenience.</aside>
+    </section>
+
+    <!-- 9 LALONDE FIGURE -->
+    <section id="lalonde" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-arrows-turn-to-dots" style="color: var(--danger-color);"></i> The Same Programme, Two Answers</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 22px; align-items: center;">
+        <img src="figures/figure_001_selection_bias.png" alt="Bar chart: the NSW job-training programme raises earnings by $1,794 against its randomised control group, but appears to cut them by $15,205 against PSID comparison men, a selection bias of minus $16,999" style="width: 100%; border-radius: 8px;">
+        <div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 20px;">
+            <p style="font-size: 14.5pt; margin: 0;">Same programme. Same men. Same outcome variable. Only the comparison group changes &mdash; and the conclusion changes sign.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 15px 20px; margin-top: 14px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>Note the direction.</strong> Students expect selection bias to <em>flatter</em> a programme. NSW enrollees were far more disadvantaged than PSID men, so the bias runs <strong>downward</strong> and makes an effective programme look actively harmful.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">Lalonde (1986); Dehejia &amp; Wahba (1999) subsample, 185 treated / 260 control. Computed in <code>figures/_prep_data.py</code> from the NBER files.</div>
+      <aside class="notes">3 min. This is Thread 5 continuing from Ch 8 &mdash; they have already t-tested the experimental contrast. The new content is the observational column. Say the bias number out loud: minus sixteen thousand nine hundred and ninety-nine dollars, on a programme whose real effect is under two thousand.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Which Way Does the Bias Run?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt; line-height: 1.6; margin: 0;">The NSW programme raised earnings by <strong>+$1,794</strong> in the experiment. Compared against PSID men instead, it appears to <em>cut</em> earnings by <strong>$15,205</strong>.</p>
+          <p style="font-size: 15.5pt; font-weight: 600; margin: 10px 0 0;">What does that tell you about the selection-bias term?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch09-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Large and <em>positive</em> &mdash; enrollees would have out-earned the comparison group anyway</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Large and <em>negative</em> &mdash; enrollees would have earned far less anyway</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Roughly zero &mdash; the gap is sampling noise at \(n = 445\)</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The sign is not identified from the two numbers given</div>
+        </div>
+        <aside class="notes">1 min. Vote on devices; results on the next slide. A is the productive error &mdash; it is the intuition that programmes get flattered, and it is worth surfacing before you correct it.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch09-econ5200-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; It Runs Downward</h2>
+        <div class="poll-results-chart" data-poll-id="ch09-econ5200-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 48px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Bias = observational &minus; experimental = \(-15{,}205 - 1{,}794 = -\$16{,}999\). The enrollees' <em>untreated</em> earnings sat far below the PSID men's, so the comparison drags the estimate down.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting but wrong:</strong> in general the bias term is unobservable &mdash; that is the whole problem. Here you have been handed the experimental benchmark, so it is identified <em>as the residual</em>. That is precisely what makes Lalonde a landmark paper rather than a cautionary anecdote.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- 10 INDEPENDENCE -->
+    <section id="independence" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-coins" style="color: var(--success-color);"></i> What Randomisation Actually Assumes</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 26px; text-align: center;">
+          <p style="font-size: 21pt; margin: 0;">\[D_i \perp\!\!\!\perp \big(Y_i(1),\, Y_i(0)\big)\]</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>In words:</strong> assignment carries no information about what <em>would have</em> happened under either condition. Not "the groups look similar on the covariates you plotted" &mdash; independence from both potential outcomes, measured and unmeasured alike.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;">The consequence is one line: \(E[Y_i(0) \mid D_i=1] = E[Y_i(0) \mid D_i=0]\), so the bracketed selection term is <strong>exactly zero</strong>, and \(\hat{\tau} = \bar{Y}_T - \bar{Y}_C\) is unbiased for the ATE.</p>
+        </div>
+      </div>
+      <div class="footnote">Chapter 9 &sect;4.3. Chapter 10 restates this as "randomisation deletes every arrow into \(D\)", which closes all backdoor paths at once.</div>
+      <aside class="notes">2.5 min. Push on the difference between independence and balance: a balance table is <em>evidence</em> about a finite sample, the independence statement is about the assignment mechanism. A failed balance test on one covariate out of twenty is expected; a broken randomiser is not.</aside>
+    </section>
+
+    <!-- 11 PAYOFF -->
+    <section id="payoff" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--secondary-color);"></i> The Payoff, and Why It Feels Like a Trick</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px;">
+            <p style="font-size: 14.5pt; margin: 0 0 8px; font-weight: 700; color: var(--muted-color);">Chapter 8 &mdash; the t-test</p>
+            <p style="font-size: 17pt; margin: 0; text-align: center;">\(\bar{Y}_T - \bar{Y}_C\)</p>
+            <p style="font-size: 13.5pt; margin: 10px 0 0; color: var(--muted-color);">A statement about two samples.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 18px 22px;">
+            <p style="font-size: 14.5pt; margin: 0 0 8px; font-weight: 700; color: var(--success-color);">Chapter 9 &mdash; the ATE</p>
+            <p style="font-size: 17pt; margin: 0; text-align: center;">\(\bar{Y}_T - \bar{Y}_C\)</p>
+            <p style="font-size: 13.5pt; margin: 10px 0 0; color: var(--success-color);">A statement about a cause.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 17px 24px; margin-top: 18px;">
+          <p style="font-size: 16pt; margin: 0;"><strong>Identical arithmetic.</strong> The causal content is not in the estimator &mdash; it is in the data-generating process that produced \(D_i\). You cannot read it off the output, and no software will warn you when it is absent.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the sentence to repeat all term. Every method in Chapters 10&ndash;13 is an attempt to manufacture that data-generating property when you were not allowed to randomise.</aside>
+    </section>
+
+    <!-- 12 DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Where Would You Have to Be Lucky?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="margin: 0; font-weight: 600;">Legal blocks the randomised pricing test. A colleague proposes matching on 40 observed customer covariates instead.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px;"><p style="font-size: 15pt; margin: 0;"><strong>1.</strong> Write the one sentence about \(Y_i(0)\) that the matching estimate needs to be true.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px;"><p style="font-size: 15pt; margin: 0;"><strong>2.</strong> Name a variable that would break it <em>and that your firm does not record</em>.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px;"><p style="font-size: 15pt; margin: 0;"><strong>3.</strong> What would you want next week's DAG to show you about it?</p></div>
+        </div>
+      </div>
+      <div class="footnote">4 minutes in pairs. Press <kbd>4</kbd> for the timer.</div>
+      <aside class="notes">4 min plus 1 to debrief. The sentence you want for (1) is conditional independence given the 40 covariates &mdash; much stronger than "the groups look balanced." For (2), steer toward private information: intent to churn, a competitor's quote already in hand. Reject "income" &mdash; they measure that.</aside>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section id="divider-measure" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; Measuring It Honestly</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Inference with no distributional assumptions, and the sample size you should have committed to.</p>
+    </section>
+    <!-- 13 WHY NOT T-TEST -->
+    <section id="why-not-t" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-chart-area" style="color: var(--secondary-color);"></i> Why Last Week's Tool Is Uncomfortable Here</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 24px;">
+          <p style="font-size: 15.5pt; margin: 0;">The t-test leans on the CLT. Revenue per user, session duration, transaction value: right-skewed and <strong>zero-inflated</strong>. Most users spend nothing; a few spend a great deal.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 17px 24px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;">Chapter 7 already gave you the warning: CLT convergence is <em>slow</em> for heavy-tailed data. "Asymptotically valid" is not a property of your dataset; it is a property of a limit your dataset may be nowhere near.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 17px 24px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;"><i class="fa-solid fa-arrow-right"></i> In the Lalonde sample roughly a third of 1978 earnings are exactly <strong>zero</strong>. The sampling distribution of the difference in means is not a bell curve, and we do not need it to be.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. If someone objects that n = 445 is "big enough", agree that it usually is and then point at the zero mass &mdash; the issue is not n, it is the shape the CLT has to smooth over.</aside>
+    </section>
+
+    <!-- 14 PERMUTATION IDEA + ALGORITHM -->
+    <section id="permutation-idea" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-shuffle" style="color: var(--secondary-color);"></i> The Permutation Test: One Idea</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 17px 22px;">
+            <p style="font-size: 15.5pt; margin: 0;">Under <strong>Fisher's sharp null</strong> &mdash; \(Y_i(1) = Y_i(0)\) for <em>every</em> \(i\) &mdash; the labels "treatment" and "control" are arbitrary. Every outcome is fixed; only the label varies.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 15px 22px; margin-top: 14px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>Stronger than "the ATE is zero."</strong> The sharp null says no individual is affected at all &mdash; and that is exactly what licenses treating the labels as exchangeable, which is what makes the test <em>exact in finite samples</em> rather than asymptotically valid.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+          <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color); margin: 0 0 10px;">The algorithm</p>
+          <p style="font-size: 14pt; margin: 0; line-height: 1.85;">
+            <strong>1.</strong> Compute \(\hat{\tau}_{\text{obs}} = \bar{Y}_T - \bar{Y}_C\)<br>
+            <strong>2.</strong> Pool every observation<br>
+            <strong>3.</strong> Reassign labels at random, keeping group sizes<br>
+            <strong>4.</strong> Recompute the difference<br>
+            <strong>5.</strong> Repeat 20,000 times<br>
+            <strong>6.</strong> \(p\) = share of shuffles at least as extreme</p>
+        </div>
+      </div>
+      <div class="footnote">Chapter 9 &sect;5.1. This is the third resampling flavour from Chapter 7 &mdash; Monte Carlo, bootstrap, permutation &mdash; and the only one that belongs to a randomised design.</div>
+      <aside class="notes">2.5 min. The exchangeability point is the graduate half of this slide. Ask why we cannot permute in an observational study: because there the labels are not exchangeable even under a null of no effect, since assignment depended on the units.</aside>
+    </section>
+
+    <!-- 15 PERMUTATION FIGURE -->
+    <section id="permutation-null" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--secondary-color);"></i> What 20,000 Shuffles Look Like</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px; align-items: center;">
+        <img src="figures/figure_002_permutation_null.png" alt="Histogram of 20,000 permuted differences in mean earnings, centred on zero and slightly skewed, with the observed plus 1,794 dollar effect far out in the right tail and only 0.38 percent of shuffles as extreme" style="width: 100%; border-radius: 8px;">
+        <div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 15pt; margin: 0;">Observed <strong>+$1,794</strong>. Fewer than four shuffles in a thousand reach it.</p>
+            <p style="font-size: 19pt; margin: 12px 0 0; font-weight: 700; color: var(--success-color); text-align: center;">\(p = 0.0037\)</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; margin-top: 14px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>What we did not assume:</strong> normality, equal variances, a t-distribution, or a large-sample limit. The null distribution was built out of the data we were handed.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">20,000 permutations, seed 42, NSW experimental sample &mdash; <code>figures/_prep_data.py</code>.</div>
+      <aside class="notes">2 min. Point at the shape: it is not symmetric, and it has a visible shoulder. That asymmetry is exactly what a t-test would have had to assume away.</aside>
+    </section>
+
+    <!-- 16 INTERVAL -->
+    <section id="interval" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-arrows-left-right-to-line" style="color: var(--accent-color);"></i> The p-Value Does Not Tell You How Big</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 26px; text-align: center;">
+          <p style="font-size: 14pt; color: var(--muted-color); margin: 0 0 6px;">BCa bootstrap, 10,000 resamples &mdash; Chapter 7's default</p>
+          <p style="font-size: 24pt; font-weight: 700; margin: 0; color: var(--primary-color);">95% CI for the ATE: ($585, &nbsp;$3,251)</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>In words:</strong> the p-value said "distinguishable from zero." The interval says "somewhere between a rounding error and half a year's earnings for this population." Only the second sentence can be argued about in a policy meeting.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;">The interval is <em>wide</em>, and it should be: \(n = 445\), on an outcome with a pooled SD of <strong>$6,580</strong>. A wide interval is not a defect in the analysis. It is the honest report of what a 445-person experiment can know.</p>
+        </div>
+      </div>
+      <div class="footnote">BCa interval computed in <code>figures/_prep_data.py</code>, seed 42.</div>
+      <aside class="notes">2 min. Connect back to Ch 7: BCa beats the percentile interval on skewed data, which is why it is the house default. The last box sets up the power section &mdash; if you want a narrower interval you must have decided that before you collected data.</aside>
+    </section>
+
+    <!-- 17 POWER FORMULA -->
+    <section id="power-formula" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ruler-combined" style="color: var(--secondary-color);"></i> Power Is a Design Tool, Not a Report</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 26px; text-align: center;">
+          <p style="font-size: 22pt; margin: 0;">\[n = \frac{(z_{\alpha/2} + z_{\beta})^2 \,(\sigma_1^2 + \sigma_0^2)}{\delta^2}\]</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px;">
+            <p style="font-size: 14.5pt; margin: 0; line-height: 1.8;">\(z_{\alpha/2}\) &mdash; 1.96 at \(\alpha = 0.05\)<br>\(z_{\beta}\) &mdash; 0.84 at 80% power<br>\(\sigma_1^2, \sigma_0^2\) &mdash; how noisy the metric is<br>\(\delta\) &mdash; the <strong>minimum detectable effect</strong></p>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 15px 22px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>In words:</strong> three of the four inputs are conventions. Only \(\delta\) is a business decision &mdash; the smallest effect you would actually act on &mdash; and it is the one people skip.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 15px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> \(\delta\) sits in the denominator, <em>squared</em>. That single fact governs every experiment you will ever size.</p>
+      </div>
+      <aside class="notes">2 min. Make them say what \(\delta\) is for a product they know. "Any improvement" is not an answer &mdash; press until someone commits to a number, then compute what it costs on the next slide.</aside>
+    </section>
+
+    <!-- 18 POWER CURVES -->
+    <section id="power-curves" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-superscript" style="color: var(--secondary-color);"></i> Quarter the Effect, Sixteen Times the Sample</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; align-items: center;">
+        <img src="figures/figure_003_power_curves.png" alt="Three power curves against sample size per group for 2000, 1000 and 500 dollar earnings effects; the 80 percent power crossings are at n equals 171, 681 and 2,719, a 15.9-fold span" style="width: 100%; border-radius: 8px;">
+        <div>
+          <table style="width: 100%; font-size: 14pt; border-collapse: collapse;">
+            <tr style="border-bottom: 2px solid var(--line-color);"><th style="text-align: left; padding: 7px 4px;">Effect to detect</th><th style="text-align: right; padding: 7px 4px;">n per group</th></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 4px;">$2,000</td><td style="text-align: right; padding: 8px 4px; font-weight: 700;">171</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 4px;">$1,000</td><td style="text-align: right; padding: 8px 4px; font-weight: 700;">681</td></tr>
+            <tr><td style="padding: 8px 4px;">$500</td><td style="text-align: right; padding: 8px 4px; font-weight: 700;">2,719</td></tr>
+          </table>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 14px 20px; margin-top: 15px;">
+            <p style="font-size: 14.5pt; margin: 0;">\(2{,}719 / 171 = \mathbf{15.9}\). Say it as a <strong>squaring law</strong>, not as "about ten times" &mdash; \(n \propto 1/\delta^2\) is what makes it portable to the next design.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">80% power, \(\alpha = 0.05\), pooled SD $6,580 from the NSW sample &mdash; <code>figures/_prep_data.py</code>.</div>
+      <aside class="notes">2.5 min. The undergraduate lab used to phrase this as "about ten times more participants" for a table that shows 15.9&times;; that has been corrected. Give them the law rather than the multiple, because the multiple changes with the ratio and the law does not.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: The MDE Conversation</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6; margin: 0;">Your PM wants to detect a <strong>$500</strong> effect instead of a <strong>$2,000</strong> one. Same metric, same variance, same 80% power.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin: 10px 0 0;">What happens to the required sample?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch09-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) It roughly doubles</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) It roughly quadruples</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) It goes up about <em>sixteen</em>-fold</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Unchanged &mdash; power depends on \(n\), not on the effect size</div>
+        </div>
+        <aside class="notes">1 min. Expect a heavy B. It is the right rule applied to the wrong ratio, which is the most instructive kind of wrong answer.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch09-econ5200-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; About Sixteen</h2>
+        <div class="poll-results-chart" data-poll-id="ch09-econ5200-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 48px;">
+          <p style="font-size: 15pt; line-height: 1.65;">171 &rarr; 2,719, a factor of <strong>15.9</strong>. Because \(n \propto 1/\delta^2\), the multiple is the <em>square</em> of the ratio of effects: \((2000/500)^2 = 16\).</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why B is the trap:</strong> quadrupling is what you pay for <em>halving</em> the effect. Applying the halving rule to a quartering is the single most common sizing error, and it under-provisions an experiment by a factor of four.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- 19 POST-HOC POWER -->
+    <section id="posthoc-power" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-circle-question" style="color: var(--danger-color);"></i> A Number to Distrust: 80.8%</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 17px 26px;">
+          <p style="font-size: 15.5pt; margin: 0;">Plug the NSW study's <em>own observed</em> effect (\(d = 0.273\)) back into the power formula with its own sample sizes and you get an achieved power of <strong>80.8%</strong>. It looks like a study designed exactly right.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 17px 26px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>It is the p-value in a costume.</strong> Post-hoc power evaluated at the observed effect is a strictly <em>monotone function</em> of the p-value: a significant result always returns high achieved power, a null one always returns low. It contains no information the p-value did not already carry.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 26px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Labs in this course &mdash; and papers you will referee &mdash; print <code>ADEQUATELY powered</code> from exactly this calculation. That verdict is <strong>not</strong> evidence the design was adequate. Do not quote it as if it were.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 15px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> The informative version is the previous slide: power on the effect you would <em>care</em> about, before any data exists.</p>
+      </div>
+      <div class="footnote">Achieved power computed in <code>figures/_prep_data.py</code> at the observed \(d = 0.273\), \(n_1 = 185\), \(n_0 = 260\).</div>
+      <aside class="notes">2 min. Keep this slide even under time pressure. It is the single most-repeated error in student write-ups and in submitted manuscripts. If someone asks for the proof of monotonicity: achieved power is \(1-\Phi(z_{\alpha/2} - |d|\sqrt{n/2}\,)\) up to constants, and \(|d|\) is a monotone transform of the test statistic, hence of the p-value.</aside>
+    </section>
+
+    <!-- DIVIDER 3 -->
+    <section id="divider-sharpen" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; Advanced Treatment: CUPED</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">You cannot always buy sixteen times the users. You can sometimes remove the variance you already understand.</p>
+    </section>
+    <!-- 20 CUPED ESTIMATOR -->
+    <section id="cuped-estimator" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-compress" style="color: var(--accent-color);"></i> The Estimator</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 26px; text-align: center;">
+          <p style="font-size: 20pt; margin: 0;">\[\theta = \frac{\text{Cov}(Y, X)}{\text{Var}(X)}, \qquad \tilde{Y}_i = Y_i - \theta\,(X_i - \bar{X})\]</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px;">
+            <p style="font-size: 14.5pt; margin: 0; line-height: 1.8;">\(Y_i\) &mdash; the in-experiment outcome<br>\(X_i\) &mdash; a <strong>pre-experiment</strong> covariate for the same unit<br>\(\theta\) &mdash; the slope from regressing \(Y\) on \(X\)</p>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 15px 22px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>In words:</strong> strip out the part of each user's outcome that was already predictable before the experiment started. Heavy spenders keep spending heavily &mdash; that variation is noise with respect to the treatment.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 15px;">Last month's purchases predicting this week's. Prior watch time predicting this week's. Baseline session count predicting today's.</p>
+      </div>
+      <div class="footnote">Deng, Xu, Kohavi &amp; Walker (2013), WSDM &mdash; Advanced Treatment, Chapter 9 &sect;7.</div>
+      <aside class="notes">2 min. Note that \(\theta\) is estimated from the pooled data, both arms together. Estimating it separately per arm reintroduces exactly the kind of arm-specific adjustment that can bias the contrast.</aside>
+    </section>
+
+    <!-- 21 WHY LEGITIMATE -->
+    <section id="cuped-legitimacy" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--success-color);"></i> Why This Is Not Cheating</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px;">
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 24px;">
+            <p style="font-size: 15.5pt; margin: 0;"><strong>1. \(X\) is measured before assignment.</strong> It cannot have been affected by treatment, so you are not conditioning on a collider or on a post-treatment variable. The usual objection to "controlling for things" does not apply.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 24px;">
+            <p style="font-size: 15.5pt; margin: 0;"><strong>2. The adjustment is mean-zero in each arm.</strong> Under randomisation \(E[X_i - \bar{X}] = 0\) in treatment and in control alike, so \(\hat{\tau}\) stays <em>unbiased</em>. Any finite-sample imbalance in \(X\) is itself corrected rather than exploited.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 24px;">
+            <p style="font-size: 15.5pt; margin: 0;"><i class="fa-solid fa-arrow-right"></i> So this is <strong>not</strong> a bias&ndash;variance trade. You get variance reduction for nothing, which is unusual enough that it is worth being suspicious of &mdash; and the two conditions above are exactly what buys it.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Push back if someone says "isn't this just regression adjustment?" &mdash; yes, essentially, and that is the point: it is Lin's (2013) regression-adjusted estimator arrived at from an engineering direction. What matters is that the covariate is pre-treatment.</aside>
+    </section>
+
+    <!-- 22 MECHANISM -->
+    <section id="cuped-mechanism" style="padding: 30px 46px;">
+      <h2><i class="fa-solid fa-arrows-down-to-line" style="color: var(--accent-color);"></i> The Mechanism, in One Picture</h2>
+      <div class="content">
+        <img src="figures/figure_005_cuped_mechanism.png" alt="Two scatter plots of outcome against a pre-experiment covariate: the raw outcome forms a tight upward band with SD 7.65, the CUPED-adjusted outcome is the same points flattened into a horizontal cloud with SD 3.44" style="width: 92%; display: block; margin: 0 auto; border-radius: 8px;">
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 14px 24px; margin-top: 14px;">
+          <p style="font-size: 15pt; margin: 0;">The tilt is removed; the scatter about the line is not. The treatment effect lives in that residual scatter and survives untouched &mdash; the predictable variation does not.</p>
+        </div>
+      </div>
+      <div class="footnote">700-point random subsample of the lab's DGP, drawn for legibility. The full-sample figures are on the next slides.</div>
+      <aside class="notes">1.5 min. Say explicitly that the vertical axis is unchanged between panels &mdash; the collapse is real, not a rescaling. The dashed line is the arm-pooled mean in both panels.</aside>
+    </section>
+
+    <!-- 23 CEILING -->
+    <section id="cuped-ceiling" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-arrow-up-from-bracket" style="color: var(--accent-color);"></i> The Ceiling Is \(\rho^2\), and Nothing Beats It</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: center;">
+        <img src="figures/figure_004_cuped_ceiling.png" alt="Curve of variance removed by CUPED against the correlation rho, rising as rho squared: 25 percent at rho 0.5 and 82.7 percent at the lab's rho of 0.90, with the region below rho 0.4 shaded as barely worth the code" style="width: 100%; border-radius: 8px;">
+        <div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; text-align: center;">
+            <p style="font-size: 19pt; margin: 0;">\[\frac{\text{Var}(\tilde{Y})}{\text{Var}(Y)} = 1 - \rho^2(Y, X)\]</p>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 14px 20px; margin-top: 14px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>In words:</strong> CUPED cannot remove more variance than the covariate <em>explains</em>. At \(\rho = 0.9\) &mdash; routine for stable metrics like daily active usage &mdash; you remove 81%, the sensitivity of an experiment <strong>five times larger</strong>.</p>
+          </div>
+          <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 13px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> Which is why the engineering effort goes into <em>finding a high-\(\rho\) covariate</em>, not into the adjustment code.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The convexity is the teaching point: going from \(\rho=0.3\) to \(\rho=0.5\) buys you 16 points of variance; going from 0.7 to 0.9 buys you 32. Effort spent on the covariate pays increasingly, not decreasingly.</aside>
+    </section>
+
+    <!-- 24 LAB NUMBERS -->
+    <section id="cuped-lab" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> What Your Lab Measures</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 24px;">
+          <p style="font-size: 15pt; margin: 0;">Lab 9 Part 1 hands you a CUPED implementation with <strong>three bugs</strong>: <code>np.corrcoef</code> where <code>np.cov</code> belongs, a missing demeaning, and a standard error computed on the raw outcome.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; margin-top: 16px;">
+          <table style="width: 100%; font-size: 15pt; border-collapse: collapse;">
+            <tr style="border-bottom: 2px solid var(--line-color);"><th style="text-align: left; padding: 8px 6px;"></th><th style="text-align: right; padding: 8px 6px;">ATE</th><th style="text-align: right; padding: 8px 6px;">SE</th></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 9px 6px;">Naive</td><td style="text-align: right; padding: 9px 6px;">1.911</td><td style="text-align: right; padding: 9px 6px; font-weight: 700;">0.1539</td></tr>
+            <tr><td style="padding: 9px 6px;">CUPED (fixed)</td><td style="text-align: right; padding: 9px 6px;">2.019</td><td style="text-align: right; padding: 9px 6px; font-weight: 700; color: var(--success-color);">0.0641</td></tr>
+          </table>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 15px 20px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+            <p style="font-size: 28pt; font-weight: 700; margin: 0; color: var(--success-color);">82.7%</p>
+            <p style="font-size: 13.5pt; margin: 6px 0 0; color: var(--muted-color);">variance removed</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 15px 24px; margin-top: 15px;">
+          <p style="font-size: 15pt; margin: 0;"><strong>The estimator hits its bound.</strong> That DGP's ceiling is \(\frac{0.7^2 \cdot 100}{0.7^2 \cdot 100 + 3.2^2} = 82.7\%\). If you report 95%, you have a bug &mdash; not a better method. And the buggy \(\theta\) is <strong>0.901</strong> against a correct <strong>0.697</strong>: plausible-looking, which is why the lab makes you find it from the reported 0.0% reduction rather than by reading the line.</p>
+        </div>
+      </div>
+      <div class="footnote">Values reproduced from <code>book/5200/labs/lab-ch09-diagnostic.ipynb</code>, Part 1, seed 42.</div>
+      <aside class="notes">2.5 min. The "hits its bound" point is what makes the checkpoint meaningful. Ask why a bug would push the estimate <em>above</em> the ceiling &mdash; because a mis-specified SE is no longer estimating the variance of anything.</aside>
+    </section>
+
+    <!-- 25 STATE OF THE ART -->
+    <section id="cuped-sota" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-microchip" style="color: var(--secondary-color);"></i> The State of the Art, and Its Price</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color); margin: 0 0 8px;">CUPAC &mdash; Staponait&#279; et al., KDD 2025</p>
+            <p style="font-size: 14.5pt; margin: 0;">An ML model predicts \(Y\) from many pre-period features.<br><strong>38.5%</strong> average reduction in CI width &mdash; and <strong>21.2&times; slower</strong> than baseline.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color); margin: 0 0 8px;">Lin &amp; Crespo (2024), CLeaR 2026</p>
+            <p style="font-size: 14.5pt; margin: 0;">Combine pre-experiment <em>and</em> in-experiment covariates.<br>Comparable reduction from <strong>23</strong> covariates where CUPAC needed <strong>117</strong>.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 17px 26px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>The graduate point.</strong> Variance reduction is a <em>compute-versus-sensitivity</em> trade-off, and at 100,000 experiments a year the compute term is not a rounding error. CUPED survives not because it is the most powerful method but because it is <strong>closed-form</strong>.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--muted-color); font-style: italic;">One caution on in-experiment covariates: anything measured after assignment can be affected by treatment, and adjusting on it reintroduces bias. Lin &amp; Crespo are careful about which in-experiment quantities are admissible; a naive implementation would not be.</p>
+      </div>
+      <aside class="notes">2 min. The last line is the one to press on in office hours &mdash; it is the seam where a variance-reduction technique becomes a post-treatment-conditioning bug, and it is the sort of thing that gets shipped.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Where CUPED Fails</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6; margin: 0;">You apply CUPED to the engagement metric for a <strong>brand-new feature</strong> and get a <strong>2%</strong> variance reduction.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin: 10px 0 0;">Most likely explanation?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch09-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The code is broken &mdash; CUPED always delivers 50%+</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The pre-period covariate barely correlates with the outcome</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The treatment effect is too small for CUPED to detect</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The sample is too small for the adjustment to apply</div>
+        </div>
+        <aside class="notes">1 min. A is the answer of someone who has only seen the lab's 82.7% &mdash; it is worth surfacing so you can say that number is a property of the DGP, not of the method.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch09-econ5200-poll-3" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; There Is No Pre-Period</h2>
+        <div class="poll-results-chart" data-poll-id="ch09-econ5200-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 48px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Reduction is exactly \(\rho^2\), so 2% means \(\rho \approx 0.14\). For a brand-new feature there often <em>is</em> no informative pre-period behaviour &mdash; nobody has used it before.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>C is the interesting wrong answer.</strong> The variance reduction does not depend on \(\tau\) at all &mdash; it is a property of \((Y, X)\) alone. A tiny effect makes the experiment hard, but it does not make CUPED weak.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-distrust" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; How a Correct Experiment Still Lies</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Randomisation was necessary. Four reasons it was not sufficient.</p>
+    </section>
+    <!-- 26 PEEKING SETUP -->
+    <section id="peeking-setup" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-eye" style="color: var(--danger-color);"></i> Failure 1: Peeking</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p style="font-size: 16pt; margin: 0;">The experiment is planned for seven days. On day three the dashboard shows <strong>p = 0.03</strong>. The PM asks whether you can ship now.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 17px 26px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;">The fixed-\(n\) test is valid <em>only at the \(n\) you committed to</em>. Every interim look is another chance for a random walk to wander below 0.05 and back out again, and the test statistic has no memory of the looks you already took.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 15px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> Your lab simulates exactly this. Look at what it finds before you answer the PM.</p>
+      </div>
+      <aside class="notes">1 min. Ask the room for a show of hands on whether they would ship. Most say yes, or say "check again tomorrow" &mdash; which is the same thing. Then run the next slide.</aside>
+    </section>
+
+    <!-- 27 PEEKING FIGURE -->
+    <section id="peeking-evidence" style="padding: 28px 42px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--danger-color);"></i> Fifty Looks Turn 5% Into a Third</h2>
+      <div class="content">
+        <img src="figures/figure_006_peeking.png" alt="Left: one true-null experiment's p-value checked every 100 users dips below 0.05 six times, first at n equals 700, then climbs to 0.276 by the planned end. Right: across 1,000 true-null experiments the false-positive rate is 32.4 percent with uncorrected peeking, 1.9 percent with Bonferroni and 5.3 percent with a single test at the end" style="width: 97%; display: block; margin: 0 auto; border-radius: 8px;">
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 13px 24px; margin-top: 12px;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Both arms convert at exactly 10%.</strong> Every "discovery" on this slide is fictitious. Bonferroni fixes the error rate and over-corrects &mdash; 1.9% against a 5% budget is power thrown away.</p>
+        </div>
+      </div>
+      <div class="footnote">Left: lab Part 5, seed 123. Right: 1,000 simulations, seed 42; Monte Carlo SE on 32.4% is 1.5 pp &mdash; <code>figures/_prep_data.py</code>.</div>
+      <aside class="notes">2.5 min. Trace the left panel with a finger: the walk crosses at n = 700, an experimenter ships, and the p-value ends at 0.276. They never see the walk back because they stopped looking. The right panel is the lab's Extension task &mdash; students who complete it should get 32.4% to within about 3 pp.</aside>
+    </section>
+
+    <!-- 28 ALWAYS-VALID -->
+    <section id="always-valid" style="padding: 32px 52px;">
+      <h2><i class="fa-solid fa-infinity" style="color: var(--secondary-color);"></i> Formal Sketch: Always-Valid Inference</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 24px;">
+          <p style="font-size: 15pt; margin: 0;">Bonferroni is a blunt instrument. The principled fix is a test that is valid at <em>every</em> stopping time &mdash; the <strong>mixture Sequential Probability Ratio Test</strong> (mSPRT), built on <em>confidence sequences</em>: intervals valid simultaneously at all \(t\), not just at a pre-specified \(n\).</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 26px; margin-top: 14px; text-align: center;">
+          <p style="font-size: 21pt; margin: 0;">\[p_t = \inf_{s \leq t} \tilde{p}_s\]</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 15px 24px; margin-top: 14px;">
+          <p style="font-size: 15pt; margin: 0;"><strong>In words:</strong> your reported p-value is the <em>running minimum</em> of the adjusted p-values so far. It can only go down, so it cannot be gamed by choosing when to look &mdash; the number already accounts for every look you could have taken.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 13px;"><strong>The guarantee:</strong> \(P(p_t &lt; \alpha \text{ for any } t) \leq \alpha\) under the null, <em>regardless of how often you check</em>.</p>
+      </div>
+      <div class="footnote">Johari, Pekelis &amp; Walsh (2022), <em>Operations Research</em> 70(3) &mdash; Formal Sketch, Chapter 9 &sect;7.</div>
+      <aside class="notes">2.5 min. Offer the budget metaphor from the chapter: each peek spends some of your error allowance, and the sequential framework tracks the balance so you never overspend. Do not derive the likelihood-ratio process; the infimum and the guarantee are the two things they need.</aside>
+    </section>
+
+    <!-- 29 PRICE OF PEEKING -->
+    <section id="always-valid-price" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-receipt" style="color: var(--accent-color);"></i> The Right to Peek Has a Price</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 20px 26px;">
+          <p style="font-size: 17pt; margin: 0;">Always-valid methods need roughly <strong>20&ndash;40% more sample</strong> than a fixed-horizon test for the same power.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 26px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;">That is the exchange rate, and it is worth stating as one: you buy the right to stop whenever you like, and you pay for it in users. Whether that is a good trade depends on how much organisational velocity the fixed horizon was costing you.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 16px 26px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;"><i class="fa-solid fa-building" style="color: var(--secondary-color);"></i> Microsoft's ExP implements mSPRT across <em>all</em> experiments &mdash; which is what makes a continuously-refreshing dashboard statistically honest rather than a trap. Spotify's open-source <em>Confidence</em> library is a public implementation.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--muted-color); font-style: italic;">Notice how this interacts with Section 3: CUPED's variance reduction can more than pay for always-valid inference's sample premium. The two techniques are complements, and platforms ship them together.</p>
+      </div>
+      <aside class="notes">1.5 min. The last line is the synthesis worth landing: 82.7% variance reduction against a 20&ndash;40% sample premium is not a close call. This is why a modern platform can offer both a live dashboard and an honest p-value.</aside>
+    </section>
+
+    <!-- 30 SRM SETUP -->
+    <section id="srm-setup" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--danger-color);"></i> Failure 2: Sample Ratio Mismatch</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 26px;">
+          <p style="font-size: 15.5pt; margin: 0;">You randomised 50/50. You observe <strong>50.5 / 49.5</strong>. Something in the pipeline is broken.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color); margin: 0 0 7px;">Usual causes</p>
+            <p style="font-size: 14pt; margin: 0; line-height: 1.7;">Logging bugs that drop treatment rows &middot; bot traffic clustering in one arm &middot; a slower redirect on one variant &middot; trigger conditions that interact with treatment</p>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 14px 20px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--danger-color); margin: 0 0 7px;">The correct response</p>
+            <p style="font-size: 14pt; margin: 0; line-height: 1.7;">Halt. Diagnose. Rerun. <strong>No adjustment repairs a broken randomiser</strong> &mdash; Microsoft's platform blocks the display of p-values entirely when SRM fires.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 15px;">Fabijan et al. (2019) find SRM in roughly <strong>6%</strong> of experiments at Microsoft and Booking.com. Industry alarms at <strong>p &lt; 0.001</strong>, not 0.05 &mdash; the check runs on every experiment, and a 5% false-alarm rate would drown the channel. The \(\chi^2\) critical value at df = 1 is <strong>10.83</strong>.</p>
+      </div>
+      <aside class="notes">1.5 min. Emphasise that SRM invalidates <em>everything</em>, not just the affected metric &mdash; if assignment is broken you no longer have independence, so the identification argument from Section 1 is gone.</aside>
+    </section>
+
+    <!-- 31 SRM PARADOX -->
+    <section id="srm-paradox" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Both Alarms Fire. Only One Is a Problem.</h2>
+      <div class="content">
+        <table style="width: 100%; font-size: 15pt; border-collapse: collapse; margin-top: 6px;">
+          <tr style="border-bottom: 2px solid var(--line-color);">
+            <th style="text-align: left; padding: 9px 6px;"></th><th style="text-align: right; padding: 9px 6px;">N</th><th style="text-align: right; padding: 9px 6px;">Split</th><th style="text-align: right; padding: 9px 6px;">Deviation</th><th style="text-align: right; padding: 9px 6px;">\(\chi^2\)</th><th style="text-align: right; padding: 9px 6px;">p</th>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--line-color);">
+            <td style="padding: 10px 6px; font-weight: 700; color: var(--accent-color);">A</td><td style="text-align: right; padding: 10px 6px;">100,000</td><td style="text-align: right; padding: 10px 6px;">50.60 / 49.40</td><td style="text-align: right; padding: 10px 6px;">0.60 pp</td><td style="text-align: right; padding: 10px 6px; font-weight: 700;">14.40</td><td style="text-align: right; padding: 10px 6px;">\(1.5 \times 10^{-4}\)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 6px; font-weight: 700; color: var(--secondary-color);">B</td><td style="text-align: right; padding: 10px 6px;">20,000,000</td><td style="text-align: right; padding: 10px 6px;">50.05 / 49.95</td><td style="text-align: right; padding: 10px 6px;">0.05 pp</td><td style="text-align: right; padding: 10px 6px; font-weight: 700;">20.00</td><td style="text-align: right; padding: 10px 6px;">\(7.7 \times 10^{-6}\)</td>
+          </tr>
+        </table>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 16px 26px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>B's imbalance is twelve times smaller and its \(\chi^2\) is larger.</strong> For a 50/50 design, \(\chi^2 = 4N \cdot \text{dev}^2\) &mdash; at fixed deviation it grows <em>linearly in \(N\)</em>. At scale, \(N\) does all the work.</p>
+        </div>
+      </div>
+      <div class="footnote">Lab 9 Part 2. Both statistics reproduced exactly in <code>figures/_prep_data.py</code>.</div>
+      <aside class="notes">2 min. Do not give away the resolution yet &mdash; make them sit with the paradox for a beat. Someone will say "so raise the threshold," which is the answer you want to reject two slides from now.</aside>
+    </section>
+
+    <!-- 32 SRM SCALING -->
+    <section id="srm-scaling" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-arrow-trend-up" style="color: var(--danger-color);"></i> Significance Is Not Severity</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: center;">
+        <img src="figures/figure_007_srm_scaling.png" alt="Log-log plot of the SRM chi-squared statistic against experiment size for a 0.05 percentage-point and a 0.60 percentage-point deviation; the 0.60 pp line crosses the 10.83 alarm threshold at about 75,000 users while the 0.05 pp line crosses at about 10.8 million" style="width: 100%; border-radius: 8px;">
+        <div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 20px;">
+            <p style="font-size: 14.5pt; margin: 0;">A 0.60 pp deviation trips the alarm at <strong>N &asymp; 75,000</strong>. A 0.05 pp deviation trips it at <strong>N &asymp; 10.8 million</strong>. A platform running 20-million-user experiments will alarm on deviations far too small to move any metric.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 15px 20px; margin-top: 14px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>Do not raise \(\alpha\).</strong> That reintroduces the false negatives the strict threshold exists to prevent. Pair the test with an <strong>effect-size gate</strong>: what magnitude of misassignment could plausibly bias <em>this metric</em>, given its variance? Alarm on the conjunction.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">The same statistical-vs-practical-significance move you make about the treatment effect, applied to the diagnostic itself.</div>
+      <aside class="notes">2 min. This is the slide the undergraduate deck does not have. The transferable idea is that a diagnostic which is run on every unit of a very large population needs a magnitude criterion, not just a probability one &mdash; the same reason genome-wide association studies do not use \(\alpha = 0.05\).</aside>
+    </section>
+
+    <!-- 33 GOODHART -->
+    <section id="goodhart" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--danger-color);"></i> Failure 3: You Optimised the Wrong Thing</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 26px;">
+          <p style="font-size: 16pt; margin: 0;"><em>"When a measure becomes a target, it ceases to be a good measure."</em> &mdash; Chapter 2, via Meta's DAU/MAU gaming and Wells Fargo's unauthorised accounts.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 17px 26px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;">A recommendation test lifts click-through by <strong>40%</strong>. Ship it?</p>
+          <p style="font-size: 15.5pt; margin: 10px 0 0;">Not if the algorithm earned those clicks with clickbait. Long-run satisfaction and retention cratered. CTR became a target and stopped being a measure of value &mdash; and the experiment was <em>correctly analysed</em> the entire time.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 15px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> This failure is invisible to every diagnostic on the previous four slides. Randomisation was fine. The estimator was fine. The <em>question</em> was wrong.</p>
+      </div>
+      <aside class="notes">1.5 min. Ask who remembers Goodhart from Chapter 2 before you put the definition up. The pivot that matters: this is the one failure mode that no amount of statistical rigour detects.</aside>
+    </section>
+
+    <!-- 34 METRIC HIERARCHY -->
+    <section id="metric-hierarchy" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--success-color);"></i> The Defence: A Metric Hierarchy</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt; margin: 0;"><strong>Primary (success) metric</strong> &mdash; the one quantity the experiment is designed to move. Exactly one.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; margin: 0;"><strong>Guardrail metrics</strong> &mdash; system health that must not degrade: page load time, error rate, support ticket volume.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 24px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt; margin: 0;"><strong>Counter-metrics</strong> &mdash; the <em>cost</em> of the primary's improvement. Conversion up, average order value down, revenue flat.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 26px; margin-top: 16px;">
+          <p style="font-size: 16pt; margin: 0;"><strong>The decision rule:</strong> ship only if the primary metric improves <em>and</em> the guardrails show non-inferiority &mdash; no statistically significant degradation.</p>
+        </div>
+      </div>
+      <div class="footnote">Note the asymmetry: the primary needs a significant <em>improvement</em>; guardrails need only the <em>absence</em> of significant harm. Those are different tests with different power requirements.</div>
+      <aside class="notes">2 min. The footnote is the graduate detail &mdash; a non-inferiority test is not "we failed to reject", it is a test against a margin. An underpowered guardrail check reliably passes, which is precisely how a harmful feature ships with a clean scorecard.</aside>
+    </section>
+
+    <!-- 35 WAYFAIR -->
+    <section id="wayfair" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-briefcase" style="color: var(--secondary-color);"></i> Economist at Work: Wayfair's Demeter</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 24px;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>The problem.</strong> The true LTV impact of a marketing change takes 60&ndash;90 days to materialise. Waiting two months per test destroys velocity &mdash; but optimising short-run clicks runs straight into Goodhart.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color); margin: 0 0 7px;">Surrogate indices</p>
+            <p style="font-size: 14pt; margin: 0;">3&ndash;7 day leading indicators &mdash; add-to-cart velocity, initial session duration &mdash; forecast the 60-day revenue impact. Internal validation had accurate 60-day forecasts by <strong>day 14</strong>, when realised 14-day revenue was under half the cumulative impact.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color); margin: 0 0 7px;">Geo-experimentation</p>
+            <p style="font-size: 14pt; margin: 0;">For direct mail and vendor networks, where user-level randomisation is impossible: <strong>210 mutually exclusive geographic units</strong>, assigned by integer optimisation, lift estimated with synthetic difference-in-differences.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 14px 24px; margin-top: 14px;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>The surrogate is itself a Goodhart risk</strong> &mdash; you are now optimising a <em>prediction</em> of the thing you care about. It works only because the surrogate is audited on a rolling basis against realised 60-day outcomes.</p>
+        </div>
+      </div>
+      <div class="footnote">Wayfair Tech Blog (2024&ndash;2025), Boston. Their 210 units return on the SUTVA slides in a moment.</div>
+      <aside class="notes">2 min. The synthetic DiD reference forward-links to Chapter 11 on the 5200 track. Flag it: the geo design is a DiD design, and they will build one in three weeks.</aside>
+    </section>
+
+    <!-- 36 DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Build the Metric Set</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="margin: 0; font-weight: 600;">A streaming service tests autoplaying the next episode at the end of a credits sequence.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px;"><p style="font-size: 14.5pt; margin: 0;"><strong>1.</strong> Name the <strong>primary</strong> metric.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px;"><p style="font-size: 14.5pt; margin: 0;"><strong>2.</strong> Name <strong>two guardrails</strong> and what each protects.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px;"><p style="font-size: 14.5pt; margin: 0;"><strong>3.</strong> Name <strong>one counter-metric</strong> and the failure it catches.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px;"><p style="font-size: 14.5pt; margin: 0;"><strong>4.</strong> Write the ship rule as one sentence a PM could execute.</p></div>
+        </div>
+      </div>
+      <div class="footnote">5 minutes in threes. Press <kbd>5</kbd> for the timer.</div>
+      <aside class="notes">5 min plus 2 to debrief. The productive disagreement is whether watch time is the primary metric or already a Goodhart trap &mdash; it rises mechanically when you autoplay into a sleeping viewer. Steer toward "completion of a started episode" or "next-day return." Good counter-metrics: cancellations, sampled satisfaction survey.</aside>
+    </section>
+
+    <!-- 37 SUTVA -->
+    <section id="sutva" style="padding: 32px 52px;">
+      <h2><i class="fa-solid fa-network-wired" style="color: var(--danger-color);"></i> Failure 4: The Assumption Nobody States</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 26px; text-align: center;">
+          <p style="font-size: 19pt; margin: 0;">\[Y_i(D_1, D_2, \ldots, D_n) = Y_i(D_i) \quad \text{for all } i\]</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 14px 24px; margin-top: 13px;">
+          <p style="font-size: 15pt; margin: 0;"><strong>In words:</strong> your outcome depends on <em>your</em> assignment and nobody else's. Stated once in a footnote, never checked &mdash; and on a platform it is routinely false.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 18px;">
+            <p style="font-size: 13.5pt; font-weight: 700; color: var(--danger-color); margin: 0 0 6px;">Two-sided marketplaces</p>
+            <p style="font-size: 13.5pt; margin: 0;">Discounted users book the listings control users would have booked. Holtz et al. (2025): at least <strong>19.76%</strong> of Airbnb's individually-randomised estimate was interference bias.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 18px;">
+            <p style="font-size: 13.5pt; font-weight: 700; color: var(--danger-color); margin: 0 0 6px;">Social networks</p>
+            <p style="font-size: 13.5pt; margin: 0;">A treated user's new sharing feature puts more content in front of their control-group friends. The control arm is <em>indirectly treated</em>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 18px;">
+            <p style="font-size: 13.5pt; font-weight: 700; color: var(--danger-color); margin: 0 0 6px;">Resource constraints</p>
+            <p style="font-size: 13.5pt; margin: 0;">Faster treated Uber drivers consume dispatches from a fixed rider pool, suppressing control drivers.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">Holtz et al. (2025), <em>Management Science</em> 71(1):390&ndash;406 &mdash; a meta-experiment, i.e. an experiment on experimental designs.</div>
+      <aside class="notes">2 min. Note what a meta-experiment is, because it is a lovely piece of design: they randomised the <em>randomisation unit</em>, running cluster-randomised and individually-randomised versions of the same test, and differenced the estimates.</aside>
+    </section>
+
+    <!-- 38 THREE WORLDS -->
+    <section id="three-worlds" style="padding: 28px 42px;">
+      <h2><i class="fa-solid fa-globe" style="color: var(--danger-color);"></i> Your Lab's Three Worlds</h2>
+      <div class="content">
+        <img src="figures/figure_008_interference.png" alt="Left: purchase rates by arm with and without interference; the control rate falls 0.118 while the treated rate falls only 0.082. Right: the true individual effect 0.1500, the naive A/B estimate 0.1861 and the global rollout effect 0.1428" style="width: 97%; display: block; margin: 0 auto; border-radius: 8px;">
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 13px 24px; margin-top: 12px;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>The mechanism, precisely.</strong> Both arms are hurt by scarcity; control is hurt <em>more</em>, because a control buyer hesitates and loses the item while a discounted buyer converts on the spot. That asymmetry <em>is</em> the bias.</p>
+        </div>
+      </div>
+      <div class="footnote">10,000 buyers, 4,000 items, availability elasticity 1.0 for control against 0.3 for treated &mdash; Lab 9 Part 3, seed 42.</div>
+      <aside class="notes">2.5 min. Stress that interference does not <em>have</em> to inflate: if scarcity multiplied both arms' probability by the same factor, an additive effect times a common factor below one would shrink, and you would understate. "Interference overstates" is a consequence of who loses the contested unit, not a law.</aside>
+    </section>
+
+    <!-- 39 WHICH BENCHMARK -->
+    <section id="which-benchmark" style="padding: 32px 52px;">
+      <h2><i class="fa-solid fa-code-compare" style="color: var(--danger-color);"></i> Two Biases. Only One Is the Decision.</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14.5pt; font-weight: 700; color: var(--muted-color); margin: 0 0 8px;">Against the individual effect</p>
+            <p style="font-size: 15pt; margin: 0;">0.1861 vs 0.1500 &rarr; bias <strong>+0.0361</strong><br><span style="font-size: 21pt; font-weight: 700; color: var(--muted-color);">19.4%</span> of the naive estimate</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14.5pt; font-weight: 700; color: var(--success-color); margin: 0 0 8px;">Against the global rollout</p>
+            <p style="font-size: 15pt; margin: 0;">0.1861 vs 0.1428 &rarr; bias <strong>+0.0433</strong><br><span style="font-size: 21pt; font-weight: 700; color: var(--success-color);">23.3%</span> of the naive estimate</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 26px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>The second one.</strong> Nobody ships a discount to a random half of the market forever. The business question is "what if we turn this on for <em>everyone</em>" &mdash; and that counterfactual has the <em>same inventory</em> serving <em>twice as many</em> boosted buyers.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 13px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> In the A/B test, the control arm was quietly subsidising the treatment arm's supply. Both estimates sit inside the 15&ndash;25% band Holtz et al. report.</p>
+      </div>
+      <aside class="notes">2 min. This distinction is the deepest idea in the section and it is 5200-only. The A/B test measures a <em>direct</em> effect at a fixed level of market saturation; the rollout changes the saturation. Formally it is the difference between a direct effect and a total (equilibrium) effect &mdash; and it is exactly why marketplace teams run switchbacks.</aside>
+    </section>
+
+    <!-- 40 FIX THE UNIT -->
+    <section id="fix-the-unit" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-object-group" style="color: var(--success-color);"></i> The Fix Is the Unit, Not the Sample Size</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 15px 26px;">
+          <p style="font-size: 15.5pt; margin: 0;">More users make a biased estimate <strong>more precise</strong>. You will get a tighter confidence interval around the wrong number.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 15px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Cluster randomisation</strong> &mdash; randomise geographies, not people. Wayfair's 210 units. Interference is contained <em>within</em> a cluster.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Switchback designs</strong> &mdash; alternate treatment and control across <em>time periods</em>. Uber and Lyft (Bojinov &amp; Simchi-Levi 2020). The whole market is treated at once, so nobody is competing across arms.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Graph cluster randomisation</strong> &mdash; partition the social graph into loosely connected components and randomise those.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--muted-color); font-style: italic;">All three trade precision for validity: fewer effective units means wider intervals. That is the correct trade, and it is why a cluster design needs a power calculation on <em>clusters</em>, not on users.</p>
+      </div>
+      <aside class="notes">1.5 min. The closing line matters for their labs and their final projects &mdash; the effective sample size in a cluster design is closer to the number of clusters than to the number of users, and students routinely size these wrong by two orders of magnitude.</aside>
+    </section>
+
+    <!-- 41 FDR -->
+    <section id="fdr" style="padding: 32px 52px;">
+      <h2><i class="fa-solid fa-percent" style="color: var(--danger-color);"></i> The Base Rate You Cannot Design Away</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px;">
+          <p style="font-size: 14.5pt; margin: 0;">Miller &amp; Hosanagar (2025) analysed <strong>2,270 experiments across 242 firms</strong> and found essentially <em>no</em> systematic p-hacking &mdash; shipping a false positive earns no revenue, so the market corrects fast. And yet Berman &amp; Van den Bulte (2022) find <strong>18&ndash;25%</strong> of "significant" A/B results are false positives.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; margin-top: 15px; align-items: center;">
+          <div>
+            <p style="font-size: 14.5pt; margin: 0 0 8px;">Test 100 features; <strong>70 are truly null</strong>. At \(\alpha = 0.05\) you expect <strong>3.5</strong> false positives &mdash; fixed by \(\alpha\) and the base rate alone. How many <em>true</em> positives you get is entirely a question of power:</p>
+            <table style="width: 100%; font-size: 14.5pt; border-collapse: collapse;">
+              <tr style="border-bottom: 2px solid var(--line-color);"><th style="text-align: left; padding: 7px 4px;">Power on the 30 real effects</th><th style="text-align: right; padding: 7px 4px;">True +</th><th style="text-align: right; padding: 7px 4px;">FDR</th></tr>
+              <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 4px;">80%</td><td style="text-align: right; padding: 8px 4px;">24</td><td style="text-align: right; padding: 8px 4px; font-weight: 700;">13%</td></tr>
+              <tr><td style="padding: 8px 4px;">20%</td><td style="text-align: right; padding: 8px 4px;">6</td><td style="text-align: right; padding: 8px 4px; font-weight: 700; color: var(--danger-color);">37%</td></tr>
+            </table>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 15px 20px;">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>Underpowered testing does not merely miss effects &mdash; it poisons the discoveries you do make.</strong> The false positives keep arriving at a rate \(\alpha\) does not care about while the true ones dry up.</p>
+            <p style="font-size: 14pt; margin: 12px 0 0; color: var(--muted-color);">The observed 18&ndash;25% sits between these rows, which tells you something about the power of a typical industry experiment.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">Benjamini&ndash;Hochberg (Ch 8) controls FDR across metrics; most platforms now report adjusted p-values or test hierarchically &mdash; primary first, secondaries only if the primary holds.</div>
+      <aside class="notes">2.5 min. Callback to the hook: this is what "100,000 tests, two-thirds null" implies about the shipped set. And it closes the loop with Section 2 &mdash; power is not just about <em>your</em> experiment, it is about the credibility of your whole portfolio.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: The +12% Driver</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt; line-height: 1.6; margin: 0;">A ride-hailing platform randomises <em>drivers</em>: treated drivers get a new dispatch algorithm. Treated drivers complete <strong>12% more rides</strong>. Rider demand is unchanged over the test window.</p>
+          <p style="font-size: 15.5pt; font-weight: 600; margin: 10px 0 0;">Most likely problem?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch09-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Sample Ratio Mismatch &mdash; the split is broken</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) SUTVA fails &mdash; treated drivers took rides from control drivers</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Peeking &mdash; they stopped the test early</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Nothing &mdash; 12% is real and should ship</div>
+        </div>
+        <aside class="notes">1 min. The load-bearing clause is "rider demand unchanged." Do not paraphrase it away when you read the stem aloud.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch09-econ5200-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; The Rides Came From Somewhere</h2>
+        <div class="poll-results-chart" data-poll-id="ch09-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 48px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Fixed demand plus a per-driver gain means the extra rides were taken from the control arm. The measured gap is inflated by exactly the amount control was depressed &mdash; this is World 2 against World 3 with drivers in place of buyers.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>What a full rollout would deliver:</strong> possibly close to nothing, because then <em>every</em> driver competes on the same fixed demand. The fix is a switchback or a city-level cluster design &mdash; <em>not</em> a bigger sample.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DIVIDER 5 -->
+    <section id="divider-decide" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; Going Deeper: The Decision</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">A p-value ranks the surprise. Expected loss prices the mistake.</p>
+    </section>
+    <!-- 42 BAYES QUESTION -->
+    <section id="bayes-question" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-question" style="color: var(--secondary-color);"></i> A Different Question</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--muted-color); margin: 0 0 8px;">Frequentist</p>
+            <p style="font-size: 15pt; margin: 0;"><em>If the treatment did nothing, how surprising is this data?</em></p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--success-color); margin: 0 0 8px;">Bayesian</p>
+            <p style="font-size: 15pt; margin: 0;"><em>Given this data, what is the probability B is better than A?</em></p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 15px;">The second is the question the person deciding whether to ship actually asked.</p>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 16px 26px; margin-top: 14px; text-align: center;">
+          <p style="font-size: 13.5pt; color: var(--muted-color); margin: 0 0 6px;">Beta&ndash;Binomial conjugacy, uniform \(\text{Beta}(1,1)\) prior, \(s\) successes in \(n\) trials</p>
+          <p style="font-size: 19pt; margin: 0;">\[\theta \mid \text{data} \sim \text{Beta}(1 + s,\; 1 + n - s)\]</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 14px 26px; margin-top: 13px;">
+          <p style="font-size: 15pt; margin: 0;"><strong>In words:</strong> the prior contributes one imaginary success and one imaginary failure; the data supplies the rest. At \(n = 3{,}000\) the prior is invisible &mdash; which is exactly what a uniform prior should do.</p>
+        </div>
+      </div>
+      <div class="footnote">Going Deeper, Chapter 9 &sect;7. Connects to Chapter 5: posterior &prop; likelihood &times; prior.</div>
+      <aside class="notes">2 min. Anticipate "isn't the prior arbitrary?" &mdash; yes, and the honest response is that at this sample size it does not matter, while at \(n = 30\) it would, and then you would have to defend it. That is a feature: the Bayesian framework makes you say what you believed.</aside>
+    </section>
+
+    <!-- 43 SCORECARD -->
+    <section id="bayes-scorecard" style="padding: 30px 48px;">
+      <h2><i class="fa-solid fa-clipboard-list" style="color: var(--secondary-color);"></i> Your Lab's Scorecard</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: center;">
+        <img src="figures/figure_009_bayesian.png" alt="Two overlapping Beta posterior densities for conversion rate: variant A centred at 0.1193 and variant B at 0.1296, with substantial overlap and P of B greater than A equal to 0.887" style="width: 100%; border-radius: 8px;">
+        <div>
+          <table style="width: 100%; font-size: 14pt; border-collapse: collapse;">
+            <tr style="border-bottom: 2px solid var(--line-color);"><th style="text-align: left; padding: 7px 4px;"></th><th style="text-align: right; padding: 7px 4px;">Conversions</th><th style="text-align: right; padding: 7px 4px;">Rate</th></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px 4px;">A</td><td style="text-align: right; padding: 8px 4px;">357 / 3,000</td><td style="text-align: right; padding: 8px 4px; font-weight: 700;">11.90%</td></tr>
+            <tr><td style="padding: 8px 4px;">B</td><td style="text-align: right; padding: 8px 4px;">388 / 3,000</td><td style="text-align: right; padding: 8px 4px; font-weight: 700;">12.93%</td></tr>
+          </table>
+          <p style="font-size: 14pt; margin: 10px 0 0; color: var(--muted-color);">Observed lift <strong>+1.03 pp</strong>. Posteriors \(\text{Beta}(358, 2644)\) and \(\text{Beta}(389, 2613)\).</p>
+          <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; margin-top: 13px;">
+            <p style="font-size: 19pt; margin: 0; text-align: center; font-weight: 700;">\(P(\theta_B &gt; \theta_A) = 0.887\)</p>
+            <p style="font-size: 13.5pt; margin: 8px 0 0; color: var(--muted-color);">In 88.7% of the draws consistent with this data, B is the better variant &mdash; a probability about the <em>parameter</em>, which no frequentist interval is permitted to state.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">100,000 Monte Carlo draws from each posterior &mdash; Lab 9 Part 4, seeds 42 and 43.</div>
+      <aside class="notes">2 min. Point at the overlap: a 1 pp observed lift on a 12% base with 3,000 per arm is simply not much evidence, and the picture says so more honestly than any single number.</aside>
+    </section>
+
+    <!-- 44 EXPECTED LOSS -->
+    <section id="expected-loss" style="padding: 32px 52px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--accent-color);"></i> Expected Loss Is the Decision Rule</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 26px; text-align: center;">
+          <p style="font-size: 19pt; margin: 0;">\[\mathbb{E}[\text{loss of shipping B}] = \mathbb{E}\big[\max(\theta_A - \theta_B,\, 0)\big]\]</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 14px 26px; margin-top: 13px;">
+          <p style="font-size: 15pt; margin: 0;"><strong>In words:</strong> average, over everything you still believe could be true, the conversion rate you would give up by shipping B when A was actually better. Measured in <em>units of the metric</em>, not in units of surprise.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 15px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 18px; text-align: center;">
+            <p style="font-size: 13pt; color: var(--muted-color); margin: 0 0 5px;">Expected loss, ship B</p>
+            <p style="font-size: 20pt; font-weight: 700; margin: 0; color: var(--success-color);">0.047 pp</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 18px; text-align: center;">
+            <p style="font-size: 13pt; color: var(--muted-color); margin: 0 0 5px;">Expected loss, ship A</p>
+            <p style="font-size: 20pt; font-weight: 700; margin: 0; color: var(--danger-color);">1.077 pp</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 18px; text-align: center;">
+            <p style="font-size: 13pt; color: var(--muted-color); margin: 0 0 5px;">Permutation test</p>
+            <p style="font-size: 20pt; font-weight: 700; margin: 0; color: var(--muted-color);">p = 0.230</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 14px 26px; margin-top: 14px;">
+          <p style="font-size: 15pt; margin: 0;">Under the lab's rule &mdash; ship if \(P(B&gt;A) &gt; 0.95\) <em>and</em> expected loss &lt; 0.001 &mdash; the verdict is <strong>do not ship</strong>. The loss criterion passes comfortably; the probability criterion does not. And the frequentist test agrees: fail to reject.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say plainly that the two frameworks agreeing is the normal case at this sample size. The Bayesian machinery is not a device for reaching a different verdict &mdash; it is a device for stating the verdict in units a decision-maker can price.</aside>
+    </section>
+
+    <!-- 45 DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Would You Ship It?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 16px 26px; border-radius: 12px;">
+          <p style="font-size: 15.5pt; margin: 0;">Same scorecard: \(P(B&gt;A) = 0.887\) &middot; expected loss of shipping B = <strong>0.047 pp</strong> &middot; expected loss of shipping A = <strong>1.077 pp</strong> &middot; permutation \(p = 0.230\).</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 22px;"><p style="font-size: 14.5pt; margin: 0;"><strong>1.</strong> Ship, hold, or extend? <em>Commit before you argue.</em></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 22px;"><p style="font-size: 14.5pt; margin: 0;"><strong>2.</strong> Your answer should change with the <strong>cost of the change</strong>. Does it? Compare a one-line copy edit against a re-architecture of checkout.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 22px;"><p style="font-size: 14.5pt; margin: 0;"><strong>3.</strong> What would move you from "hold" to "ship" <em>without collecting more data?</em></p></div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 13px 24px; margin-top: 13px;">
+          <p style="font-size: 14.5pt; margin: 0;">Note the asymmetry before you answer: shipping A when B is better costs <strong>23 times</strong> what shipping B when A is better costs. The 0.95 threshold is not a statistical fact &mdash; it is a risk preference.</p>
+        </div>
+      </div>
+      <div class="footnote">4 minutes, whole room. Press <kbd>4</kbd> for the timer.</div>
+      <aside class="notes">4 min. The landing: expected loss makes the cost asymmetry explicit in metric units while p = 0.230 does not. For a zero-cost change, 0.047 pp of expected downside is trivially acceptable. For (3), the answer is a decision-theoretic threshold justified by implementation cost and agreed <em>before</em> the test &mdash; not moved afterwards, which is the peeking problem wearing a Bayesian hat.</aside>
+    </section>
+
+    <!-- 46 TAKEAWAYS -->
+    <section id="takeaways" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: grid; grid-template-columns: 38px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 14pt;">Randomisation kills <em>one specific term</em>. On Lalonde that term is <strong>&minus;$16,999</strong>, and it flips the sign of the finding.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">2</p>
+            <p style="font-size: 14pt;">The permutation test is <em>exact</em> under the sharp null. The interval, not the p-value, is what goes to a decision.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">3</p>
+            <p style="font-size: 14pt;">\(n \propto 1/\delta^2\): quarter the effect, <strong>sixteen times</strong> the users. Post-hoc power adds nothing the p-value did not.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--accent-color);">4</p>
+            <p style="font-size: 14pt;">CUPED buys sensitivity for free up to a hard ceiling of \(\rho^2\) &mdash; <strong>82.7%</strong> in your lab, exactly its bound.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">5</p>
+            <p style="font-size: 14pt;">A correct estimator is not a valid experiment: 50 peeks turn 5% into <strong>32.4%</strong>; SRM significance is not SRM severity; interference overstates the <em>global</em> effect by <strong>23%</strong>.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">6</p>
+            <p style="font-size: 14pt;">Decide in <em>units of loss</em>. A p-value ranks the surprise; expected loss prices the mistake.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. If you are short on time, read 1, 4 and 6 &mdash; identification, the graduate-only sensitivity result, and the decision rule.</aside>
+    </section>
+
+    <!-- 47 EXIT TICKET -->
+    <section id="exit-ticket" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 24px 30px;">
+          <p style="font-size: 17pt; line-height: 1.65; margin: 0;">An experiment on a two-sided marketplace shows a <strong>+5% lift</strong>, \(p = 0.001\), <strong>no SRM</strong>, and all guardrails flat.</p>
+          <p style="font-size: 17pt; line-height: 1.65; margin: 14px 0 0; font-weight: 600;">In two sentences: name the one remaining threat, and name the redesign that addresses it.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 26px; margin-top: 18px;">
+          <p style="font-size: 15pt; margin: 0;">Submit on Canvas before the next session. Full credit for naming SUTVA / interference and a cluster or switchback design; <strong>bonus</strong> for noting that the biased quantity is the <em>global</em> rollout effect, not the individual one.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Every threat on this stem has been explicitly ruled out except one, so a student who cannot name it has not followed Section 4. Use the bonus clause to see who caught the World 2 versus World 3 distinction.</aside>
+    </section>
+
+    <!-- 48 FORWARD -->
+    <section id="forward" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--secondary-color);"></i> Where This Goes Next</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 26px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>Chapter 10 &mdash; DAGs.</strong> A formal language for <em>why</em> randomisation works: it deletes every arrow into \(D\), closing all backdoor paths at once. And a way to draw the interference paths Section 4 was describing in words.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 26px; border-left: 4px solid var(--accent-color); margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>Chapters 11&ndash;13 &mdash; DiD, IV, RD.</strong> Three ways to buy identification when the coin flip is not available. Each one substitutes a different assumption for the independence statement on slide 10.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 26px; border-left: 4px solid var(--success-color); margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin: 0;"><strong>Chapter 24 &mdash; Double ML.</strong> Use ML to residualise both treatment and outcome against high-dimensional confounders, then recover something close to RCT precision from observational data. Note the shape: it is CUPED's residualisation logic, applied to confounding rather than to variance.</p>
+        </div>
+      </div>
+      <div class="footnote">Before next session: Lab 9 (diagnostic) &mdash; CUPED debugging, SRM reasoning, the marketplace simulation, and the Bayesian pipeline.</div>
+      <aside class="notes">1 min. The CUPED-to-DML link in the last box is worth stating explicitly; it is a genuine structural parallel and it makes Chapter 24 feel inevitable rather than exotic.</aside>
+    </section>
+
+    <!-- 49 SOURCES -->
+    <section id="sources" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-book" style="color: var(--muted-color);"></i> Sources</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; font-size: 12.5pt; line-height: 1.7; color: var(--text-color);">
+          <div>
+            <p style="margin: 0 0 8px;">Berman, R. &amp; Van den Bulte, C. (2022). "False Discovery in A/B Testing." <em>Management Science</em> 68(9).</p>
+            <p style="margin: 0 0 8px;">Bojinov, I. &amp; Simchi-Levi, D. (2020). "Design and Analysis of Switchback Experiments." HBS WP 21-034.</p>
+            <p style="margin: 0 0 8px;">Dehejia, R. &amp; Wahba, S. (1999). <em>JASA</em> 94(448).</p>
+            <p style="margin: 0 0 8px;">Deng, A., Xu, Y., Kohavi, R. &amp; Walker, T. (2013). "Improving the Sensitivity of Online Controlled Experiments." <em>WSDM</em>.</p>
+            <p style="margin: 0 0 8px;">Fabijan, A. et al. (2019). "Diagnosing Sample Ratio Mismatch." <em>KDD</em>.</p>
+            <p style="margin: 0 0 8px;">Holland, P. W. (1986). "Statistics and Causal Inference." <em>JASA</em> 81(396).</p>
+            <p style="margin: 0;">Holtz, D. et al. (2025). "Reducing Interference Bias in Online Marketplace Experiments." <em>Management Science</em> 71(1).</p>
+          </div>
+          <div>
+            <p style="margin: 0 0 8px;">Johari, R., Pekelis, L. &amp; Walsh, D. (2022). "Always Valid Inference." <em>Operations Research</em> 70(3).</p>
+            <p style="margin: 0 0 8px;">Kohavi, R., Tang, D. &amp; Xu, Y. (2020). <em>Trustworthy Online Controlled Experiments</em>. CUP.</p>
+            <p style="margin: 0 0 8px;">LaLonde, R. (1986). <em>American Economic Review</em> 76(4).</p>
+            <p style="margin: 0 0 8px;">Lin, Z. &amp; Crespo, P. (2024). arXiv:2410.09027; CLeaR 2026.</p>
+            <p style="margin: 0 0 8px;">Miller, A. P. &amp; Hosanagar, K. (2025). "An Empirical Study of P-Hacking in Online Controlled Experiments." <em>ISR</em>.</p>
+            <p style="margin: 0 0 8px;">Rubin, D. B. (1974). <em>Journal of Educational Psychology</em> 66(5).</p>
+            <p style="margin: 0;">Staponait&#279;, G. et al. (2025). "Variance Reduction in Online Marketplace A/B Testing." <em>KDD</em>.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 22px; margin-top: 16px;">
+          <p style="font-size: 12.5pt; margin: 0; color: var(--muted-color);">Every number on these slides was executed rather than quoted: <code>figures/_prep_data.py</code> in this folder, and <code>book/5200/labs/lab-ch09-diagnostic.ipynb</code>. Wayfair Demeter details from the Wayfair Tech Blog (2024&ndash;2025).</p>
+        </div>
+      </div>
+      <aside class="notes">Leave up during questions.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

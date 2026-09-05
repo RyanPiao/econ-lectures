@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OLS Diagnostics: When OLS Fails</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- MathJax 3 (tex-svg). Inline math is \( ... \) NOT $...$ -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 56% 44%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 46px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 14</p>
+          <h1 style="font-size: 33pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 22px;">OLS Diagnostics:<br>When OLS Fails</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">OLS does not fail loudly. It fails by telling you it is certain.</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/figure_000_cover.png" alt="A fitted regression line through scattered data whose spread widens to the right, with a narrow classical confidence band drawn inside a much wider honest one, and three ringed high-influence points sitting far from the line" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">14.1</p>
+            <p style="font-size: 15pt;">Say which OLS failures corrupt the <strong>standard error</strong> and which corrupt the <strong>estimate</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">14.2</p>
+            <p style="font-size: 15pt;">Compute and interpret <strong>HC3 robust</strong> and <strong>cluster-robust</strong> standard errors</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">14.3</p>
+            <p style="font-size: 15pt;">Diagnose <strong>leverage and influence</strong>, and quantify how much of a finding rests on how little data</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">14.4</p>
+            <p style="font-size: 15pt;">Decide whether to <strong>cluster</strong> by reasoning about how the treatment was assigned</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 14.4 as today's centre of gravity &mdash; it is the one with the largest consequences and the one they will use at work. Do not read all four aloud.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 13.</strong> In a multivariate regression, what does &ldquo;holding the other variables fixed&rdquo; actually <em>do</em> to the data before the coefficient is computed?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 8.</strong> A test run at the 5% level promises what, exactly, about a world in which the null is true?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Today: <strong>you have been reading standard errors as if they were facts.</strong></p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. QC1 target: it discards the variation in x_j that the other regressors can account for. QC2 target: it rejects 5% of the time. Write "5%" on the board and leave it there &mdash; Section C breaks that promise in front of them at minute 34, and you will point back at it.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-collapse" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> A Regression You Have Already Run</h2>
+      <div class="content">
+        <p class="text-lg">California Housing. 20,640 census block groups. The regression from Chapter 13.</p>
+        <div style="background: #f4f2ef; border-radius: 10px; padding: 16px 24px; margin-top: 16px; font-family: 'SF Mono', Menlo, monospace; font-size: 15pt; color: var(--primary-color);">
+          AveRooms&nbsp;&nbsp;&nbsp;&nbsp;coefficient <strong>&minus;0.0272</strong>&nbsp;&nbsp;&nbsp;&nbsp;std error 0.0024&nbsp;&nbsp;&nbsp;&nbsp;t = <strong>&minus;11.23</strong>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px;">A \(t\) of &minus;11 is not a marginal result. It is the kind of number that ends an argument.</p>
+        <div class="fragment fade-up" style="margin-top: 18px;">
+          <p style="font-size: 15pt; margin-bottom: 10px;">Now change <strong>one thing</strong>. Not the data. Not the model. Not the coefficient. Only the <em>formula</em> for the standard error.</p>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--danger-color); font-family: 'SF Mono', Menlo, monospace; font-size: 15pt; color: var(--primary-color);">
+            AveRooms&nbsp;&nbsp;&nbsp;&nbsp;coefficient <strong>&minus;0.0272</strong>&nbsp;&nbsp;&nbsp;&nbsp;std error 0.0121&nbsp;&nbsp;&nbsp;&nbsp;t = <strong>&minus;2.25</strong>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the first block, pause, then reveal the second and say nothing for three seconds. Point at the coefficient in both blocks: it did not move by a digit. The standard error grew five-fold. Do NOT explain HC3 yet &mdash; that is Section B. Right now it is only a number that should not be possible.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 -->
+    <section id="hook-ten-rows" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-weight-hanging" style="color: var(--danger-color);"></i> And It Gets Worse</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 30px; align-items: center; margin-top: 6px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 24px; text-align: center;">
+            <p style="font-size: 52pt; font-weight: 700; color: var(--accent-color); line-height: 1;">10</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 8px;">observations out of 20,640</p>
+            <p style="font-size: 12pt; color: #7a4a2f; margin-top: 4px;">0.05% of the data</p>
+          </div>
+          <div>
+            <p class="text-lg" style="line-height: 1.6;">Those ten rows hold <strong>85% of the total influence</strong> in that regression. Delete them and the coefficient <strong>more than doubles</strong>, to &minus;0.0609.</p>
+            <p style="font-size: 15pt; line-height: 1.6; margin-top: 14px;">So the number was never &minus;0.0272 with any real confidence. It came from a handful of unusual block groups, reported with a standard error computed under an assumption the data violates at \(p \approx 10^{-137}\).</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f4f2ef; border-left: 4px solid var(--primary-color); border-radius: 8px; padding: 16px 24px; margin-top: 20px;">
+          <p style="font-size: 17pt;">Nothing errored. No warning printed. Every diagnostic that would have caught this <strong>had to be asked for</strong>.</p>
+          <p style="font-size: 19pt; margin-top: 8px; color: var(--danger-color); font-weight: 600;">OLS does not fail loudly. It fails by telling you it is certain.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Ask "how many rows out of twenty thousand would you guess we need to delete to double this coefficient?" before showing the 10. Guesses are usually in the hundreds. Then reveal. The last line is the thesis of the hour &mdash; say it slowly and do not paraphrase it.</aside>
+    </section>
+
+    <!-- SLIDE 6: the map (promise) -->
+    <section id="two-kinds-promise" style="padding: 30px 50px;">
+      <h2 style="margin-bottom: 10px;"><i class="fa-solid fa-table-columns" style="color: var(--secondary-color);"></i> Two Kinds of Failure &mdash; the Map for Today</h2>
+      <div class="content">
+        <table style="width: 100%; font-size: 15pt; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--primary-color);">
+              <th style="text-align: left; padding: 8px 10px;">Problem</th>
+              <th style="text-align: left; padding: 8px 10px;">Point estimate</th>
+              <th style="text-align: left; padding: 8px 10px;">Standard error</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: #f0f5f8;"><td style="padding: 9px 10px;">Heteroscedasticity</td><td style="padding: 9px 10px; color: var(--success-color); font-weight: 700;">unbiased</td><td style="padding: 9px 10px;">wrong, usually too small</td></tr>
+            <tr style="background: #f0f5f8;"><td style="padding: 9px 10px;">Clustered dependence</td><td style="padding: 9px 10px; color: var(--success-color); font-weight: 700;">unbiased</td><td style="padding: 9px 10px;">wrong, often catastrophically</td></tr>
+            <tr style="background: #f0f5f8;"><td style="padding: 9px 10px;">High leverage / influence</td><td style="padding: 9px 10px; color: var(--accent-color); font-weight: 700;">fragile</td><td style="padding: 9px 10px;">misleading</td></tr>
+            <tr style="background: #faf0f0;"><td style="padding: 9px 10px;">Omitted confounder</td><td style="padding: 9px 10px; color: var(--danger-color); font-weight: 700;">biased</td><td style="padding: 9px 10px;">irrelevant &mdash; wrong thing estimated</td></tr>
+            <tr style="background: #faf0f0;"><td style="padding: 9px 10px;">Wrong functional form</td><td style="padding: 9px 10px; color: var(--danger-color); font-weight: 700;">biased</td><td style="padding: 9px 10px;">irrelevant, same reason</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size: 15pt; margin-top: 16px;">The <strong style="color: var(--secondary-color);">blue rows</strong> are today's business and are fixable with a better variance formula. The <strong style="color: var(--danger-color);">rose rows</strong> are not fixable by anything in this chapter.</p>
+      </div>
+      <aside class="notes">2 min. This table is a promise you pay off at minute 60 &mdash; say so explicitly: "we come back to this slide at the end and the bottom two rows are the whole point." Do not read every row. Point at the estimate column and say: the top three leave it alone.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER A -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>A. What a Standard Error Assumes</h1>
+      <p class="subtitle">Ten minutes &bull; &sect;14.0&ndash;14.1</p>
+      <aside class="notes">Transition line: "before we can say the standard error is wrong, we have to say what it was claiming."</aside>
+    </section>
+
+    <!-- SLIDE: four things -->
+    <section id="four-things" style="padding: 30px 52px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-forward-fast" style="color: var(--secondary-color);"></i> Four Things From Ch 12&ndash;13 &mdash; 90 Seconds</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color);">1. The coefficient vector</p>
+            <p style="font-size: 14pt; margin-top: 5px;">\(\boldsymbol{\hat{\beta}} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y}\). Each \(\hat{\beta}_j\) is a <strong>partial effect</strong>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">2. Two scorecards</p>
+            <p style="font-size: 14pt; margin-top: 5px;">\(R^2\) cannot fall when you add a predictor &mdash; even a random one. <strong>RMSE</strong> is in the units of \(y\).</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">3. The train/test split</p>
+            <p style="font-size: 14pt; margin-top: 5px;">Because in-sample fit measures <em>flexibility</em> as much as accuracy.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt; font-weight: 700; color: var(--danger-color);">4. Frisch&ndash;Waugh&ndash;Lovell</p>
+            <p style="font-size: 14pt; margin-top: 5px;">What &ldquo;controlling for&rdquo; actually <em>does</em>. Next slide.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1.5 min and no more &mdash; you taught all four in the last fortnight. Ask the room to define "partial effect" out loud, confirm, move. The ECON 5200 room spends twenty minutes here; you must not.</aside>
+    </section>
+
+    <!-- SLIDE: FWL -->
+    <section id="fwl" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> Frisch&ndash;Waugh&ndash;Lovell: What &ldquo;Controlling For&rdquo; Means</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">The coefficient on \(x_j\) in a multivariate regression is <em>identical</em> to the coefficient from a three-step procedure: residualise \(y\) against the other predictors, residualise \(x_j\) against the same others, then regress the first residuals on the second.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; margin: 14px 0; text-align: center;">
+          $$\hat{\beta}_j = \frac{\text{Cov}(\tilde{y}, \tilde{x}_j)}{\text{Var}(\tilde{x}_j)}$$
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 22px;">
+          <p style="font-size: 15pt;"><strong>What this says in words:</strong> &ldquo;holding constant&rdquo; is not a figure of speech. It is an <em>operation</em> &mdash; strip out of both sides everything the other variables can explain, and regress what is left on what is left. Everything else is discarded <em>before</em> the coefficient is computed.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> <strong>Remember this one.</strong> Chapter 24 defines Double Machine Learning as exactly this procedure with the two first stages replaced by ML models.</p>
+      </div>
+      <aside class="notes">3 min. Draw the three steps as three arrows on the board while you say them. You do not need to derive it &mdash; they saw it in Ch 13. The forward reference to Ch 24 is the reason it is on the slide at all; say "this is the single sentence from today that Chapter 24 is built on."</aside>
+    </section>
+
+    <!-- SLIDE: key concept residuals -->
+    <section id="key-concept-residuals" style="padding: 40px 70px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--success-color);"></i> Key Concept</h2>
+      <div class="content">
+        <div style="background: #f1f5f1; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 26px 32px;">
+          <p style="font-size: 21pt; font-weight: 600; color: var(--primary-color); margin-bottom: 14px;">A standard error is a claim about residuals.</p>
+          <p class="text-lg" style="line-height: 1.6;">Every standard error OLS prints comes from a formula, and that formula assumes things about the errors: that they all have the same variance, and that they are unrelated to one another.</p>
+          <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">Residuals are <strong>observable</strong>. So unlike the causal assumptions of Chapters 10&ndash;13, these are <strong>directly testable</strong> &mdash; and when they fail, the failure is in the standard error, not the coefficient.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Contrast explicitly with Ch 10-13: parallel trends and the exclusion restriction can only be argued. These can be checked. That is why this chapter feels different from the last four.</aside>
+    </section>
+
+    <!-- SLIDE: two datasets figure -->
+    <section id="two-datasets" style="padding: 22px 42px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-chart-simple" style="color: var(--secondary-color);"></i> The Picture Before the Algebra</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_001_two_datasets.png" alt="Two scatterplots with identical fitted lines and identical classical confidence bands: on the left every point sits about the same distance from the line, on the right points are tight at the left and scatter widely at the right" style="max-height: 400px; width: auto;">
+        <p style="font-size: 15pt; margin-top: 10px; text-align: left;">The line is equally good in both. But on the right, the observations at the right-hand end carry <strong>far less information</strong> than those on the left &mdash; and a formula that treats every observation as equally informative will <strong>overstate how much you know</strong>.</p>
+      </div>
+      <aside class="notes">2 min. Ask which panel you would rather have 100 more observations from, and where. The answer &mdash; the left end of the right panel &mdash; is the intuition for the whole of robust inference: observations are not equally informative, and the classical formula pretends they are.</aside>
+    </section>
+
+    <!-- SLIDE: spherical errors -->
+    <section id="spherical" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-circle-nodes" style="color: var(--secondary-color);"></i> Spherical Errors: One Equation, Two Claims</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 22px; text-align: center;">
+          $$E[\boldsymbol{\varepsilon}\boldsymbol{\varepsilon}' \mid \mathbf{X}] = \sigma^2 \mathbf{I}_n$$
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">The diagonal is constant</p>
+            <p style="font-size: 15pt; margin-top: 6px;">Every observation has the same error variance. <strong>Homoscedasticity.</strong></p>
+            <p style="font-size: 13.5pt; margin-top: 6px; color: var(--muted-color);">&sect;B breaks this one.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">The off-diagonals are zero</p>
+            <p style="font-size: 15pt; margin-top: 6px;">No error is related to any other. <strong>No autocorrelation.</strong></p>
+            <p style="font-size: 13.5pt; margin-top: 6px; color: var(--muted-color);">&sect;C breaks this one.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px;"><strong>What this says in words:</strong> the Gauss&ndash;Markov theorem makes OLS the Best Linear Unbiased Estimator, but it makes <em>two separate promises</em> in one line. Today we break them one at a time.</p>
+      </div>
+      <aside class="notes">2.5 min. Draw the n-by-n matrix on the board as a big square, point at the diagonal, then sweep across the off-diagonals. The visual of "one equation, two claims" is what makes Sections B and C feel like one lecture rather than two.</aside>
+    </section>
+
+    <!-- SLIDE: sandwich -->
+    <section id="sandwich" style="padding: 28px 52px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-burger" style="color: var(--accent-color);"></i> The Sandwich &mdash; Named, Not Derived</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: #f1f5f1; border-radius: 10px; padding: 12px 16px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13pt; color: var(--success-color); font-weight: 700; margin-bottom: 4px;">WHEN THE ASSUMPTION HOLDS</p>
+            $$\widehat{\text{Var}}(\boldsymbol{\hat{\beta}}) = \hat{\sigma}^2 (\mathbf{X}'\mathbf{X})^{-1}$$
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 12px 16px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 13pt; color: var(--danger-color); font-weight: 700; margin-bottom: 4px;">WHAT IS ACTUALLY TRUE</p>
+            $$(\mathbf{X}'\mathbf{X})^{-1}(\mathbf{X}'\boldsymbol{\Omega}\mathbf{X})(\mathbf{X}'\mathbf{X})^{-1}$$
+          </div>
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;"><strong>What this says in words:</strong> the two outer terms are the <strong>bread</strong>; the middle is the <strong>filling</strong>; \(\boldsymbol{\Omega}\) is the true error covariance matrix, whatever it happens to be. Set \(\boldsymbol{\Omega} = \sigma^2\mathbf{I}\) and the sandwich <em>collapses back</em> to the classical formula.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px;">So the classical estimator is a <strong>special case</strong>, not a different thing &mdash; and every robust standard error you will ever use is a different guess at the filling. <strong style="color: var(--accent-color);">You are not asked to derive it. You are asked to know it is one guess among several, and usually the wrong one.</strong></p>
+      </div>
+      <aside class="notes">3 min. Physically point at the bread and the filling; the name does the pedagogical work. Do the collapse verbally &mdash; "put sigma-squared-I in the middle and the X-primes cancel" &mdash; but do NOT write the algebra out. That is the graduate section's job, not yours. If a student asks for it, offer office hours.</aside>
+    </section>
+
+    <!-- SLIDE: beta untouched + misconception -->
+    <section id="beta-untouched" style="padding: 36px 62px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #faf0f0; border-left: 5px solid var(--danger-color); border-radius: 10px; padding: 20px 28px;">
+          <p style="font-size: 19pt; font-style: italic; color: var(--danger-color);">&ldquo;Heteroscedasticity biases my coefficients.&rdquo;</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.6;"><strong>It does not.</strong> OLS stays unbiased and consistent &mdash; the coefficient is still, on average, right. What breaks is the <em>variance</em> of the estimator, and therefore every standard error, \(t\)-statistic, \(p\)-value and confidence interval computed from it.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f1f5f1; border-radius: 8px; padding: 14px 18px;">
+            <p style="font-size: 15pt;"><strong>Predicting?</strong> This may be nearly irrelevant to you. (Hold that thought &mdash; Ch 15.)</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px;">
+            <p style="font-size: 15pt;"><strong>Testing a hypothesis?</strong> It can be the difference between a finding and nothing.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px; color: var(--muted-color);">Confusing this with <strong>omitted variable bias</strong> &mdash; which <em>does</em> corrupt the coefficient &mdash; is the most common error on this topic in interviews.</p>
+      </div>
+      <aside class="notes">2 min. Get the unbiasedness point stated by a student rather than by you: "someone tell me what happens to beta-hat." The interview line is not decoration &mdash; several of them will be asked this in a co-op screen this spring.</aside>
+    </section>
+
+      <!-- POLL 1 -->
+      <section id="poll-1" style="padding: 36px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll 1</h2>
+        <div class="content">
+          <p class="text-lg">You refit the California Housing regression with <code>cov_type='HC3'</code>. What happens to the estimated <strong>coefficient</strong> on <code>AveRooms</code>?</p>
+          <div class="poll-grid" data-poll-id="ch14-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>A</strong> &nbsp; It shrinks toward zero</div>
+            <div class="poll-option" data-choice="B" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>B</strong> &nbsp; It grows in magnitude</div>
+            <div class="poll-option" data-choice="C" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>C</strong> &nbsp; Nothing at all &mdash; it is identical</div>
+            <div class="poll-option" data-choice="D" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>D</strong> &nbsp; It depends how severe the heteroscedasticity is</div>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. D is the attractive wrong answer and usually wins the room. Let the vote settle before advancing.</aside>
+      </section>
+
+      <section id="poll-1-reveal" data-poll-results="ch14-econ3916-poll-1" style="padding: 28px 50px;">
+        <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Nothing At All</h2>
+        <div class="poll-results-chart" data-poll-id="ch14-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:8px 60px 22px;"></div>
+        <div class="content">
+          <p style="font-size: 15.5pt;">The covariance type is an argument to the <em>variance</em> formula. It never touches \(\boldsymbol{\hat{\beta}} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y}\), which does not contain \(\boldsymbol{\Omega}\) anywhere.</p>
+          <p style="font-size: 15.5pt; margin-top: 10px;"><strong>Your own lab proves it.</strong> Lab 14 Part 1, simulated data with a known true slope of 2.0: classical estimate <strong>2.0147</strong>, HC3 estimate <strong>2.0147</strong>. Same four decimals. Only the interval moved.</p>
+        </div>
+        <aside class="notes">1.5 min. Say the number twice. This is the single fact that separates a student who understands robust inference from one who has memorised an argument name.</aside>
+      </section>
+
+    <!-- SECTION DIVIDER B -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>B. Heteroscedasticity in Practice</h1>
+      <p class="subtitle">Twelve minutes &bull; &sect;14.2</p>
+      <aside class="notes">Transition: "we have broken the diagonal. Now let us catch it, and then fix it."</aside>
+    </section>
+
+    <!-- SLIDE: detect -->
+    <section id="detect-tests" style="padding: 30px 52px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-vial" style="color: var(--secondary-color);"></i> Two Tests, Both Regressions on Squared Residuals</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Breusch&ndash;Pagan</p>
+            <p style="font-size: 14.5pt; margin-top: 5px;">Regress squared residuals on the predictors. Do they explain anything?</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">White's test</p>
+            <p style="font-size: 14.5pt; margin-top: 5px;">Same, plus squares and cross-products &mdash; catches non-linear variance patterns BP misses.</p>
+          </div>
+        </div>
+        <div style="background: #f4f2ef; border-radius: 10px; padding: 14px 22px; margin-top: 14px; font-family: 'SF Mono', Menlo, monospace; font-size: 14pt;">
+          Breusch-Pagan: LM = 635.0&nbsp;&nbsp;&nbsp;&nbsp;p = 2.55e-137<br>
+          White test:&nbsp;&nbsp;&nbsp;&nbsp;LM = 1,971.6&nbsp;&nbsp;&nbsp;p = 0
+        </div>
+        <div class="fragment fade-up" style="background: #faf0f0; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt;"><strong>But do not over-invest in the tests.</strong> With \(n = 20{,}640\) almost any test rejects; with \(n = 30\) almost none do. The significance of a diagnostic is mostly a statement about <em>sample size</em>. <strong>Plot the residuals and look</strong> &mdash; Chapter 3's lesson, one level up.</p>
+        </div>
+      </div>
+      <aside class="notes">2.5 min. Downplay the formal tests deliberately and out loud: "with twenty thousand rows this test was always going to reject; it told us almost nothing we could not see." Students are trained to trust p-values, so this needs saying rather than implying.</aside>
+    </section>
+
+    <!-- SLIDE: funnel figure -->
+    <section id="funnel" style="padding: 18px 36px;">
+      <h2 style="margin-bottom: 2px; font-size: 24pt;"><i class="fa-solid fa-chart-area" style="color: var(--secondary-color);"></i> The Plot That Catches More Than Every Test Combined</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_002_funnel.png" alt="Residuals against fitted values for California Housing with the residual standard deviation by fitted quintile stepping up from 0.712 to 0.890, and a lower panel of mean residuals by quintile arching from plus 0.017 down to minus 0.087 and back up to plus 0.133" style="max-height: 470px; width: auto;">
+      </div>
+      <aside class="notes">1.5 min on the image alone. Trace the upper staircase with your finger left to right, then point at the lower panel and say "and that is a different problem entirely." Next slide unpacks both.</aside>
+    </section>
+
+    <!-- SLIDE: two findings -->
+    <section id="two-findings" style="padding: 30px 52px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--accent-color);"></i> Two Findings in One Table</h2>
+      <div class="content">
+        <div style="background: #f4f2ef; border-radius: 10px; padding: 14px 22px; font-family: 'SF Mono', Menlo, monospace; font-size: 14pt;">
+          residual SD:&nbsp;&nbsp;&nbsp;&nbsp;0.712&nbsp;&nbsp;0.687&nbsp;&nbsp;0.826&nbsp;&nbsp;0.875&nbsp;&nbsp;0.890<br>
+          residual mean:&nbsp;+0.017&nbsp;-0.087&nbsp;-0.051&nbsp;-0.012&nbsp;+0.133
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">The spread rises 25%</p>
+            <p style="font-size: 14.5pt; margin-top: 5px;">Cheapest to most expensive block groups. <strong>That is the heteroscedasticity</strong> the tests flagged.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">The means are not flat</p>
+            <p style="font-size: 14.5pt; margin-top: 5px;">Negative in the middle, positive at both ends. An <strong>arch</strong> means <strong>functional form</strong>, not variance. &sect;F returns to this.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f1f5f1; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;"><strong>What this costs a decision-maker.</strong> One RMSE for the whole model averages a residual SD of 0.712 with one of 0.890. If the expensive neighbourhoods are the ones the model gets used on, the headline accuracy is optimistic by roughly a quarter. <strong>Report error by segment.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The segment-RMSE point is the one a co-op supervisor will care about most; state it as a rule they can apply next week. Warn them that the arch is the more serious of the two findings even though it is the smaller number, and promise Section F.</aside>
+    </section>
+
+      <!-- POLL 2 -->
+      <section id="poll-2" style="padding: 36px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll 2 &mdash; Predict It</h2>
+        <div class="content">
+          <p class="text-lg">Robust standard errors will grow <em>every</em> SE in this regression. Which coefficient do you think grows the <strong>most</strong>?</p>
+          <div class="poll-grid" data-poll-id="ch14-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>A</strong> &nbsp; <code>MedInc</code> &mdash; the biggest coefficient</div>
+            <div class="poll-option" data-choice="B" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>B</strong> &nbsp; <code>HouseAge</code> &mdash; the smallest and noisiest</div>
+            <div class="poll-option" data-choice="C" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>C</strong> &nbsp; <code>AveRooms</code> &mdash; the one from the hook</div>
+            <div class="poll-option" data-choice="D" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>D</strong> &nbsp; All three grow by about the same factor</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. D is the interesting wrong answer &mdash; it is what "robust standard errors are more conservative" sounds like if you never checked. Ask for a show of hands on D specifically before revealing.</aside>
+      </section>
+
+    <!-- SLIDE: HC formula -->
+    <section id="hc3-fix" style="padding: 28px 52px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-screwdriver-wrench" style="color: var(--success-color);"></i> The Fix Is Not to Abandon OLS</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">It is to stop using a variance formula you know to be wrong.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 18px; margin: 10px 0; text-align: center;">
+          $$\widehat{\text{Var}}_{HC}(\boldsymbol{\hat{\beta}}) = (\mathbf{X}'\mathbf{X})^{-1}\left(\sum_{i=1}^{n} w_i e_i^2 \mathbf{x}_i\mathbf{x}_i'\right)(\mathbf{X}'\mathbf{X})^{-1}$$
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 13px 20px;">
+          <p style="font-size: 14.5pt;"><strong>What this says in words:</strong> same bread, new filling &mdash; built from each observation's <em>own</em> squared residual \(e_i^2\) instead of one common \(\sigma^2\). <strong>HC0</strong> sets \(w_i = 1\). <strong>HC3</strong> sets \(w_i = 1/(1-h_{ii})^2\), where \(h_{ii}\) is observation \(i\)'s <strong>leverage</strong>.</p>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 12px;"><strong>Why the leverage correction:</strong> high-leverage points pull the fitted line toward themselves, which artificially shrinks their own residuals and flatters the model. HC3 inflates those residuals back up in proportion to how much pulling they did.</p>
+        <div style="background: #f1f5f1; border-radius: 8px; padding: 12px 20px; margin-top: 12px;">
+          <p style="font-size: 15pt;"><strong style="color: var(--success-color);">Use HC3 by default.</strong> It costs one argument: <code>model.fit(cov_type='HC3')</code></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Note out loud that h_ii here is the SAME object you will meet in Section E as leverage &mdash; one quantity, two uses. Students who miss that treat HC3 and Cook's distance as unrelated topics. Do not derive the weight; just say what it does.</aside>
+    </section>
+
+    <!-- SLIDE: repricing -->
+    <section id="se-repricing" style="padding: 20px 38px;">
+      <h2 style="margin-bottom: 2px; font-size: 24pt;"><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i> Answer: C &mdash; Robust Errors Are Not a Uniform Tax</h2>
+      <div class="poll-results-chart" data-poll-id="ch14-econ3916-poll-2" style="display:flex; gap:18px; align-items:flex-end; justify-content:center; height:100px; margin:2px 60px 6px;"></div>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_003_se_repricing.png" alt="Horizontal bars of the ratio of the HC3 standard error to the classical standard error: HouseAge 1.24 times, MedInc 2.06 times, AveRooms 4.99 times, with each unchanged coefficient and its t-statistic collapse shown beside the bar" style="max-height: 330px; width: auto;">
+        <p style="font-size: 14.5pt; margin-top: 6px; text-align: left;">Every coefficient identical. Every standard error larger. They <strong>reprice each coefficient</strong> according to how much of its apparent precision came from the homoscedasticity assumption &mdash; and <code>AveRooms</code> was living almost entirely on credit.</p>
+      </div>
+      <aside class="notes">2.5 min. This slide carries Poll 2's result bars as well as the reveal &mdash; show the vote first, then the figure. The uneven-repricing point is not obvious and is worth stating twice: "robust standard errors are not a blanket penalty; they are a repricing."</aside>
+    </section>
+
+    <!-- SLIDE: lab coverage -->
+    <section id="lab-coverage" style="padding: 20px 40px;">
+      <h2 style="margin-bottom: 2px; font-size: 24pt;"><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> From Your Lab: Robust Helps, and Does Not Finish the Job</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_004_lab_coverage.png" alt="Coverage of a nominal ninety-five percent confidence interval over four hundred trials of heteroscedastic data: classical 91.8 percent with Monte Carlo standard error 1.4 points, HC3 robust 93.5 percent with 1.2 points, both below the ninety-five percent line" style="max-height: 360px; width: auto;">
+        <p style="font-size: 14.5pt; margin-top: 8px; text-align: left;">Lab 14 Part 1, 400 trials, true slope known. Two honest readings and you need <strong>both</strong>: robust standard errors move coverage the right way, <em>and</em> the two rates sit about one Monte Carlo standard error apart, so this experiment on its own does not prove much. <strong style="color: var(--accent-color);">Say that out loud rather than rounding 93.5% up to &ldquo;fixed.&rdquo;</strong></p>
+      </div>
+      <aside class="notes">2 min. This is the intellectual-honesty beat of the lecture. Students want "robust = fixed"; the measured answer is "better, and still short, and this experiment cannot resolve the gap." Point at the error bars. Ask how many more trials they would need &mdash; the answer, four times as many to halve the MC SE, is worth saying.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER C -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>C. Dependence, and Why You Cluster</h1>
+      <p class="subtitle">Fifteen minutes &bull; &sect;14.3 &bull; the most consequential thing today</p>
+      <aside class="notes">Transition: "we broke the diagonal. Now the off-diagonals &mdash; and this one is worse by an order of magnitude."</aside>
+    </section>
+
+    <!-- SLIDE: intuition -->
+    <section id="cluster-intuition" style="padding: 34px 58px;">
+      <h2><i class="fa-solid fa-people-group" style="color: var(--secondary-color);"></i> Your Sample Is Smaller Than Its Row Count</h2>
+      <div class="content">
+        <p class="text-lg">The second half of the spherical-errors assumption says no two errors are related. In economic data they routinely are:</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 12px; text-align: center;"><p style="font-size: 14.5pt;">students within a <strong>school</strong></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 12px; text-align: center;"><p style="font-size: 14.5pt;">workers within a <strong>firm</strong></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 12px; text-align: center;"><p style="font-size: 14.5pt;">households within a <strong>neighbourhood</strong></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 12px; text-align: center;"><p style="font-size: 14.5pt;">quarters within a <strong>country</strong></p></div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 18px 26px; margin-top: 20px;">
+          <p style="font-size: 18pt;">A thousand people in one town who all lived through the same local recession are <strong>not</strong> a thousand independent observations about recessions.</p>
+          <p style="font-size: 18pt; margin-top: 6px; color: var(--accent-color); font-weight: 600;">They are closer to one.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Deliver the last two lines as the whole point and then stop. If the room gets this sentence, the 85% that follows is inevitable rather than surprising &mdash; which is the right kind of surprise.</aside>
+    </section>
+
+    <!-- SLIDE: single draw -->
+    <section id="single-draw" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-map-location-dot" style="color: var(--accent-color);"></i> A Policy Assigned at the Region Level</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">40 regions &times; 250 people = 10,000 rows. Treatment assigned <strong>per region</strong>. True effect <strong>exactly zero</strong>.</p>
+        <div style="background: #f4f2ef; border-radius: 10px; padding: 14px 22px; margin-top: 14px; font-family: 'SF Mono', Menlo, monospace; font-size: 15pt;">
+          naive SE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.0260&nbsp;&nbsp;&nbsp;t = 0.94<br>
+          clustered SE&nbsp;<strong>0.2613</strong>&nbsp;&nbsp;&nbsp;t = 0.09<br>
+          <span style="color: var(--danger-color);">inflation: <strong>10.1x</strong></span>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px;">A <strong>ten-fold</strong> difference in claimed precision from the same 10,000 rows.</p>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 10px; color: var(--muted-color);">On this one draw neither is significant, so the room shrugs. Good &mdash; that is the setup.</p>
+      </div>
+      <aside class="notes">2 min. Run this live if the machine cooperates. Let the shrug happen; do not rescue it. The single draw is deliberately anticlimactic so the replication loop lands. Then advance to the poll.</aside>
+    </section>
+
+      <!-- POLL 3 -->
+      <section id="poll-3" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll 3 &mdash; Predict It</h2>
+        <div class="content">
+          <p class="text-lg">Now run that experiment <strong>2,000 times</strong>. The true effect is zero every time and the test is set at the 5% level. How often do the <strong>naive</strong> standard errors declare a significant effect?</p>
+          <div class="poll-grid" data-poll-id="ch14-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>A</strong> &nbsp; About 5% &mdash; that is what the level means</div>
+            <div class="poll-option" data-choice="B" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>B</strong> &nbsp; About 20%</div>
+            <div class="poll-option" data-choice="C" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>C</strong> &nbsp; About 50%</div>
+            <div class="poll-option" data-choice="D" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>D</strong> &nbsp; About 85%</div>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. This is the emotional peak of the lecture and it must be a prediction, not a reveal. Point at the "5%" you wrote on the board during retrieval practice. Almost nobody picks D. Wait for the full vote.</aside>
+      </section>
+
+      <section id="poll-3-reveal" data-poll-results="ch14-econ3916-poll-3" style="padding: 18px 38px;">
+        <h2 style="margin-bottom: 2px; font-size: 24pt;"><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: D &mdash; Eighty-Five Percent</h2>
+        <div class="poll-results-chart" data-poll-id="ch14-econ3916-poll-3" style="display:flex; gap:18px; align-items:flex-end; justify-content:center; height:92px; margin:2px 60px 4px;"></div>
+        <div class="content" style="text-align: center;">
+          <img src="figures/figure_005_false_positive.png" alt="Two bars against a five percent nominal line: naive standard errors reject 84.7 percent of the time with a Monte Carlo standard error of 0.8 percentage points, cluster-robust standard errors 6.3 percent with 0.5 points, over two thousand replications of a true null" style="max-height: 330px; width: auto;">
+        </div>
+        <aside class="notes">2 min. Say "eighty-five percent" and then stop talking for three seconds. A test built to be wrong 5% of the time is wrong roughly 85% of the time &mdash; you would publish, ship or legislate on noise five times out of six. Then point at the green bar: 6.3% against a target of 5%, with a Monte Carlo SE of 0.5 points, so that 6.3 is a measurement rather than a coincidence.</aside>
+      </section>
+
+    <!-- SLIDE: misconception huge sample -->
+    <section id="misconception-huge" style="padding: 36px 62px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #faf0f0; border-left: 5px solid var(--danger-color); border-radius: 10px; padding: 20px 28px;">
+          <p style="font-size: 19pt; font-style: italic; color: var(--danger-color);">&ldquo;My sample is huge, so I don't need robust standard errors.&rdquo;</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.6;">Sample size is the reason to <strong>worry</strong>, not the reason not to. The 85% happened <em>because</em> the naive formula treated 10,000 correlated observations as 10,000 independent ones &mdash; and the more rows you add inside the same 40 regions, the more overconfident it becomes.</p>
+        <div class="fragment fade-up" style="background: #f1f5f1; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 18px 26px; margin-top: 18px;">
+          <p style="font-size: 19pt;">What matters is the number of <strong>clusters</strong>, not the number of rows.</p>
+          <p style="font-size: 15pt; margin-top: 6px; color: var(--muted-color);">Growing \(n\) inside a fixed number of clusters buys almost nothing and costs you calibration.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Ask: "if we ran this with a million people instead of ten thousand, would the false-positive rate go up or down?" Up. That answer surprises people and it is the whole lesson.</aside>
+    </section>
+
+    <!-- SLIDE: when to cluster -->
+    <section id="when-to-cluster" style="padding: 28px 52px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-diagram-project" style="color: var(--success-color);"></i> When to Cluster &mdash; the Rule That Replaced the Old One</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">The old answer was <em>&ldquo;cluster if you sampled in groups&rdquo;</em> &mdash; which never explained why researchers cluster by state but not by gender.</p>
+        <div style="background: #f1f5f1; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 22px; margin-top: 12px;">
+          <p style="font-size: 16pt;">Abadie, Athey, Imbens &amp; Wooldridge (2023) reframed it: <strong>clustering is a question about experimental design, not sampling.</strong> Cluster when the sampling drew clusters from a broader population, or &mdash; the condition that decides most real cases &mdash; <strong>the treatment was assigned at the cluster level.</strong></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;">A pricing change randomised <strong>per user</strong>?</p>
+            <p style="font-size: 14.5pt; margin-top: 5px; color: var(--secondary-color); font-weight: 600;">No geographic clustering needed &mdash; the assignment mechanism has no spatial structure.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;">A policy that switches on <strong>per state</strong>?</p>
+            <p style="font-size: 14.5pt; margin-top: 5px; color: var(--accent-color); font-weight: 600;">Cluster by state &mdash; however many individuals you observe.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 17pt; margin-top: 16px; text-align: center; font-weight: 600; color: var(--primary-color);">The unit of <em>assignment</em>, not the unit of <em>observation</em>, sets the level.</p>
+      </div>
+      <aside class="notes">2.5 min. This is the takeaway students will actually use at work &mdash; give them the two-case rule and say plainly that it is answerable before they touch the data. You are teaching the decision rule the paper produced, not the paper's variance algebra.</aside>
+    </section>
+
+    <!-- SLIDE: key concept cluster -->
+    <section id="key-concept-cluster" style="padding: 42px 72px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--success-color);"></i> Key Concept</h2>
+      <div class="content">
+        <div style="background: #f1f5f1; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 26px 32px;">
+          <p style="font-size: 21pt; font-weight: 600; color: var(--primary-color); margin-bottom: 14px;">Cluster at the level of treatment assignment.</p>
+          <p class="text-lg" style="line-height: 1.6;">The question is not &ldquo;are my observations correlated?&rdquo; &mdash; they always are, somehow. It is <strong>&ldquo;at what level was the treatment assigned?&rdquo;</strong></p>
+          <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">Forty regions is forty pieces of information about a region-level policy, whether you observe 10,000 people or 10 million.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. This is the slide to photograph in Section C. Say the last sentence twice.</aside>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 26px 48px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion &mdash; Pick the Level (5 min)</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">In pairs. For each: <strong>name the unit of assignment in a sentence, then name the clustering level.</strong></p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>1.</strong> A retailer A/B tests a checkout redesign, randomising <strong>each visitor</strong>. 2.1M sessions across 300 cities.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>2.</strong> A <strong>state</strong> raises its minimum wage. Monthly employment, 50 states, 10 years.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>3.</strong> A district assigns a reading curriculum <strong>school by school</strong>. 14,000 pupils in 60 schools.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>4.</strong> A bank changes its overdraft fee <strong>for every customer at once</strong> on 1 March. 4M customers.</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px; color: var(--muted-color);"><i class="fa-solid fa-stopwatch"></i> Two minutes in pairs, then four cold-calls. Press <strong>2</strong> for the timer.</p>
+      </div>
+      <aside class="notes">5 min. Targets: (1) the visitor &mdash; no geographic clustering, and note the 300 cities are a red herring; (2) the state &mdash; cluster by state, and the row count is irrelevant; (3) the school &mdash; 60 clusters, not 14,000 observations. Spend the time on (4): nobody was assigned anything relative to anybody else. It is not a clustering problem at all, it is an identification problem with no control group. If a pair reaches that on their own, hand them the room.</aside>
+    </section>
+
+    <!-- SLIDE: think like an economist -->
+    <section id="think-like-economist" style="padding: 42px 72px;">
+      <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Think Like an Economist</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 5px solid var(--accent-color); border-radius: 10px; padding: 26px 32px;">
+          <p class="text-lg" style="line-height: 1.6;">Before choosing a clustering level, <strong>describe the mechanism that assigned your treatment, in a sentence, out loud.</strong></p>
+          <p class="text-lg" style="line-height: 1.6; margin-top: 12px; font-style: italic; color: var(--accent-color);">&ldquo;The state legislature passed it, so every resident of that state got it on the same day.&rdquo;</p>
+          <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">That answers the question &mdash; cluster by state. If you <em>cannot</em> describe the mechanism, you do not yet know enough about your data to report a standard error from it, and no amount of robustness options will substitute.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Close Section C here. Tell them this sentence is the first thing you will ask about their final project, and that "I clustered at the county level" without the mechanism sentence is not an answer.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER D -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>D. A Diagnostic That Answers the Wrong Question</h1>
+      <p class="subtitle">Six minutes &bull; &sect;14.3b &bull; a small mystery</p>
+      <aside class="notes">Transition: "clustering handles dependence inside known groups. What about dependence between neighbouring rows?"</aside>
+    </section>
+
+    <!-- SLIDE: DW mystery -->
+    <section id="dw-mystery" style="padding: 30px 55px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-magnifying-glass" style="color: var(--secondary-color);"></i> Serial Correlation &mdash; and a Result That Cannot Be</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--muted-color);">
+            <p style="font-size: 14.5pt; font-weight: 700;">Durbin&ndash;Watson</p>
+            <p style="font-size: 14pt; margin-top: 4px;">0 to 4, with 2 meaning no first-order correlation. Tests only AR(1); <strong>invalid</strong> with a lagged dependent variable.</p>
+          </div>
+          <div style="background: #f1f5f1; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt; font-weight: 700;">Breusch&ndash;Godfrey</p>
+            <p style="font-size: 14pt; margin-top: 4px;">The modern replacement. Arbitrary lag order, valid with lagged dependent variables. <strong>Use it.</strong></p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px;">Now run both on our California Housing regression &mdash; <strong>cross-sectional data with no time dimension at all</strong>:</p>
+        <div style="background: #faf0f0; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 14px 22px; margin-top: 10px; font-family: 'SF Mono', Menlo, monospace; font-size: 15pt;">
+          Durbin-Watson&nbsp;&nbsp;&nbsp;&nbsp;<strong>0.805</strong><br>
+          Breusch-Godfrey&nbsp;&nbsp;LM = 9,861.3&nbsp;&nbsp;&nbsp;p = 0
+        </div>
+        <p style="font-size: 15pt; margin-top: 12px;">Strong, overwhelmingly significant serial correlation &mdash; in data with <strong>no time ordering whatsoever</strong>.</p>
+      </div>
+      <aside class="notes">2.5 min. Run this as a mystery. Show 0.805 and ask the room what serial correlation could possibly mean in a cross-section. Let them get properly stuck for twenty seconds before you advance to the poll. Also note the API gotcha for the lab: acorr_breusch_godfrey returns a plain 4-tuple, so .statistic and .pvalue raise AttributeError.</aside>
+    </section>
+
+      <!-- POLL 4 -->
+      <section id="poll-4" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll 4</h2>
+        <div class="content">
+          <p class="text-lg">Durbin&ndash;Watson is 0.805 on cross-sectional data. What is the test <strong>actually</strong> detecting?</p>
+          <div class="poll-grid" data-poll-id="ch14-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>A</strong> &nbsp; Nothing &mdash; the test is broken on cross-sectional data</div>
+            <div class="poll-option" data-choice="B" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>B</strong> &nbsp; Geography &mdash; the rows are ordered by location, so adjacent rows are adjacent places</div>
+            <div class="poll-option" data-choice="C" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>C</strong> &nbsp; Real serial correlation &mdash; the data has a hidden time dimension</div>
+            <div class="poll-option" data-choice="D" style="background: #f8f6f3; border: 2px solid var(--line-color); border-radius: 10px; padding: 16px 20px; cursor: pointer;"><strong>D</strong> &nbsp; Heteroscedasticity leaking into an autocorrelation statistic</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. A is the popular wrong answer and it is the one worth correcting hardest: the test is not broken, it worked perfectly. Advance once voting slows.</aside>
+      </section>
+
+      <section id="poll-4-reveal" data-poll-results="ch14-econ3916-poll-4" style="padding: 26px 46px;">
+        <h2 style="margin-bottom: 4px; font-size: 25pt;"><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Geography in a Serial-Correlation Costume</h2>
+        <div class="poll-results-chart" data-poll-id="ch14-econ3916-poll-4" style="display:flex; gap:18px; align-items:flex-end; justify-content:center; height:110px; margin:4px 60px 14px;"></div>
+        <div class="content">
+          <p style="font-size: 15pt;">Shuffle the rows and run <strong>identical code</strong>:</p>
+          <div style="background: #f1f5f1; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 12px 22px; margin-top: 8px; font-family: 'SF Mono', Menlo, monospace; font-size: 14.5pt;">
+            Durbin-Watson&nbsp;&nbsp;&nbsp;&nbsp;<strong>1.973</strong><br>
+            Breusch-Godfrey&nbsp;&nbsp;LM = 7.5&nbsp;&nbsp;&nbsp;p = 0.057
+          </div>
+          <p style="font-size: 15pt; margin-top: 12px;">It vanished. Same data, same model, same coefficients &mdash; <strong>only the row order changed</strong>, and a \(p\)-value of zero became 0.057. California Housing is ordered geographically, so what the tests detected was real <strong>spatial</strong> dependence.</p>
+        </div>
+        <aside class="notes">2 min. The reveal is memorable and generalises far beyond this test. Be explicit that shuffling is NOT the fix &mdash; it destroys real information. The fix is to recognise the dependence as spatial and treat it as such.</aside>
+      </section>
+
+    <!-- SLIDE: two lessons -->
+    <section id="diagnostic-scepticism" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Two Lessons, and the Second Is the General One</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 10px; padding: 16px 24px;">
+          <p style="font-size: 15.5pt;"><strong>Practically:</strong> do not run serial-correlation tests on cross-sectional data unless the row order <em>means</em> something &mdash; and if it does, say what it means.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 24px; margin-top: 14px;">
+          <p style="font-size: 17pt;"><strong>Generally:</strong> a diagnostic answers the question it was built to answer, <em>not</em> the question you had in mind. Both tests behaved perfectly. <strong>The mismatch was ours.</strong></p>
+        </div>
+        <div style="background: #faf0f0; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 14px 24px; margin-top: 16px;">
+          <p style="font-size: 14.5pt; font-style: italic; color: var(--danger-color); margin-bottom: 6px;">Common Misconception: &ldquo;a significant diagnostic test means my model is broken.&rdquo;</p>
+          <p style="font-size: 14.5pt;">It means an assumption is violated. <em>Which</em> one, whether it matters, and what to do are three further questions the test does not answer. Read a test as evidence to interpret, not a verdict to obey.</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px; color: var(--muted-color);"><strong>Lab 14 makes the same point from the other side:</strong> its &ldquo;missing curvature&rdquo; panel <strong>passes</strong> Breusch&ndash;Pagan at \(p = 0.79\) while the residual plot shows the curve at a glance.</p>
+      </div>
+      <aside class="notes">2 min. The lab callback matters &mdash; a test can miss what a plot shows, and a test can find what you were not asking about. Both failures are the same failure. That is the transferable idea in this section.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER E -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>E. Leverage and Influence</h1>
+      <p class="subtitle">Twelve minutes &bull; &sect;14.4 &bull; how little data is your finding standing on?</p>
+      <aside class="notes">Transition: "we have fixed two variance formulas. Neither of them asks how many rows the answer is actually resting on."</aside>
+    </section>
+
+    <!-- SLIDE: three words -->
+    <section id="three-words" style="padding: 18px 36px;">
+      <h2 style="margin-bottom: 2px; font-size: 24pt;"><i class="fa-solid fa-table-cells-large" style="color: var(--accent-color);"></i> Three Words, Three Different Things</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_006_quadrant.png" alt="A two by two grid of leverage against residual size: low leverage and small residual is an ordinary observation, low leverage with a large residual is an outlier that barely moves the line, high leverage with a small residual is harmless because it sits where the line was heading, and high leverage with a large residual is the influential and dangerous cell" style="max-height: 420px; width: auto;">
+        <p style="font-size: 14.5pt; margin-top: 6px; text-align: left;"><strong>Extremity alone is not a problem. Extremity <em>plus disagreement</em> is.</strong> A block group with 140 rooms per household is wildly extreme in \(x\), but if its value falls right on the fitted line, deleting it changes almost nothing.</p>
+      </div>
+      <aside class="notes">2.5 min. Draw this on the board too, and put one imaginary data point in each cell. The bottom-right "harmless" cell is the counter-intuitive one and the reason "remove the outliers" is bad advice stated at the wrong level: low-leverage outliers are the ones you can most safely leave alone.</aside>
+    </section>
+
+    <!-- SLIDE: measuring -->
+    <section id="measuring" style="padding: 28px 52px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-ruler" style="color: var(--secondary-color);"></i> Measuring It</h2>
+      <div class="content">
+        <p style="font-size: 15pt;"><strong>Leverage</strong> is \(h_{ii}\), the \(i\)th diagonal of \(\mathbf{H} = \mathbf{X}(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\) &mdash; <strong style="color: var(--accent-color);">the same quantity HC3 uses</strong>. It averages \(p/n\); a common flag is \(h_{ii} > 3p/n\).</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 8px 18px; margin: 10px 0; text-align: center;">
+          $$D_i = \frac{\sum_{j=1}^n (\hat{y}_j - \hat{y}_{j(i)})^2}{p \, \hat{\sigma}^2}$$
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 12px 20px;">
+          <p style="font-size: 14.5pt;"><strong>What this says in words:</strong> refit the model with observation \(i\) deleted, and ask how far <em>all</em> the fitted values moved. That is <strong>Cook's distance</strong> &mdash; influence measured directly. Conventional threshold: \(D_i > 4/n\).</p>
+        </div>
+        <div style="background: #f4f2ef; border-radius: 10px; padding: 12px 22px; margin-top: 12px; font-family: 'SF Mono', Menlo, monospace; font-size: 14pt;">
+          mean leverage&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.00019&nbsp;&nbsp;(= p/n = 0.00019)<br>
+          obs above 3x mean&nbsp;&nbsp;&nbsp;&nbsp;457<br>
+          max Cook's D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>5.2624</strong><br>
+          obs above 4/n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;941
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 10px;">A Cook's distance of <strong>5.26</strong> is enormous &mdash; the threshold here is \(4/20{,}640 \approx 0.0002\).</p>
+      </div>
+      <aside class="notes">2.5 min. Say the h_ii connection explicitly: this is the same number that set the HC3 weight in Section B. One object, two uses. Students who miss that carry HC3 and Cook's distance around as unrelated facts.</aside>
+    </section>
+
+    <!-- SLIDE: deletion ladder -->
+    <section id="deletion-ladder" style="padding: 16px 34px;">
+      <h2 style="margin-bottom: 2px; font-size: 23pt;"><i class="fa-solid fa-compress-arrows-alt" style="color: var(--danger-color);"></i> How Little Data Is the Finding Standing On?</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_007_deletion_ladder.png" alt="Upper panel, cumulative share of total Cook's distance reaching 85.2 percent at ten observations and 90.7 percent at the top one percent; lower panel, the AveRooms coefficient moving from minus 0.0272 to minus 0.0945 as the ten to two hundred most influential rows are dropped" style="max-height: 460px; width: auto;">
+      </div>
+      <aside class="notes">2 min. Run the deletion loop live if you can. Ten rows out of twenty thousand carry 85% of the influence. This is not a reason to distrust regression &mdash; it is a reason to REPORT how concentrated your result is, because a finding that survives deleting its ten most influential points is a different claim from one that does not.</aside>
+    </section>
+
+    <!-- SLIDE: look at the ten -->
+    <section id="the-ten" style="padding: 24px 46px;">
+      <h2 style="margin-bottom: 6px; font-size: 25pt;"><i class="fa-solid fa-eye" style="color: var(--accent-color);"></i> What You Must Not Do Is Delete Them and Move On</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 380px 1fr; gap: 22px; align-items: center;">
+          <div style="background: #f4f2ef; border-radius: 10px; padding: 12px 16px; font-family: 'SF Mono', Menlo, monospace; font-size: 11.5pt; line-height: 1.5;">
+            <span style="color: var(--muted-color);">&nbsp;MedInc&nbsp;&nbsp;AveRooms&nbsp;&nbsp;Population</span><br>
+            &nbsp;&nbsp;5.55&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;36.08&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;241<br>
+            &nbsp;&nbsp;4.97&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;56.27&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;54<br>
+            &nbsp;&nbsp;2.17&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;28.60&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;142<br>
+            &nbsp;15.00&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8.46&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;55<br>
+            &nbsp;&nbsp;1.62&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;62.42&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;83<br>
+            &nbsp;&nbsp;3.24&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;52.85&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;265<br>
+            &nbsp;&nbsp;1.19&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;52.69&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;98<br>
+            &nbsp;&nbsp;4.07&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;61.81&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;112<br>
+            &nbsp;&nbsp;4.62&nbsp;&nbsp;&nbsp;<strong>132.53</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;36<br>
+            &nbsp;&nbsp;1.88&nbsp;&nbsp;&nbsp;<strong>141.91</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;30
+          </div>
+          <div>
+            <p style="font-size: 15pt;">Nine of the ten have <code>AveRooms</code> above the 99th percentile (10.36). The median block group has <strong>5.23</strong> rooms per household. Six of the ten have populations under 100.</p>
+            <p style="font-size: 15pt; margin-top: 12px;"><strong>Those numbers are not houses.</strong> <code>AveRooms</code> is total rooms &divide; households. A block group with a handful of households and any institutional building &mdash; a dormitory, a barracks, a hotel &mdash; produces an average-rooms figure that describes <strong>nothing real</strong>.</p>
+            <p style="font-size: 15pt; margin-top: 12px; color: var(--accent-color); font-weight: 600;">The most influential observations are a measurement artifact, and the artifact is a small denominator.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Let the room work out what a block group with 142 rooms per household actually is before you say it. Someone will get to "dormitory." Then land the reframing on the next slide.</aside>
+    </section>
+
+    <!-- SLIDE: reframing -->
+    <section id="reframing" style="padding: 38px 66px;">
+      <h2><i class="fa-solid fa-rotate" style="color: var(--success-color);"></i> That Reframes the Whole Finding</h2>
+      <div class="content">
+        <div style="background: #f1f5f1; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 22px 30px;">
+          <p class="text-lg" style="line-height: 1.6;">The negative <code>AveRooms</code> coefficient was <strong>not</strong> a fact about large houses. It was substantially a fact about <strong>tiny block groups containing large buildings</strong>.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.6;">This is Chapter 1's insistence that data is a product of measurement decisions, arriving thirteen chapters later as a diagnostic &mdash; discovered by the regression itself, without being told to look.</p>
+        <p style="font-size: 18pt; margin-top: 14px; color: var(--accent-color); font-weight: 600;">And it is a better result than the coefficient was.</p>
+        <div style="background: #faf0f0; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 13px 22px; margin-top: 16px;">
+          <p style="font-size: 14pt; font-style: italic; color: var(--danger-color); margin-bottom: 4px;">Misconception: &ldquo;influential observations are outliers, and outliers should be removed.&rdquo;</p>
+          <p style="font-size: 14pt;">Deleting points because they are inconvenient is how you produce a result that replicates on nobody else's data. An influential point is usually either a data error worth fixing at source, or the most informative observation you have.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Spend the last minute on the ethics: the right output is a sentence in your report, not a filtered dataset. Then set up Discussion 2, which asks them to write that sentence.</aside>
+    </section>
+
+    <!-- SLIDE: lab influence contrast -->
+    <section id="lab-influence" style="padding: 32px 56px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> From Your Lab: Which Number Actually Moved?</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Lab 14 Part 3. One row out of 600, its \(y\) forced to 60. <strong>Low</strong> leverage (0.0027), enormous studentised residual (18.1). Delete it:</p>
+        <div style="background: #f4f2ef; border-radius: 10px; padding: 14px 22px; margin-top: 12px; font-family: 'SF Mono', Menlo, monospace; font-size: 14.5pt;">
+          <span style="color: var(--muted-color);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;slope&nbsp;&nbsp;&nbsp;std err</span><br>
+          with obs 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.0325&nbsp;&nbsp;&nbsp;<strong>0.0317</strong><br>
+          without obs 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.0142&nbsp;&nbsp;&nbsp;<strong>0.0213</strong>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f1f5f1; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;">The slope moved <strong>0.0182</strong> &mdash; only <strong>0.58</strong> of its own standard error. By the model's own yardstick, it barely moved.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;">The standard error <strong>fell 33%</strong>. In Part 1 the estimate held still and the interval <em>grew</em>. Here it <em>shrank</em>.</p>
+          </div>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 14px; color: var(--muted-color);">Ask yourself which term of \(\hat{\sigma}^2\) a single huge residual enters, and with what power. That is your Part 3 interpretation question.</p>
+      </div>
+      <aside class="notes">2 min. This is the most under-appreciated result in the lab. A big residual enters sigma-hat-squared as a SQUARE, so it inflates the standard error far more than it shifts the estimate. Do not give the answer &mdash; they owe it in the notebook.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 30px 54px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-pen-nib" style="color: var(--secondary-color);"></i> Discussion &mdash; Write the Sentence (4 min)</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt;">You found the ten block groups. You are writing this up for a manager who will never read your code. <strong>In pairs, write one or two sentences</strong> that:</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 16px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 14.5pt;"><strong>(a)</strong> report the coefficient</p></div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 16px; border-left: 4px solid var(--accent-color);"><p style="font-size: 14.5pt;"><strong>(b)</strong> report how concentrated it is</p></div>
+          <div style="background: #f1f5f1; border-radius: 8px; padding: 14px 16px; border-left: 4px solid var(--success-color);"><p style="font-size: 14.5pt;"><strong>(c)</strong> say what those ten rows are &mdash; <em>without deleting them</em></p></div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px;">Then swap with the pair beside you: <strong>whose sentence would survive a hostile reader?</strong></p>
+        <p style="font-size: 14pt; margin-top: 10px; color: var(--muted-color);"><i class="fa-solid fa-stopwatch"></i> Two minutes to write, one to swap, one to read two aloud. Press <strong>4</strong> for the timer.</p>
+      </div>
+      <aside class="notes">4 min. Model answer to read after two student versions: "The coefficient on average rooms is -0.027 (HC3 SE 0.012). It is highly concentrated: the ten most influential block groups, 0.05% of the sample, account for 85% of total Cook's distance, and dropping them more than doubles the estimate. Those ten are small-population block groups whose average-rooms figure reflects an institutional building over a tiny household denominator rather than large houses." Note that this is a graded skill &mdash; it is the written deliverable of Lab 14.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER F -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>F. What Diagnostics Cannot Save You From</h1>
+      <p class="subtitle">Seven minutes &bull; &sect;14.5 &bull; the honest boundary</p>
+      <aside class="notes">Transition: "everything so far fixes inference. None of it fixes the estimate. Back to the map."</aside>
+    </section>
+
+    <!-- SLIDE: back to the map -->
+    <section id="two-kinds-payoff" style="padding: 28px 50px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-rotate-left" style="color: var(--secondary-color);"></i> Back to the Map &mdash; the Bottom Two Rows</h2>
+      <div class="content">
+        <div style="opacity: 0.42;">
+          <table style="width: 100%; font-size: 14pt; border-collapse: collapse;">
+            <tr style="background: #f0f5f8;"><td style="padding: 6px 10px;">Heteroscedasticity</td><td style="padding: 6px 10px;">unbiased</td><td style="padding: 6px 10px;">fixed &mdash; HC3</td></tr>
+            <tr style="background: #f0f5f8;"><td style="padding: 6px 10px;">Clustered dependence</td><td style="padding: 6px 10px;">unbiased</td><td style="padding: 6px 10px;">fixed &mdash; cluster-robust</td></tr>
+            <tr style="background: #f0f5f8;"><td style="padding: 6px 10px;">High leverage / influence</td><td style="padding: 6px 10px;">fragile</td><td style="padding: 6px 10px;">handled &mdash; report the concentration</td></tr>
+          </table>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+          <div style="background: #faf0f0; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--danger-color);">Omitted variables</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">\(\hat{\beta}\) converges to the wrong number &mdash; Ch 13's OVB formula says <em>which</em> wrong number. HC3 around a biased estimate gives you a <strong>precise interval around the wrong value</strong>, which is <em>worse</em> than an imprecise one because it is more persuasive.</p>
+          </div>
+          <div style="background: #faf0f0; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--danger-color);">Wrong functional form</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Fit a line to a curve and the coefficient is a weighted average of slopes you did not intend. This one at least announces itself &mdash; if you look. Next slide.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The greyed-out top three rows are deliberate: it shows the room how much of the table today actually solved, and how much it did not. The "precise interval around the wrong value is worse" line is the one to say slowly.</aside>
+    </section>
+
+    <!-- SLIDE: functional form -->
+    <section id="functional-form" style="padding: 16px 34px;">
+      <h2 style="margin-bottom: 2px; font-size: 23pt;"><i class="fa-solid fa-wave-square" style="color: var(--danger-color);"></i> An Exquisitely Precise Interval Around a Meaningless Number</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_008_functional_form.png" alt="Upper panel, two thousand points generated from three times log x with a straight-line fit cutting through the curve at an R squared of 0.9036; lower panel, mean residuals by quintile of x arching from minus 0.499 up to plus 0.444 and back down to minus 0.405 for the linear fit while the log refit stays flat" style="max-height: 440px; width: auto;">
+        <p style="font-size: 14pt; margin-top: 4px; text-align: left;">\(R^2 = 0.90\), HC3 SE = 0.0058. <strong>Most analysts would ship this.</strong> The slope of 0.648 corresponds to nothing &mdash; the true relationship has no constant slope. Refit in \(\log x\) and the slope recovers <strong>3.005</strong>, essentially the truth. <strong style="color: var(--danger-color);">No <code>cov_type</code> argument would have found this. Only looking at the residuals does.</strong></p>
+      </div>
+      <aside class="notes">2.5 min. Ask the room whether they would have shipped a model with an R-squared of 0.90 and a robust standard error of 0.006. Most hands go up. That is the point. Then point at the arch in the lower panel and connect it to the arch they saw in the California quintile table in Section B &mdash; same signature, and we said then that it was the more serious of the two findings.</aside>
+    </section>
+
+    <!-- SLIDE: key concept two kinds -->
+    <section id="key-concept-two-kinds" style="padding: 40px 70px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--success-color);"></i> Key Concept</h2>
+      <div class="content">
+        <div style="background: #f1f5f1; border-left: 5px solid var(--success-color); border-radius: 10px; padding: 24px 30px;">
+          <p style="font-size: 21pt; font-weight: 600; color: var(--primary-color); margin-bottom: 14px;">Two kinds of failure, one chapter.</p>
+          <p class="text-lg" style="line-height: 1.6;">Heteroscedasticity, clustered dependence and leverage break your <strong>inference</strong> while leaving the estimate intact &mdash; fixable with HC3, cluster-robust errors, and honest reporting.</p>
+          <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">Omitted variables and misspecified functional form break the <strong>estimate</strong>, and <strong style="color: var(--danger-color);">every diagnostic in this chapter will pass while you are wrong.</strong></p>
+          <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">Knowing <em>which kind</em> of failure you face is more valuable than any single test.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Say plainly that diagnostics are only half protective &mdash; students leave a diagnostics lecture believing they are a shield. For the other half they need Chapters 10 to 13: a defensible identification strategy. The diagnostics here are what you run AFTER you have one.</aside>
+    </section>
+
+    <!-- SLIDE: Conley-Kelly -->
+    <section id="conley-kelly" style="padding: 24px 46px;">
+      <h2 style="margin-bottom: 6px; font-size: 25pt;"><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--accent-color);"></i> Economist at Work: A Literature Audits Itself</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">For two decades, economic history produced <em>persistence</em> results &mdash; modern outcomes across regions traced to characteristics of those same places centuries earlier. The \(t\)-statistics were often enormous.</p>
+        <p style="font-size: 14.5pt; margin-top: 10px;">Conley and Kelly noticed that variables measured across space &mdash; soil quality, ruggedness, distance to a coast, modern income &mdash; all trend strongly: nearby places resemble each other far more than chance would produce. Regress one such variable on another and you can get a huge \(t\) from two series with nothing to do with each other.</p>
+        <div style="background: #f1f5f1; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 13px 20px; margin-top: 12px;">
+          <p style="font-size: 14.5pt;"><strong>The important part is what they did next.</strong> Rather than argue from theory, they built two diagnostics a persistence study can be made to <em>fail</em>: a <strong>placebo test</strong> replacing the historical treatment with pure spatial noise (if the method is sound, noise should find nothing), and a <strong>synthetic outcomes test</strong>. They applied both to <strong>30 studies in leading journals</strong>. Few approached significance.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+          <div style="background: #faf0f0; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 14pt;">The corrections from &sect;B and &sect;C were often <strong>already applied</strong> in those papers &mdash; and were <strong>not enough</strong>.</p></div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 14pt;">The problem was in the <strong>design</strong>, not the variance. The remedy is a design change, not an estimator change.</p></div>
+        </div>
+        <p style="font-size: 12pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">Conley, T. G. &amp; Kelly, M. (2025). &ldquo;The Standard Errors of Persistence.&rdquo; <em>Journal of International Economics</em> 153.</p>
+      </div>
+      <aside class="notes">2.5 min. This is the strongest available illustration that a fix can be applied correctly and still be insufficient. End on the framing line: diagnostics are not for certifying results, they are for making claims falsifiable enough that a literature can check itself. That sets up Discussion 3 exactly.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 32px 58px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-flask-vial" style="color: var(--secondary-color);"></i> Discussion &mdash; The One You Would Fear (4 min)</h2>
+      <div class="content">
+        <p class="text-lg">Think about the project you are building for this course.</p>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 10px; padding: 18px 26px; margin-top: 14px;">
+          <p style="font-size: 16.5pt;"><strong>1.</strong> Which row of today's table would you fear most in <em>your own</em> data, and why that one?</p>
+          <p style="font-size: 16.5pt; margin-top: 10px;"><strong>2.</strong> Name <strong>one check you could run this week</strong> that would make you <em>less</em> confident if it failed.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px;">The check has to be able to <strong>come out badly</strong>. That is the entire Conley&ndash;Kelly lesson: a diagnostic that cannot fail is not a diagnostic.</p>
+        <p style="font-size: 14pt; margin-top: 10px; color: var(--muted-color);"><i class="fa-solid fa-stopwatch"></i> Two minutes in pairs, then three volunteers. Press <strong>4</strong> for the timer.</p>
+      </div>
+      <aside class="notes">4 min. Push back hard on any answer of the form "I'd check the R-squared" &mdash; that cannot come out badly in the relevant sense. Good answers: refit without my ten most influential rows; re-run with a placebo treatment; check whether my controls change the sign. Collect three and move.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER G -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>G. A Diagnostic Workflow</h1>
+      <p class="subtitle">Five minutes &bull; &sect;14.6 &bull; the part you photograph</p>
+      <aside class="notes">Transition: "five sections of tests is not a procedure. Here is the procedure."</aside>
+    </section>
+
+    <!-- SLIDE: workflow -->
+    <section id="workflow" style="padding: 22px 44px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-list-check" style="color: var(--success-color);"></i> The Slide to Photograph</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 14.5pt;"><strong>Plot residuals against fitted values. Always, before anything else.</strong> A funnel is variance; a pattern in the middle is functional form. Cost: three lines. Catches more real problems than every formal test today combined.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f1f5f1; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">2</p>
+            <p style="font-size: 14.5pt;"><strong>Use HC3 by default.</strong> Not &ldquo;if Breusch&ndash;Pagan rejects.&rdquo; By default. Run the formal tests to <em>report</em> the diagnosis, not to decide whether to be careful.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #fdf0ea; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">3</p>
+            <p style="font-size: 14.5pt;"><strong>Ask how the treatment was assigned</strong> and cluster there. Answerable before you touch the data, and it has by far the largest consequences of anything today. <strong>Recall the 85%.</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--muted-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--muted-color);">4</p>
+            <p style="font-size: 14.5pt;"><strong>Check leverage and influence.</strong> Cook's distance, look at the top ten, refit without them. If the conclusion changes, that is a finding to report &mdash; and look at <em>what those observations are</em>.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #faf0f0; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--danger-color);">5</p>
+            <p style="font-size: 14.5pt;"><strong>Ask what would break the estimate rather than the interval.</strong> An unmeasurable confounder? A non-linear relationship? Neither shows up above, and both are worse than everything above.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Tell them explicitly this is the slide to photograph. Argue for step 2 out loud: students are taught test-then-decide, and "just use HC3 always" sounds like laziness until you point out that a test's power depends on n &mdash; so test-then-decide means being careful only when you have enough data to prove you need to be.</aside>
+    </section>
+
+    <!-- SLIDE: reporting -->
+    <section id="reporting" style="padding: 38px 66px;">
+      <h2><i class="fa-solid fa-file-signature" style="color: var(--accent-color);"></i> The Actual Deliverable</h2>
+      <div class="content">
+        <p class="text-lg">Diagnostics are not a private ritual performed before publication. <strong>They are part of the result.</strong></p>
+        <div style="background: #fdf0ea; border-left: 5px solid var(--accent-color); border-radius: 10px; padding: 22px 30px; margin-top: 16px;">
+          <p style="font-size: 17pt; font-style: italic; line-height: 1.6;">&ldquo;Standard errors are HC3-robust; clustered at the state level, which is the level of policy assignment; the estimate is stable to dropping the ten most influential observations.&rdquo;</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px;">Three clauses that tell a reader precisely how much to believe you. <strong>Their absence tells them something too.</strong></p>
+        <p style="font-size: 17pt; margin-top: 14px; color: var(--accent-color); font-weight: 600;">Being able to write those three clauses is the actual deliverable of this hour.</p>
+      </div>
+      <aside class="notes">1.5 min. Close on this rather than on a technique. Point out that each clause maps to one section of today: HC3 to B, the clustering level to C, the stability claim to E. Then note the fourth thing the sentence does NOT claim &mdash; that the model is correctly specified. That is Section F, and no sentence can buy it.</aside>
+    </section>
+
+    <!-- SLIDE: takeaways -->
+    <section id="key-takeaways" style="padding: 24px 46px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>1.</strong> Every standard error is the output of a formula assuming equal-sized, unrelated errors &mdash; and residuals are observable, so those assumptions are <strong>testable</strong>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>2.</strong> Heteroscedasticity, clustering and leverage corrupt <strong>inference</strong>, not the estimate. HC3 left every California coefficient unchanged and collapsed one \(t\) from &minus;11.23 to &minus;2.25.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>3.</strong> <strong>Cluster at the level of treatment assignment.</strong> A region-level policy with <em>no true effect</em> was called significant <strong>84.7%</strong> of the time by naive standard errors and <strong>6.3%</strong> by clustered ones.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>4.</strong> Report how concentrated a result is: ten rows of 20,640 held <strong>85.2%</strong> of the influence, and dropping them doubled the coefficient.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--muted-color);">
+            <p style="font-size: 14.5pt;"><strong>5.</strong> <strong>No diagnostic here detects an omitted confounder or a wrong functional form.</strong> Those corrupt the estimate, every test today will pass, and the fix is a better design.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Read only 3 and 5 aloud. The rest are for the photograph.</aside>
+    </section>
+
+    <!-- SLIDE: exit ticket -->
+    <section id="exit-ticket" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color);">Submit on Canvas before you leave. Two sentences each.</p>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 26px; margin-top: 14px; border-left: 4px solid var(--secondary-color);">
+          <p class="text-lg"><strong>1.</strong> Which two rows of today's table would a <em>forecaster</em> be entitled to ignore, and why?</p>
+        </div>
+        <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 26px; margin-top: 14px; border-left: 4px solid var(--accent-color);">
+          <p class="text-lg"><strong>2.</strong> Your team ran an A/B test where the new checkout was switched on <strong>city by city</strong> for 40 cities and 900,000 users. Someone reports \(p = 0.01\) with default standard errors. What do you say, and what number do you ask for?</p>
+        </div>
+      </div>
+      <aside class="notes">1 min to read out. Q1 targets: heteroscedasticity and, arguably, clustered dependence &mdash; a forecaster who wants an accurate prediction can live with a mis-stated standard error. Q2 targets: the assignment was at the city level, so cluster by city; ask for the cluster-robust standard error and note there are 40 clusters, not 900,000 observations. Q2 is the one you grade properly.</aside>
+    </section>
+
+    <!-- SLIDE: looking ahead -->
+    <section id="looking-ahead" style="padding: 28px 52px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-road" style="color: var(--secondary-color);"></i> Looking Ahead &mdash; and Lab 14</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt;"><strong>Chapter 15 &mdash; the ML shift.</strong> Prediction stops caring about standard errors and starts caring about out-of-sample error. A forecaster reading &sect;B should conclude &ldquo;this barely matters to me&rdquo; and be <em>right</em> &mdash; but should read &sect;E with alarm, because influential observations move <em>predictions</em>, and &sect;F with more alarm still. <strong>Today's sections are not equally important; it depends on whether you are explaining or predicting.</strong></p>
+        </div>
+        <div style="background: #f1f5f1; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--success-color); margin-top: 12px;">
+          <p style="font-size: 15pt;"><strong>Lab 14 &mdash; <code>lab-ch14-guided.ipynb</code>.</strong> Parts 1&ndash;3 are guided: prove the coefficient survives while the interval breaks, measure the coverage, read four residual patterns, and find the one row in 600 that cuts the standard error by a third. <strong>Part 4 is yours</strong> &mdash; diagnose the real California Housing regression, choose which standard errors you would report, and say something about the <strong>965 block groups</strong> sitting exactly at the $500,001 top-code.</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px; color: var(--muted-color);">Also seeded forward: <strong>Ch 16</strong> (regularization &mdash; the principled answer to the multicollinearity leverage measures) and <strong>Ch 24</strong> (Double ML is the FWL slide from &sect;A with ML first stages).</p>
+      </div>
+      <aside class="notes">1.5 min. The top-code detail is a deliberate hook for Part 4 &mdash; 4.68% of the sample is censored at exactly 5.00001 and almost nobody notices. Tell them the best Part 4 answers mention it. End the lecture on the Ch 15 reordering: the same diagnostic means different things depending on the job.</aside>
+    </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

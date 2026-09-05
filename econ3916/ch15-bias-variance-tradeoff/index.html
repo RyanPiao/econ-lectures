@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The ML Shift: Bias-Variance Tradeoff</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax 3 (tex-svg). NOT included by create-presentation.js — added manually.
+       Inline delimiters are \\( \\) deliberately: with $...$ any text node holding two
+       currency figures gets everything between them typeset as mathematics. -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 56% 44%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px; text-align: left;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 15</p>
+          <h1 style="font-size: 33pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">The ML Shift:<br>Bias-Variance Tradeoff</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Three errors, two of them yours &mdash; and the one no splitting scheme can fix</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 30px;">
+          <img src="figures/cover-ch15-bias-variance.png" alt="Four dartboards in a grid crossing low and high bias with low and high variance: dart clusters either tight or scattered, and either centred on the bullseye or offset from it" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">15.1</p>
+            <p style="font-size: 15pt;">State the <strong>decomposition</strong>, explain each of its three terms, and name the one no model can reduce</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">15.2</p>
+            <p style="font-size: 15pt;">Diagnose <strong>over- and underfitting</strong> from training-versus-validation curves, and select complexity by cross-validation</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">15.3</p>
+            <p style="font-size: 15pt;">Explain why adding a control is <strong>right for inference and often wrong for prediction</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">15.4</p>
+            <p style="font-size: 15pt;">Identify <strong>leakage</strong> &mdash; preprocessing, temporal, grouped &mdash; and judge whether a validation score can be believed</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Say plainly that today is where the course changes its objective. Chapters 10, 13 and 14 were about earning the right to interpret a coefficient. (Say the numbers that way, not "10 to 14" &mdash; on this track Ch 11 is SQL and Ch 12 is OLS for prediction.) From here, the coefficient may not even exist. PS4 covers Ch 12&ndash;15 and lands after this chapter.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 12.</strong> Twenty columns of pure noise raised in-sample \(R^2\). Why could \(R^2\) not fall?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 14.</strong> A test-set score is itself an estimate. What does it have that a population quantity does not?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both converge on today: <strong>in-sample fit measures flexibility, not accuracy</strong> &mdash; and the number that replaces it is itself random.</p>
+      </div>
+      <aside class="notes">2 min, cold call. Answer 1: OLS minimises RSS over a strictly larger space, so the old solution is still available and the new minimum can only be smaller or equal. Ch 12's adjusted R-squared with 20 noise columns was 0.47722. Answer 2: sampling variability. Ch 14 said so and stopped. Today we measure it &mdash; a 2.4x spread, coming in Section 4.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-zillow" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-house-circle-xmark" style="color: var(--danger-color);"></i> 2 November 2021</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">Zillow's board shut down the business it had spent two years building. <strong>Zillow Offers</strong> bought houses directly from owners, made light repairs and resold them. The whole operation rested on one number: what a house was worth.</p>
+        <p class="text-lg" style="line-height: 1.55; margin-top: 12px;">They had better housing data than anyone alive. They built the <strong>Neural Zestimate</strong> &mdash; one national deep network replacing a patchwork of local models. <em>It performed beautifully in validation.</em></p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 22px;">
+          <div class="stat-highlight"><div class="number" style="color: var(--danger-color);">$304M</div><div class="label">Q3 inventory write-down</div></div>
+          <div class="stat-highlight"><div class="number" style="color: var(--danger-color); font-size: 33pt; white-space: nowrap;">$240&ndash;265M</div><div class="label">further losses expected in Q4</div></div>
+          <div class="stat-highlight"><div class="number">7,000</div><div class="label">homes held across 25 metros</div></div>
+          <div class="stat-highlight"><div class="number">2,000</div><div class="label">people laid off &mdash; a quarter of the company</div></div>
+        </div>
+        <p style="margin-top: 18px; font-size: 16pt; color: var(--primary-color);"><strong>The part that should unsettle you: the model was not obviously broken.</strong> It scored well on held-out data, by the standards its builders used.</p>
+      </div>
+      <aside class="notes">3 min. Source is Zillow Group's Form 8-K, Q3 2021, filed 2 November. Do not rush to the punchline &mdash; let the write-down land first, then say the model was not broken. That sentence is the hook, not the dollar figure. Leave the four numbers up while you say it.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 — the payload -->
+    <section id="hook-payload" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i> Symmetric Errors, Asymmetric Consequences</h2>
+      <div class="content">
+        <p class="text-lg">Two things the model could not see. The housing market shifted structurally &mdash; that is Chapter 20's problem. And, more subtly:</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p style="font-size: 17pt;">The model's <strong>errors were symmetric</strong>. The market's <strong>response to them was not.</strong></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="background: #F9F0EE; border-radius: 8px; padding: 16px 22px;">
+            <p style="font-size: 15pt;"><strong>Model overvalues the house</strong><br><span style="color: var(--danger-color);">&rarr; the owner accepts the offer</span><br>The error becomes <strong>inventory</strong>.</p>
+          </div>
+          <div style="background: #EEF2F0; border-radius: 8px; padding: 16px 22px;">
+            <p style="font-size: 15pt;"><strong>Model undervalues the house</strong><br><span style="color: var(--success-color);">&rarr; the owner walks away and sells elsewhere</span><br>The error is <strong>corrected by the seller</strong>.</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px; font-size: 16pt;">A model with unbiased errors, facing a mechanism that keeps only the expensive ones, <strong>loses money on average</strong> &mdash; and no validation score reveals it, <em>because the validation set does not get to decline your offer.</em></p>
+      </div>
+      <aside class="notes">3 min. This is the whole lecture in miniature. Today is about machinery that makes prediction error decomposable, controllable and honestly measurable &mdash; and this slide is why that machinery is necessary and not sufficient. We come back to it in Section 5b, and again on the takeaways slide. Do not explain selective labels yet; just plant it.</aside>
+    </section>
+
+    <!-- SLIDE 6: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Two Jobs, Two Scorecards</h1>
+      <p class="subtitle">Section 15.1 &bull; The same model, graded two different ways</p>
+    </section>
+
+    <!-- SLIDE 7: The two-column table -->
+    <section id="two-scorecards" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-table-columns" style="color: var(--secondary-color);"></i> Inference and Prediction Are Different Jobs</h2>
+      <div class="content">
+        <p style="font-size: 15pt; margin-bottom: 8px;">An econometrician and an ML engineer can fit the <em>identical</em> model to the <em>identical</em> data and disagree completely about whether it is any good.</p>
+        <table>
+          <tr><th style="width: 26%;"></th><th style="width: 37%;">Inference (Ch 10, 13&ndash;14)</th><th style="width: 37%;">Prediction (Ch 15 onward)</th></tr>
+          <tr><td><strong>Object of interest</strong></td><td>\(\hat\beta\), a parameter</td><td>\(\hat f(x)\), a function</td></tr>
+          <tr><td><strong>Fear</strong></td><td>omitted variable bias</td><td>overfitting</td></tr>
+          <tr><td><strong>Adding a variable</strong></td><td>reduces bias &mdash; usually good</td><td>adds variance &mdash; often bad</td></tr>
+          <tr><td><strong>Measured on</strong></td><td>the sample, with a standard error</td><td><strong>data the model has never seen</strong></td></tr>
+          <tr><td><strong>Success</strong></td><td>the estimate is identified</td><td>the predictions are accurate</td></tr>
+        </table>
+        <p style="margin-top: 14px; font-size: 16pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> <strong>The last row reorganises everything.</strong> From here forward the question is a held-out score, and a standard error is mostly beside the point.</p>
+      </div>
+      <aside class="notes">3 min. Put this up early and leave it up conceptually all lecture. Ask the room which column their econometrics training has been in &mdash; the answer is the left one, for fourteen chapters &mdash; and say plainly that the right column is a different discipline with different reflexes. The claim that a model with uninterpretable coefficients can be a total success is genuinely uncomfortable for economics students. Let them push back.</aside>
+    </section>
+
+    <!-- SLIDE 8: Same model, two verdicts -->
+    <section id="two-verdicts" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-building" style="color: var(--accent-color);"></i> The Same Model, Two Verdicts</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">A city housing authority regresses rent on square footage, bedrooms, neighbourhood, building age and distance to transit &mdash; then asks two questions of it.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 16px 20px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt; font-style: italic; color: var(--secondary-color);">"How much does an extra bedroom add to rent?"</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Chapter 13's question. The answer is a <strong>coefficient</strong>. To believe it causally you need the adjustment set right (Ch 10) and the standard error honest (Ch 14). Whether it predicts well is almost beside the point.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 16px 20px; border-top: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-style: italic; color: var(--accent-color);">"What should this vacant unit rent for?"</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Now the coefficients are <strong>irrelevant</strong>. If a Random Forest &mdash; which has no coefficients &mdash; predicts better, that is strictly better. Nobody asks a Random Forest what a bedroom is worth.</p>
+          </div>
+        </div>
+        <div class="key-result" style="margin-top: 16px;">
+          <p>Neighbourhood fixed effects <strong>sharpen</strong> the bedroom coefficient and may <strong>destroy</strong> prediction &mdash; hundreds of parameters on few observations each. You cannot optimise both. <strong>Decide which question you are answering before you fit anything.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The worked example matters more than the abstraction. Ask which of the two questions their midterm project is asking &mdash; most will not have decided, and that is the point of the slide. Mixing the two is the most common failure in applied work that touches both.</aside>
+    </section>
+
+    <!-- SLIDE 9: Misconception — more variables -->
+    <section id="misconception-variables" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 20pt; font-style: italic; color: #7a4a2f;">"More variables make a model better."</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 14px;">This is the econometrician's instinct, and it is <strong>correct for the job econometrics does</strong>. For prediction it is wrong more often than right.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">Each added variable buys flexibility, and flexibility is paid for in <strong>variance</strong>. Once the model can already represent the signal, further variables fit <em>noise</em> &mdash; improving in-sample \(R^2\), which cannot decrease, while degrading out-of-sample accuracy.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 12px; color: var(--accent-color);"><strong>Chapter 12 showed twenty columns of pure noise raising \(R^2\). Today you see what that cost.</strong></p>
+      </div>
+      <aside class="notes">2 min. The sentence to land: nothing about the mathematics changed, the objective did. Same action &mdash; adding a control &mdash; virtuous in Ch 13, destructive here. Note for the instructor: the printed chapter attributes the noise-columns demo to Ch 13 in this one callout box and to Ch 12 everywhere else; Ch 12 is correct and is what this deck says.</aside>
+    </section>
+
+    <!-- SLIDE 10: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The Decomposition</h1>
+      <p class="subtitle">Section 15.2 &bull; Three errors, only two of them negotiable</p>
+    </section>
+
+    <!-- SLIDE 11: Figure 001 — the fan, BEFORE the algebra -->
+    <section id="fan-of-fits" style="padding: 22px 40px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Bias and Variance Are Shapes Before They Are Terms</h2>
+      <div class="content" style="display: grid; grid-template-columns: 40% 60%; gap: 22px; align-items: center;">
+        <div>
+          <p style="font-size: 14pt; line-height: 1.5;">300 training sets drawn from the same world. Same model family. Only the sample changes.</p>
+          <p style="font-size: 14pt; line-height: 1.5; margin-top: 10px;"><strong>Degree 1</strong> &mdash; all 300 lines lie on top of each other, and all 300 are wrong the same way. Tight cluster, wrong place. Averaging them would not help: their average is also a straight line.</p>
+          <p style="font-size: 14pt; line-height: 1.5; margin-top: 10px;"><strong>Degree 15</strong> &mdash; a thicket. Each curve chases the noise of its own sample. Their <em>average</em> tracks the truth, but no individual curve does, <strong>and you only ever get one.</strong></p>
+          <p style="font-size: 14pt; line-height: 1.5; margin-top: 10px;"><strong>Degree 5</strong> &mdash; tight <em>and</em> near the truth. That is what a minimum looks like.</p>
+        </div>
+        <img class="figure" src="figures/figure_001_fan_of_fits.png" alt="Three stacked panels each showing 300 fitted polynomial curves against the true function: degree 1 curves form a tight cluster far from the truth, degree 5 curves form a tight cluster on the truth, degree 15 curves spread into a wide thicket around it" style="max-height: 560px; width: auto; display: block; margin: 0 auto;">
+      </div>
+      <aside class="notes">3 min, and show it BEFORE the equation. This is Chapter 4's dartboard with a different label: bias is the systematic offset from the bullseye, variance is the spread of the darts. The reason to carry the analogy is that it makes the tradeoff a shape you can diagnose from a plot rather than an inequality you have to remember. The chapter describes this fan in words and never draws it &mdash; so this picture is the one thing on the slides that the reading does not give them.</aside>
+    </section>
+
+    <!-- SLIDE 12: The equation -->
+    <section id="epe-equation" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> Expected Prediction Error, Decomposed</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">Truth: \(y = f(x) + \varepsilon\), with \(E[\varepsilon] = 0\) and \(\text{Var}(\varepsilon) = \sigma^2\). Fit \(\hat f\) on a training sample; ask about squared error at a new point \(x_0\), averaging over <em>all the training sets you might have drawn</em>.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 20px; margin: 14px 0; text-align: center;">
+          $$\text{EPE}(x_0) = \underbrace{\big(E[\hat f(x_0)] - f(x_0)\big)^2}_{\text{Bias}^2} + \underbrace{E\big[(\hat f(x_0) - E[\hat f(x_0)])^2\big]}_{\text{Variance}} + \underbrace{\sigma^2}_{\text{Irreducible}}$$
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 26px; font-size: 14pt;">
+          <p>\(\hat f(x_0)\) &mdash; the prediction from a model fitted on <em>one</em> training sample</p>
+          <p>\(E[\hat f(x_0)]\) &mdash; the <em>average</em> prediction across all possible samples</p>
+          <p>\(f(x_0)\) &mdash; the truth</p>
+          <p>\(\sigma^2\) &mdash; the variance of the noise in \(y\)</p>
+        </div>
+        <div class="misconception" style="margin-top: 14px;">
+          <p><strong>Scope, said out loud:</strong> this is a statement about <strong>squared error</strong>, and nothing else. It is not a general law of learning. Classification &mdash; Chapters 17&ndash;18 &mdash; gets no clean analogue, which is why those chapters need different metrics.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Read the expectation out loud: we are averaging over training sets, not over test points. That is the move students miss. Say the scope restriction explicitly &mdash; every year someone writes "by the bias-variance decomposition" about a classifier's accuracy on a problem set, and it does not decompose that way.</aside>
+    </section>
+
+    <!-- SLIDE 13: Three failures in plain words -->
+    <section id="three-failures" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--accent-color);"></i> Three Distinct Failures, in Plain Words</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 16px 24px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 17pt;"><strong>Bias</strong> &mdash; being <em>systematically</em> wrong.</p>
+            <p style="font-size: 14.5pt; margin-top: 5px;">Your model is too rigid to represent the truth. It would still miss with infinite data. The remedy is <strong>more</strong> flexibility.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 16px 24px; border-left: 5px solid var(--accent-color);">
+            <p style="font-size: 17pt;"><strong>Variance</strong> &mdash; being <em>unstable</em>.</p>
+            <p style="font-size: 14.5pt; margin-top: 5px;">Your model swings depending on which particular sample it happened to see. And you only ever get one sample. The remedy is <strong>less</strong> flexibility.</p>
+          </div>
+          <div style="background: #f1f0ee; border-radius: 8px; padding: 16px 24px; border-left: 5px solid var(--muted-color);">
+            <p style="font-size: 17pt;"><strong>Irreducible error</strong> &mdash; the noise in \(y\) itself.</p>
+            <p style="font-size: 14.5pt; margin-top: 5px;">No model reduces it. Ever. It is not a modelling failure at all &mdash; it is a property of the world you are measuring.</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; font-size: 16pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> You trade the first two against each other by choosing complexity. <strong>You cannot touch the third.</strong></p>
+      </div>
+      <aside class="notes">2 min. Bias and variance have opposite remedies &mdash; that is the single most useful sentence on this slide, and it is why "the model is underperforming" and "the model is overfitting" are different diagnoses. Come back to it on the U-curve slides.</aside>
+    </section>
+
+    <!-- SLIDE 14: The simulated table -->
+    <section id="decomp-table" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> Measuring It, in a World Where We Know the Truth</h2>
+      <div class="content">
+        <p style="font-size: 14pt;">\(f(x) = 1.5\sin(1.4x) + 0.6x\) on \([-3,3]\), Gaussian noise \(\sigma = 0.55\), \(n = 120\), <strong>300 independently drawn training sets.</strong> Bias is defined relative to the true \(f\) &mdash; so decomposing error requires knowing the truth, which never happens with real data. That is why this one chapter simulates.</p>
+        <table style="margin-top: 10px;">
+          <tr><th>degree</th><th>bias\(^2\)</th><th>variance</th><th>noise \(\sigma^2\)</th><th>total (EPE)</th></tr>
+          <tr><td>1</td><td>0.9968</td><td>0.0210</td><td>0.3025</td><td>1.3203</td></tr>
+          <tr><td>3</td><td>0.1036</td><td>0.0166</td><td>0.3025</td><td>0.4227</td></tr>
+          <tr style="background: #EEF2F0;"><td><strong>5</strong></td><td><strong>0.0017</strong></td><td><strong>0.0177</strong></td><td>0.3025</td><td><strong>0.3219</strong> &larr; best</td></tr>
+          <tr><td>10</td><td>0.0003</td><td>0.0530</td><td>0.3025</td><td>0.3558</td></tr>
+          <tr><td>15</td><td>0.0014</td><td>&asymp; 0.78</td><td>0.3025</td><td>1.0823</td></tr>
+        </table>
+        <p style="margin-top: 12px; font-size: 15pt;">Bias\(^2\) collapses as the model gains the flexibility to follow a sine wave. Then <strong>variance takes over</strong>, climbing by a factor of order forty. <strong>Noise never moves</strong> &mdash; nothing you do to a model changes the randomness in \(y\).</p>
+      </div>
+      <aside class="notes">3 min. Reveal it a row at a time if you can. Two honesty notes you should say out loud rather than hide: bias-squared at degrees 10 and 15 (0.0003, 0.0014) is at the level of this simulation's own Monte Carlo error, so it is "indistinguishable from zero", not a falling series. And the degree-15 variance is not a four-decimal quantity &mdash; bootstrapping the 300 fits gives its total a Monte Carlo SE of 0.27. Hence "of order forty", not "43.98-fold".</aside>
+    </section>
+
+    <!-- SLIDE 15: Figure 002 -->
+    <section id="decomp-figure" style="padding: 24px 45px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> The Whole Curve, Stacked</h2>
+      <div class="content" style="display: grid; grid-template-columns: 61% 39%; gap: 22px; align-items: center;">
+        <img class="figure" src="figures/figure_002_decomposition.png" alt="Stacked area chart of expected squared error against polynomial degree 1 to 15: a constant irreducible noise band at 0.3025, bias squared collapsing after degree 3, variance taking over after degree 10, and the total minimised at degree 5 at 0.3219" style="max-height: 480px; width: 100%;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">The grey band is the <strong>floor</strong>. It is the same height at every degree, because nothing you do to a model changes \(\sigma^2\).</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;">The blue wedge is <strong>bias\(^2\)</strong>: large and left, gone by degree 5.</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;">The orange wedge is <strong>variance</strong>: invisible at first, then it eats the plot.</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;">Degree 2 buys <em>no</em> bias reduction and costs variance &mdash; \(f\) is an odd function, so even powers are pure noise here.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The degree-2 annotation is worth ten seconds: it is a concrete case of "a variable you added that could not possibly help", which is the misconception slide made arithmetic. Note also that the U is very flat between degrees 5 and 10 &mdash; that flatness is what Section 4's standard errors are about.</aside>
+    </section>
+
+    <!-- SLIDE 16: What the sum-check proves -->
+    <section id="identity-honesty" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--primary-color);"></i> "It Sums to Four Decimals" &mdash; What That Does and Does Not Prove</h2>
+      <div class="content">
+        <p class="text-lg">At every degree, bias\(^2\) + variance + \(\sigma^2\) equals the measured error to four decimal places. That is worth pausing on, for the right reason.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #EEF2F0; border-radius: 8px; padding: 16px 22px; border-top: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>What it proves.</strong> The three boxes are <strong>exhaustive and non-overlapping</strong>. There is no fourth source of squared error hiding anywhere. This is an <em>identity</em>, not an approximation.</p>
+          </div>
+          <div style="background: #F9F0EE; border-radius: 8px; padding: 16px 22px; border-top: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt;"><strong>What it does not prove.</strong> That any particular number is <em>accurate</em>. Both sides are computed from the same array of predictions, so their agreement is forced by algebra &mdash; the executed residual is <strong>7&times;10\(^{-18}\)</strong>, and it would be that small on random junk.</p>
+          </div>
+        </div>
+        <div class="key-result" style="margin-top: 16px;">
+          <p><strong>The evidence that the numbers are right is the figure and the standard errors, not the sum-check.</strong> This distinction will matter again in twenty minutes, when cross-validation lands suspiciously close to the truth.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is a small integrity lesson and undergraduates take it well if you keep it short. An identity is a guarantee about structure; a measurement is a claim about the world. The chapter says "it is an identity" outright &mdash; the deck just refuses the temptation to read it as confirmation. Flag forward to the CV coincidence so it does not arrive from nowhere.</aside>
+    </section>
+
+    <!-- SLIDE 17: POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll &mdash; The Best You Could Possibly Do</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">In this simulation we know the truth exactly: \(f(x) = 1.5\sin(1.4x) + 0.6x\), plus Gaussian noise with \(\sigma = 0.55\).</p>
+          <p class="text-lg" style="margin-top: 12px;"><strong>With unlimited data and a perfect model, what is the lowest achievable test MSE?</strong></p>
+          <div class="poll-grid" data-poll-id="ch15-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Zero &mdash; a perfect model makes no errors</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) About 0.30</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) About 0.55</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) It depends entirely on which algorithm you use</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students click to vote; results appear on the next slide. Let the room commit to A &mdash; most will. This is the chapter's own recommended live moment: ask what a perfect model achieves, let them guess zero, then show them otherwise.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch15-econ3916-poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; About 0.30</h2>
+        <div class="poll-results-chart" data-poll-id="ch15-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">\(\sigma^2 = 0.55^2 = \mathbf{0.3025}\). That is the <strong>irreducible error</strong> &mdash; the variance of the noise in \(y\) itself. No model of any sophistication predicts better than that, ever.</p>
+          <p class="text-lg" style="line-height: 1.55; margin-top: 12px;"><strong>C</strong> confuses \(\sigma\) with \(\sigma^2\). <strong>D</strong> is the belief that a good enough algorithm eventually drives error to zero.</p>
+          <p style="margin-top: 14px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> A great deal of wasted effort in applied ML is an attempt to model \(\sigma^2\).</p>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch15-econ3916-poll-1')" style="position:absolute; bottom:14px; right:20px; font-size:11pt; padding:4px 10px;">Reset</button>
+        <aside class="notes">2 min. Recalibrating this expectation is worth the whole minute &mdash; it governs how they read every result for the rest of the course. If the A share is large, say so out loud: the room's instinct was that error goes to zero, and the world says otherwise.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 18: The floor -->
+    <section id="the-floor" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-arrows-down-to-line" style="color: var(--muted-color);"></i> There Is a Floor, and It Is Not Yours</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin: 8px 0 18px;">
+          <div class="stat-highlight"><div class="number" style="color: var(--muted-color);">0.3025</div><div class="label">the floor: \(\sigma^2\), the noise in \(y\)</div></div>
+          <div class="stat-highlight"><div class="number" style="color: var(--success-color);">0.3219</div><div class="label">best achievable here (degree 5)</div></div>
+          <div class="stat-highlight"><div class="number" style="color: var(--accent-color);">6%</div><div class="label">how much worse than perfect the best model is</div></div>
+        </div>
+        <p class="text-lg" style="line-height: 1.55;">The best possible model here is <strong>6% worse than perfect</strong>, and that gap is as good as it gets. Students routinely expect that enough flexibility eventually drives error to zero. It cannot.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>Key concept &mdash; three errors, only two negotiable.</strong> You trade bias against variance by choosing complexity. You cannot touch \(\sigma^2\). If your target contains $0.55 of unpredictable variation, no model &mdash; no matter how large, how modern or how expensive &mdash; predicts it better than that.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Note the dollar sign in the key-result box is a plain currency dollar and stays a plain dollar &mdash; all inline maths in this deck is delimited with backslash-paren precisely so that currency figures never get typeset as equations. Substantively: recognising the floor is what separates realistic expectations from a doomed search for a better algorithm, and we return to it in Section 4 when we ask how much model selection is worth.</aside>
+    </section>
+
+    <!-- SLIDE 19: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The U-Curve</h1>
+      <p class="subtitle">Section 15.3 &bull; One split of one dataset shows the shape</p>
+    </section>
+
+    <!-- SLIDE 20: U-curve table -->
+    <section id="ucurve-table" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-table" style="color: var(--secondary-color);"></i> Training Error Falls. Test Error Turns.</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">No 300 training sets, no known \(f\). One split of one dataset &mdash; 72 training points, <strong>48 test points</strong>.</p>
+        <table style="margin-top: 8px;">
+          <tr><th>degree</th><th>train MSE</th><th>test MSE</th><th></th></tr>
+          <tr><td>1</td><td>1.0897</td><td>1.4761</td><td style="color: var(--muted-color);">both bad, and close &mdash; underfitting</td></tr>
+          <tr><td>2</td><td>1.0544</td><td>1.4768</td><td style="color: var(--muted-color);">even powers buy nothing here</td></tr>
+          <tr><td>3</td><td>0.3941</td><td>0.4942</td><td></td></tr>
+          <tr style="background: #EEF2F0;"><td><strong>5</strong></td><td>0.2836</td><td><strong>0.3648</strong></td><td style="color: var(--success-color);">best on this menu</td></tr>
+          <tr><td>7</td><td>0.2833</td><td>0.3650</td><td style="color: var(--muted-color);">two ten-thousandths away</td></tr>
+          <tr><td>10</td><td>0.2673</td><td>0.3948</td><td></td></tr>
+          <tr><td>15</td><td>0.2540</td><td>0.4547</td><td style="color: var(--danger-color);">train best, test second-worst &mdash; overfitting</td></tr>
+        </table>
+        <p style="margin-top: 12px; font-size: 15pt;"><strong>Training error falls monotonically.</strong> It has to: a more flexible model can always fit the training data at least as well &mdash; exactly as \(R^2\) could never decrease when Chapter 12 bolted twenty noise columns onto a regression.</p>
+      </div>
+      <aside class="notes">3 min. Sketch the two curves on the board BEFORE showing the table &mdash; one monotonically falling, one U-shaped &mdash; and ask which one a model-selection procedure should use. Note the printed chapter's output block omits the degree-2 row that its own code produces; the row is restored here, and it earns its place because f is odd, so even powers are pure noise.</aside>
+    </section>
+
+    <!-- SLIDE 21: Figure 003 -->
+    <section id="ucurve-figure" style="padding: 24px 45px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-chart-area" style="color: var(--accent-color);"></i> The Gap Is the Diagnostic</h2>
+      <div class="content" style="display: grid; grid-template-columns: 62% 38%; gap: 22px; align-items: center;">
+        <img class="figure" src="figures/figure_003_ucurve.png" alt="Training and test mean squared error plotted against polynomial degree 1 to 15: training error falls monotonically, test error is U-shaped with its minimum near degree 5 to 6, and the shaded gap between the two curves widens steadily to the right" style="max-height: 470px; width: 100%;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;"><strong>Degree 1:</strong> 1.09 vs 1.48. Both bad, almost no gap. A rigid model that is <em>honestly</em> bad.</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;"><strong>Degree 15:</strong> 0.25 vs 0.45. Excellent on train, poor on test. A model that has <em>memorised</em>.</p>
+          <div class="key-result" style="margin-top: 14px;">
+            <p style="font-size: 14pt;">A <strong>widening gap</strong> between training and validation error is the signature of overfitting &mdash; and it is more informative than either number alone.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The gap is what students will actually look at in their labs, so make them say it back. Connect explicitly to Ch 12's noise-columns demonstration: that showed R-squared rising on garbage, this shows what the garbage costs.</aside>
+    </section>
+
+    <!-- SLIDE 22: Three consequences -->
+    <section id="ucurve-consequences" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> Three Consequences Students Under-Absorb</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt;"><strong>1. A model can be bad without overfitting.</strong></p>
+            <p style="font-size: 14pt; margin-top: 4px;">Degree 1 is genuinely poor with almost no gap. Its problem is <em>bias</em>, and the remedy is <strong>more</strong> flexibility, not less. "Underperforming" and "overfitting" are different diagnoses with opposite treatments.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt;"><strong>2. The best model is rarely the most flexible one you can afford.</strong></p>
+            <p style="font-size: 14pt; margin-top: 4px;">Degree 15 fits the training data best of anything in the table and is the second-worst choice on new data. Any procedure that rewards training fit reliably selects the <em>worst</em> model &mdash; which disqualifies in-sample \(R^2\) from this job entirely.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt;"><strong>3. Degrees 5 and 7 are indistinguishable &mdash; and the menu is an artifact.</strong></p>
+            <p style="font-size: 14pt; margin-top: 4px;">0.3648 vs 0.3650 on 48 observations is not a ranking. Worse: sweep <em>every</em> degree and this split's minimum is degree <strong>6</strong>, at 0.3639 &mdash; a degree the menu never offered. <strong>Cross-validation can only compare what you put on the menu.</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Consequence 3 is the bridge to Section 4 and to Chapter 16: a discrete search over seven degrees is a crude instrument, and regularization replaces it with a continuous dial. When two models are this close, prefer the simpler one &mdash; not from aesthetics, but because it has less variance and the comparison lacks the resolution to justify anything else.</aside>
+    </section>
+
+    <!-- SLIDE 23: Misconception — perfect training fit -->
+    <section id="misconception-trainfit" style="padding: 40px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 20pt; font-style: italic; color: #7a4a2f;">"A model that fits the training data perfectly is a good model."</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 18px;">A model with enough parameters can fit <em>any</em> training set exactly &mdash; including one that is pure noise. <strong>Perfect training fit is evidence of flexibility, not of accuracy</strong>, and past a point it is evidence of a problem.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 14px;">The only score that means anything is on data that <strong>played no part in fitting</strong>.</p>
+        <div class="key-result" style="margin-top: 18px;">
+          <p>This is the same sentence as the retrieval question you answered at the start of class. \(R^2\) could not fall when Chapter 12 added twenty noise columns, and a degree-15 polynomial fits 72 points better than a degree-5 one, <strong>for exactly the same reason</strong> &mdash; and in both cases the number that went up told you nothing about accuracy.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Keep it short; it is a restatement they need in words rather than a new idea. If someone raises "but sometimes very flexible models do fine" &mdash; that is double descent, it is real, it is the lab's optional take-home challenge, and it is not what governs a 120-point economics dataset.</aside>
+    </section>
+
+    <!-- SLIDE 24: Discussion 1 -->
+    <section id="discussion-1" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion 1 &mdash; Diagnose This Model</h2>
+      <div class="content">
+        <div class="discussion-prompt">
+          <p class="bloom-level">Bloom L4 &bull; Analyze &bull; 4 minutes &bull; pairs</p>
+          <p style="font-size: 16pt;">You inherit a colleague's rent-prediction model. <strong>Training RMSE $180. Validation RMSE $186.</strong> Your manager says: "it's clearly overfitting &mdash; use a simpler model."</p>
+          <p style="font-size: 16pt; margin-top: 8px;">Is the manager right? What is the actual diagnosis, and what would you do instead?</p>
+        </div>
+        <p style="margin-top: 16px; font-size: 15pt;">Be ready to say <em>how you would tell</em> "this model is biased" apart from "we have hit the floor."</p>
+      </div>
+      <aside class="notes">4 min including debrief. Press 4 for the timer. The gap is 3% &mdash; essentially nothing &mdash; so this model is NOT overfitting. If $186 is unacceptable the problem is bias, or the floor, and the remedy is more flexibility, better features, or the recognition that sigma-squared here is simply large. Simplifying it would make it worse. For the last question: fit something much more flexible and see whether validation error moves at all. If it does not, you are at the floor and no algorithm change will help.</aside>
+    </section>
+
+    <!-- SLIDE 25: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>One Split Is Not Enough</h1>
+      <p class="subtitle">Section 15.4 &bull; Your held-out score is itself a random variable</p>
+    </section>
+
+    <!-- SLIDE 26: Figure 004 -->
+    <section id="split-spread" style="padding: 24px 45px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-dice" style="color: var(--danger-color);"></i> Same Data, Same Model, 200 Different Splits</h2>
+      <div class="content" style="display: grid; grid-template-columns: 62% 38%; gap: 22px; align-items: center;">
+        <img class="figure" src="figures/figure_004_split_spread.png" alt="Histogram of test mean squared error for the identical degree-5 model across 200 random splits of the same 120 observations, spanning 0.2143 at the luckiest split to 0.5087 at the unluckiest with a median of 0.3346" style="max-height: 460px; width: 100%;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">The data never changed. The model never changed. <strong>Only which rows landed in the test set.</strong></p>
+          <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 14pt;">
+            <p><span style="color: var(--success-color); font-weight: 700;">min 0.2143</span> &mdash; report this and your model looks <strong>36% better</strong> than the median</p>
+            <p><span style="font-weight: 700;">median 0.3346</span></p>
+            <p><span style="color: var(--danger-color); font-weight: 700;">max 0.5087</span> &mdash; report this and it looks <strong>52% worse</strong></p>
+          </div>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 14pt;">A <strong>2.4&times; spread</strong> in reported performance, from nothing but the partition.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Run this loop live if you have the notebook open &mdash; it takes about ten seconds and the spread is startling. Ch 14 ended by saying a test score has sampling variability; this is that sentence with a number attached. Point at the dotted line at sigma-squared = 0.3025: a good fraction of these splits report a score BELOW the theoretical floor, which is a useful shock.</aside>
+    </section>
+
+    <!-- SLIDE 27: 28% wrong -->
+    <section id="wrong-degree" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-user-xmark" style="color: var(--danger-color);"></i> It Gets Worse When You Use the Split to <em>Choose</em></h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Let each of those 200 splits pick the best polynomial degree from the menu:</p>
+        <table style="margin-top: 10px; width: 72%; margin-left: auto; margin-right: auto;">
+          <tr><th>degree chosen</th><th>times</th><th>share</th></tr>
+          <tr><td>3</td><td>1</td><td>0%</td></tr>
+          <tr style="background: #EEF2F0;"><td><strong>5</strong></td><td><strong>143</strong></td><td><strong>72%</strong> &larr; correct</td></tr>
+          <tr><td>7</td><td>22</td><td>11%</td></tr>
+          <tr><td>10</td><td>34</td><td>17%</td></tr>
+        </table>
+        <div class="misconception" style="margin-top: 18px;">
+          <p style="font-size: 17pt;"><strong>A single split selects the wrong complexity 28% of the time.</strong></p>
+          <p style="font-size: 15pt; margin-top: 6px;">More than a quarter of analysts doing everything correctly &mdash; holding out data, never peeking, evaluating honestly &mdash; would ship the wrong model.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. "28% of you would ship the wrong model" is the line that lands. Say it about the room, not about analysts in general. Then introduce cross-validation as the FIX rather than as a definition, so it arrives as a solution to a problem they have just felt.</aside>
+    </section>
+
+    <!-- SLIDE 28: CV equation -->
+    <section id="cv-equation" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-rotate" style="color: var(--secondary-color);"></i> \(k\)-Fold Cross-Validation</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 20px; margin-bottom: 14px; text-align: center;">
+          $$CV(k) = \frac{1}{k}\sum_{j=1}^{k}\text{MSE}_j$$
+        </div>
+        <p style="font-size: 14.5pt;"><strong>Where:</strong> \(\text{MSE}_j\) is the error on fold \(j\), from a model fitted on the other \(k-1\) folds.</p>
+        <div class="key-result" style="margin-top: 12px;">
+          <p><strong>In plain words.</strong> Cut the data into \(k\) blocks. Hold each block out in turn, train on the rest, score on the held-out block, and average the \(k\) scores.</p>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 14px;">Every observation is used for validation <strong>exactly once</strong> and for training \(k-1\) times, so the estimate does not hinge on one lucky partition. Averaging \(k\) noisy draws is what makes model selection reliable rather than lucky.</p>
+        <p style="font-size: 14.5pt; margin-top: 10px;">Use \(k = 5\) or \(k = 10\). Both work; larger \(k\) costs compute without buying much.</p>
+      </div>
+      <aside class="notes">2 min. Never present the formula bare &mdash; the plain-words box is the version they will remember. If a student asks why not leave-one-out: it is the graduate answer, involving the correlation between the fitted models, and the practical answer is that 5 or 10 both work fine. That correlation argument returns in Ch 19 as the reason Random Forests decorrelate their trees.</aside>
+    </section>
+
+    <!-- SLIDE 29: CV table with SEs -->
+    <section id="cv-table" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-ruler" style="color: var(--secondary-color);"></i> Print the Standard Error, Not Just the Mean</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">10-fold CV on the same 120 points. The mean on its own <strong>looks far more precise than it is</strong>, so the code prints the SE of each mean beside it.</p>
+        <table style="margin-top: 10px; width: 78%; margin-left: auto; margin-right: auto;">
+          <tr><th>degree</th><th>CV MSE</th><th>SE of that mean</th></tr>
+          <tr><td>1</td><td>1.2712</td><td>0.0699</td></tr>
+          <tr><td>3</td><td>0.4438</td><td>0.0591</td></tr>
+          <tr style="background: #EEF2F0;"><td><strong>5</strong></td><td><strong>0.3222</strong> &larr; selected</td><td><strong>0.0426</strong></td></tr>
+          <tr><td>7</td><td>0.3328</td><td>0.0461</td></tr>
+          <tr><td>10</td><td>0.3406</td><td>0.0512</td></tr>
+          <tr><td>15</td><td>0.4468</td><td>0.1062</td></tr>
+        </table>
+        <p style="margin-top: 14px; font-size: 15pt;">Cross-validation picks degree 5 &mdash; the right answer. <strong>Now look at the third column before you believe anything else about this table.</strong></p>
+      </div>
+      <aside class="notes">2 min. Hold the room here. Everything on the next slide depends on their having actually read the SE column, so ask someone to say out loud how big 0.0426 is relative to the gaps between rows 5, 7 and 10.</aside>
+    </section>
+
+    <!-- SLIDE 30: The coincidence + 1SE rule -->
+    <section id="cv-coincidence" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--primary-color);"></i> Two Things This Table Cannot Tell You</h2>
+      <div class="content">
+        <div style="background: #F9F0EE; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 14px 22px;">
+          <p style="font-size: 15.5pt;"><strong>1. That CV is unbiased.</strong> Its estimate at the minimum, 0.3222, sits <strong>0.0003</strong> from the true expected error the decomposition measured (0.3219). Resist the obvious reading. That estimate carries a standard error of <strong>0.0426</strong> across its own ten folds &mdash; <strong>142 times the size of the agreement</strong>. Landing within 0.0003 is a coincidence of this partition. CV <em>is</em> close to unbiased for expected prediction error &mdash; but this table is not the evidence, because a single run cannot resolve anything smaller than about 0.04.</p>
+        </div>
+        <div style="background: #F9F0EE; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 12px;">
+          <p style="font-size: 15.5pt;"><strong>2. That degree 5 beats degree 7.</strong> Degrees 5, 7 and 10 come in at 0.3222, 0.3328 and 0.3406 &mdash; a spread of <strong>0.0184, less than half of one standard error</strong>. CV has not found a winner. It has found that all three are indistinguishable and picked the smallest number anyway.</p>
+        </div>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>The one-standard-error rule.</strong> Among models within one SE of the best, take the <strong>simplest</strong> &mdash; because the ordering inside that band is noise, and the simpler model has less variance.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min, and this is the most important slide in Section 4. Two habits to send them away with: always print the SE beside a CV mean, and never rank models whose SEs overlap. The one-standard-error rule is not a convention or a preference &mdash; it is what you do when your instrument has finite resolution. They will use it on their own lab output in fifteen minutes.</aside>
+    </section>
+
+    <!-- SLIDE 31: The third split -->
+    <section id="third-split" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--accent-color);"></i> Why There Is a Third Split</h2>
+      <div class="content">
+        <p class="text-lg">Once you use validation scores to <em>choose</em> something &mdash; a degree, a hyperparameter, an algorithm &mdash; that score <strong>stops being an unbiased estimate of future performance, because you selected on it.</strong> Chapter 8's multiple-comparisons problem, arriving in a new costume.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 16px 20px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">Train</p>
+            <p style="font-size: 14pt; margin-top: 5px;">fit the parameters</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 16px 20px; border-top: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--accent-color);">Validation</p>
+            <p style="font-size: 14pt; margin-top: 5px;">choose between models</p>
+          </div>
+          <div style="background: #EEF2F0; border-radius: 8px; padding: 16px 20px; border-top: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">Test</p>
+            <p style="font-size: 14pt; margin-top: 5px;">touched <strong>exactly once</strong>, at the end</p>
+          </div>
+        </div>
+        <div class="misconception" style="margin-top: 18px;">
+          <p style="font-size: 16pt;">If you check the test set and then change something, <strong>it is a validation set now</strong>, and you no longer have an honest estimate. The professional move is to say so.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Students conflate validation and test constantly, so say it explicitly here and repeat it in the lab. The lab's Part 4 (nested CV) is exactly this point made quantitative: on their own lab data the reported CV minimum is 0.1401 and the nested, honest estimate is 0.2070.</aside>
+    </section>
+
+    <!-- SLIDE 32: Why the floor changes how you read this -->
+    <section id="floor-reading" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-screwdriver-wrench" style="color: var(--muted-color);"></i> How Much Is Model Selection Actually Worth?</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">The floor was <strong>0.3025</strong> and the best model reached <strong>0.3219</strong>. The <em>entire</em> range between the best and worst reasonable models &mdash; degrees 3 through 10, spanning 0.3648 to 0.4942 on the test split &mdash; is small relative to the noise you can never remove.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p>Squeezing out the last few percent of achievable error is a much smaller prize than it looks when you report improvements as <em>percentages of the total</em>.</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.55; margin-top: 14px;">This is why experienced practitioners spend their time on <strong>data quality, feature construction and problem framing</strong> rather than algorithm selection. Those can lower \(\sigma^2\) <em>itself</em> &mdash; a better-measured target, a feature capturing something previously unobserved &mdash; which is the only way to move the floor.</p>
+        <p style="margin-top: 14px; font-size: 16pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Swapping one model for another slides you along a curve <strong>whose minimum is already fixed</strong>. Chapters 16 to 19 buy you a closer approach to the floor. They do not lower it.</p>
+      </div>
+      <aside class="notes">2 min &mdash; and this is the marked cut if the room is running long, since the takeaways slide restates it. Otherwise it is worth the time: it is the most transferable career advice in the chapter, and it inoculates them against the "which algorithm should I use" question that dominates their final projects.</aside>
+    </section>
+
+    <!-- SLIDE 33: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Leakage</h1>
+      <p class="subtitle">Section 15.5 &bull; When the held-out data was not really held out</p>
+    </section>
+
+    <!-- SLIDE 34: What leakage is + preprocessing -->
+    <section id="leakage-preprocessing" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-faucet-drip" style="color: var(--danger-color);"></i> Leakage, and the First of Three Kinds</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 16pt;"><strong>Data leakage</strong> is any path by which information from outside the training set reaches the model during fitting. It inflates validation scores, sometimes spectacularly, and <strong>the inflation is invisible until deployment</strong> &mdash; at which point the model is much worse than advertised and nobody can say why.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px;"><strong>Preprocessing leakage.</strong> Scale or impute <em>before</em> splitting, and the training data has been transformed using the test set's mean and variance. The model has seen a summary of data it should not know exists.</p>
+        <p style="font-size: 15pt; margin-top: 12px;">The effect is usually small with simple scaling on a large sample &mdash; <em>which is precisely why it survives review</em>. It becomes serious with feature selection, imputation or target encoding: choosing the twenty best predictors by correlation with \(y\) <strong>on the full dataset</strong> lets the test set vote on which features the model gets. In the extreme, selecting features on pure noise before splitting produces a model that validates well and predicts nothing.</p>
+      </div>
+      <aside class="notes">2 min. The "small effects survive review" point is the one worth landing &mdash; a bug that produces a 40% inflation gets caught; a bug that produces a 2% inflation gets published. Order note: I lead with preprocessing because it is the one their code will commit today, but grouped leakage is the one their panel data will inflict on them, and it comes last for emphasis.</aside>
+    </section>
+
+    <!-- SLIDE 35: Pipeline code -->
+    <section id="pipeline-code" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-code" style="color: var(--success-color);"></i> The Fix Is Structural, Not Disciplinary</h2>
+      <div class="content">
+        <div style="background: #F9F0EE; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 12px 18px;">
+          <p style="font-size: 12pt; color: var(--danger-color); font-weight: 700; letter-spacing: 1px; margin-bottom: 4px;">WRONG &mdash; the scaler has already seen the test set</p>
+          <pre style="margin: 0; font-size: 12.5pt; line-height: 1.45; font-family: 'SF Mono', Menlo, monospace; color: var(--text-color); background: transparent;">X_scaled = StandardScaler().fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y)</pre>
+        </div>
+        <div style="background: #EEF2F0; border-left: 5px solid var(--success-color); border-radius: 8px; padding: 12px 18px; margin-top: 14px;">
+          <p style="font-size: 12pt; color: var(--success-color); font-weight: 700; letter-spacing: 1px; margin-bottom: 4px;">RIGHT &mdash; the scaler is refitted inside every fold</p>
+          <pre style="margin: 0; font-size: 12.5pt; line-height: 1.45; font-family: 'SF Mono', Menlo, monospace; color: var(--text-color); background: transparent;">pipe = Pipeline([('scaler', StandardScaler()), ('model', Ridge())])
+scores = cross_val_score(pipe, X_train, y_train, cv=5)</pre>
+        </div>
+        <div class="key-result" style="margin-top: 16px;">
+          <p>Put every transformation inside a <code>Pipeline</code> and scikit-learn <strong>guarantees</strong> that <code>.fit()</code> touches only training folds. Manual scaling followed by cross-validation is a bug that produces optimistic numbers <em>and no error message</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say the last sentence twice. "No error message" is why this is a structural fix rather than a matter of care: careful people write this bug, and nothing tells them. Their PS4 Part B will be graded on whether the transformations are inside a Pipeline.</aside>
+    </section>
+
+    <!-- SLIDE 36: Temporal leakage table -->
+    <section id="temporal-leakage" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-clock-rotate-left" style="color: var(--danger-color);"></i> Temporal Leakage: Shuffling Puts the Future in the Training Set</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Take a persistent series &mdash; a slow-moving level plus noise, which describes most macroeconomic data &mdash; and predict it from three lags, once with shuffled \(k\)-fold and once respecting time order.</p>
+        <table style="margin-top: 12px; width: 80%; margin-left: auto; margin-right: auto;">
+          <tr><th>model</th><th>shuffled 5-fold <span style="font-weight:400;">(leaky)</span></th><th>time-respecting <span style="font-weight:400;">(honest)</span></th><th>looks better by</th></tr>
+          <tr><td>Random Forest (200 trees)</td><td>1.811</td><td>2.150</td><td style="color: var(--danger-color);"><strong>&asymp; 16%</strong></td></tr>
+          <tr><td>OLS (3 lags)</td><td>1.525</td><td>1.629</td><td><strong>&asymp; 6%</strong></td></tr>
+        </table>
+        <p style="margin-top: 14px; font-size: 15pt;">Both look better under shuffling &mdash; that is leakage doing what leakage does. <strong>But look at how much better.</strong> On this one draw the flexible model gains nearly three times as much.</p>
+        <p style="margin-top: 10px; font-size: 15pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Also worth noticing: <strong>OLS on three lags beats the Random Forest under <em>both</em> schemes.</strong></p>
+      </div>
+      <aside class="notes">2 min. Flag honestly that this table is a single draw, and that a single draw is exactly the kind of evidence this lecture has been teaching them to distrust. The next slide replicates it 40 times, which is what makes the claim safe to assert. The OLS-beats-forest point tempers expectations before Ch 16 to 19 introduce more powerful machinery.</aside>
+    </section>
+
+    <!-- SLIDE 37: Figure 005 replication -->
+    <section id="leakage-replication" style="padding: 24px 45px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-repeat" style="color: var(--accent-color);"></i> One Draw Is One Draw &mdash; So Replicate It</h2>
+      <div class="content" style="display: grid; grid-template-columns: 60% 40%; gap: 22px; align-items: center;">
+        <img class="figure" src="figures/figure_005_leakage_asymmetry.png" alt="Bar chart with error bars comparing how much shuffling inflates the validation score across 40 independent draws of the same data-generating process: Random Forest 44.5 percent plus or minus 3.3, OLS 11.6 percent plus or minus 1.7, with individual draws shown as scattered dots" style="max-height: 450px; width: 100%;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;"><strong>40 independent draws</strong> of the same process:</p>
+          <div style="margin-top: 10px; font-size: 14.5pt; line-height: 1.6;">
+            <p>Random Forest inflated <strong>44.5%</strong> (SE 3.3)</p>
+            <p>OLS inflated <strong>11.6%</strong> (SE 1.7)</p>
+            <p>Difference <strong>+32.9 pp</strong> (SE 3.2)</p>
+            <p>RF inflated more in <strong>95%</strong> of draws</p>
+          </div>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 14pt;">The chapter's single realisation was at the <em>low</em> end. The direction is not in doubt &mdash; and now it has an error bar.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. This slide is also a method lesson: they just watched me refuse to rank two CV scores 0.0184 apart, so I am not allowed to assert a 16-versus-6 gap from one seed either. Same standard, applied to my own claim. Say that out loud &mdash; it is the most useful thing on the slide.</aside>
+    </section>
+
+    <!-- SLIDE 38: POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll &mdash; The Forest Wins by 15%</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">A colleague compares a Random Forest against OLS using <strong>shuffled 5-fold CV on quarterly GDP data</strong>. The forest wins by 15%.</p>
+          <p class="text-lg" style="margin-top: 12px;"><strong>What is the single most likely explanation?</strong></p>
+          <div class="poll-grid" data-poll-id="ch15-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The forest genuinely captures non-linearities OLS cannot</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Shuffling leaked future values, and the flexible model exploited them more</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The forest needs more trees</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) OLS violated homoskedasticity</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students click to vote. Some will pick A and they should be encouraged to defend it &mdash; the point is not that A is absurd, it is that A is a claim that has to be earned on a time-respecting split.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch15-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Shuffling Leaked the Future</h2>
+        <div class="poll-results-chart" data-poll-id="ch15-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.5;">Shuffling ordered data is temporal leakage, and the replication says the flexible model gains roughly <strong>four times as much</strong> from it. The honest comparison uses <code>TimeSeriesSplit</code> &mdash; and under it, in our example, <strong>OLS wins</strong>.</p>
+          <p class="text-lg" style="line-height: 1.5; margin-top: 12px;"><strong>A is not impossible</strong> &mdash; but it is the claim that has to be <em>earned</em> on a time-respecting split, and usually it is not. <strong>C and D</strong> are real issues that would not produce this pattern.</p>
+          <div class="key-result" style="margin-top: 12px;">
+            <p>Leakage does not merely inflate scores. It inflates them <strong>differentially</strong>, manufacturing an apparent advantage for exactly the models that would otherwise be penalised for their variance. <strong>Any comparison run on leaky splits is systematically biased toward complexity.</strong></p>
+          </div>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch15-econ3916-poll-2')" style="position:absolute; bottom:14px; right:20px; font-size:11pt; padding:4px 10px;">Reset</button>
+        <aside class="notes">2 min. The key-result box is the mechanism and it is the thing to carry into the Kapoor &amp; Narayanan slide: a flexible model has the capacity to exploit leaked information and a rigid one does not, so leaky evaluation is not neutral noise &mdash; it has a direction, and the direction favours complexity.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 39: Grouped leakage + CMT -->
+    <section id="grouped-leakage" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-car-side" style="color: var(--danger-color);"></i> Grouped Leakage &mdash; The Subtlest, and Yours</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">If a dataset contains <strong>repeated observations of the same unit</strong> &mdash; several trips by one driver, several quarters for one firm, several students in one school &mdash; a random split puts the same unit on both sides. The model learns to recognise <em>that unit</em> rather than the general pattern.</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; margin-top: 14px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">Economist at Work &mdash; Cambridge Mobile Telematics</p>
+          <p style="font-size: 14pt; margin-top: 6px;">CMT processes sensor data from over <strong>55 million drivers</strong> to assess driving risk; insurers price policies on the output. The obvious validation is to pool every trip and split randomly. It is wrong. One driver contributes hundreds of trips over the same commute, the same roads, the same car. Split randomly and that driver is on both sides &mdash; so the model does not have to learn the physics of risky driving. It can learn <em>this person's commute</em>.</p>
+          <p style="font-size: 14pt; margin-top: 8px;">In Chapter 14's language: repeated measures from one driver are a <strong>panel</strong>, and pooling them violates the independence that standard CV assumes. <strong>Clustering did not disappear because the model became non-parametric.</strong></p>
+        </div>
+        <p style="margin-top: 12px; font-size: 15pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> The fix is <code>GroupKFold</code> &mdash; every trip from a driver confined to one fold, so performance is measured on <strong>drivers the model has never seen</strong>. Which is the only question an insurer entering a new market is asking.</p>
+      </div>
+      <aside class="notes">3 min. Lead the leakage block's emphasis here rather than on preprocessing &mdash; this is the one they have never considered and the one their own panel data will inflict on them. Generalise at the end: if your rows are not independent, your random split is not measuring what you think, and the fix is to split along the dimension you want to generalise across.</aside>
+    </section>
+
+    <!-- SLIDE 40: Kapoor & Narayanan -->
+    <section id="kapoor-narayanan" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-book-open-reader" style="color: var(--danger-color);"></i> The Scale of the Problem</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 16px;">
+          <div class="stat-highlight"><div class="number" style="color: var(--danger-color);">329</div><div class="label">papers audited</div></div>
+          <div class="stat-highlight"><div class="number" style="color: var(--danger-color);">17</div><div class="label">scientific fields</div></div>
+          <div class="stat-highlight"><div class="number">&asymp; 0</div><div class="label">of ML's reported advantage that survived</div></div>
+        </div>
+        <p class="text-lg" style="line-height: 1.55;">Kapoor and Narayanan (2023) found leakage <strong>pervasive</strong>. In area after area &mdash; civil war prediction, health forecasting &mdash; complex models had reportedly crushed traditional logistic regression. When the data was repartitioned to respect chronology, so the future could not inform the past, <strong>the advantage largely vanished</strong>: decades-old linear models performed comparably to the neural networks that had supposedly superseded them.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p>It is not that the sophisticated models were bad. <strong>It is that the evaluation was wrong</strong>, in a way that systematically favoured flexibility &mdash; because a more flexible model exploits leaked information more efficiently.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. "329 papers across 17 fields" reframes leakage from a coding slip to a discipline-wide problem, and that reframing is the reason this slide exists. Let it sit uncomfortably for a beat before moving on.</aside>
+    </section>
+
+    <!-- SLIDE 41: The simplicity finding -->
+    <section id="simplicity-finding" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-feather" style="color: var(--success-color);"></i> The Simplicity Finding</h2>
+      <div class="content">
+        <div class="key-result" style="border-left-color: var(--success-color);">
+          <p style="font-size: 17pt;"><strong>On noisy, tabular, moderately sized economic data, simple models often win.</strong> Not always, and not by much &mdash; but often enough that flexibility should be <em>argued for</em> rather than assumed.</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.55; margin-top: 14px;">The decomposition explains exactly why. Economic data tends to have a <strong>large irreducible component</strong> (human behaviour is genuinely partly unpredictable), a <strong>modest number of informative features</strong>, and sample sizes in the <strong>thousands rather than the millions</strong>. That combination puts the minimum of the U-curve at low complexity: a rigid form accepts some bias and buys a large reduction in variance, and when \(\sigma^2\) is big the variance saving dominates.</p>
+        <p class="text-lg" style="line-height: 1.55; margin-top: 12px;">The environments where flexible models decisively win look different &mdash; enormous samples, low noise, rich structure a linear form genuinely cannot represent: images, language, board positions. Those conditions are real. <strong>They are not the conditions of most economic panels.</strong></p>
+        <p style="margin-top: 14px; font-size: 16pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> <strong>Always fit the simple model first, and make the complex one earn its place on held-out data.</strong></p>
+      </div>
+      <aside class="notes">2 min. This is a discipline rather than a prejudice, and worth saying that way. A penalised linear regression is not a fallback for people who cannot run gradient boosting; on a great many economic problems it is the correct answer, and Ch 16 makes it considerably stronger.</aside>
+    </section>
+
+    <!-- SLIDE 42: Discussion 2 -->
+    <section id="discussion-2" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion 2 &mdash; The Dean's AUC of 0.94</h2>
+      <div class="content">
+        <div class="discussion-prompt">
+          <p class="bloom-level">Bloom L4 &bull; Analyze &bull; 4 minutes &bull; table groups</p>
+          <p style="font-size: 16pt;">Your team has student-level data: <strong>40,000 observations, 5,000 students, 8 semesters each</strong>, predicting dropout. Random 5-fold CV reports <strong>AUC 0.94</strong>. The dean wants to deploy it to flag <em>incoming</em> students.</p>
+          <p style="font-size: 16pt; margin-top: 8px;">Name every reason that 0.94 is <strong>not</strong> the number the dean is buying.</p>
+        </div>
+        <p style="margin-top: 16px; font-size: 15pt;">Four places to look. You should be able to fill at least three of them from today alone:</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 10px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 16px; border-top: 3px solid var(--secondary-color);"><p style="font-size: 14pt;"><strong>Who is in both halves</strong> of the split?</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 16px; border-top: 3px solid var(--accent-color);"><p style="font-size: 14pt;"><strong>What order</strong> did the rows arrive in?</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 16px; border-top: 3px solid var(--success-color);"><p style="font-size: 14pt;"><strong>Which features</strong> exist for an applicant who has not enrolled?</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 16px; border-top: 3px solid var(--danger-color);"><p style="font-size: 14pt;"><strong>Whose decision</strong> put these 5,000 students in the data at all?</p></div>
+        </div>
+      </div>
+      <aside class="notes">4 min including debrief. Press 4 for the timer. Expected answers: (i) grouped leakage &mdash; the same student is on both sides, so the model has memorised individuals; GroupKFold on student id is mandatory. (ii) temporal leakage &mdash; later semesters are predicting earlier ones. (iii) feature mismatch &mdash; incoming students have none of the semester-level features the model uses, so the deployment feature set differs from the training one. (iv) selective labels, which is the next section, and it is fine if nobody gets it. Push for the honest design: group AND time split, features restricted to what is known at admission. This is the marked cut if you are behind, since the exit ticket reaches the same ground.</aside>
+    </section>
+
+    <!-- SLIDE 43: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The Outcomes You Never Observe</h1>
+      <p class="subtitle">Section 15.5b &bull; The failure no splitting scheme fixes</p>
+    </section>
+
+    <!-- SLIDE 44: Selective labels -->
+    <section id="selective-labels" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-eye-slash" style="color: var(--primary-color);"></i> Selective Labels</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Return to the hook. Zillow's model was evaluated on houses &mdash; but <strong>which</strong> houses ended up in Zillow's inventory was decided by <em>sellers choosing whether to accept the offer.</em> Its real-world performance was measured on a set assembled by other people's choices, made in response to the model's own output.</p>
+        <p style="font-size: 15pt; margin-top: 10px;"><strong>You observe the outcome only for the units where some decision went one way.</strong></p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; margin-top: 12px; font-size: 14.5pt;">
+          <p><i class="fa-solid fa-building-columns" style="color: var(--secondary-color);"></i> A bank observes repayment only for applicants it <strong>approved</strong>. The defaults of rejected applicants are unobservable, forever.</p>
+          <p><i class="fa-solid fa-gavel" style="color: var(--secondary-color);"></i> A court observes reoffending only for defendants <strong>released</strong> on bail.</p>
+          <p><i class="fa-solid fa-user-tie" style="color: var(--secondary-color);"></i> A hiring team observes performance only for candidates <strong>hired</strong>.</p>
+          <p><i class="fa-solid fa-cart-shopping" style="color: var(--secondary-color);"></i> A platform observes conversion only for users <strong>shown</strong> the offer.</p>
+        </div>
+        <div class="misconception" style="margin-top: 14px;">
+          <p style="font-size: 15.5pt;">In each case the training data is a <strong>non-random sample selected on the very outcome you are modelling</strong> &mdash; and the selection was performed by a decision-maker, often a previous version of your own model.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Start with the bank example &mdash; everyone sees it immediately &mdash; then Zillow, then bail on the next slide. This section is the chapter's argument for why economists belong in machine learning, so give it real time and do not let it get compressed by an overrun earlier.</aside>
+    </section>
+
+    <!-- SLIDE 45: Kleinberg + remedies -->
+    <section id="kleinberg-remedies" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-shield-halved" style="color: var(--accent-color);"></i> Perfect Splitting Discipline Provides No Protection</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">Kleinberg, Lakkaraju, Leskovec, Ludwig and Mullainathan (2018) set this out in the bail setting. An algorithm predicting reoffending can only be trained on defendants <em>judges chose to release</em>. If judges used information the data does not contain, the released population is favourably selected on unobservables &mdash; and the algorithm's apparent accuracy tells you little about the defendants judges <strong>detained</strong>. Which is exactly the population a proposal to replace judges with algorithms would apply to.</p>
+        <div class="misconception" style="margin-top: 12px;">
+          <p style="font-size: 15.5pt;">Your split can be immaculate. Your <code>Pipeline</code> airtight, your <code>GroupKFold</code> correct, your test set untouched, your cross-validation textbook. <strong>And your validation score still answers a question about a population that was chosen for you</strong>, by a process that correlates with the outcome.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 12px;"><strong>The remedies are not statistical hygiene. They are research design &mdash; and two of the three you already own.</strong></p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 10px; font-size: 13.5pt;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-top: 3px solid var(--secondary-color);"><p><strong>Randomise the decision.</strong> Approve some applicants by lottery and their outcomes are unselected. <em>Chapter 9.</em></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-top: 3px solid var(--accent-color);"><p><strong>Use variation in the decision-maker.</strong> Randomly assigned judges of differing strictness give outcomes a stricter judge would have denied &mdash; <em>someone else's coin flip has done your randomising for you.</em></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; border-top: 3px solid var(--success-color);"><p><strong>Bound what you cannot see.</strong> State what would have to be true of the unobserved outcomes to reverse your conclusion. <em>Chapter 10's E-value and sensitivity analysis, a second time.</em></p></div>
+        </div>
+      </div>
+      <aside class="notes">3 min. The moment worth engineering is the realisation that a perfect train/test discipline provides no protection whatsoever here. Students who have just absorbed five sections of splitting discipline find that genuinely destabilising, which is the right reaction. Be precise about what this track owns: remedies 1 and 3 are Ch 9 and Ch 10 and they genuinely already have them. Remedy 2 is the instrumental-variables idea, which ECON 3916 does not develop &mdash; so present the judge-strictness variation as a design they can recognise, not an estimator they can run, and say that ECON 5200 builds it out. Do not tell them it is "Chapter 12"; on this track Chapter 12 is OLS for prediction.</aside>
+    </section>
+
+    <!-- SLIDE 46: Discussion 3 -->
+    <section id="discussion-3" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion 3 &mdash; Would You Sign Your Name to It?</h2>
+      <div class="content">
+        <div class="discussion-prompt">
+          <p class="bloom-level">Bloom L6 &bull; Evaluate &bull; 3 minutes &bull; whole room</p>
+          <p style="font-size: 16pt;">A university asks you to build a model predicting which applicants will graduate, <strong>trained on ten years of enrolled students</strong>, to be used in admissions.</p>
+          <p style="font-size: 16pt; margin-top: 8px;">Whose decision determined which outcomes you get to observe? And what would you have to change about the <strong>design</strong> &mdash; not the code &mdash; before you would sign your name to it?</p>
+        </div>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>Think Like an Economist.</strong> For any predictive model, ask: <em>whose decision determined which outcomes I get to see?</em> If the answer is anyone at all &mdash; a loan officer, a judge, a seller, a previous model &mdash; you have a selection problem <strong>before</strong> you have a prediction problem.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Answer: the admissions committee's, and previous versions of the same criteria. Statistical hygiene cannot repair it. Designs that can: waitlist lotteries (Ch 9), variation in leniency across admissions readers (the instrumental-variables idea &mdash; recognisable here, developed in ECON 5200, not in this course), or an explicit bound on how different the rejected applicants would have to be to reverse the recommendation (Ch 10). Accept and praise the answer that the model should not be used for this decision at all &mdash; that is a professional judgement, not a cop-out.</aside>
+    </section>
+
+    <!-- SLIDE 47: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>In Practice</h1>
+      <p class="subtitle">Section 15.6 &bull; The checklist is the deliverable</p>
+    </section>
+
+    <!-- SLIDE 48: The checklist -->
+    <section id="checklist" style="padding: 26px 50px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-clipboard-check" style="color: var(--success-color);"></i> Six Steps, in This Order</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f8f6f3; border-radius: 6px; padding: 9px 16px;">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 13.5pt;"><strong>Split before you look.</strong> Hold out a test set as the <em>first</em> operation, before any exploration, scaling or feature engineering. Everything you learn from data you later test on contaminates the test &mdash; including what you learn with your eyes.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f8f6f3; border-radius: 6px; padding: 9px 16px;">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">2</p>
+            <p style="font-size: 13.5pt;"><strong>Put every transformation inside a <code>Pipeline</code>.</strong> Not a style preference &mdash; the mechanism that makes preprocessing leakage structurally impossible rather than merely discouraged.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f8f6f3; border-radius: 6px; padding: 9px 16px;">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">3</p>
+            <p style="font-size: 13.5pt;"><strong>Choose complexity by cross-validation, on the training set only.</strong> Five or ten folds. Never on the test set, and never on training error. Report the SE, and apply the one-standard-error rule.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f8f6f3; border-radius: 6px; padding: 9px 16px;">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">4</p>
+            <p style="font-size: 13.5pt;"><strong>Ask whether your rows are independent.</strong> Same unit more than once &rarr; <code>GroupKFold</code>. Ordered in time &rarr; do not shuffle at all. Random \(k\)-fold is the correct default only for genuinely independent observations, which economic data frequently is not.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f8f6f3; border-radius: 6px; padding: 9px 16px;">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">5</p>
+            <p style="font-size: 13.5pt;"><strong>Touch the test set once.</strong> Report that number. If you then change the model, the honest move is to say you no longer have a test set.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #fdf0ea; border-radius: 6px; padding: 9px 16px;">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--danger-color);">6</p>
+            <p style="font-size: 13.5pt;"><strong>Ask what the prediction will be used for.</strong> Everything today measures squared error, which is right only if errors are symmetric, all observations matter equally, and nobody responds to your predictions. <strong>Zillow failed on the third with every other box ticked.</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Present these as a checklist and say the checklist IS the deliverable &mdash; it is what PS4 Part B is graded against. Step 1 gets resistance because students want to explore first, so be concrete: looking at a scatter plot of the full data and choosing a functional form from it is model selection on the test set, performed by eye. Step 4 is the one their own project data will punish them for. Close on step 6 and the Zillow callback.</aside>
+    </section>
+
+    <!-- SLIDE 49: Misconception — CV prevents overfitting -->
+    <section id="misconception-cv" style="padding: 38px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 20pt; font-style: italic; color: #7a4a2f;">"Cross-validation prevents overfitting."</p>
+        </div>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 16px;">It <strong>detects</strong> overfitting; it does not prevent it. Cross-validation is a <em>measurement device</em> &mdash; it tells you which complexity generalises best <strong>among those you tried</strong>. If every candidate is too flexible, CV faithfully reports the least-bad one.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 14px;">And <strong>CV itself can be overfit</strong>: try enough model configurations against the same folds and you will eventually find one that suits those particular partitions. Chapter 8's multiple-comparisons problem again &mdash; and the reason the final test set exists.</p>
+      </div>
+      <aside class="notes">1 min. Tie it back to slide 22's menu point: CV can only compare what you put on the menu, and it cannot tell you the menu was wrong. That is the setup for Ch 16, where the menu becomes continuous.</aside>
+    </section>
+
+    <!-- SLIDE 50: Lab preview -->
+    <section id="lab-preview" style="padding: 22px 42px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-flask-vial" style="color: var(--secondary-color);"></i> Lab 15 &mdash; A Different World, the Same Shape</h2>
+      <div class="content" style="display: grid; grid-template-columns: 44% 56%; gap: 20px; align-items: center;">
+        <div>
+          <p style="font-size: 13.5pt; line-height: 1.45;">The lab uses a <strong>different</strong> simulated world from the chapter &mdash; \(f(x)=\sin(1.4x)+0.25x\) on \([0,6]\), \(\sigma=0.45\), and only \(n=60\) &mdash; deliberately, so today's shape has to be <em>recognised</em>, not recalled.</p>
+          <p style="font-size: 13.5pt; line-height: 1.45; margin-top: 10px;"><strong>Variance does not rise from the start.</strong> It is flat at about 0.02 from degree 1 to 5 (0.0211, 0.0187, 0.0205, 0.0180), then climbs to 0.0994 at degree 15 &mdash; about five times its degree-5 value. A model too rigid to chase noise does not have much to vary.</p>
+          <div class="key-result" style="margin-top: 10px;">
+            <p style="font-size: 13pt;">The slogan "bias falls, variance rises" describes only the <em>second half</em> of this picture. The lab's own output says so. <strong>Report the table, not the slogan.</strong></p>
+          </div>
+        </div>
+        <img class="figure" src="figures/figure_006_lab_preview.png" alt="Two panels from Lab 15: bias squared and variance across polynomial degrees 1 to 15 showing variance flat until degree 5 before climbing, and five-fold cross-validated mean squared error with one-standard-error bars in which cross-validation picks degree 4 while a single held-out set picks degree 5" style="max-height: 540px; width: auto; display: block; margin: 0 auto;">
+      </div>
+      <aside class="notes">2 min. This is the honest-reporting habit made concrete on their own deliverable: the lab prints a table that does NOT match the textbook cartoon, and the lab's own commentary tells them to report what the table says. Part 4 of the lab is a YOUR TASK on nested cross-validation &mdash; executed on the lab data, the reported CV minimum is 0.1401 and the nested honest estimate is 0.2070. Tell them the direction is guaranteed in expectation while that particular gap is not: with five outer folds of twelve points its SE is 0.086.</aside>
+    </section>
+
+    <!-- SLIDE 51: POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll &mdash; Which Degree Do You Report?</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">In Lab 15, 5-fold CV picks <strong>degree 4</strong> (CV MSE 0.1401) and a single held-out set of 2,000 points picks <strong>degree 5</strong> (CV MSE 0.1510). The fold-to-fold SE at degree 4 is <strong>0.0112</strong>.</p>
+          <p class="text-lg" style="margin-top: 12px;"><strong>Which do you report?</strong></p>
+          <div class="poll-grid" data-poll-id="ch15-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Degree 4 &mdash; CV used all the data</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Degree 5 &mdash; 2,000 held-out points beat 5 folds</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Either &mdash; the difference is 0.0109 against an SE of 0.0112, so the data cannot rank them</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Re-run with a different seed until they agree</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Both A and B are defensible-sounding and both miss the point, which is why they are here. Let the room vote before saying anything.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch15-econ3916-poll-3" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; The Data Cannot Rank Them</h2>
+        <div class="poll-results-chart" data-poll-id="ch15-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.5;">The gap is <strong>smaller than one standard error of the estimate itself</strong>. This is the one-standard-error rule doing its job on your own lab output: both sit inside the band, so take the simpler &mdash; <strong>degree 4</strong> &mdash; and say <em>why</em>, which is that the comparison lacks resolution, not that degree 4 won.</p>
+          <p class="text-lg" style="line-height: 1.5; margin-top: 12px;"><strong>D</strong> is the honest name for a common practice, and it is p-hacking. <strong>B</strong> confuses the size of the held-out set with the reliability of the <em>selection</em> made from it &mdash; which is exactly what the 200-splits histogram was about.</p>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch15-econ3916-poll-3')" style="position:absolute; bottom:14px; right:20px; font-size:11pt; padding:4px 10px;">Reset</button>
+        <aside class="notes">1 min. If a student objects that 0.0109 versus 0.0112 is "basically one SE, so it is borderline" &mdash; agree, and say that borderline is exactly the case the rule is for. The rule is not a hypothesis test; it is a tie-breaking convention that resolves ties toward simplicity.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 52: Key takeaways -->
+    <section id="takeaways" style="padding: 26px 50px;">
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 9px 18px;">
+            <p style="font-size: 13.5pt;"><strong>1.</strong> Expected prediction error decomposes exactly into <strong>bias\(^2\) + variance + irreducible noise</strong> &mdash; for squared error &mdash; and only the first two are yours to trade.</p>
+          </div>
+          <div style="background: #f8f6f3; border-left: 4px solid var(--muted-color); border-radius: 6px; padding: 9px 18px;">
+            <p style="font-size: 13.5pt;"><strong>2.</strong> The irreducible term is a <strong>floor</strong>. With \(\sigma = 0.55\) the best achievable error was 0.3219 against a floor of 0.3025, and no model of any sophistication crosses it.</p>
+          </div>
+          <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 9px 18px;">
+            <p style="font-size: 13.5pt;"><strong>3.</strong> Training error falls monotonically and therefore <strong>cannot select a model</strong>. The widening gap between training and validation error is the signature of overfitting.</p>
+          </div>
+          <div style="background: #f8f6f3; border-left: 4px solid var(--accent-color); border-radius: 6px; padding: 9px 18px;">
+            <p style="font-size: 13.5pt;"><strong>4.</strong> One split is a <strong>single noisy draw</strong> &mdash; 200 splits of identical data gave a 2.4&times; spread and chose the wrong model 28% of the time. Cross-validate, print the SE, and when models sit within one SE of each other, take the simplest.</p>
+          </div>
+          <div style="background: #f8f6f3; border-left: 4px solid var(--danger-color); border-radius: 6px; padding: 9px 18px;">
+            <p style="font-size: 13.5pt;"><strong>5.</strong> <strong>Leakage makes every number above meaningless</strong>, and it inflates scores most for the most flexible models &mdash; 44.5% versus 11.6% in our replication; and across 329 papers in 17 fields ML's reported advantage over logistic regression largely vanished once time was respected.</p>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 6px; padding: 9px 18px;">
+            <p style="font-size: 13.5pt;"><strong>6.</strong> And none of it protects you when <strong>someone else's decision determined which outcomes you observe.</strong> That is Zillow &mdash; and it is an economics problem before it is a modelling one.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Land on takeaway 6 and make the return to the hook explicit: everything between slide 5 and here was the machinery, and Zillow had the machinery. What it did not have was an economist asking who gets to decline the offer.</aside>
+    </section>
+
+    <!-- SLIDE 53: Exit ticket -->
+    <section id="exit-ticket" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--success-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px;">
+            <p style="font-size: 15.5pt;"><strong>1.</strong> Name the three terms of the decomposition and say which one no model can reduce &mdash; and give the number that floor took in today's simulation.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px;">
+            <p style="font-size: 15.5pt;"><strong>2.</strong> You are handed a validation AUC of 0.94 on 5,000 students observed over 8 semesters. Give <strong>two specific reasons</strong> that number might not survive deployment, and name the fix for each.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px;">
+            <p style="font-size: 15.5pt;"><strong>3.</strong> One sentence: what did Zillow get wrong that a better validation score <em>could not</em> have caught?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; font-size: 15pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Submit on Canvas before the next session. <strong>PS4 (Ch 12&ndash;15, Prediction Fundamentals) opens after this chapter</strong> &mdash; 50/50 between Part A and the Jupyter Part B.</p>
+      </div>
+      <aside class="notes">1 min. Q1 covers LO 15.1 (answer: bias-squared, variance, irreducible; the third; 0.3025). Q2 covers LO 15.4 (grouped leakage &rarr; GroupKFold; temporal leakage &rarr; time-respecting split; feature mismatch at deployment; selective labels). Q3 covers the hook and Section 5b (the errors were symmetric but the seller's response was not, so the deployment sample was selected on the model's own overvaluations).</aside>
+    </section>
+
+    <!-- SLIDE 54: Looking ahead -->
+    <section id="looking-ahead" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--secondary-color);"></i> Looking Ahead</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 92px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Ch 16</p>
+            <p style="font-size: 14pt;"><strong>Regularization.</strong> Instead of trying degrees, penalise complexity <em>continuously</em> and let cross-validation set the penalty. Ridge and LASSO are today's tradeoff with a <strong>dial instead of a switch</strong> &mdash; and the dial matters, because our discrete search could only compare the degrees we happened to put on the menu.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 92px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Ch 17&ndash;18</p>
+            <p style="font-size: 14pt;"><strong>Classification and evaluation.</strong> The decomposition assumed squared error. Categorical outcomes need different loss functions and different metrics &mdash; and there is no clean analogue of today's identity.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 92px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">Ch 19</p>
+            <p style="font-size: 14pt;"><strong>Trees and forests.</strong> A single deep tree is the purest high-variance model in the book. Random Forests reduce that variance by averaging many decorrelated trees &mdash; variance reduction bought exactly as today would price it.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 92px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">Ch 20&ndash;21</p>
+            <p style="font-size: 14pt;"><strong>Time series.</strong> Temporal leakage stops being a warning and becomes the central concern. Random \(k\)-fold is simply <em>invalid</em> on ordered data, and those chapters build the splitting schemes that replace it.</p>
+          </div>
+        </div>
+        <p style="margin-top: 14px; font-size: 14.5pt; color: var(--muted-color);">Read Chapter 16 before the next session. Lab 15 is due on Canvas &mdash; GitHub repo link, as usual.</p>
+      </div>
+      <aside class="notes">1 min. The Ch 16 framing is the one to say out loud: regularization is this chapter's method applied with a finer instrument, and it is also the natural answer to the multicollinearity Ch 13 diagnosed &mdash; shrinking correlated predictors together is a variance reduction bought with a little bias, priced exactly as today would price it.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

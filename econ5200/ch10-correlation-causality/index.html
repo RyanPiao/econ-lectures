@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Correlation & Causality: Causal Logic and DAGs</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax 3 (tex-svg). Inline math is \( ... \) NOT $...$ -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 10</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Correlation &amp; Causality</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Causal logic and DAGs &mdash; which controls rescue an estimate, which do nothing, and which invent a result</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch10-causality.png" alt="Abstract illustration of a dense web of faint non-causal paths, three backdoor forks above, one bold causal arrow between two nodes, and a collider below drawn with a dashed ring to show it is closed" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">10.1</p>
+            <p style="font-size: 15pt;">Explain why an association admits <strong>three structurally different</strong> explanations, and which one a design rules out</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">10.2</p>
+            <p style="font-size: 15pt;">State <strong>d-separation</strong> formally, and say what the <strong>global Markov property</strong> licenses you to infer</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">10.3</p>
+            <p style="font-size: 15pt;">Apply the <strong>backdoor criterion</strong>, and prove the adjustment formula by <strong>graph mutilation</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">10.4</p>
+            <p style="font-size: 15pt;">Quantify how strong an unmeasured confounder must be to overturn a result &mdash; on the risk-ratio <em>and</em> partial-\(R^2\) scales</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. 10.2 and 10.3 are the two you did not get as undergraduates &mdash; the graph is a formal object today, not a mnemonic. Flag 10.4 as the one that will show up in your own referee reports.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; margin-bottom: 14px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 6.</strong> Sampling bias makes large samples converge on the <em>wrong</em> answer. Name the mechanism by which sample <em>size</em> fails to help.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 9.</strong> The observed gap in group means equals the ATE plus a selection-bias term. What does randomization do to that term, and <em>why</em>?</p>
+        </div>
+        <p style="margin-top: 18px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both converge on today: <strong>you rarely get to randomize, and more data will not rescue you.</strong></p>
+      </div>
+      <aside class="notes">2 min, cold-call two. QC1 target: the data defect identity &mdash; bias does not average out, \(n\) only shrinks noise. QC2 target: randomization sets it to zero by construction because assignment is independent of potential outcomes. Do not accept "it balances the groups" without "in expectation, on everything, including things you did not measure."</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook part 1 -->
+    <section id="hook-1" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> A Finding That Was Never There</h2>
+      <div class="content">
+        <p class="text-xl" style="line-height: 1.6;">For most of a decade, strategy and management research reported that when a company appoints a <strong>woman CEO</strong>, the other women executives at that company do <em>worse</em> &mdash; lower pay, lower representation below.</p>
+        <p class="text-lg" style="margin-top: 14px; color: var(--muted-color);">Published. Cited. Circulated as evidence of something people were quick to name.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 20px 26px; margin-top: 20px;">
+          <p class="text-xl" style="font-weight: 600;">March 2024. Frake, Hagemann and Uribe re-ran it. <span style="color: var(--danger-color);">The effect was not there.</span></p>
+          <p class="text-lg" style="margin-top: 10px;">No fabricated data. No miscoded variable. The regressions ran correctly on real data and returned a real number. The problem was <strong>one control variable</strong>.</p>
+        </div>
+      </div>
+      <div class="footnote">Frake, Hagemann &amp; Uribe (2024), <em>Strategic Management Journal</em>, DOI: 10.1002/smj.3588</div>
+      <aside class="notes">2 min. Do not name the mechanism yet &mdash; say "one control variable" and stop. Half the room will guess collider; let them sit with it unconfirmed until Section 5. The point of the hook is not the answer, it is that the study was competently executed.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook part 2 -->
+    <section id="hook-2" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-clipboard-check" style="color: var(--danger-color);"></i> Every Diagnostic You Know Would Have Passed</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px;">
+          <div style="background: #e8f5e9; padding: 14px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--success-color);"><p style="font-size: 14pt;"><i class="fa-solid fa-check" style="color: var(--success-color);"></i> Large sample</p></div>
+          <div style="background: #e8f5e9; padding: 14px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--success-color);"><p style="font-size: 14pt;"><i class="fa-solid fa-check" style="color: var(--success-color);"></i> Correct SEs</p></div>
+          <div style="background: #e8f5e9; padding: 14px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--success-color);"><p style="font-size: 14pt;"><i class="fa-solid fa-check" style="color: var(--success-color);"></i> Small \(p\)-value</p></div>
+          <div style="background: #e8f5e9; padding: 14px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--success-color);"><p style="font-size: 14pt;"><i class="fa-solid fa-check" style="color: var(--success-color);"></i> Replicable</p></div>
+        </div>
+        <p class="text-xl" style="line-height: 1.6;">Chapter 8 taught you to ask whether a difference is <em>real</em>. This difference <strong>was</strong> real &mdash; reliably present in the data, in every sample you could draw.</p>
+        <div class="fragment fade-up key-result" style="margin-top: 18px;">
+          <p style="font-size: 18pt;"><strong>What no test in Chapters 7&ndash;9 can tell you:</strong> whether the number in front of you answers the question you asked.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; color: var(--secondary-color); font-weight: 600;">By the end of today you can look at a specification &mdash; <em>before</em> running it &mdash; and say which controls rescue it, which do nothing, and which invent a result. You do it by drawing a picture.</p>
+      </div>
+      <aside class="notes">2 min. The four green checks are the emotional load-bearing element: everything they have been trained to check, passing. Land the last line and move &mdash; do not editorialise.</aside>
+    </section>
+
+    <!-- DIVIDER: Section 1 -->
+    <section id="divider-1" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; Three Explanations, One Correlation</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">And no test that separates them</p>
+    </section>
+
+    <!-- SLIDE 7: three stories -->
+    <section id="three-stories" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i> Your Scatterplot Slopes Upward. Why?</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: 18px; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">Causation</p>
+            <p style="font-size: 15pt;">\(D\) causes \(Y\). The association <em>is</em> the causal effect. This is the one you hope for.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: 18px; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">Confounding</p>
+            <p style="font-size: 15pt;">Some third thing causes both. Cities with more police have more crime; <strong>city size causes both</strong>. Real, reproducible, and silent about hiring officers.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: 18px; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">Selection</p>
+            <p style="font-size: 15pt;">Nothing causes anything. <strong>The way the data came to be in front of you</strong> created the pattern. Nobody teaches this one; everybody falls into it.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 16pt;"><strong>They are indistinguishable in the data.</strong> A correlation of 0.7 looks identical under all three. Any claim to have separated them is a claim about <em>structure</em> &mdash; asserted, then defended, never computed.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Ask the room for a confounding example from their own field before showing the police/crime line; graduate students always have one. Do not let anyone offer a "test for confounding" here &mdash; that is Poll 1 and it is better if they walk into it.</aside>
+    </section>
+
+    <!-- SLIDE 8: two worlds -->
+    <section id="two-worlds" style="padding: 30px 45px;">
+      <h2><i class="fa-solid fa-chart-scatter" style="color: var(--accent-color);"></i> Two Worlds, and You Wrote the Truth in Both</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_002_three_worlds.png" alt="Two scatterplots with visually similar upward-sloping clouds: World 1 where D causes Y with a true effect of 2.0 and correlation 0.889, and World 2 where an unmeasured U drives both while the true effect is exactly zero and the correlation is 0.664" style="width: 100%; border-radius: 6px;">
+          <div>
+            <pre style="font-size: 11.5pt; line-height: 1.5; background: #f8f6f3; border-radius: 6px; padding: 12px 14px; margin: 0;"><code># World 1
+d1 = rng.normal(0,1,n)
+y1 = 2*d1 + rng.normal(0,1,n)
+
+# World 2
+u  = rng.normal(0,1,n)
+d2 = 1.4*u + rng.normal(0,1,n)
+y2 = 1.4*u + rng.normal(0,1,n)
+#    no d2 term at all</code></pre>
+            <p style="font-size: 14pt; margin-top: 14px; line-height: 1.6;">Both correlations are large, positive, and overwhelmingly significant at any \(n\) you like.</p>
+            <p style="font-size: 14pt; margin-top: 8px; line-height: 1.6; color: var(--danger-color); font-weight: 600;">In one the truth is 2. In the other it is exactly 0.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Run this live if the room is awake. Anscombe (Ch 3) said "plot your data" &mdash; here plotting is also insufficient, because the variable that distinguishes the worlds is not on either axis. Pre-empt "with enough data the truth emerges": more data makes a confounded estimate more PRECISE, not more correct. It tightens the interval around the bias. Same lesson as Ch 6's data defect identity in causal clothing.</aside>
+    </section>
+
+    <!-- SLIDE 9: where Ch9 stopped -->
+    <section id="ch9-stop" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-flag-checkered" style="color: var(--secondary-color);"></i> What Chapter 9 Gave You &mdash; and Where It Stopped</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; text-align: center;">
+          <p style="font-size: 15pt;">$$\underbrace{E[Y_i \mid D_i = 1] - E[Y_i \mid D_i = 0]}_{\text{what you compute}} = \underbrace{\tau}_{\text{what you want}} + \underbrace{E[Y_i(0) \mid D_i = 1] - E[Y_i(0) \mid D_i = 0]}_{\text{selection bias}}$$</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.65;"><strong>Reading it in English.</strong> The selection-bias term asks whether the treated and untreated groups would have differed <em>even with no treatment at all</em>. Randomization forces it to zero. Without randomization it is an unknown number of unknown sign.</p>
+        <div class="fragment fade-up" style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 16pt;">The decomposition tells you the bias <em>exists</em>. It gives you no purchase on <strong>what to do about it</strong> &mdash; which variables, held fixed, shrink that term. And it does not warn you that some variables, held fixed, will <strong>grow</strong> it.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 14px; color: var(--secondary-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> For that we need to talk about structure.</p>
+      </div>
+      <aside class="notes">2 min. This is the pivot slide. The whole first half of the course produced an unknown of unknown sign; the second half of today is a calculus for reasoning about it. Say the words "unknown sign" twice &mdash; it matters again in Section 5 when the sign of collider bias comes up.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 38px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Which Analysis Separates Them?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">You have 5,000 observations from one of the two worlds and you are not told which. Which of these would tell you where you are?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch10-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) A larger sample &mdash; 5 million observations</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) A scatterplot with a LOESS smoother plus a residual plot</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) A specification test &mdash; RESET, White, Breusch&ndash;Pagan</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Nothing computable from \(D\) and \(Y\) alone</div>
+        </div>
+        <aside class="notes">2 min. Students click to vote on their devices. Do not reveal until the bars settle. A is the answer their first six chapters trained.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch10-econ5200-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: D &mdash; Nothing You Can Compute</h2>
+        <div class="poll-results-chart" data-poll-id="ch10-econ5200-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px;"></div>
+        <div style="padding: 6px 40px;">
+          <p style="font-size: 15pt; line-height: 1.65;">A, B and C are all statements about the <strong>joint distribution of \(D\) and \(Y\)</strong> &mdash; and the two DGPs can be tuned to have the <em>same</em> joint distribution. The distinguishing information is \(U\), which is not in the data you were handed.</p>
+          <div style="background: #fdf0ed; border-left: 4px solid var(--danger-color); padding: 14px 20px; border-radius: 8px; margin: 14px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>A is the dangerous one.</strong> More data is the instinct the whole first half of this course installed. It shrinks the interval around the <em>bias</em>. Sample size cures noise, never bias.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min debrief. Expect "couldn't you just test whether U exists?" &mdash; yes, if you measured U, which is what the rest of the lecture is about; no, if you did not. Then transition: every one of these three stories is a claim about structure, so let us get a language for structure.</aside>
+      </section>
+    </section>
+
+    <!-- DIVIDER: Section 2 -->
+    <section id="divider-2" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; The Graph as a Formal Object</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">d-separation, the Markov property, and a theorem you can prove by deleting arrows</p>
+    </section>
+
+    <!-- SLIDE: DAG basics -->
+    <section id="dag-basics" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-diagram-project" style="color: var(--secondary-color);"></i> Two Ingredients, One Very Strong Convention</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt;"><strong>Nodes</strong> are variables. An arrow \(X \to Y\) means &ldquo;\(X\) is a <em>direct</em> cause of \(Y\).&rdquo; That is the entire vocabulary.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 16px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt;"><strong>Directed</strong>: causes point at effects. <strong>Acyclic</strong>: no loop returns to its start &mdash; which rules out simultaneity, and we will pay for that in Section 6.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 17pt;"><strong>The assumptions live in the absences.</strong></p>
+          <p style="font-size: 15.5pt; margin-top: 8px; line-height: 1.6;">Drawing \(X \to Y\) says &ldquo;\(X\) <em>might</em> affect \(Y\)&rdquo; &mdash; a weak claim. Leaving the arrow out says &ldquo;\(X\) has <strong>no direct effect</strong> on \(Y\) at all&rdquo; &mdash; a strong one. When you critique someone&rsquo;s DAG you are almost always arguing about an arrow they left out.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The absences point is the single most portable idea in the section &mdash; it is how you referee a paper that shows a DAG. Draw a two-node graph on the board and ask what you have just asserted about every other variable in the world.</aside>
+    </section>
+
+    <!-- SLIDE: three configurations -->
+    <section id="three-configs" style="padding: 30px 45px;">
+      <h2><i class="fa-solid fa-shapes" style="color: var(--accent-color);"></i> Everything Is Built From Three Configurations</h2>
+      <div class="content">
+        <img src="figures/figure_001_three_structures.png" alt="Three DAG configurations side by side: a chain from D to M to Y, a fork with U pointing to both D and Y, and a collider with D and Y both pointing into C, each annotated with whether conditioning opens or closes the path" style="width: 100%; max-width: 1050px; margin: 4px auto 0; display: block;">
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 16.5pt;"><strong>Conditioning &mdash; controlling for it, stratifying on it, filtering to one of its values &mdash; closes chains and forks. It <span style="color: var(--danger-color);">opens</span> colliders.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Get concrete examples from the room for chain and fork; supply the collider one yourself (ICU admission is caused by both a respiratory condition and a severe infection). Do NOT explain why conditioning opens a collider yet &mdash; Poll 3 depends on the room still finding it implausible.</aside>
+    </section>
+
+    <!-- SLIDE: paths and blocking -->
+    <section id="paths-blocking" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-route" style="color: var(--secondary-color);"></i> Paths, Backdoors, and the Pipe Metaphor</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">A <strong>path</strong> is any sequence of edges connecting \(D\) and \(Y\), <em>ignoring arrow direction</em>. It is <strong>causal</strong> if every arrow points away from \(D\). Every other path is a <strong>backdoor path</strong> &mdash; the first arrow points <em>into</em> \(D\), through the back door.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; margin-bottom: 8px;"><strong>A path is blocked by \(\mathbf{S}\) if either:</strong></p>
+          <p style="font-size: 15pt; margin-bottom: 6px;"><strong>1.</strong> it contains a chain \(\cdots \to W \to \cdots\) or fork \(\cdots \leftarrow W \to \cdots\) with \(W \in \mathbf{S}\); or</p>
+          <p style="font-size: 15pt;"><strong>2.</strong> it contains a collider \(C\), and neither \(C\) <strong>nor any descendant of \(C\)</strong> is in \(\mathbf{S}\).</p>
+        </div>
+        <p class="text-lg" style="margin-top: 14px; line-height: 1.6;"><strong>A path is a pipe.</strong> Chains and forks are open by default and conditioning plugs them. Colliders are plugged by default and conditioning <em>unplugs</em> them.</p>
+        <div class="fragment fade-up" style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 14px 20px; margin-top: 12px;">
+          <p style="font-size: 15pt;"><strong>The descendant clause is where careful people still get caught.</strong> You do not have to condition on the collider itself &mdash; conditioning on a <em>proxy</em> of it does the damage.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The descendant clause is the graduate-only detail here; undergraduates get the two-clause rule without it. Concrete case: you did not select on ICU admission, but you selected on "has an ICU billing code," which is a descendant. Same damage.</aside>
+    </section>
+
+    <!-- SLIDE: d-separation formal -->
+    <section id="dsep-formal" style="padding: 32px 55px;">
+      <h2><span style="font-size: 13pt; letter-spacing: 2px; color: var(--accent-color); text-transform: uppercase;">Advanced Treatment</span><br><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i> d-Separation, Stated Properly</h2>
+      <div class="content">
+        <p class="text-lg">Let \(G\) be a DAG over \(\mathbf{V}\) with \(D, Y \in \mathbf{V}\). Write \(\text{pa}(V)\) for parents, \(\text{de}(V)\) for descendants.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 14.5pt; margin-bottom: 8px;"><strong>Definition (d-separation).</strong> A path \(\pi\) between \(D\) and \(Y\) is blocked by \(\mathbf{S} \subseteq \mathbf{V} \setminus \{D, Y\}\) if either</p>
+          <p style="font-size: 14.5pt; margin-bottom: 6px;">(i) \(\pi\) contains a non-collider \(W \in \mathbf{S}\), or</p>
+          <p style="font-size: 14.5pt; margin-bottom: 8px;">(ii) \(\pi\) contains a collider \(C\) with \((\{C\} \cup \text{de}(C)) \cap \mathbf{S} = \varnothing\).</p>
+          <p style="font-size: 14.5pt;">If every path is blocked, \(D\) and \(Y\) are <strong>d-separated</strong> given \(\mathbf{S}\): &nbsp; \(D \perp_G Y \mid \mathbf{S}\).</p>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 16px;">
+          <p style="font-size: 16pt;"><strong>Read the subscript.</strong> \(\perp_G\) is a statement about the <em>graph</em>, not the distribution. d-separation is purely combinatorial &mdash; no probabilities, no parameters, no data. It is a fact about a picture, checkable by tracing lines with a finger.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Slow down on the subscript. Students conflate \(\perp_G\) with \(\perp\!\!\!\perp\) immediately, and the entire next slide exists to connect them. Say explicitly: so far we have proved nothing about any dataset.</aside>
+    </section>
+
+    <!-- SLIDE: Markov property -->
+    <section id="markov" style="padding: 32px 55px;">
+      <h2><span style="font-size: 13pt; letter-spacing: 2px; color: var(--accent-color); text-transform: uppercase;">Advanced Treatment</span><br><i class="fa-solid fa-bridge" style="color: var(--secondary-color);"></i> The Global Markov Property Is the Whole Point</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 14.5pt; margin-bottom: 8px;"><strong>Theorem.</strong> If \(P\) factorises according to \(G\), that is \(\;P(\mathbf{v}) = \prod_{V \in \mathbf{V}} P(v \mid \text{pa}(V))\), then</p>
+          <p style="font-size: 15pt; text-align: center;">$$D \perp_G Y \mid \mathbf{S} \;\;\Longrightarrow\;\; D \perp\!\!\!\perp Y \mid \mathbf{S} \;\text{ in } P$$</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.65;"><strong>Interpretation &mdash; the bridge that makes the picture worth drawing.</strong> The left side you check by <em>tracing lines</em>. The right side is a statement about <em>probability</em>. The theorem says: if the world really factorises the way your graph claims, then every d-separation you can read off the picture is a real conditional independence in the data.</p>
+        <div class="fragment fade-up key-result" style="margin-top: 16px;">
+          <p style="font-size: 16pt;"><strong>Everything else today is bookkeeping on top of this one implication.</strong> The backdoor criterion is a recipe for arranging a particular d-separation; the Markov property is what converts it into something a dataset can answer.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the load-bearing theorem. If they take one thing from Section 2, it is that a combinatorial property of a drawing implies a probabilistic statement about data &mdash; conditional on the factorisation assumption, which is the graph itself. State plainly: the theorem is not empirical content, it is a translation device.</aside>
+    </section>
+
+    <!-- SLIDE: faithfulness -->
+    <section id="faithfulness" style="padding: 32px 55px;">
+      <h2><span style="font-size: 13pt; letter-spacing: 2px; color: var(--accent-color); text-transform: uppercase;">Advanced Treatment</span><br><i class="fa-solid fa-scale-unbalanced" style="color: var(--danger-color);"></i> The Converse Needs Faithfulness &mdash; and Economics Breaks It</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;"><strong>Faithfulness</strong> says every conditional independence in \(P\) is <em>implied</em> by \(G\). It fails when causal effects along different paths cancel exactly.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>The textbook defence.</strong> Such cancellations occupy a <em>measure-zero</em> set of parameter values. Non-generic. Do not worry.</p>
+          </div>
+          <div style="background: #fdf0ed; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>Why that defence is weak here.</strong> Equilibrium conditions and optimising behaviour <em>produce exactly the cancellations required</em>. Measure zero is not rare when an optimiser is aiming at it.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 5px solid var(--accent-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt;"><strong>Concretely.</strong> A price effect that nets to zero because an income effect exactly offsets a substitution effect is a faithfulness violation &mdash; and it is a comparative-statics <em>result</em>, not a coincidence.</p>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 12px;">
+          <p style="font-size: 16pt;"><strong>Practical rule.</strong> Never read a null conditional independence as evidence of no causal path. The Markov direction is safe; faithfulness is the direction you have to argue for.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is where an instructor gets caught, so have the example ready rather than waving at measure zero. Related: this is exactly why structure-learning algorithms are fragile on economic data. Several widely used continuous-optimisation methods effectively sort variables by marginal variance rather than causal direction, so rescaling a variable can reverse an arrow. A DAG is a hypothesis you bring; the data can refute one and cannot hand you one.</aside>
+    </section>
+
+    <!-- SLIDE: backdoor criterion -->
+    <section id="backdoor-criterion" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Key Concept: The Backdoor Criterion</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; border-left: 5px solid var(--accent-color);">
+          <p style="font-size: 16pt; margin-bottom: 10px;">\(\mathbf{S}\) suffices to identify the causal effect of \(D\) on \(Y\) if:</p>
+          <p style="font-size: 16pt; margin-bottom: 6px;"><strong>1.</strong> \(\mathbf{S}\) blocks every <strong>backdoor</strong> path from \(D\) to \(Y\), and</p>
+          <p style="font-size: 16pt;"><strong>2.</strong> \(\mathbf{S}\) contains <strong>no descendant of \(D\)</strong>.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #e8f5e9; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong>Condition 1</strong> is the familiar one. Close the confounding channels.</p>
+          </div>
+          <div style="background: #fdf0ed; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>Condition 2</strong> is the one people forget. Anything downstream of \(D\) is either a <em>mediator</em> (blocking the effect you want) or a <em>collider</em> (creating bias you did not have).</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Tell them to photograph this slide. The two conditions are logically independent &mdash; Poll 2 turns on exactly that. Note that condition 2 is about timing relative to the TREATMENT, not the outcome; that is the distractor.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Which Condition Fails?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">A researcher estimating the effect of a job-training programme \(D\) on 1978 earnings \(Y\) controls for the participant&rsquo;s <strong>1977 occupational skill level</strong> &mdash; which the programme itself raised.</p>
+          <p style="font-size: 15.5pt; font-weight: 600; margin-top: 10px;">Which condition of the backdoor criterion breaks, and what happens to the estimate?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch10-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Condition 1 &mdash; a backdoor is left open, so the estimate is confounded upward</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Condition 2 &mdash; skill is a descendant of \(D\); the estimate shrinks toward zero</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Neither &mdash; skill is measured before the outcome, so the control is valid</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Both &mdash; descendants always leave backdoors open as well</div>
+        </div>
+        <aside class="notes">2 min. Placing this poll mid-section, not at its end, is deliberate: three theorems back to back flatten the room.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch10-econ5200-poll-2" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Skill Is a Mediator</h2>
+        <div class="poll-results-chart" data-poll-id="ch10-econ5200-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:145px; margin:10px 60px;"></div>
+        <div style="padding: 4px 40px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Skill sits on \(D \to \text{skill} \to Y\). It is a descendant of \(D\), so <strong>condition 2</strong> fails. Conditioning on it blocks part of the causal path, and the estimate shrinks toward the <em>direct</em> effect. Nothing is confounded &mdash; the estimate is unbiased <strong>for a different estimand</strong>.</p>
+          <div style="background: #fdf0ed; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin: 12px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>C is the tempting error:</strong> what matters is timing relative to the <em>treatment</em>, not the outcome. <strong>D is wrong</strong> because the two conditions are logically independent &mdash; you can violate either alone.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Flag that "unbiased for a different estimand" returns in Section 5 with real numbers (3.978 vs 0.988). Do not develop it now.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: adjustment theorem -->
+    <section id="adjustment-theorem" style="padding: 30px 55px;">
+      <h2><span style="font-size: 13pt; letter-spacing: 2px; color: var(--accent-color); text-transform: uppercase;">Advanced Treatment</span><br><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> The Backdoor Adjustment Theorem</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 24px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 14.5pt; margin-bottom: 6px;"><strong>Theorem.</strong> Let \(\mathbf{S}\) satisfy &nbsp;(a) no element of \(\mathbf{S}\) is in \(\text{de}(D)\); &nbsp;(b) \(\mathbf{S}\) blocks every path between \(D\) and \(Y\) containing an arrow <em>into</em> \(D\). Then</p>
+          <p style="font-size: 14pt; text-align: center; margin: 0;">$$P(Y = y \mid do(D = d)) = \sum_{\mathbf{s}} P(Y = y \mid D = d, \mathbf{S} = \mathbf{s})\, P(\mathbf{S} = \mathbf{s})$$</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 22px; margin-top: 13px;">
+          <p style="font-size: 14.5pt;"><strong>Where:</strong> \(do(D=d)\) denotes an <em>intervention</em> that sets \(D\) to \(d\) for everyone &mdash; as opposed to merely <em>observing</em> \(D = d\).</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ed; border-left: 5px solid var(--accent-color); border-radius: 8px; padding: 15px 22px; margin-top: 13px;">
+          <p style="font-size: 15.5pt;"><strong>In English, before that symbol is used again.</strong> The left-hand side is a <em>counterfactual</em>: outcomes in a world where we reached in and assigned the treatment. The right-hand side contains <em>only conditional probabilities you can estimate from data you already have</em>. The theorem states the exact conditions under which those two objects are the same number.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The do-operator is new notation for most of this room; spend the fragment on it. The right-hand side is estimable, the left is not &mdash; that asymmetry is the entire discipline. This is also the equation Ch 24 estimates with machine learning.</aside>
+    </section>
+
+    <!-- SLIDE: mutilation proof -->
+    <section id="mutilation-proof" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--danger-color);"></i> Proof Sketch: Graph Surgery</h2>
+      <div class="content">
+        <img src="figures/figure_003_mutilated_graph.png" alt="Two DAGs side by side: G, the observed world in which S and U both point into D and into Y, and the mutilated graph G-D-bar in which every arrow into D has been deleted, leaving only the causal arrow from D to Y and the arrows into Y" style="width: 100%; max-width: 950px; margin: 0 auto; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px;">
+            <p style="font-size: 13.5pt;"><strong>(a)</strong> No descendants of \(D\) in \(\mathbf{S}\) \(\Rightarrow\) \(\mathbf{S}\)&rsquo;s own distribution is unaffected: \(P(\mathbf{s} \mid do(d)) = P(\mathbf{s})\).</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px;">
+            <p style="font-size: 13.5pt;"><strong>(b)</strong> Backdoors blocked \(\Rightarrow\) \(Y \perp D \mid \mathbf{S}\) <em>in the mutilated graph</em>, so \(P(y \mid do(d), \mathbf{s}) = P(y \mid d, \mathbf{s})\). Marginalise. \(\blacksquare\)</p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 10px;">
+          <p style="font-size: 15.5pt;"><strong>Take the proof, not just the result.</strong> Randomization is <em>literally</em> the right-hand picture. An RCT does not approximate \(G_{\overline{D}}\) &mdash; it constructs it, by physically deleting every arrow into the treatment.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Draw the deletion on the board as you say it. The "randomization constructs the mutilated graph" line is the one students remember, and it retroactively upgrades Ch 9 from a procedure to a theorem. Point out that the lab's blocked_backdoors() function is this proof in three lines of networkx.</aside>
+    </section>
+
+    <!-- SLIDE: PO equivalence -->
+    <section id="ignorability-equiv" style="padding: 32px 55px;">
+      <h2><span style="font-size: 13pt; letter-spacing: 2px; color: var(--accent-color); text-transform: uppercase;">Advanced Treatment</span><br><i class="fa-solid fa-arrows-left-right" style="color: var(--secondary-color);"></i> This Is Conditional Ignorability in a Different Hat</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt; margin-bottom: 8px;"><strong>Condition (b) is exactly</strong></p>
+            <p style="font-size: 14pt; text-align: center; margin: 0;">$$\{Y_i(1), Y_i(0)\} \perp\!\!\!\perp D_i \mid \mathbf{S}_i$$</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt; margin-bottom: 8px;"><strong>Populated strata is exactly</strong></p>
+            <p style="font-size: 14pt; text-align: center; margin: 0;">$$0 < P(D_i = 1 \mid \mathbf{S}_i = \mathbf{s}) < 1$$</p>
+          </div>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.65;"><strong>The two frameworks state the same identifying assumption.</strong> Neither is stronger. What differs is procedure: potential outcomes <em>states</em> the condition and leaves satisfying it to the researcher&rsquo;s judgment; the graph supplies an <strong>algorithm for finding an \(\mathbf{S}\) that satisfies it</strong>.</p>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p style="font-size: 16pt;">That distinction is worth nothing with four candidate controls, and everything with four hundred &mdash; which is precisely the Chapter 24 situation.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Every economist in the room learned ignorability first. Making the equivalence explicit stops the graph looking like a rival religion. Pearl (2009) ch. 3 for the full development; Chernozhukov et al. (2024) ch. 7 for the treatment aimed at economists.</aside>
+    </section>
+
+    <!-- DIVIDER: Section 3 -->
+    <section id="divider-3" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; The Lalonde Debate, as a Graph</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Thirty years of argument, restated as one unblocked path</p>
+    </section>
+
+    <!-- SLIDE: lalonde two graphs -->
+    <section id="lalonde-graphs" style="padding: 28px 45px;">
+      <h2><i class="fa-solid fa-diagram-project" style="color: var(--secondary-color);"></i> The Same Treated People, Two Different Graphs</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 8px;">
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--secondary-color);"><p style="font-size: 12.5pt;"><strong>NSW:</strong> 445 men</p></div>
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--accent-color);"><p style="font-size: 12.5pt;"><strong>185</strong> treated</p></div>
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--success-color);"><p style="font-size: 12.5pt;"><strong>260</strong> exp. controls</p></div>
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--danger-color);"><p style="font-size: 12.5pt;"><strong>15,992</strong> CPS men</p></div>
+        </div>
+        <img src="figures/figure_004_lalonde_dag.png" alt="Two DAGs: the experimental sample where D points to Y with nothing pointing into D, and the observational sample where an unmeasured U and a measured covariate set S each point into both D and Y" style="width: 100%; max-width: 1000px; margin: 0 auto; display: block;">
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 5px solid var(--success-color); border-radius: 8px; padding: 13px 20px; margin-top: 10px;">
+          <p style="font-size: 15pt;"><strong>Randomization means nothing causes \(D\).</strong> No arrow points into it &mdash; and a backdoor path <em>requires</em> an arrow into \(D\). So there are none, and \(\mathbf{S} = \varnothing\) is valid. That is the formal version of what Ch 9 asserted.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. LaLonde (1986) did something devious: he kept the experimental TREATED group and replaced the experimental control group with ordinary CPS men. Same treated units, different comparison. Build the right-hand graph incrementally on the board &mdash; ask "what else causes D?" and let the room supply prior earnings and education before you supply motivation.</aside>
+    </section>
+
+    <!-- SLIDE: lalonde numbers -->
+    <section id="lalonde-numbers" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-money-bill-trend-up" style="color: var(--danger-color);"></i> What Changing the Comparison Group Does</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_005_lalonde_numbers.png" alt="Bar chart of three LaLonde estimates against a dashed benchmark line: experimental benchmark of $1,794, observational with no adjustment at negative $8,498, and observational with the full covariate set at $699" style="width: 100%; border-radius: 6px;">
+          <div>
+            <pre style="font-size: 11pt; line-height: 1.55; background: #f8f6f3; border-radius: 6px; padding: 12px 14px; margin: 0;"><code>Experimental benchmark:   $ 1,794
+Observational, naive:     $-8,498
+Observational, adjusted:  $   699</code></pre>
+            <p style="font-size: 14pt; margin-top: 14px; line-height: 1.6;">Swapping the comparison group turns a <strong>+$1,794</strong> programme effect into <strong>&minus;$8,498</strong> &mdash; a sign reversal of over ten thousand dollars, produced entirely by <em>who you compared to</em>.</p>
+            <p style="font-size: 14pt; margin-top: 10px; line-height: 1.6; color: var(--secondary-color); font-weight: 600;">Adjustment recovers most of the gap. It still lands short of the benchmark, and without the experiment you would never know.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">Executed in <code>lab-ch10-diagnostic.ipynb</code>; Dehejia &amp; Wahba (2002) files via NBER.</div>
+      <aside class="notes">3 min. These are the lab's actual printed numbers, not the chapter's range. Do not say "the observational estimates ranged from -15,000 to +2,000" as if you computed it &mdash; that is the literature's range across specifications; what YOU ran gives -8,498 and +699. Emphasise the last line: the benchmark is the luxury, not the norm.</aside>
+    </section>
+
+    <!-- SLIDE: networkx -->
+    <section id="lalonde-networkx" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-code" style="color: var(--secondary-color);"></i> Let the Graph Do the Bookkeeping</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: start;">
+          <pre style="font-size: 11pt; line-height: 1.5; background: #f8f6f3; border-radius: 6px; padding: 13px 15px; margin: 0;"><code>def blocked_backdoors(graph, adjust):
+    mutilated = graph.copy()
+    mutilated.remove_edges_from(
+        list(graph.out_edges("D")))
+    return nx.is_d_separator(
+        mutilated, {"D"}, {"Y"}, set(adjust))</code></pre>
+          <div>
+            <pre style="font-size: 11pt; line-height: 1.6; background: #2d2d2d; color: #f0ede9; border-radius: 6px; padding: 13px 15px; margin: 0;"><code>nothing:            False
+earn74, educ:       False
+earn74, educ, U:    True</code></pre>
+            <p style="font-size: 13.5pt; margin-top: 10px; color: var(--muted-color);">This function <em>is</em> the graph surgery from the theorem: delete the out-edges of \(D\), test d-separation in what remains.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 15.5pt;"><strong>The middle line is the honest summary of thirty years of argument about this dataset.</strong> Adjusting for every covariate anyone actually measured does <em>not</em> close all the backdoors, because \(U\) remains. The graph does not say the estimate is wrong &mdash; it says precisely which assumption you are relying on.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Run it live; the False on the middle line is the moment the room gets it. API note for anyone typing along: nx.d_separated is gone, it is nx.is_d_separator now, and every argument must be a set. nx.find_minimal_d_separator returns {'U','educ','earn74'} directly.</aside>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Is \(\mathbf{S}\) Rich Enough?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">Adjustment moved the estimate from &minus;$8,498 to +$699, against a known benchmark of +$1,794. <span style="color: var(--danger-color);">In your own work there is no benchmark.</span></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="padding: 15px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 14.5pt;">(a) Argue it</p>
+            <p style="font-size: 14.5pt;">Why is &ldquo;the estimate moved a long way toward the truth&rdquo; <em>not</em> evidence that the adjustment strategy is valid?</p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 14.5pt;">(b) Classify it</p>
+            <p style="font-size: 14.5pt;"><code>re74</code> and <code>re75</code> are pre-treatment earnings. Confounders, proxies for \(U\), or something else? Does the answer change if you had only <code>re75</code>?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span></p>
+      </div>
+      <aside class="notes">5 min. Push hard on (b). The strong answer: prior earnings are best read as NOISY PROXIES for U &mdash; the Ashenfelter dip means a transitory earnings shock drives both participation and later earnings. Two years proxy U better than one, which is why the Dehejia-Wahba specification is so sensitive to which earnings years enter, and why Smith and Todd found the result fragile. If someone says "they're confounders, full stop," ask what causes prior earnings.</aside>
+    </section>
+
+    <!-- DIVIDER: Section 4 -->
+    <section id="divider-4" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; Good Controls</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">What &ldquo;control for it&rdquo; actually means, and what it costs</p>
+    </section>
+
+    <!-- SLIDE: adjustment formula -->
+    <section id="adjustment-formula" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> The Adjustment Formula</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; text-align: center;">
+          <p style="font-size: 15pt; margin: 0;">$$E[Y_i(d)] = \sum_{\mathbf{s}} E[Y_i \mid D_i = d, \mathbf{S}_i = \mathbf{s}] \cdot P(\mathbf{S}_i = \mathbf{s})$$</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 22px; margin-top: 12px;">
+          <p style="font-size: 14pt;"><strong>Where:</strong> \(Y_i(d)\) is the potential outcome under treatment value \(d\); \(\mathbf{S}_i\) the adjustment vector; \(\mathbf{s}\) one combination of its values; \(P(\mathbf{S}_i = \mathbf{s})\) the share of the population with that combination.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 14px; line-height: 1.65;"><strong>Interpretation.</strong> Compute the average outcome separately <em>within</em> each stratum of the controls, then average across strata weighted by how common each stratum is. Everything on the right is estimable from observed data; the left-hand side is a counterfactual. <strong>The backdoor criterion is exactly the condition that licenses the equality.</strong></p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 5px solid var(--accent-color); border-radius: 8px; padding: 14px 22px; margin-top: 13px;">
+          <p style="font-size: 15pt;">That is all a multiple regression is doing. What the <em>graph</em> adds &mdash; and no amount of algebra supplies &mdash; is the answer to <strong>which variables belong in the list</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Say plainly: "control for it" means "compare units that have the same value of it, then average." If a treated and untreated person share 1975 earnings, education and age, whatever bias those three introduced is gone from that comparison.</aside>
+    </section>
+
+    <!-- SLIDE: positivity + explosion -->
+    <section id="positivity" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-color);"></i> Two Constraints That Decide the Rest of the Course</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 16px 24px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15.5pt;"><strong>Overlap (positivity).</strong> Every stratum must contain <em>both</em> treated and untreated units. If nobody with a PhD ever entered the programme, no arithmetic recovers what would have happened if one had. This is why practitioners check that estimated treatment probabilities stay away from 0 and 1 &mdash; and why <code>oci-agent</code> trims on the propensity score.</p>
+        </div>
+        <div style="background: #fdf0ed; border-radius: 8px; padding: 16px 24px; border-left: 4px solid var(--danger-color); margin-top: 14px;">
+          <p style="font-size: 15.5pt;"><strong>The stratum explosion.</strong> With 20 binary controls there are \(2^{20} > 10^6\) strata, and your data will not populate them. Regression solves this by <em>imposing functional form</em>. Chapter 24&rsquo;s double machine learning solves it with flexible ML for the nuisance functions.</p>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p style="font-size: 16pt;"><strong>Both are answers to the same problem, and the graph is agnostic between them.</strong> Identification and estimation are separate; the graph solves only the first.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This slide is the explicit bridge to Ch 24. Note that positivity is the assumption that fails silently &mdash; you get a number, it just extrapolates. The DML lecture will return to exactly this slide.</aside>
+    </section>
+
+    <!-- SLIDE: three-question test -->
+    <section id="three-question" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Think Like an Economist: The Three-Question Test</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px;">
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 21pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 17pt;">Does it <strong>cause the treatment</strong>?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 16px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 21pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 17pt;">Does it <strong>cause the outcome</strong>?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 52px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 16px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 21pt; font-weight: 700; color: var(--success-color);">3</p>
+            <p style="font-size: 17pt;">Did it happen <strong>before the treatment</strong>?</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt;">All three yes \(\Rightarrow\) confounder, include it. Third answer no \(\Rightarrow\) <strong>stop</strong>. And notice what is <em>not</em> on the list: &ldquo;does it improve model fit.&rdquo; Fit is a prediction criterion; this is an identification problem.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Tell them to photograph it. Then immediately undercut it: question 3 is a useful SCREEN, not a sufficient rule &mdash; M-bias in Section 5 is the counterexample, and it is coming.</aside>
+    </section>
+
+    <!-- SLIDE: good control works -->
+    <section id="good-control-works" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> It Works: Blocking the One Backdoor Path</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_006_good_control.png" alt="Coefficient plot with 95 percent confidence intervals: the unadjusted estimate sits at 0.658 far from zero, while the estimate adjusting for U sits at 0.014, indistinguishable from the dashed line marking the true value of zero" style="width: 100%; border-radius: 6px;">
+          <div>
+            <pre style="font-size: 11pt; line-height: 1.55; background: #f8f6f3; border-radius: 6px; padding: 12px 14px; margin: 0;"><code>u = rng.normal(0,1,n)
+d = 1.4*u + rng.normal(0,1,n)
+y = 1.4*u + rng.normal(0,1,n)
+# true effect of D on Y is 0</code></pre>
+            <pre style="font-size: 10.5pt; line-height: 1.6; background: #2d2d2d; color: #f0ede9; border-radius: 6px; padding: 12px 14px; margin: 12px 0 0;"><code>No adjustment    0.658
+Adjusting for U  0.014
+        (truth = 0.000)</code></pre>
+            <p style="font-size: 13.5pt; margin-top: 12px; line-height: 1.6;">The unadjusted estimate has a standard error small enough that you reject a zero effect without hesitation. Blocking one path collapses it.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 12px 20px; margin-top: 10px;">
+          <p style="font-size: 15pt;"><strong>Hold this contrast.</strong> The next section runs code that looks almost identical and does the opposite.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Run it live. If time allows, ask what happens if U is measured with ERROR &mdash; partial adjustment, partial bias, which is the realistic case in nearly all applied work and a preview of Ch 14's measurement-error material.</aside>
+    </section>
+
+    <!-- SLIDE: Netflix -->
+    <section id="netflix" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-briefcase" style="color: var(--accent-color);"></i> Economist at Work: Netflix Automates the Checklist</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Netflix makes nine-figure content and product decisions on evidence that is often observational. Their analysts did what analysts everywhere do: put every available user metric in the model and hope more controls meant less bias.</p>
+        <div style="background: #fdf0ed; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 13px;">
+          <p style="font-size: 15pt;">That routinely violates condition 2 &mdash; &ldquo;every available user metric&rdquo; includes variables measured <em>after</em> treatment: subsequent viewing, downstream engagement. Those are mediators and colliders, not confounders.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 13px; line-height: 1.6;">In June 2026 they open-sourced <strong><code>oci-agent</code></strong>: an <em>actor</em> that executes the analysis plan and a <em>critic</em> that reviews the output. It automates covariate balance (standardised mean difference below 0.2), propensity-score trimming for overlap, and sensitivity analysis. Netflix reports it orchestrating <strong>100+ analyses a month</strong>.</p>
+        <div class="fragment fade-up key-result" style="margin-top: 13px;">
+          <p style="font-size: 16pt;"><strong>The transferable principle.</strong> What a machine should do is the mechanical checking a tired analyst skips. Framing the question, scrutinising the assumptions, judging the diagnostics stay with you. <em>Automating the checklist does not automate the argument.</em></p>
+        </div>
+      </div>
+      <div class="footnote">Chen, A. et al. (2026), arXiv:2607.22443; Netflix Technology Blog, June 2026.</div>
+      <aside class="notes">3 min. Worth saying to a graduate room: this is what your first industry job looks like. The parts you are being trained for are the parts oci-agent's critic explicitly reserves for humans. Transition: "You now know how to fix confounding. Next: what happens when you apply the same fix to the wrong variable."</aside>
+    </section>
+
+    <!-- DIVIDER: Section 5 -->
+    <section id="divider-5" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; Bad Controls</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Adding a control can <em>create</em> bias &mdash; and you choose its sign without knowing it</p>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Predict the Sign, Before I Run It</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 8px;">
+          <p style="font-size: 15pt; line-height: 1.6;">\(D\) and \(Y\) are generated as <strong>independent standard normals</strong> &mdash; two lines of code, no relationship whatsoever. A third variable is built as \(C = 1.2D + 1.2Y + \varepsilon\), so <em>both</em> cause it. We regress \(Y\) on \(D\) <strong>and \(C\)</strong>.</p>
+          <p style="font-size: 15.5pt; font-weight: 600; margin-top: 9px;">What is the coefficient on \(D\)?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch10-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 15px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) About zero, large \(p\) &mdash; a control cannot invent an effect</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Large and <strong>positive</strong> &mdash; \(C\) relates positively to both</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Large and <strong>negative</strong></div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Unstable &mdash; it would flip sign across seeds</div>
+        </div>
+        <aside class="notes">2 min. Set it up carefully: show the two generating lines, get the room to agree OUT LOUD that there is no relationship, then vote. This is the emotional centre of the lecture; do not rush the setup.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch10-econ5200-poll-3" style="padding: 26px 45px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; &minus;0.593, with \(p &lt; 0.001\)</h2>
+        <div class="poll-results-chart" data-poll-id="ch10-econ5200-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:130px; margin:8px 60px;"></div>
+        <div style="padding: 4px 40px;">
+          <pre style="font-size: 11pt; line-height: 1.55; background: #2d2d2d; color: #f0ede9; border-radius: 6px; padding: 12px 15px; margin: 0;"><code>No control          estimate = -0.012  p = 0.212  R2 = 0.000
+Controlling for C   estimate = -0.593  p = 0.000  R2 = 0.585   (truth = 0.000)</code></pre>
+          <div style="background: #fdf0ed; border-left: 4px solid var(--danger-color); padding: 12px 20px; border-radius: 8px; margin: 12px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>B is the majority error</strong> and worth naming: <em>positive</em> coefficients in the DGP produce a <em>negative</em> induced association. <strong>D is the sophisticated error</strong> &mdash; this is not sampling noise. It is a systematic feature of the estimand; it reproduces on every seed and grows <em>more precise</em> with \(n\).</p>
+          </div>
+          <p style="font-size: 14.5pt;">No diagnostic flags it. Residuals look fine. \(R^2\) went from 0.000 to <strong>0.585</strong> &mdash; the fit <em>improved</em>.</p>
+        </div>
+        <aside class="notes">3 min. The -0.593 with p&lt;0.001 on data generated independently by a random number generator two lines earlier should get an audible reaction. Wait for it. Then: the only thing that would have caught this is knowing C was a collider, which is a fact about how the data was generated, not one you can extract from it.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: collider slice -->
+    <section id="collider-slice" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--danger-color);"></i> Why: Look Inside a Slice of the Collider</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_007_collider_slice.png" alt="Scatterplot of independent D and Y in faint grey with a narrow slice of the collider C highlighted in red, showing a strongly downward-sloping cloud within the slice while the full sample shows no relationship" style="width: 100%; border-radius: 6px;">
+          <div>
+            <pre style="font-size: 10.5pt; line-height: 1.6; background: #2d2d2d; color: #f0ede9; border-radius: 6px; padding: 12px 14px; margin: 0;"><code>corr(D,Y), everyone:      -0.012
+corr(D,Y), holding C fixed: -0.563</code></pre>
+            <p style="font-size: 14pt; margin-top: 13px; line-height: 1.6;">Within a slice of \(C\), a high \(D\) <strong>must</strong> be met by a low \(Y\) to keep \(C\) where it is.</p>
+            <p style="font-size: 14pt; margin-top: 10px; line-height: 1.6; color: var(--danger-color); font-weight: 600;">Regression control is exactly this slicing &mdash; done smoothly, for every value of \(C\) at once.</p>
+            <p style="font-size: 13.5pt; margin-top: 10px; line-height: 1.55; color: var(--muted-color);">A restaurant is worth visiting if the food is good <em>or</em> the location is convenient. Among places people actually go, food and location are negatively correlated. And notice: <strong>your dataset is the restaurants people visited.</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. This slice figure and its -0.563 come from the lab's reveal cell. The association is an artefact of the COMPARISON, not a property of the world. The restaurant analogy lands faster than the medical ones; use it and move on &mdash; the graduate payoff is the next slide.</aside>
+    </section>
+
+    <!-- SLIDE: collider sign -->
+    <section id="collider-sign" style="padding: 22px 42px;">
+      <h2><i class="fa-solid fa-arrows-up-down" style="color: var(--accent-color);"></i> Collider Bias Has a Sign &mdash; and You Chose It</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Everyone leaves the last slide believing collider bias is negative. <strong>It is not.</strong> The sign is set by the <em>selection rule</em>, not by collider bias as such. Same causal structure &mdash; \(D\) and \(Y\) independent, both causing \(C\) &mdash; two rules:</p>
+        <img src="figures/figure_008_collider_sign.png" alt="Two scatterplots of independent D and Y: keeping units where D plus Y exceeds 1.2 induces a correlation of minus 0.639 among the selected, while keeping units where D minus Y exceeds 1.2 induces plus 0.638, against a full-sample correlation of zero" style="width: 100%; max-width: 900px; margin: 6px auto 0; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px;">
+          <div style="background: #fdf0ed; border-radius: 6px; padding: 9px 16px; border-left: 3px solid var(--danger-color);">
+            <p style="font-size: 13pt;">Regression version: \(C = 1.2D + 1.2Y\) gives \(\hat\beta_D = -0.593\)</p>
+          </div>
+          <div style="background: #eef4ee; border-radius: 6px; padding: 9px 16px; border-left: 3px solid var(--success-color);">
+            <p style="font-size: 13pt;">\(C = 1.2D - 1.2Y\) gives \(\hat\beta_D = +0.583\)</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the graduate-only slide and the reason this deck is not the 3916 deck. "Collider implies negative" is a coincidence of the examples people teach with &mdash; ICU admission, restaurant quality, executive presence are all OR-shaped, meaning either cause alone suffices. Anyone who leaves believing the sign is a property of colliders has learned a coincidence.</aside>
+    </section>
+
+    <!-- SLIDE: portable rule -->
+    <section id="collider-rule" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-compass" style="color: var(--secondary-color);"></i> The Portable Rule for Signing It</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; border-left: 5px solid var(--accent-color);">
+          <p style="font-size: 17pt;">Do not ask <em>&ldquo;is there a collider?&rdquo;</em> Ask <strong>&ldquo;what does the selection rule trade off against what?&rdquo;</strong></p>
+          <p style="font-size: 15.5pt; margin-top: 10px;">The induced association takes the <strong>opposite sign</strong> to the sign with which the two variables enter that rule together.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #fdf0ed; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>&ldquo;Either one suffices&rdquo; rules</strong> (a sum). ICU admission, restaurant visits, executives who appear in the data. Induced association: <strong>negative</strong>.</p>
+          </div>
+          <div style="background: #eef4ee; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>&ldquo;One compensates for the other&rdquo; rules</strong> (a difference). Admissions trading scores against essays; lenders trading income against collateral; journals trading effect size against novelty. Induced association: <strong>positive</strong>.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p style="font-size: 16pt;">Every canonical teaching example is a sum. That is why the folklore says &ldquo;negative&rdquo; &mdash; and why the folklore will mislead you the first time you meet a compensating selection rule in the wild.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Ask the room for a compensating rule from their own field before showing the right-hand box. Peer review is the one that always lands: a paper gets in if the effect is big OR the idea is novel &mdash; that is a sum. But a committee that explicitly trades one against the other is a difference. Push them to say which theirs is.</aside>
+    </section>
+
+    <!-- SLIDE: three ways table -->
+    <section id="three-ways" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-table-list" style="color: var(--secondary-color);"></i> Three Ways a Control Hurts You &mdash; They Fail Differently</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%; margin-top: 8px;">
+          <thead>
+            <tr><th style="width: 17%;"></th><th style="width: 26%;">Structure</th><th style="width: 30%;">What goes wrong</th><th>Estimate moves</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: var(--danger-color); font-weight: 700;">Collider</td>
+              <td>\(D \to C \leftarrow Y\)</td>
+              <td>opens a non-causal path</td>
+              <td>sign set by the selection rule</td>
+            </tr>
+            <tr>
+              <td style="color: var(--secondary-color); font-weight: 700;">Mediator</td>
+              <td>\(D \to M \to Y\)</td>
+              <td>blocks part of the causal path</td>
+              <td>toward the <em>direct</em> effect</td>
+            </tr>
+            <tr>
+              <td style="color: var(--accent-color); font-weight: 700;">M-bias</td>
+              <td>\(U_1 \to W \leftarrow U_2\), \(U_1 \to D\), \(U_2 \to Y\)</td>
+              <td>opens a path through a <strong>pre-treatment</strong> collider</td>
+              <td>bias where there was none</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 5px solid var(--accent-color); border-radius: 8px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt;">Only the first and third are <em>bias</em>. The middle one is not a bias problem at all &mdash; and calling it one is the most common confusion in applied seminars.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the table, then hold on the fragment. It sets up the next slide, which is the one place this deck spends real time on the estimand distinction.</aside>
+    </section>
+
+    <!-- SLIDE: mediator -->
+    <section id="mediator" style="padding: 24px 42px;">
+      <h2><i class="fa-solid fa-circle-question" style="color: var(--secondary-color);"></i> The Mediator: a Right Answer to the Wrong Question</h2>
+      <div class="content">
+        <img src="figures/figure_010_mediator.png" alt="A DAG of training D causing skill M causing earnings Y with a direct path of 1.0, beside a bar chart in which the total-effect regression returns 3.978 against a truth of 4.0 and the mediator-controlled regression returns 0.988 against a truth of 1.0" style="width: 100%; max-width: 940px; margin: 2px auto 0; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>Neither regression is biased.</strong> Both are unbiased &mdash; for <em>different estimands</em>. &ldquo;Adding a control changed my estimate fourfold&rdquo; is not evidence either is wrong.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;">&ldquo;Should we fund this programme?&rdquo; wants the <strong>total</strong> effect of 4.0 &mdash; the programme delivers its benefit <em>through</em> the skill it creates.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 9px;">
+          <p style="font-size: 15.5pt;"><strong>So the rule is misnamed.</strong> &ldquo;Don&rsquo;t control for post-treatment variables&rdquo; is taught as a bias rule. It is really a statement about <strong>which estimand you want</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. From the 5200 lab, Diagnosis 3 &mdash; the 3916 lab has no counterpart. Controlling for skill answers "what does training do for people whose skill did not change?", which is a question nobody asked. If pressed on measurement error in M: partial control, so the direct-effect estimate drifts BACK toward the total effect &mdash; you under-adjust.</aside>
+    </section>
+
+    <!-- SLIDE: M-bias -->
+    <section id="m-bias" style="padding: 24px 42px;">
+      <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> M-Bias: The Rule You Actually Use Is Wrong</h2>
+      <div class="content">
+        <img src="figures/figure_009_m_bias.png" alt="A DAG in which unmeasured U1 and U2 both point into pre-treatment W, with U1 causing D and U2 causing Y, beside a bar chart where the unadjusted estimate is minus 0.004 with p equal to 0.594 and the estimate controlling for W is minus 0.201 with p below 0.001, against a truth of zero" style="width: 100%; max-width: 940px; margin: 2px auto 0; display: block;">
+        <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; margin-top: 8px;">
+          <div style="background: #fdf0ed; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 13.5pt;">\(W\) is measured <strong>before</strong> treatment. Not caused by \(D\). Not caused by \(Y\). And it is a collider on \(D \leftarrow U_1 \to W \leftarrow U_2 \to Y\) &mdash; blocked until you condition on it.</p>
+          </div>
+          <pre style="font-size: 10pt; line-height: 1.5; background: #2d2d2d; color: #f0ede9; border-radius: 6px; padding: 11px 13px; margin: 0;"><code>is_d_separator(..., set())  # True
+is_d_separator(..., {"W"})  # False</code></pre>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 9px;">
+          <p style="font-size: 15.5pt;"><strong>Four lines of <code>networkx</code> refute a rule taught in most first-year sequences.</strong> Timing is a useful <em>screen</em> for mediators. It is not sufficient, and no rule based on timing alone can be.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Expect resistance &mdash; they were taught the pre-treatment rule, often by me. Be explicit that the rule is a useful approximation being replaced by something exact. On plausibility: M-bias needs U1 and U2 both substantial, and it bites hardest where the pre-treatment variable is an administrative SUMMARY of many upstream causes &mdash; a credit score, a risk index, a composite eligibility score are literally common effects by construction. It is least plausible for a demographic primitive like birth year.</aside>
+    </section>
+
+    <!-- SLIDE: key concept conditioning -->
+    <section id="key-conditioning" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Key Concept: Conditioning Opens Colliders</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; border-left: 5px solid var(--accent-color);">
+          <p style="font-size: 16.5pt; line-height: 1.6;">Because <strong>sample selection is a form of conditioning</strong>, any filter applied to your data is a conditioning operation &mdash; restricting to ICU patients, to executives who appear in the data, to customers who completed onboarding, to firms that survived.</p>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 18px;">
+          <p style="font-size: 17pt;"><strong>&ldquo;Bias from a control variable&rdquo; and &ldquo;bias from sample selection&rdquo; are the same mathematical event.</strong></p>
+        </div>
+        <p class="text-lg" style="margin-top: 18px; line-height: 1.6;">This retroactively explains Chapter 6. Survivorship bias, non-response bias, and Berkson&rsquo;s paradox are <em>one structure with three names</em> &mdash; and it is the structure in the opening hook: executive presence in the observed data is caused both by the CEO&rsquo;s gender and by the career outcomes being measured.</p>
+      </div>
+      <aside class="notes">2 min. Close the loop on the hook here explicitly &mdash; conditioning on who appears in the executive data opened a path and manufactured the finding. This is also the slide that makes Ch 6 feel like it was always about this.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 28px 48px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Audit the Specification</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 15px 24px; border-radius: 12px;">
+          <p style="font-size: 15pt; line-height: 1.6;">A colleague estimates the effect of a firm adopting <strong>remote work</strong> (\(D\)) on <strong>employee productivity</strong> (\(Y\)), on a panel of firms observed after adoption. Controls: <em>industry</em>; <em>firm size at adoption</em>; <em>employee tenure measured this year</em>; <em>an engagement-survey score collected six months after adoption</em>; and the sample is <strong>current employees only</strong>.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="padding: 13px 18px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 14pt;">(a) Classify</p>
+            <p style="font-size: 14pt;">Run each control through the three-question test. Which survive?</p>
+          </div>
+          <div style="padding: 13px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 14pt;">(b) Sign it</p>
+            <p style="font-size: 14pt;">One item is not a control at all but a <em>sample restriction</em>. Name it, name the structure &mdash; and use the portable rule to argue the <strong>sign</strong> of the bias.</p>
+          </div>
+        </div>
+        <p style="margin-top: 13px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span></p>
+      </div>
+      <aside class="notes">5 min. Industry and firm-size-at-adoption are defensible confounders. Tenure-this-year and the six-month survey are post-treatment. The killer is "current employees only": STAYING is caused by both remote work and productivity, so the sample is conditioned on a collider. For (b) press for the trade-off framing &mdash; people stay because remote work suits them OR because they are highly productive, which is an OR-rule, both entering positively, so the induced association among stayers is NEGATIVE. Remote work will look like it REDUCES productivity.</aside>
+    </section>
+
+    <!-- DIVIDER: Section 6 -->
+    <section id="divider-6" class="section-divider" data-state="is-section-divider">
+      <h1>6 &nbsp;&bull;&nbsp; What the Graph Cannot Do</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">You do not have the right graph. Nobody does. Here is what to do anyway.</p>
+    </section>
+
+    <!-- SLIDE: ICU study -->
+    <section id="icu-study" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-hospital" style="color: var(--secondary-color);"></i> A Real Study, Where Nobody Knew the Answer</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">A 2026 population-based cohort study of <strong>142,045 ICU hospitalizations</strong> for COVID-19 across Texas hospitals, 2020&ndash;2024. In-hospital mortality:</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #eef4ee; padding: 16px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--success-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--success-color);">10.7%</p>
+            <p style="font-size: 14pt;">currently nicotine-dependent</p>
+          </div>
+          <div style="background: #f8f6f3; padding: 16px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--accent-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--accent-color);">13.8%</p>
+            <p style="font-size: 14pt;">formerly dependent</p>
+          </div>
+          <div style="background: #fdf0ed; padding: 16px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--danger-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--danger-color);">16.1%</p>
+            <p style="font-size: 14pt;">never dependent</p>
+          </div>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.6;">At face value, nicotine dependence looks <em>protective</em> against dying of COVID. The collider is easy to see with this lecture&rsquo;s vocabulary &mdash; and <strong>the authors saw it too</strong>: their paper includes a DAG in which nicotine dependence and COVID severity <strong>collide on ICU admission</strong>.</p>
+      </div>
+      <div class="footnote">Garza, J. et al. (2026), <em>PLOS One</em> 21(4), e0308776.</div>
+      <aside class="notes">2 min. Damaged lungs get you admitted at a LOWER threshold of viral severity; a previously healthy patient reaches the ICU only with an exceptionally severe infection. Restricting to ICU patients conditions on a common effect. Let the room feel clever for spotting it &mdash; the next slide takes it away.</aside>
+    </section>
+
+    <!-- SLIDE: they tested it -->
+    <section id="icu-tested" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-vial-circle-check" style="color: var(--accent-color);"></i> They Did Not Stop at the Graph. They Tested It.</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15.5pt;"><strong>The testable implication.</strong> If ICU selection were manufacturing a spurious protective effect, the same artifact should appear for <em>other</em> conditions that lower the admission threshold.</p>
+        </div>
+        <div style="background: #fdf0ed; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--danger-color); margin-top: 13px;">
+          <p style="font-size: 15.5pt;"><strong>They looked, and it did not.</strong> Other diagnoses failed to show the same protective association, before and after adjustment. They then estimated the effect with propensity-score overlap weighting to balance measured confounders &mdash; and the association survived.</p>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 16px;">
+          <p style="font-size: 16pt;"><strong>The honest summary is not &ldquo;the collider explained it away.&rdquo;</strong> It is that a plausible collider was proposed, formalised as a graph, converted into a <em>testable implication</em>, and rejected on evidence. That is what a DAG is actually for.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 14px; line-height: 1.6; color: var(--secondary-color); font-weight: 600;">It does not settle arguments. It turns a vague worry &mdash; &ldquo;isn&rsquo;t this just selection?&rdquo; &mdash; into a specific claim that data can bear on.</p>
+      </div>
+      <aside class="notes">3 min. Spend real time here. Students leave the collider section over-confident that spotting a collider wins the argument. This is a published case where the collider was proposed, tested, and REJECTED. The transferable move is converting the objection into an implication and checking it &mdash; which is exactly what Discussion 3 asks them to do.</aside>
+    </section>
+
+    <!-- SLIDE: E-value -->
+    <section id="evalue" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-gauge-high" style="color: var(--secondary-color);"></i> The Answerable Question, and the E-Value</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">The immature response is to claim there is no unobserved confounding &mdash; untestable, and everyone knows it. The mature response answers a different question: <strong>how strong would an unmeasured confounder have to be to overturn this?</strong></p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 24px; margin-top: 12px; text-align: center;">
+          <p style="font-size: 15pt; margin: 0;">$$\text{E-value} = RR + \sqrt{RR \times (RR - 1)}$$</p>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 11px; line-height: 1.6;"><strong>Where / Interpretation.</strong> \(RR\) is the observed risk ratio. An E-value of 2.37 says: to erase this result, some unmeasured variable must raise the probability of treatment by a factor of at least 2.37 <em>and</em> raise the probability of the outcome by at least 2.37. Weaker confounders cannot do it.</p>
+        <table class="table-standard" style="width: 100%; margin-top: 12px;">
+          <thead><tr><th>Observed \(RR\)</th><th>1.2</th><th>1.5</th><th>2.0</th><th>3.0</th></tr></thead>
+          <tbody><tr><td><strong>E-value</strong></td><td>1.69</td><td>2.37</td><td>3.41</td><td>5.45</td></tr></tbody>
+        </table>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 5px solid var(--accent-color); border-radius: 8px; padding: 12px 20px; margin-top: 12px;">
+          <p style="font-size: 15pt;"><strong>Notice the shape, not the numbers.</strong> A weak effect needs only a modest confounder &mdash; 1.69 is well inside the range of variables that go unmeasured in ordinary datasets. A strong effect needs one so strong someone would probably have noticed.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Converting an unfalsifiable assertion into a QUANTITY is the move. "An unmeasured confounder would need to be twice as strongly associated with both as our strongest measured variable" is something a labour economist can evaluate; "there is no unobserved confounding" is not. The statistic hands the argument back to the economist rather than pretending to settle it.</aside>
+    </section>
+
+    <!-- SLIDE: Cinelli-Hazlett -->
+    <section id="cinelli-hazlett" style="padding: 30px 55px;">
+      <h2><span style="font-size: 13pt; letter-spacing: 2px; color: var(--accent-color); text-transform: uppercase;">Formal Sketch</span><br><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> The Regression-Native Version</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; line-height: 1.55;">The E-value lives on the risk-ratio scale, which suits epidemiology and sits awkwardly with the continuous outcomes and linear models economists use. Cinelli and Hazlett (2020) give the analogue &mdash; compare the <em>long</em> regression including an unobserved \(U\) against the <em>short</em> one omitting it:</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 24px; margin-top: 10px; text-align: center;">
+          <p style="font-size: 14pt; margin: 0;">$$|\hat{\tau}_{\text{short}} - \hat{\tau}_{\text{long}}| = \text{se}(\hat{\tau}_{\text{short}}) \sqrt{\frac{R^2_{Y \sim U \mid D, \mathbf{S}} \cdot R^2_{D \sim U \mid \mathbf{S}}}{1 - R^2_{D \sim U \mid \mathbf{S}}}} \cdot \sqrt{df}$$</p>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 13px;">
+          <p style="font-size: 15.5pt;"><strong>Interpretation.</strong> The bias from omitting \(U\) depends on \(U\) <em>only</em> through two numbers: how much residual variance it explains in the <strong>treatment</strong>, and how much in the <strong>outcome</strong>. <em>Two numbers summarise an infinite family of possible confounders</em> &mdash; that is the whole reason the parameterisation is worth having.</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px; line-height: 1.55; color: var(--muted-color);"><strong>Sketch.</strong> Apply Frisch&ndash;Waugh&ndash;Lovell twice &mdash; once to partial \(\mathbf{S}\) out of both regressions, once to express the residual confounding in terms of the two partial \(R^2\) quantities.</p>
+      </div>
+      <div class="footnote">Cinelli &amp; Hazlett (2020), <em>JRSS-B</em> 82(1), 39&ndash;67. Implementation: <code>sensemakr</code>.</div>
+      <aside class="notes">3 min. FWL comes from the Ch 14 recap for this track &mdash; ECON 5200 never reads Ch 13-3916, so do not say "as you saw in Chapter 13." Do not derive; the point is the parameterisation, not the algebra. The two-numbers line is the one to land.</aside>
+    </section>
+
+    <!-- SLIDE: robustness value -->
+    <section id="robustness-value" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-shield-halved" style="color: var(--accent-color);"></i> The Robustness Value, and Why You Can Benchmark It</h2>
+      <div class="content">
+        <img src="figures/figure_011_sensitivity.png" alt="Left panel: the E-value rising with the observed risk ratio, marked at 1.69, 2.37, 3.41 and 5.45. Right panel: a Cinelli-Hazlett contour plot over the two partial R-squared axes with the zero contour marked, a robustness value point at 0.20 on the diagonal, and the strongest observed covariate plotted well inside the safe region" style="width: 100%; max-width: 960px; margin: 0 auto; display: block;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 13.5pt;">The <strong>robustness value</strong> is the minimum \(R^2\) a confounder needs with <em>both</em> \(D\) and \(Y\) to drive the estimate to zero. Here \(RV = 0.20\).</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13.5pt;">Because it is on the \(R^2\) scale it can be <strong>benchmarked against covariates you did measure</strong> &mdash; the green point.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 9px;">
+          <p style="font-size: 15.5pt;">&ldquo;An unobserved confounder would need to explain <strong>three times</strong> as much residual variation as the strongest control we have&rdquo; is an argument a referee can engage with. A table of estimates that barely move is not.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The contour is a worked case: tau-hat = 0.50, se = 0.10, df = 500, giving RV = 0.20 exactly. Do not present it as an empirical result &mdash; it is an illustration of the geometry. The lab's optional extension has them build this sweep themselves.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Which Claim Can a Referee Engage With?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">You report \(\hat\tau = 0.50\) and want to defend it against unobserved confounding. Which sentence gives a referee something they can actually push back on?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch10-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) &ldquo;We control for 34 covariates and the estimate is stable across specifications.&rdquo;</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) &ldquo;A Hausman test fails to reject exogeneity at the 5% level.&rdquo;</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) &ldquo;A confounder would need to explain 20% of the residual variation in both &mdash; three times our strongest control.&rdquo;</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) &ldquo;There is no reason to believe unobserved confounding is present in this setting.&rdquo;</div>
+        </div>
+        <aside class="notes">2 min. A is the one most of them have written. Let the bars show that before revealing.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch10-econ5200-poll-4" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; It States a Quantity</h2>
+        <div class="poll-results-chart" data-poll-id="ch10-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:145px; margin:10px 60px;"></div>
+        <div style="padding: 4px 40px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Only C gives a subject-matter expert something to dispute: they can name a candidate variable and argue it clears or fails the bar. That is what makes it a scientific claim rather than a reassurance.</p>
+          <div style="background: #fdf0ed; border-left: 4px solid var(--danger-color); padding: 12px 20px; border-radius: 8px; margin: 12px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>A is the misconception.</strong> Stability across <em>measured</em> controls is silent about the unmeasured ones &mdash; and under some structures a stable estimate is exactly what an omitted confounder produces. <strong>B</strong> answers a different question and needs an instrument. <strong>D</strong> is unfalsifiable, so unarguable.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Sensitivity analysis asks the right question &mdash; how strong would the UNMEASURED thing have to be &mdash; rather than re-asking the answerable one.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: going deeper 1 -->
+    <section id="going-deeper-1" style="padding: 30px 55px;">
+      <h2><span style="font-size: 13pt; letter-spacing: 2px; color: var(--accent-color); text-transform: uppercase;">Going Deeper</span><br><i class="fa-solid fa-clock-rotate-left" style="color: var(--secondary-color);"></i> Why Economists Resisted Graphs</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Economics adopted causal graphs roughly two decades after epidemiology and computer science. <strong>The delay was not inertia.</strong></p>
+        <div style="background: #fdf0ed; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--danger-color); margin-top: 12px;">
+          <p style="font-size: 15pt;"><strong>The case against (Imbens 2020).</strong> Potential outcomes insists a causal statement requires a <em>manipulable</em> treatment &mdash; no describable intervention, no well-posed question. That maps cleanly onto policy evaluation, where there is always a lever. It also maps onto the structural tradition: supply and demand are <em>simultaneous</em>, and <strong>acyclicity forbids exactly that structure</strong>. An economist whose central objects are equilibrium relationships is being asked to give up the thing they study.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef4ee; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--success-color); margin-top: 12px;">
+          <p style="font-size: 15pt;"><strong>The case for.</strong> Potential outcomes has no <em>procedure</em> for choosing an adjustment set. It states ignorability and leaves satisfying it to judgment &mdash; fine with four candidate controls, hopeless with four hundred. And the empirical record supports Pearl here: <strong>the errors in Frake et al. (2024) were made by competent researchers exercising judgment.</strong></p>
+        </div>
+      </div>
+      <div class="footnote">Imbens (2020), <em>JEL</em> 58(4), 1129&ndash;1179.</div>
+      <aside class="notes">3 min. Worth saying to this room: you will be asked in a seminar why you drew a DAG in an economics paper. This slide is the answer. Do not present it as graphs winning &mdash; the manipulability discipline is a real intellectual contribution and the simultaneity objection is not disposed of.</aside>
+    </section>
+
+    <!-- SLIDE: going deeper 2 -->
+    <section id="going-deeper-2" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-handshake" style="color: var(--secondary-color);"></i> The Current Settlement</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; border-left: 5px solid var(--accent-color);">
+          <p style="font-size: 16pt; line-height: 1.6;">The two frameworks are <strong>formally equivalent</strong> for the questions both can express &mdash; you saw the proof of that in Section 2.8 &mdash; and <strong>complementary in practice</strong>.</p>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 18px;">
+          <p style="font-size: 16.5pt;">Modern causal machine learning uses graphs because <strong>algorithms need a criterion they can check, not judgment they cannot.</strong></p>
+        </div>
+        <p class="text-lg" style="margin-top: 18px; line-height: 1.6;">Chapter 24&rsquo;s double machine learning is the clearest case. The DAG determines <em>which nuisance functions to estimate</em>, and only then does the ML machinery run. The graph does identification; the algorithm does estimation; neither substitutes for the other.</p>
+      </div>
+      <div class="footnote">See also &ldquo;Causal Inference: A Tale of Three Frameworks,&rdquo; arXiv:2511.21516 (2025).</div>
+      <aside class="notes">2 min. This is the explicit hand-off to Ch 24 and it should feel like a promise, not a footnote. Say: in four weeks you will write code that consumes a DAG as input.</aside>
+    </section>
+
+    <!-- SLIDE: three limits -->
+    <section id="three-limits" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> Three Things a DAG Will Not Do For You</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt;"><strong>It will not find the arrows you forgot.</strong> Wrong beliefs produce a confident, internally consistent, <em>incorrect</em> adjustment set. That is a <em>relocation</em> of the problem, not a defect &mdash; the assumptions were always there; the graph makes them visible and arguable instead of buried in a specification.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt;"><strong>It does not handle simultaneity.</strong> Acyclicity rules out feedback. Supply and demand set price and quantity at once. Chapter 12&rsquo;s instrumental-variables material is largely about this case.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt;"><strong>It does not give you an estimate.</strong> The graph says <em>what</em> to adjust for. Nothing about how &mdash; regression, matching, weighting &mdash; or about standard errors, functional form, or overlap.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do not compress this when running late. Students who have just been shown a powerful tool need its limits from you rather than discovering them in a seminar in three years.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Two Defensible Graphs</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 17px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">Take an empirical question from your own field. Draw the DAG you would defend. Now draw a <em>second, equally defensible</em> DAG a competent critic might propose.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="padding: 15px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 14.5pt;">If the adjustment sets differ</p>
+            <p style="font-size: 14.5pt;">the data cannot arbitrate between them. What evidence <em>outside</em> your dataset would?</p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 14.5pt;">And in the meantime</p>
+            <p style="font-size: 14.5pt;">what do you actually report?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min think &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">4 min. Strong answers name a TESTABLE IMPLICATION on which the two graphs differ &mdash; an implied conditional independence &mdash; and check it, which is exactly what the Texas ICU authors did. Next-best: report both adjustment sets plus the sensitivity bound. Weak: pick the one that gives the nicer result. Flag that this is Steps 4-5 of the lab's take-home challenge.</aside>
+    </section>
+
+    <!-- SLIDE: takeaways -->
+    <section id="key-takeaways" style="padding: 30px 48px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>Three explanations, no test.</strong> Causation, confounding, selection &mdash; the distinguishing information is not in the data.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-bridge" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>d-separation + Markov is the engine.</strong> A combinatorial property of a picture implies conditional independence in the data. Faithfulness runs the other way &mdash; and economics breaks it.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-scissors" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>The adjustment theorem is graph surgery.</strong> Delete every arrow into \(D\). This is conditional ignorability plus positivity, restated as an <em>algorithm</em>.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-arrows-up-down" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>Collider bias has a sign, and the selection rule sets it.</strong> Selection on a sum induces a negative association; on a difference, a positive one.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px; margin-top: 12px; text-align: center; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>You can never prove there is no unmeasured confounder</strong> &mdash; so quantify how strong one would have to be, and let domain knowledge judge whether it plausibly exists.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Close by returning to the hook: the Frake replication did not need new data, only a better graph.</aside>
+    </section>
+
+    <!-- SLIDE: exit ticket -->
+    <section id="exit-ticket" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt;"><strong>1.</strong> Name the <strong>estimand</strong> the remote-work specification was actually recovering, and the one the colleague wanted.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt;"><strong>2.</strong> Complete the sentence for your own work: <em>&ldquo;An unobserved confounder would have to ________ to overturn this result.&rdquo;</em></p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15.5pt;"><strong>3.</strong> One thing that is still unclear.</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min &mdash; hand in on the way out</span></p>
+      </div>
+      <aside class="notes">2 min. Question 2 is the one to read carefully &mdash; a student who writes a QUANTITY has understood Section 6; a student who writes "not exist" has not.</aside>
+    </section>
+
+    <!-- SLIDE: next -->
+    <section id="next" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--accent-color);"></i> Lab 10 &amp; What Comes Next</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt;"><strong>Lab 10 &mdash; Diagnosing Bad Controls.</strong> Diagnosis-first: each part hands you a regression that is wrong and asks what happened <em>before</em> it tells you. Collider, M-bias, mediator/estimand, then the LaLonde benchmark contrast. You ship <code>src/dag_utils.py</code> &mdash; backdoor enumeration, the blocking rules including the descendant clause, and minimal adjustment-set search. Extension: the partial-\(R^2\) sensitivity sweep.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>Ch 11 &mdash; DiD.</strong> Every adjustment set today assumed you could <em>measure</em> the confounders. DiD does not ask you to.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>Ch 12&ndash;13 &mdash; IV and RD.</strong> Two more ways to buy identification without measuring the confounder &mdash; and IV is the framework for the simultaneity acyclicity forbids.</p>
+          </div>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid #7C3A5F; margin-top: 14px;">
+          <p style="font-size: 14pt;"><strong>Ch 24 &mdash; Double Machine Learning.</strong> When the adjustment set is high-dimensional the stratum count explodes and no dataset populates it. The DAG still decides <em>what</em> to adjust for; ML handles <em>how</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Emphasise the diagnosis-first format: write your diagnosis BEFORE running the reveal cell. The three simulated failure modes are exactly Sections 5.3-5.6 of today, and the LaLonde part is Section 3.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>
