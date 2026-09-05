@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estimation &amp; Bootstrapping</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax 3 (tex-svg). Inline math is \( ... \) deliberately: with $...$
+       any text node holding two currency figures gets typeset as mathematics. -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+    <!-- ============ A. OPENING ============ -->
+
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 7</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Estimation &amp; Bootstrapping</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Non-parametric uncertainty &mdash; what the resampling buys you, at what rate, and the three ways it quietly fails</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch07-boot-5200.png" alt="Abstract illustration: five clusters of dots resampled whole, cascading into a skewed bootstrap distribution sliced at two different pairs of cut points" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">7.1</p>
+            <p style="font-size: 15pt;">Separate the spread of the <strong>data</strong> from the spread of the <strong>estimator</strong>, and read a bootstrap SE of exactly zero correctly</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">7.2</p>
+            <p style="font-size: 15pt;">Explain why a <strong>studentized</strong> bootstrap is second-order accurate, and what &ldquo;asymptotically pivotal&rdquo; buys</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">7.3</p>
+            <p style="font-size: 15pt;">Measure <strong>coverage</strong>, and report it against its own <strong>Monte Carlo standard error</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">7.4</p>
+            <p style="font-size: 15pt;">Repair an interval whose i.i.d. assumption is false &mdash; cluster and <strong>wild cluster</strong> bootstraps</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 7.2 as today's centre of gravity: it is the one thing the undergraduate section of this course does not get, and the one that decides which method you reach for in your own work.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-bottom: 13px;">
+          <p class="text-lg"><strong>Ch 4.</strong> The median has a breakdown point of 0.5; the mean has \(1/n\). Name the price you pay for that robustness.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-bottom: 13px;">
+          <p class="text-lg"><strong>Ch 5.</strong> Monte Carlo estimated \(\pi\) by sampling from a distribution you <em>knew</em>. What do you sample from when you do not know it?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p class="text-lg"><strong>Ch 6.</strong> Meng's 2.3 million biased respondents carried the information of 400 random ones. What does that say about anything you compute <em>from</em> that sample &mdash; including a bootstrap interval?</p>
+        </div>
+        <div class="key-result" style="margin-top: 16px;">
+          <p><strong>Bridge.</strong> Chapter 6 said a big sample can be aimed at the wrong place. Today is the other half: even a perfectly aimed sample wobbles &mdash; and the job is measuring the wobble honestly enough to say how big the wobble in your measurement is.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min, cold-call. Answers: (1) no closed-form standard error; (2) your own data &mdash; the empirical distribution; (3) the bootstrap inherits the bias faithfully and confidently. That third answer is the one to hold onto: nothing today repairs a bad sample.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook -->
+    <section id="hook" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-chart-area" style="color: var(--danger-color);"></i> April 2025: the Fed's Fan Charts Stopped Working</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px;">
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px;">
+            <p class="number">8.3</p>
+            <p class="label">SD above mean &mdash; US economic policy uncertainty</p>
+          </div>
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px;">
+            <p class="number">16</p>
+            <p class="label">SD above mean &mdash; trade policy uncertainty</p>
+          </div>
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px;">
+            <p class="number">~80</p>
+            <p class="label">quarterly forecast errors the bands were calibrated on</p>
+          </div>
+        </div>
+        <p class="text-lg">The fan charts around GDP, unemployment and inflation are built from about twenty years of past forecast errors. A band labelled 70% is a claim about <strong>nominal</strong> coverage: <em>if</em> the future resembles the calibration period, it captures the truth 70% of the time.</p>
+        <div class="misconception">
+          <p><strong>When the future stops resembling it, actual coverage falls &mdash; and nothing in the chart says so.</strong> A 70% band can capture the truth 40% of the time and still be drawn exactly the same way.</p>
+        </div>
+        <p class="text-lg">Nothing was wrong with the data. The <em>uncertainty formula</em> failed. Today: what to do when you cannot trust it &mdash; and, harder, how to tell whether the replacement is any better.</p>
+      </div>
+      <div class="footnote">Federal Reserve Board, &ldquo;Costs of Rising Uncertainty,&rdquo; FEDS Notes, April 2025.</div>
+      <aside class="notes">3 min. Plant the nominal-vs-actual distinction here, in words, before it becomes a measured number in Section 6. Everything in this lecture is a version of this slide: a procedure that states a coverage level, and a world in which it does not achieve it.</aside>
+    </section>
+
+    <!-- ============ B. THE ESTIMATOR HAS A DISTRIBUTION ============ -->
+    <section id="div-1" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; The Estimator Has a Distribution</h1>
+      <p class="text-lg" style="color: var(--muted-color);">Seven minutes. You have seen this; we need one sentence of it sharpened.</p>
+    </section>
+
+    <section id="point-vs-sampling" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-crosshairs" style="color: var(--secondary-color);"></i> A Point Estimate Hides a Question</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 600; color: var(--secondary-color);">Point estimate</p>
+            <p class="text-lg">One number, from one sample. Tells you <em>where you landed</em>.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 600; color: var(--accent-color);">Sampling distribution</p>
+            <p class="text-lg">The distribution of that number across every possible sample of the same size. Tells you <em>how much you could have missed by</em>.</p>
+          </div>
+        </div>
+        <div class="key-result" style="margin-top: 18px;">
+          <p><strong>The framing that makes the rest of today possible.</strong> The bootstrap does not estimate a standard deviation. It estimates a <em>distribution</em> &mdash; and a standard error is just one summary of it. Once you hold that, quantiles, ratios, Gini coefficients and quantile treatment effects are all the same problem.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 14px;">ACS puts median Massachusetts household income near $96,500 in 2024 &mdash; from about 100,000 sampled households out of 2.9 million. A different 100,000 gives a different number. How different is the entire question.</p>
+      </div>
+      <aside class="notes">2 min. Do not linger. The graduate audience knows this; what they have often not internalised is that the object of estimation is a distribution, which is what licenses everything from Section 5 onward.</aside>
+    </section>
+
+    <section id="sd-vs-se" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-arrows-left-right" style="color: var(--accent-color);"></i> Standard Deviation Is Not Standard Error</h2>
+      <div class="content">
+        <p style="font-size: 20pt; text-align: center; margin: 6px 0 10px;">$$\text{SE}(\bar{x}) = \frac{s}{\sqrt{n}}$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; margin-bottom: 12px;">
+          <p style="font-size: 14pt; margin: 2px 0;"><strong>Where:</strong> \(s\) is the sample standard deviation &mdash; the spread of the <em>data</em>; \(n\) is the sample size.</p>
+        </div>
+        <p class="text-lg"><strong>Interpretation.</strong> The standard error is the standard deviation of the <em>estimator</em>, not of the data. SD answers &ldquo;how spread out are individual incomes?&rdquo; SE answers &ldquo;how uncertain is our estimate of the average?&rdquo; They are different objects, and only one of them shrinks when you collect more data.</p>
+        <div class="misconception">
+          <p><strong>Misconception:</strong> &ldquo;Standard error is standard deviation over root \(n\).&rdquo;</p>
+          <p>True for the <em>mean</em> of i.i.d. draws. For the median, a correlation, a Gini coefficient or a quantile treatment effect the formula is different &mdash; and usually does not exist at all. That absence is the entire market for the bootstrap.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Write both sentences on the board side by side. The \(\sqrt{n}\) is the quantitative payoff of more data: not that the data gets less variable, but that the estimate gets more precise.</aside>
+    </section>
+
+    <section id="sd-se-measured" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--success-color);"></i> Measured, Not Asserted</h2>
+      <div class="content">
+        <p class="text-lg">Lognormal(11.0, 0.8) population of 100,000. Draw 1,000 samples of size 100 and compare the spread of the data with the spread of the 1,000 sample means.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 16px 0;">
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px;">
+            <p class="number" style="font-size: 30pt;">$79,636</p>
+            <p class="label">population SD &mdash; spread of the DATA</p>
+          </div>
+          <div class="stat-highlight" style="background: #f0f5f8; border-radius: 8px;">
+            <p class="number" style="font-size: 30pt; color: var(--accent-color);">$8,277</p>
+            <p class="label">SE of the mean, empirical (1,000 repeated samples)</p>
+          </div>
+          <div class="stat-highlight" style="background: #f0f5f8; border-radius: 8px;">
+            <p class="number" style="font-size: 30pt; color: var(--success-color);">$7,964</p>
+            <p class="label">SE of the mean, formula \(s/\sqrt{n}\)</p>
+          </div>
+        </div>
+        <div class="key-result">
+          <p>The empirical SE over 1,000 repeated samples matches \(s/\sqrt{n}\) to within 4%. The data spread is <strong>ten times larger</strong> than the estimate's spread, and the \(\sqrt{n}\) is the whole reason. This is the CLT, arriving before we have stated it.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the chapter's own code block, re-executed on this machine. If a student asks why empirical and formula differ by 4%: 1,000 replications is itself a Monte Carlo estimate &mdash; which is the habit Section 6 formalises.</aside>
+    </section>
+
+    <!-- ============ C. THE CLT AND ITS RATE ============ -->
+    <section id="div-2" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; The CLT, and Its Rate</h1>
+      <p class="text-lg" style="color: var(--muted-color);">Not whether it arrives. How fast, and in what shape.</p>
+    </section>
+
+    <section id="clt-statement" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bell" style="color: var(--secondary-color);"></i> The Central Limit Theorem</h2>
+      <div class="content">
+        <p style="font-size: 20pt; text-align: center; margin: 6px 0 10px;">$$\sqrt{n}(\bar{X} - \mu) \xrightarrow{d} N(0, \sigma^2)$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; margin-bottom: 12px;">
+          <p style="font-size: 14pt; margin: 2px 0;"><strong>Where:</strong> \(\bar{X}\) is the sample mean, \(\mu\) the population mean, \(\sigma^2\) the population variance, and \(\xrightarrow{d}\) convergence in distribution.</p>
+        </div>
+        <p class="text-lg"><strong>Interpretation.</strong> Whatever shape the population has &mdash; skewed, bimodal, uniform &mdash; the <em>average</em> becomes approximately normal as \(n\) grows. Normality in applied work is not a property of data. It is a property of averages.</p>
+        <div class="key-result">
+          <p>Chapter 5's LLN said \(\bar{X} \to \mu\). The CLT says <strong>how fast and in what shape</strong> &mdash; and that rate, \(n^{-1/2}\), is the number Section 5 of this lecture is going to try to beat.</p>
+        </div>
+        <div class="misconception">
+          <p><strong>Misconception:</strong> &ldquo;The CLT means my data is normally distributed.&rdquo; It applies to sample means and sums, never to individual observations.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say the last line out loud: the whole Advanced Treatment block is an attempt to beat the exponent in this theorem. That framing makes Section 5 feel inevitable rather than ornamental.</aside>
+    </section>
+
+    <section id="clt-figure" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-wave-square" style="color: var(--accent-color);"></i> Watch the Skewness Die at Rate \(n^{-1/2}\)</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_001_clt_rate.png" alt="Standardised sampling distributions of the mean from a right-skewed exponential population at n equals 5, 30 and 500, overlaid on the standard normal density; the n equals 5 curve has its mode pushed left and a heavier right tail, while n equals 500 is indistinguishable from the normal" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p class="text-lg">All three curves are standardised, so any departure from the dashed normal is <em>pure shape error</em>.</p>
+            <p class="text-lg" style="margin-top: 12px;">At \(n = 5\) the mode is pushed left and the right tail is dragged out. That asymmetry is the leading Edgeworth correction term &mdash; it is proportional to the population skewness and it dies at \(n^{-1/2}\).</p>
+            <div class="key-result">
+              <p>By \(n = 500\) it is invisible <em>to the eye</em>. It is not zero. Coverage error at nominal 95% still runs at order \(n^{-1/2}\), and Section 6 measures exactly that at \(n = 50\).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Exponential population, 6,000 replications per n. Ask them to name the direction of the n=5 error before you point at it: on right-skewed data the standardised mean is right-skewed too, so the interval misses low more often than high.</aside>
+    </section>
+
+    <section id="how-large" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-ruler" style="color: var(--danger-color);"></i> &ldquo;n &ge; 30&rdquo; Is Folklore, Not a Theorem</h2>
+      <div class="content">
+        <table class="table-standard">
+          <thead><tr><th>Population shape</th><th>\(n\) for approximate normality</th></tr></thead>
+          <tbody>
+            <tr><td>Symmetric, light-tailed (uniform, normal)</td><td>\(n \geq 10\)</td></tr>
+            <tr><td>Moderately skewed (exponential)</td><td>\(n \geq 30\text{–}50\)</td></tr>
+            <tr><td>Heavily skewed (lognormal, \(\sigma &gt; 1\))</td><td>\(n \geq 100\text{–}500\)</td></tr>
+            <tr><td>Very heavy tails (Pareto, tail index &lt; 3)</td><td>\(n \geq 1{,}000+\)</td></tr>
+            <tr><td><strong>Infinite variance</strong> (Cauchy, Pareto index \(\leq 2\))</td><td><strong>Never</strong></td></tr>
+          </tbody>
+        </table>
+        <p class="text-lg" style="margin-top: 10px;">Income, wealth, firm size and financial returns are in rows three to five. The rule was calibrated on row one.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>Microsoft / Bing.</strong> Fat tails in innovation-quality metrics needed <em>hundreds of thousands</em> of observations before the mean's sampling distribution was approximately normal.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>Spotify Confidence.</strong> 520 experiments on the mobile home screen in one year, 58 teams. Only 12% showed a significant lift &mdash; but 64% produced <em>decision-ready</em> intervals. They stopped scoring point estimates and started scoring interval quality.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. The Spotify reframing is the one to sell: the deliverable of an experiment is an interval narrow enough to act on, not a p-value below a threshold. That is also how you should read your own regression tables.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: What Does the Bootstrap Substitute?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The bootstrap principle says the relationship between a <em>resample</em> and your <em>sample</em> mimics the relationship between your <em>sample</em> and the <em>population</em>.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Stated formally: what is being substituted for what?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The normal distribution, for the unknown sampling distribution</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The empirical distribution \(\hat{F}\), for the unknown population \(F\)</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) A larger sample, for a smaller one</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) A parametric model, for a non-parametric one</div>
+        </div>
+        <aside class="notes">1 min to vote. Do not reveal until the bar chart settles. C is the answer that reveals someone thinks resampling manufactures information.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch07-econ5200-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; It Is a Plug-In Estimator</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ5200-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px;"></div>
+        <div style="padding: 6px 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">You want a functional of \(F\) &mdash; the sampling distribution of \(T(X_1,\dots,X_n; F)\). You do not have \(F\). So you substitute \(\hat{F}\), which puts mass \(1/n\) on each observed point, and compute the functional <em>exactly</em> under \(\hat{F}\) by simulation.</p>
+          <div style="background: #F9F0EE; border-left: 4px solid var(--danger-color); padding: 14px 20px; border-radius: 8px; margin: 12px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is the dangerous answer:</strong> resampling manufactures no information. Every bootstrap sample uses only the original observations. If \(\hat{F}\) is a poor stand-in for \(F\) &mdash; a biased sample (Ch 6), or a tiny one &mdash; the bootstrap reproduces that faithfully and confidently.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. A is the parametric interval, i.e. the thing we are avoiding. Push on C: the bootstrap has exactly the sample's information content, no more, and that is why Chapter 6 is a prerequisite rather than a digression.</aside>
+      </section>
+    </section>
+
+    <!-- ============ D. THE PARAMETRIC INTERVAL AND THE WALL ============ -->
+    <section id="div-3" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; The Parametric Interval, and the Wall</h1>
+      <p class="text-lg" style="color: var(--muted-color);">Six minutes to reach the place where the formula runs out.</p>
+    </section>
+
+    <section id="build-ci" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-arrows-left-right-to-line" style="color: var(--secondary-color);"></i> Building the Interval from the CLT</h2>
+      <div class="content">
+        <p style="font-size: 20pt; text-align: center; margin: 6px 0 10px;">$$\text{CI}_{95\%} = \bar{x} \pm 1.96 \times \frac{s}{\sqrt{n}}$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; margin-bottom: 12px;">
+          <p style="font-size: 14pt; margin: 2px 0;"><strong>Where:</strong> \(\bar{x}\) is the sample mean, 1.96 the standard normal quantile \(z_{0.025}\), and \(s/\sqrt{n}\) the standard error of the mean.</p>
+        </div>
+        <p class="text-lg"><strong>Interpretation.</strong> Across repeated application of this procedure, about 95% of the intervals it produces contain \(\mu\).</p>
+        <div class="misconception">
+          <p><strong>What it does NOT say.</strong> &ldquo;There is a 95% probability the true mean lies in this interval.&rdquo; \(\mu\) is fixed; this interval either contains it or it does not. The 95% is a property of the <em>procedure</em>.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 8px;">Hold that sentence. In Section 8 the Bayesian bootstrap will offer you a different one &mdash; and the difference between the two sentences is the only thing that distinguishes them.</p>
+      </div>
+      <aside class="notes">2 min. Graduate rooms know the frequentist reading but state it loosely under pressure. Making them hold the sentence now is what makes the Bayesian-bootstrap contrast land in Section 8 rather than sounding like trivia.</aside>
+    </section>
+
+    <section id="the-wall" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> The Wall: What Is the SE of a Median?</h2>
+      <div class="content">
+        <p style="font-size: 20pt; text-align: center; margin: 4px 0 8px;">$$\text{SE}(\text{median}) = \frac{1}{2 f(\text{median})} \cdot \frac{1}{\sqrt{n}}$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 22px; margin-bottom: 10px;">
+          <p style="font-size: 14pt; margin: 2px 0;"><strong>Where:</strong> \(f(\cdot)\) is the population <em>density</em> evaluated at the median; \(n\) is the sample size.</p>
+        </div>
+        <p class="text-lg"><strong>Interpretation.</strong> The precision of the sample median depends on how densely observations pile up <em>around</em> the true median. A tall narrow peak (large \(f\)) means perturbing the sample barely moves the median. A flat region means small perturbations move it a lot.</p>
+        <div class="misconception">
+          <p><strong>And there is the wall.</strong> The formula needs \(f\) at the median &mdash; which requires knowing the population distribution, the very thing you were trying not to assume. For skewed, multimodal or heavy-tailed data it is unreliable.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 8px;">The Fed's SCF reports median household net worth ($192,700) beside a mean of $1.06 million, precisely because the mean is a billionaire's plaything. Having reported the median, it then owes you an interval for it.</p>
+      </div>
+      <aside class="notes">3 min. Ask the room to extend the list: the 90th percentile, a Gini coefficient, a ratio of two estimated means, a quantile treatment effect. All the same wall. This is the slide that makes the bootstrap necessary rather than merely available.</aside>
+    </section>
+
+    <!-- ============ E. THE BOOTSTRAP ============ -->
+    <section id="div-4" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; The Bootstrap, and the First Way It Fails</h1>
+      <p class="text-lg" style="color: var(--muted-color);">Ten minutes. We build it, then break it on purpose.</p>
+    </section>
+
+    <section id="algorithm" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-repeat" style="color: var(--secondary-color);"></i> The Algorithm, in English Before Any Code</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;">Start with your sample \(x_1, x_2, \ldots, x_n\)</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 15pt;">Draw \(n\) observations <strong>with replacement</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">3</p>
+            <p style="font-size: 15pt;">Compute your statistic on that resample &mdash; <em>any</em> statistic</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--danger-color);">4</p>
+            <p style="font-size: 15pt;">Repeat \(B\) times. The distribution of those \(B\) values approximates the sampling distribution</p>
+          </div>
+        </div>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>Why with replacement?</strong> Without it, every resample is the original sample reshuffled. With it, each resample holds roughly <strong>63.2%</strong> unique observations and 36.8% duplicates &mdash; the same machinery that makes bagging work in Chapter 19.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Deal five index cards face up, draw with replacement in front of the room, and let them see a card appear twice and another not at all. That variation IS the sampling variability being estimated.</aside>
+    </section>
+
+    <section id="how-many-b" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-hashtag" style="color: var(--accent-color);"></i> How Large Should \(B\) Be?</h2>
+      <div class="content">
+        <table class="table-standard">
+          <thead><tr><th>Purpose</th><th>\(B\)</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Standard error</td><td>200</td><td>A summary of the centre. It stabilises fast.</td></tr>
+            <tr><td>Confidence interval</td><td>2,000&ndash;10,000</td><td>Endpoints live in the tails, which need more draws to pin down.</td></tr>
+            <tr><td>BCa interval</td><td>5,000&ndash;10,000</td><td>Bias correction and acceleration add noise that averages out slowly.</td></tr>
+            <tr><td>Bootstrap \(p\)-value</td><td>9,999 (odd)</td><td>An odd count keeps the observed statistic off a percentile boundary. 19,999 for publication.</td></tr>
+          </tbody>
+        </table>
+        <div class="key-result">
+          <p><strong>The distinction that matters, and we will test it later.</strong> \(B\) controls <em>Monte Carlo error</em> &mdash; the noise from simulating rather than enumerating. You can drive it to zero by computing longer. It does nothing at all to <em>approximation error</em>, which is a property of the method and of \(n\).</p>
+        </div>
+        <p class="text-lg" style="margin-top: 8px;">Practical check: run it twice with different seeds. If the endpoints move meaningfully, raise \(B\).</p>
+      </div>
+      <aside class="notes">2 min. Plant the Monte-Carlo-vs-approximation distinction hard here. Poll 3 is built entirely on people who never made it.</aside>
+    </section>
+
+    <section id="degenerate" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Now Break It on Purpose: Median Age, Adult Census</h2>
+      <div class="content">
+        <p class="text-lg">An analyst reports a 95% CI for median age and gets <code>[37.0, 37.0]</code>. They conclude the median is known exactly and move on. Here is what the code actually prints:</p>
+        <pre style="font-size: 13.5pt; background: #f8f6f3; padding: 16px 20px; border-radius: 8px; margin: 12px 0; line-height: 1.5;"><code>n:                 32,561
+Sample median:     37.0
+Bootstrap SE:      0.000000
+Percentile 95% CI: [37.0, 37.0]
+Distinct values across 2,000 resamples: 1</code></pre>
+        <div class="key-result">
+          <p><strong>This is not a bug.</strong> Age is integer-valued and heavily tied at the middle of the distribution. At \(n = 32{,}561\) the median is pinned: every one of 2,000 resamples returns 37. The bootstrap is correctly reporting that <em>the estimator does not move</em>.</p>
+        </div>
+        <div class="misconception">
+          <p><strong>What it is NOT reporting:</strong> that the population median is 37.0 with certainty. It is reporting that the resampling variability of this statistic, at this \(n\), is below the resolution of the statistic itself.</p>
+        </div>
+      </div>
+      <div class="footnote">Lab 7, Diagnosis 1 &mdash; executed on this machine. Hours-per-week does the same thing: median 40.0, SE 0.000000, one distinct value.</div>
+      <aside class="notes">3 min. Let them sit with the zero before you explain it. The generalisation to state aloud: a statistic that takes finitely many values on a large sample has an almost-degenerate sampling distribution, and no resampling scheme can manufacture variation that is not there.</aside>
+    </section>
+
+    <section id="degenerate-figure" style="padding: 22px 50px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--secondary-color);"></i> Two Bootstrap Distributions, One Dataset</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 36% 64%; gap: 24px; align-items: start;">
+          <img src="figures/figure_002_degenerate.png" alt="Top panel: 2,000 bootstrap medians of age form a single bar at 37 with zero width. Bottom panel: 10,000 bootstrap means of positive capital gains form a smooth bell centred near 12,900 dollars with the middle 95 percent marked" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p class="text-lg"><strong>Top.</strong> Median age. One bar. The sampling distribution is a point mass, and every interval method inherits that.</p>
+            <p class="text-lg" style="margin-top: 10px;"><strong>Bottom.</strong> Mean of positive capital gains, same dataset, \(n = 2{,}712\). Genuinely continuous, SE \(\approx\) $431.</p>
+            <div class="key-result">
+              <p>The difference is not the bootstrap. It is the <strong>statistic</strong> and the <strong>support of the data</strong>. Before you blame a method, ask whether the estimator you chose can move at all.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Note the bottom panel is much NARROWER than the underlying capital-gains data, which spans zero to over 99,000 dollars. That is the visual meaning of standard error versus standard deviation, and students conflate the two panels constantly.</aside>
+    </section>
+
+    <section id="bca-refuses" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-hand" style="color: var(--danger-color);"></i> Ask BCa for an Interval on That, and It Refuses</h2>
+      <div class="content">
+        <pre style="font-size: 13pt; background: #f8f6f3; padding: 16px 20px; border-radius: 8px; margin: 8px 0; line-height: 1.5;"><code>WARNING RAISED: RuntimeWarning
+  invalid value encountered in scalar divide
+WARNING RAISED: DegenerateDataWarning
+  The BCa confidence interval cannot be calculated. This problem is known
+  to occur when the distribution is degenerate or the statistic is np.min.
+
+BCa 95% CI: [nan, nan]</code></pre>
+        <p class="text-lg"><strong>Read the warning, not the number.</strong> BCa's acceleration constant comes from the <em>jackknife</em>: leave one observation out at a time and see how far the statistic moves. Here it never moves, so the acceleration is \(0/0\) and scipy returns <code>nan</code> rather than a confidently wrong interval.</p>
+        <div class="key-result">
+          <p><strong>A method that refuses to answer is behaving well.</strong> The failure mode to fear is the one that returns something plausible &mdash; which is exactly what the next two sections do, twice, at scale.</p>
+        </div>
+      </div>
+      <div class="footnote">Note <code>batch=100</code> in the call: without it scipy materialises a 9,999 &times; 32,561 array, roughly 2.6 GB.</div>
+      <aside class="notes">2 min. Do not explain the acceleration constant yet &mdash; only that it comes from a jackknife. Section 5 writes the formula down and the tie-back lands much harder if they have been carrying the mystery for twenty minutes.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Why Did BCa Return <code>nan</code>?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><code>scipy.stats.bootstrap(..., method='BCa')</code> on the median of 32,561 integer ages returns <code>[nan, nan]</code> with a <code>DegenerateDataWarning</code>.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What broke?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) <code>n_resamples</code> too small to estimate the 2.5th percentile</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The jackknife acceleration is \(0/0\) &mdash; the statistic never moves when you drop one point</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Outliers the bias correction cannot handle</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) scipy needs continuous data and ages are integers</div>
+        </div>
+        <aside class="notes">1 min. A is the reflex answer and the one to hunt for. If D is popular, that is worth a full minute in the reveal.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch07-econ5200-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; The Jackknife Has Nothing to Divide</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ5200-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px;"></div>
+        <div style="padding: 6px 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The acceleration is a ratio of third to second moments of the jackknife deviations \(\hat\theta_{(\cdot)} - \hat\theta_{(i)}\). Every one of those deviations is zero here, so numerator and denominator both vanish. You will see the formula in ten minutes.</p>
+          <div style="background: #F9F0EE; border-left: 4px solid var(--danger-color); padding: 14px 20px; border-radius: 8px; margin: 12px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting and wrong:</strong> more resamples is the reflex, and it changes nothing. The degeneracy is in the <em>statistic</em>, not in the simulation. <strong>D is wrong in a useful way:</strong> integer data is perfectly fine for the bootstrap &mdash; what breaks it is ties dense enough at the median that the order statistic never crosses a boundary.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. This poll is the hinge into the Advanced Treatment: they now WANT the acceleration formula, because they have been told twice that it exists and once that it broke.</aside>
+      </section>
+    </section>
+
+    <section id="earns-keep" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-coins" style="color: var(--success-color);"></i> And Now Where It Earns Its Keep</h2>
+      <div class="content">
+        <p class="text-lg">Capital gains among the 2,712 respondents reporting any &mdash; heavily right-skewed, which is exactly when a symmetric CLT interval should make you suspicious.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0;">
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px; padding: 10px;">
+            <p class="number" style="font-size: 26pt;">$12,939</p><p class="label">mean</p>
+          </div>
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px; padding: 10px;">
+            <p class="number" style="font-size: 26pt;">$7,298</p><p class="label">median</p>
+          </div>
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px; padding: 10px;">
+            <p class="number" style="font-size: 26pt; color: var(--danger-color);">3.41</p><p class="label">skewness</p>
+          </div>
+        </div>
+        <table class="table-standard">
+          <thead><tr><th>Interval for the mean</th><th>95% CI</th><th>Width</th></tr></thead>
+          <tbody>
+            <tr><td>Parametric (CLT)</td><td>[$12,096, $13,781]</td><td>$1,685</td></tr>
+            <tr><td>Bootstrap, percentile</td><td>[$12,128, $13,796]</td><td>$1,668</td></tr>
+            <tr><td>Bootstrap, basic</td><td>[$12,081, $13,749]</td><td>$1,668</td></tr>
+            <tr><td><strong>Bootstrap, BCa</strong></td><td><strong>[$12,171, $13,853]</strong></td><td>$1,683</td></tr>
+          </tbody>
+        </table>
+        <div class="key-result">
+          <p>Look at what BCa does: it barely changes the <em>width</em>. It <strong>shifts</strong> the interval &mdash; both endpoints move up by $43 and $57. That shift is the bias correction and acceleration doing their work on a distribution with skewness 3.41, and explaining it is the next twelve minutes.</p>
+        </div>
+      </div>
+      <div class="footnote">9,999 resamples, <code>random_state=42</code>, re-executed from the chapter's own code.</div>
+      <aside class="notes">2 min. Someone will say the four intervals are basically the same. Agree, and say why that is the honest reading at n = 2,712 &mdash; then point out that the ranking of methods is decided at small n and on statistics with no formula, which is exactly where you cannot check by eye.</aside>
+    </section>
+
+    <!-- ============ F. ADVANCED TREATMENT ============ -->
+    <section id="div-5" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; Advanced Treatment</h1>
+      <p class="text-2xl" style="color: var(--primary-color);">Why the bootstrap is more accurate &mdash; and at what rate</p>
+      <p class="text-lg" style="color: var(--muted-color);">Edgeworth expansions, asymptotic refinement, and where BCa's two constants come from</p>
+    </section>
+
+    <section id="three-slicing" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i> Three Intervals, as Three Slicing Rules</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color); margin-bottom: 10px;">
+          <p style="font-size: 15pt;"><strong>Percentile.</strong> \(\text{CI} = [\hat\theta^*_{0.025},\; \hat\theta^*_{0.975}]\) &mdash; take the middle 95% of the replicates. Assumes the bootstrap distribution is centred and symmetric about the truth.</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--accent-color); margin-bottom: 10px;">
+          <p style="font-size: 15pt;"><strong>Basic (reverse percentile).</strong> \(\text{CI} = [2\hat\theta - \hat\theta^*_{0.975},\; 2\hat\theta - \hat\theta^*_{0.025}]\) &mdash; reflect the distribution through the sample estimate. Better motivated: it uses the distribution of \(\hat\theta^* - \hat\theta\) as a proxy for \(\hat\theta - \theta\). Still assumes symmetry.</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 15pt;"><strong>BCa.</strong> Slice at <em>different</em> percentiles &mdash; chosen from the data rather than fixed at 2.5 and 97.5.</p>
+        </div>
+        <div class="key-result">
+          <p>All three read the same simulated distribution. They differ only in <strong>where they cut it</strong>. The question for the next ten minutes is which cut has the smaller coverage error, and by how much as \(n\) grows.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Draw one bootstrap histogram on the board and mark the three cut rules on it. Everything after this is about moving two vertical lines.</aside>
+    </section>
+
+    <section id="studentized" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-superscript" style="color: var(--accent-color);"></i> The Studentized Statistic</h2>
+      <div class="content">
+        <p style="font-size: 22pt; text-align: center; margin: 6px 0 10px;">$$T^* = \frac{\hat{\theta}^* - \hat{\theta}}{\widehat{\text{SE}}^*}$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; margin-bottom: 12px;">
+          <p style="font-size: 14pt; margin: 2px 0;"><strong>Where:</strong> \(\hat\theta^*\) is the statistic on a bootstrap resample; \(\hat\theta\) the statistic on the original sample; \(\widehat{\text{SE}}^*\) an estimate of its standard error computed <em>inside that resample</em> &mdash; an inner bootstrap, or a delta-method formula.</p>
+        </div>
+        <p class="text-lg"><strong>Interpretation.</strong> Dividing by an estimate of its own scale makes the statistic <strong>asymptotically pivotal</strong>: its limiting distribution no longer depends on unknown population parameters. That is the entire trick. Everything on the next three slides follows from it.</p>
+        <div class="misconception">
+          <p><strong>Cost, stated honestly.</strong> You need a standard error <em>per resample</em>. An inner bootstrap makes it \(B \times B_{\text{inner}}\) work. That expense is why percentile and BCa are the defaults in practice and bootstrap-\(t\) is reserved for statistics with a cheap analytic SE.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. &ldquo;Pivotal&rdquo; is the word to slow down on. The analogy: a t-statistic is pivotal under normality, which is why Gosset's table works for every mu and sigma. Asymptotically pivotal is that property recovered without the normality.</aside>
+    </section>
+
+    <section id="edgeworth" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-arrow-trend-down" style="color: var(--secondary-color);"></i> Edgeworth: Where the Extra Order Comes From</h2>
+      <div class="content">
+        <p class="text-lg">The normal approximation has coverage error of order \(n^{-1/2}\):</p>
+        <p style="font-size: 19pt; text-align: center; margin: 4px 0;">$$P(\mu \in \text{CI}) = 0.95 + O(n^{-1/2})$$</p>
+        <p class="text-lg" style="margin-top: 8px;">Hall (1992) writes the distribution of the statistic as the normal <em>plus a series in powers of \(n^{-1/2}\)</em>, whose leading correction term depends on the population skewness &mdash; the very asymmetry you saw at \(n=5\) two sections ago. A properly studentized bootstrap statistic <strong>reproduces that leading term</strong> instead of ignoring it, so it cancels:</p>
+        <p style="font-size: 19pt; text-align: center; margin: 4px 0;">$$P(\mu \in \text{CI}_{\text{boot}}) = 0.95 + O(n^{-1})$$</p>
+        <div class="key-result">
+          <p><strong>This is what &ldquo;asymptotic refinement&rdquo; means.</strong> Not that the bootstrap is closer for <em>your</em> sample. That the error shrinks one full order faster as the sample grows. At \(n = 100\), \(n^{-1/2}\) versus \(n^{-1}\) is a factor of 10.</p>
+        </div>
+      </div>
+      <div class="footnote">Hall, P. (1992), <em>The Bootstrap and Edgeworth Expansion</em>, Springer &mdash; full proof under regularity conditions.</div>
+      <aside class="notes">3 min. The sentence to repeat: the refinement is bought by CANCELLING a known term, not by simulating harder. If they leave with only one line from this block, that is the line.</aside>
+    </section>
+
+    <section id="rate-figure" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i> One Order, and What It Is Worth</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_003_refinement_rate.png" alt="Two decay curves of coverage error against sample size: the first-order n to the minus one-half curve stays well above the second-order n to the minus one curve, and the shaded gap between them widens in relative terms as n grows" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p class="text-lg">Same constant, two exponents. At \(n=100\) the second-order error is 10&times; smaller; at \(n=1{,}000\), 32&times;.</p>
+            <div class="key-result">
+              <p><strong>The shaded gap is the refinement.</strong> It is bought by <em>studentizing</em>. It cannot be bought with more resamples, a bigger \(B\), or a faster machine.</p>
+            </div>
+            <p class="text-lg" style="margin-top: 12px;">Which curve is the plain percentile bootstrap on? <strong>The upper one.</strong> That is the next slide, and it is the most common overclaim in applied work.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Curves are illustrative of the two rates with a common constant &mdash; say so. The measured version arrives in Section 6, where both first-order methods land within noise of each other exactly as this predicts.</aside>
+    </section>
+
+    <section id="the-condition" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> The Condition Everyone Skips</h2>
+      <div class="content">
+        <div class="misconception">
+          <p style="font-size: 17pt;"><strong>The refinement requires a pivotal statistic.</strong> The plain percentile bootstrap is <em>not</em> studentized. It is first-order accurate &mdash; \(O(n^{-1/2})\) &mdash; exactly like the CLT interval you were trying to improve on.</p>
+        </div>
+        <table class="table-standard" style="margin-top: 12px;">
+          <thead><tr><th>Method</th><th>Pivotal?</th><th>Coverage error</th></tr></thead>
+          <tbody>
+            <tr><td>CLT / normal interval</td><td>&mdash;</td><td>\(O(n^{-1/2})\)</td></tr>
+            <tr><td>Bootstrap, percentile</td><td>No</td><td>\(O(n^{-1/2})\)</td></tr>
+            <tr><td>Bootstrap, basic</td><td>No</td><td>\(O(n^{-1/2})\)</td></tr>
+            <tr><td>Bootstrap, BCa</td><td>Corrected, not studentized</td><td>\(O(n^{-1})\)</td></tr>
+            <tr><td>Bootstrap-\(t\) (studentized)</td><td>Yes</td><td>\(O(n^{-1})\)</td></tr>
+          </tbody>
+        </table>
+        <p class="text-lg" style="margin-top: 10px;">&ldquo;The bootstrap handles skewness&rdquo; is half-remembered. <strong>The bootstrap is not a repair for a statistic whose formula you already have.</strong> Section 6 measures that claim and it does not survive.</p>
+      </div>
+      <aside class="notes">3 min. BCa reaches second order by a different route from bootstrap-t: it adjusts the percentiles rather than pivoting the statistic, and DiCiccio and Efron (1996) show the resulting interval is second-order accurate for a wide class. Both rows land in the same place by different arguments.</aside>
+    </section>
+
+    <section id="bca-idea" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-sliders" style="color: var(--success-color);"></i> BCa's Two Corrections &mdash; the Idea, Before the Algebra</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 600; color: var(--secondary-color);">Bias correction \(z_0\)</p>
+            <p class="text-lg" style="margin-top: 6px;">&ldquo;Is the bootstrap distribution centred on my estimate, or systematically off to one side?&rdquo;</p>
+            <p style="font-size: 14pt; margin-top: 8px; color: var(--muted-color);">Measured by counting what fraction of replicates fall below \(\hat\theta\). If exactly half, \(z_0 = 0\).</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 600; color: var(--accent-color);">Acceleration \(a\)</p>
+            <p class="text-lg" style="margin-top: 6px;">&ldquo;Does the standard error itself change as the parameter changes?&rdquo;</p>
+            <p style="font-size: 14pt; margin-top: 8px; color: var(--muted-color);">Measured by the jackknife: delete one observation at a time and look at the skewness of how the statistic responds.</p>
+          </div>
+        </div>
+        <div class="key-result">
+          <p><strong>When \(z_0 = a = 0\), BCa IS the percentile method.</strong> The corrections only bite where the bootstrap distribution is skewed or the SE varies across the parameter space &mdash; which is precisely where medians, ratios and quantiles live.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Give the idea before the algebra or the next slide is impenetrable. The one-sentence gloss on each constant is what they should be able to reproduce in an exam, not the formula.</aside>
+    </section>
+
+    <section id="bca-algebra" style="padding: 30px 46px;">
+      <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> BCa: the Adjusted Percentiles</h2>
+      <div class="content">
+        <p style="font-size: 16pt; text-align: center; margin: 2px 0;">$$\alpha_1 = \Phi\left(z_0 + \frac{z_0 + z_{\alpha/2}}{1 - a(z_0 + z_{\alpha/2})}\right) \qquad \alpha_2 = \Phi\left(z_0 + \frac{z_0 + z_{1-\alpha/2}}{1 - a(z_0 + z_{1-\alpha/2})}\right)$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; margin: 8px 0;">
+          <p style="font-size: 13.5pt; margin: 5px 0;"><strong>Where:</strong></p>
+          <p style="font-size: 13.5pt; margin: 5px 0;">\(z_0 = \Phi^{-1}\!\left(\dfrac{\#\{\hat\theta^*_b &lt; \hat\theta\}}{B}\right)\) &mdash; bias correction, read straight off the bootstrap replicates.</p>
+          <p style="font-size: 13.5pt; margin: 5px 0;">\(a = \dfrac{\sum_{i=1}^n (\hat\theta_{(\cdot)} - \hat\theta_{(i)})^3}{6\left[\sum_{i=1}^n (\hat\theta_{(\cdot)} - \hat\theta_{(i)})^2\right]^{3/2}}\) &mdash; acceleration, where \(\hat\theta_{(i)}\) deletes observation \(i\) and \(\hat\theta_{(\cdot)}\) averages them.</p>
+          <p style="font-size: 13.5pt; margin: 5px 0;">\(\Phi\) is the standard normal CDF; the interval is then \([\hat\theta^*_{\alpha_1}, \hat\theta^*_{\alpha_2}]\).</p>
+        </div>
+        <p style="font-size: 14.5pt;"><strong>Interpretation.</strong> Both formulas do one thing: take the percentile you <em>wanted</em>, push it through a normal-scale correction, and come back with the percentile you should actually cut at. Set \(z_0 = a = 0\) and both collapse to \(\alpha/2\) and \(1 - \alpha/2\).</p>
+      </div>
+      <div class="footnote">DiCiccio, T.J. &amp; Efron, B. (1996), &ldquo;Bootstrap Confidence Intervals,&rdquo; <em>Statistical Science</em> 11(3), 189&ndash;228.</div>
+      <aside class="notes">3 min. Point at the numerator of a and say: cubed deviations, so it is a third moment, so it is a skewness measure. Then point at the denominator and note it is a squared-deviation sum to the three-halves &mdash; a scale normalisation. That reading is worth more than the derivation.</aside>
+    </section>
+
+    <section id="bca-shift-figure" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-right-left" style="color: var(--accent-color);"></i> What Those Constants Did to Our Interval</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_004_bca_shift.png" alt="Histogram of 10,000 bootstrap means of positive capital gains, with the symmetric percentile cut points marked by solid lines and the BCa cut points marked by dashed lines shifted 43 and 57 dollars to the right" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p class="text-lg">Same 10,000 replicates. Two different pairs of cut points.</p>
+            <p class="text-lg" style="margin-top: 10px;">Skewness 3.41 makes \(z_0\) and \(a\) both non-zero, and they move <strong>both</strong> endpoints the same way: +$43 at the bottom, +$57 at the top.</p>
+            <div class="key-result">
+              <p>BCa <strong>shifts</strong>; it barely widens. Students expect a correction to mean &ldquo;a wider, safer interval.&rdquo; This one is an <em>aim</em> correction, not a caution margin.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. If someone asks whether the shift is big enough to matter at n = 2,712: no, and say so. It matters at small n and for skewed non-linear statistics. The point of the slide is the DIRECTION and mechanism, not the magnitude.</aside>
+    </section>
+
+    <section id="tie-back" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-link" style="color: var(--danger-color);"></i> And Now the <code>nan</code> Makes Sense</h2>
+      <div class="content">
+        <p class="text-lg">Twenty minutes ago BCa refused to give an interval for median age. You now have the reason in front of you:</p>
+        <p style="font-size: 17pt; text-align: center; margin: 10px 0;">$$a = \frac{\sum_i (\hat\theta_{(\cdot)} - \hat\theta_{(i)})^3}{6\left[\sum_i (\hat\theta_{(\cdot)} - \hat\theta_{(i)})^2\right]^{3/2}} = \frac{0}{6 \cdot 0^{3/2}}$$</p>
+        <p class="text-lg">Delete any one of 32,561 ages and the median is still 37. Every jackknife deviation is exactly zero. Numerator zero, denominator zero, and scipy declines to invent a number.</p>
+        <div class="key-result">
+          <p><strong>The transferable habit.</strong> When a library returns <code>nan</code> with a warning, the warning names a step in an algorithm you can write down. Find that step, and the <code>nan</code> stops being a nuisance and becomes a diagnosis of your data.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the payoff of holding the mystery. Say explicitly: you could not have debugged this from the error message alone; you needed the formula, which is why graduate courses teach it.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: What Actually Buys the Refinement?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 15pt; line-height: 1.6;">You want a bootstrap interval with second-order accuracy &mdash; coverage error \(O(n^{-1})\) rather than \(O(n^{-1/2})\).</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Which change buys it?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Raise <code>n_resamples</code> from 999 to 100,000</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Studentize the statistic so it is asymptotically pivotal</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Use the basic method instead of percentile</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Collect a larger sample</div>
+        </div>
+        <aside class="notes">1 min. A is the trap and it is the answer a well-prepared student gives, because more computation feels like more accuracy. Watch the bar chart before you say anything.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch07-econ5200-poll-3" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; Pivot, Do Not Compute Harder</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ5200-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px;"></div>
+        <div style="padding: 4px 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>A</strong> reduces <em>Monte Carlo</em> error &mdash; the noise from simulating rather than enumerating &mdash; which you can drive to zero by computing longer. It does nothing to the <em>approximation</em> error, which is a property of the method and of \(n\). <strong>C</strong> shifts the interval but stays first order. <strong>D</strong> reduces error under either rate without changing the rate.</p>
+          <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin: 10px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>The practical rule.</strong> Percentile for exploration. <strong>BCa for anything published</strong> &mdash; second-order accurate and scipy's default for exactly that reason. Studentized bootstrap-\(t\) when an inner SE is cheap and the stakes justify it.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. If A wins the room, that is the most useful five minutes of the lecture. Say the sentence twice: more resamples buys precision in the simulation, never accuracy in the approximation.</aside>
+      </section>
+    </section>
+
+    <!-- ============ G. COVERAGE ============ -->
+    <section id="div-6" class="section-divider" data-state="is-section-divider">
+      <h1>6 &nbsp;&bull;&nbsp; Coverage, and Its Own Error Bar</h1>
+      <p class="text-lg" style="color: var(--muted-color);">The theory of Section 5, measured &mdash; including the part that says the bootstrap wins nothing.</p>
+    </section>
+
+    <section id="coverage-defn" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--secondary-color);"></i> The Only Test That Matters</h2>
+      <div class="content">
+        <p class="text-lg">Across many repeated experiments, does a nominal 95% interval actually contain the true parameter 95% of the time?</p>
+        <div class="key-result">
+          <p><strong>The design.</strong> 400 experiments. \(n = 50\) per experiment, drawn lognormal(3.5, 0.5). 499 resamples per interval. True mean 37.525, true median 33.115, both known by construction. Four arms: two targets &times; two methods.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 10px;">And one thing most write-ups omit &mdash; a coverage simulation is <em>itself</em> an experiment, so its output is an estimate with noise:</p>
+        <p style="font-size: 19pt; text-align: center; margin: 6px 0;">$$\text{MC SE} = \sqrt{\frac{p(1-p)}{T}}$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 22px;">
+          <p style="font-size: 14pt; margin: 2px 0;"><strong>Where:</strong> \(p\) is the measured coverage and \(T\) the number of trials. <strong>Interpretation:</strong> the standard error <em>of the coverage number itself</em>. Any gap smaller than this is not a finding.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Announce the prediction from Section 5 before revealing anything: two first-order methods should land within noise of each other. Then let the data confirm it. That is a much stronger teaching move than presenting the table cold.</aside>
+    </section>
+
+    <section id="coverage-table" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-table" style="color: var(--accent-color);"></i> Measured &mdash; Read the Top Two Rows First</h2>
+      <div class="content">
+        <pre style="font-size: 15pt; background: #f8f6f3; padding: 18px 24px; border-radius: 8px; margin: 8px 0; line-height: 1.6;"><code>  target       method   coverage    MC SE
+------------------------------------------
+    mean   parametric     92.5%     1.3%
+    mean    bootstrap     92.0%     1.4%
+  median   parametric     66.8%     2.4%
+  median    bootstrap     92.8%     1.3%</code></pre>
+        <p class="text-lg">Nominal is 95% in all four rows. Two of these numbers are noise apart. One of them is a catastrophe.</p>
+        <div class="key-result">
+          <p>Before the next slide: <strong>which pair is which</strong>, and does the answer match what Section 5 predicted?</p>
+        </div>
+      </div>
+      <div class="footnote">Lab 7, Diagnosis 2 &mdash; executed on this machine. The chapter runs the same design at 1,000 experiments and 999 resamples and lands in the same place.</div>
+      <aside class="notes">2 min. Hold this slide silently for fifteen seconds. Let them find the 66.8 themselves; the shock is better earned than announced.</aside>
+    </section>
+
+    <section id="coverage-figure" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-chart-simple" style="color: var(--danger-color);"></i> The Same Four Numbers, With Their Error Bars</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_005_coverage.png" alt="Bar chart of measured coverage for four target-method combinations with Monte Carlo standard error bars; three bars sit near 92 percent with overlapping error bars while the median-parametric bar falls to 66.8 percent, all against a dashed 95 percent nominal line" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p class="text-lg">The error bars are the point of the figure. Three of the four bars overlap each other; one does not come close to anything.</p>
+            <div class="key-result">
+              <p>A bar chart of coverage <em>without</em> these error bars invites exactly the overclaim this chapter is about &mdash; ranking two methods whose difference the experiment cannot resolve.</p>
+            </div>
+            <p class="text-lg" style="margin-top: 10px;">Put error bars on your own simulation results. Referees notice their absence, and so should you.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. This figure is the methodological deliverable of the lecture. If they build one plot from today in their own work, it is this one.</aside>
+    </section>
+
+    <section id="mean-half" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-equals" style="color: var(--secondary-color);"></i> For the Mean: the Bootstrap Buys Nothing</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 12px;">
+          <div class="stat-highlight" style="background: #f0f5f8; border-radius: 8px;">
+            <p class="number">92.5%</p><p class="label">parametric CLT interval &nbsp;(MC SE 1.3)</p>
+          </div>
+          <div class="stat-highlight" style="background: #f0f5f8; border-radius: 8px;">
+            <p class="number">92.0%</p><p class="label">percentile bootstrap &nbsp;(MC SE 1.4)</p>
+          </div>
+        </div>
+        <p class="text-lg">Both under-cover slightly. The 0.5-point gap is far inside the Monte Carlo error on either estimate. Change the seed and the ordering can flip.</p>
+        <div class="key-result">
+          <p><strong>This is Section 5 showing up in data.</strong> The percentile bootstrap and the CLT interval are <em>both first-order accurate</em>. At \(n = 50\) on skewed data, neither has arrived. Swapping in BCa does not rescue it either &mdash; the chapter measures 91.0% on the same design.</p>
+        </div>
+        <div class="misconception">
+          <p><strong>Be blunt about this.</strong> &ldquo;The bootstrap handles skewness&rdquo; is a common thing to half-remember. The bootstrap is <em>not</em> a repair for a statistic whose formula you already have.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the intellectually honest half of the lecture and the half a weaker deck omits. The bootstrap's case does not rest on beating the formula; it rests on existing where the formula does not.</aside>
+    </section>
+
+    <section id="median-half" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-fire" style="color: var(--danger-color);"></i> For the Median: 28 Points, and It Is Not Noise</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 12px;">
+          <div class="stat-highlight" style="background: #F9F0EE; border-radius: 8px;">
+            <p class="number" style="color: var(--danger-color);">66.8%</p><p class="label">the mean's interval, asked about the median &nbsp;(MC SE 2.4)</p>
+          </div>
+          <div class="stat-highlight" style="background: #EEF2F0; border-radius: 8px;">
+            <p class="number" style="color: var(--success-color);">92.8%</p><p class="label">bootstrap interval for the median &nbsp;(MC SE 1.3)</p>
+          </div>
+        </div>
+        <p class="text-lg">There is no clean parametric interval for the median, so an analyst reaches for the one they have: the interval built around the <em>mean</em>. It covers the true median two times in three.</p>
+        <div class="key-result">
+          <p><strong>The mechanism is simple and it does not go away.</strong> On right-skewed data the mean sits well above the median, so an interval centred on the sample mean is <em>aimed at the wrong target</em>. More data narrows it around the wrong place; it never recentres it.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 8px;">The bootstrap interval, built around the statistic actually being asked about, covers 92.8% &mdash; the same first-order performance as everything else on this slide, which is exactly the right benchmark.</p>
+      </div>
+      <aside class="notes">2 min. Ask: would you launch on an interval that is wrong nearly a third of the time? Then note the failure is not the bootstrap winning; it is the wrong ESTIMAND being interval-ised.</aside>
+    </section>
+
+    <section id="at-scale" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-building" style="color: var(--accent-color);"></i> What 28 Points Costs a Firm</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px;">
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px;">
+            <p class="number">1,000</p><p class="label">experiments a year on a right-skewed metric</p>
+          </div>
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px;">
+            <p class="number" style="color: var(--success-color);">50</p><p class="label">misses you budgeted for at 95% nominal</p>
+          </div>
+          <div class="stat-highlight" style="background: #f8f6f3; border-radius: 8px;">
+            <p class="number" style="color: var(--danger-color);">~330</p><p class="label">misses you actually get</p>
+          </div>
+        </div>
+        <p class="text-lg">Revenue per user, session length, time to first purchase &mdash; all right-skewed, all routinely reported as medians. That is roughly <strong>280 extra wrong calls a year</strong> from using the interval that happened to be available.</p>
+        <div class="misconception">
+          <p><strong>State the assumption when you use this number.</strong> The conversion assumes those experiments resemble this data-generating process and are independent of one another. Neither is exactly true. Quote the arithmetic as an order of magnitude, not a forecast &mdash; which is the same discipline as quoting the MC SE.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The caveat box is not decoration. A student who takes the 280 without the assumption has learned the wrong half of this lecture.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: What Do You Report?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Your simulation returns: mean / parametric <strong>92.5%</strong> (MC SE 1.3); mean / bootstrap <strong>92.0%</strong> (MC SE 1.4).</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">You are writing this up. What goes in the paper?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The parametric interval covers better than the bootstrap for the mean</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The bootstrap under-covers, so avoid it on skewed data</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) No detectable difference &mdash; the gap is smaller than the MC error on either estimate</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Both methods fail, since neither reaches 95%</div>
+        </div>
+        <aside class="notes">1 min. D is the subtlest distractor and worth a full sentence in the reveal.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch07-econ5200-poll-4" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; The Experiment Cannot Resolve It</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px;"></div>
+        <div style="padding: 4px 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>A</strong> reports an ordering the design cannot support. <strong>B</strong> generalises from a gap that is noise. <strong>D</strong> is the subtle one: both <em>do</em> under-cover, but 92% against 95% at \(n=50\) on lognormal data is the expected behaviour of two first-order-accurate methods &mdash; to call it failure you would have to show it persists as \(n\) grows.</p>
+          <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin: 10px 0;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Write the sentence this way:</strong> &ldquo;Coverage was 92.5% (MC SE 1.3) and 92.0% (MC SE 1.4); the difference is within simulation error.&rdquo; That sentence costs nothing and cannot be attacked.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Contrast with the median row, where 28 points against an MC SE of 2.4 is a finding you can and should state flatly.</aside>
+      </section>
+    </section>
+
+    <section id="discussion-1" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Design the Experiment That Would Settle It</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 20px 26px; border-radius: 12px;">
+          <p class="text-2xl" style="font-weight: 600;">You believe BCa genuinely beats percentile for the median at \(n = 50\), by about 2 points of coverage. Design the simulation that would establish it.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 14px 18px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color);">Think about:</p>
+            <p style="font-size: 15pt;">How many trials before a 2-point gap clears its own MC error? Set \(\sqrt{p(1-p)/T}\) against the gap at \(p \approx 0.93\) and solve for \(T\).</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color);">Consider:</p>
+            <p style="font-size: 15pt;">What must be held fixed across arms &mdash; resample count, seeds, the DGP &mdash; for the comparison to mean anything? What would you pre-register?</p>
+          </div>
+        </div>
+        <p style="margin-top: 14px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">4 min. Debrief: at p about 0.93 the MC SE is roughly 2.6/sqrt(T) percentage points, so detecting 2 points needs T in the thousands. The move experienced people make and beginners do not: run BOTH arms on the SAME simulated datasets. Pairing cuts the variance of the difference far more than raising T does.</aside>
+    </section>
+
+    <section id="netflix" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-briefcase" style="color: var(--accent-color);"></i> Economist at Work: Netflix's Quantile Bootstrap</h2>
+      <div class="content">
+        <p class="text-lg">Play delay &mdash; the gap between pressing play and video starting &mdash; is aggressively right-skewed across a subscriber base that passed 300 million paid memberships at the end of 2024. Most stream instantly; a tail buffers badly. An average hides exactly the users you need to hear about.</p>
+        <div class="key-result">
+          <p>Netflix evaluates <strong>quantile treatment effects</strong>: the difference in the 50th, 75th and 95th percentiles between treatment and control. Non-parametric quantiles have no closed-form standard error &mdash; so the interval <em>has</em> to come from a bootstrap.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 10px;"><strong>The engineering trick.</strong> Compress the metric into (value, count) pairs, then bootstrap the <em>counts</em> using Poisson-approximated multinomial draws. Computational cost becomes independent of the original sample size &mdash; which is what turns a textbook method into production infrastructure.</p>
+        <div class="misconception">
+          <p><strong>Keep two Netflix results apart when you cite them.</strong> The quantile bootstrap is about computing an interval cheaply. Chou et al. (2025) &mdash; replaying 123 historical A/B tests under better <em>decision rules</em> for roughly a 33% improvement in cumulative north-star returns &mdash; is about what to ship, not about the bootstrap.</p>
+        </div>
+      </div>
+      <div class="footnote">Netflix Tech Blog, &ldquo;Reimagining Experimentation Analysis&rdquo;; Chou, Gray, Kallus, Bibaut &amp; Ejdemyr (2025), KDD Best Paper, arXiv:2502.08763.</div>
+      <aside class="notes">2 min. The citation-hygiene box is deliberate: these two results get merged in student write-ups constantly, and merging them is a small act of overclaiming of exactly the kind this chapter is about.</aside>
+    </section>
+
+    <!-- ============ H. FORMAL SKETCH: CLUSTERING ============ -->
+    <section id="div-7" class="section-divider" data-state="is-section-divider">
+      <h1>7 &nbsp;&bull;&nbsp; Formal Sketch</h1>
+      <p class="text-2xl" style="color: var(--primary-color);">Dependence, and the wild cluster bootstrap</p>
+      <p class="text-lg" style="color: var(--muted-color);">The failure mode that will actually bite your own research</p>
+    </section>
+
+    <section id="cluster-disaster" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-people-group" style="color: var(--danger-color);"></i> The Expensive Failure, Measured</h2>
+      <div class="content">
+        <p class="text-lg">1,000 workers across 25 firms. Firms differ a lot; workers within a firm resemble one another. True mean wage $60,000 by construction. The analyst bootstraps them as 1,000 independent draws.</p>
+        <pre style="font-size: 13.5pt; background: #f8f6f3; padding: 15px 20px; border-radius: 8px; margin: 10px 0; line-height: 1.5;"><code>Between-firm SD:    7,689          Within-firm SD:  2,946
+Sample mean wage: $59,588          (true mean $60,000)
+
+Naive (i.i.d.) bootstrap 95% CI: [$59,092, $60,121]   width $1,029
+Clustered      bootstrap 95% CI: [$56,624, $62,465]   width $5,841
+                                  the honest interval is 5.7x wider</code></pre>
+        <div class="misconception">
+          <p><strong>The naive interval happens to contain the true mean this time.</strong> That is not a defence &mdash; it is one draw. The question is what the procedure does over repeated application, which is the next slide.</p>
+        </div>
+      </div>
+      <div class="footnote">Lab 7, Diagnosis 3 &mdash; executed on this machine.</div>
+      <aside class="notes">2 min. Note the between-firm SD is nearly three times the within-firm SD: that ratio is the whole story. The effective sample size is far closer to 25 than to 1,000.</aside>
+    </section>
+
+    <section id="cluster-figure" style="padding: 20px 50px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--danger-color);"></i> Repeat It 200 Times and Count</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 37% 63%; gap: 24px; align-items: start;">
+          <img src="figures/figure_006_cluster.png" alt="Top panel: the naive i.i.d. interval is a narrow band around 59,600 dollars while the cluster bootstrap interval is 5.7 times wider and straddles the true mean of 60,000. Bottom panel: coverage over 200 fresh panels is 19.5 percent for the naive bootstrap and 91.0 percent for the cluster bootstrap against a dashed 95 percent nominal line" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p class="text-lg">Nominal is 95%. The naive interval is not slightly optimistic. It is <strong>wrong four times out of five</strong>, and it never says so.</p>
+            <div class="key-result">
+              <p><strong>Why.</strong> Resampling <em>workers</em> destroys the firm structure. It treats 1,000 observations as 1,000 independent draws when the effective sample size is closer to the number of <em>firms</em>. The fix is to resample whole firms with replacement.</p>
+            </div>
+            <p class="text-lg" style="margin-top: 10px;">Compare with the degenerate median: that failure announced itself with a zero and a warning. This one returns a beautiful, narrow, confident, wrong interval.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the most expensive of the three failures and the most common in applied micro. Overconfidence is worse than imprecision: it licenses rejecting nulls you have no business rejecting.</aside>
+    </section>
+
+    <section id="wild-cluster" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-wind" style="color: var(--secondary-color);"></i> The Regression Version: Wild Cluster Bootstrap</h2>
+      <div class="content">
+        <p class="text-lg">Resampling clusters works for a mean. For a regression coefficient with <em>few</em> clusters, Cameron, Gelbach &amp; Miller (2008) showed standard cluster-robust (Liang&ndash;Zeger) variance estimators over-reject badly &mdash; <strong>10% or more against a nominal 5%</strong> when clusters number below roughly 50.</p>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 14.5pt;">Estimate the model <strong>under the null</strong>: \(Y = X\hat\beta_0 + \hat{u}\)</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--accent-color);">2a</p>
+            <p style="font-size: 14.5pt;">Draw one weight <em>per cluster</em> \(g\) from the Rademacher distribution: \(P(v_g = 1) = P(v_g = -1) = 0.5\)</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">2b</p>
+            <p style="font-size: 14.5pt;">Build \(Y^*_i = X_i\hat\beta_0 + v_{g(i)}\hat{u}_i\), re-estimate, compute \(T^*_b\)</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">3</p>
+            <p style="font-size: 14.5pt;">Bootstrap \(p\)-value: \(\frac{1}{B}\sum_b \mathbb{1}(|T^*_b| &gt; |T_{\text{obs}}|)\)</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">Cameron, A.C., Gelbach, J.B. &amp; Miller, D.L. (2008), <em>Review of Economics and Statistics</em> 90(3), 414&ndash;427.</div>
+      <aside class="notes">3 min. Read step 1 twice. Imposing the null is the step people omit, and omitting it costs exactly the size control they came for.</aside>
+    </section>
+
+    <section id="wild-parts" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-gears" style="color: var(--accent-color);"></i> Why Each Moving Part Is There</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;"><strong>Per cluster, not per observation.</strong> Every residual in a firm gets flipped <em>together</em>. That is what preserves the intra-cluster correlation the naive bootstrap destroyed.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;"><strong>Rademacher specifically.</strong> Mean zero, unit variance, and <em>symmetric</em>. The symmetry is what delivers the best size control when clusters are few.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong>Residuals from the restricted model.</strong> Imposing the null is what makes the resulting distribution a <em>null</em> distribution &mdash; the thing a \(p\)-value is computed against.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>Very few clusters (5&ndash;10 states in a DiD).</strong> MacKinnon &amp; Webb (2018): use the <strong>subcluster wild bootstrap</strong> and <strong>Webb six-point weights</strong> instead of Rademacher. MacKinnon, Nielsen &amp; Webb (2023) give the modern treatment and the fast algorithms in <code>boottest</code>.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Connect back to Chapter 11: their DiD designs cluster on state, and a US-state DiD with a handful of treated states is exactly this regime. This is not a curiosity; it is their midterm.</aside>
+    </section>
+
+    <section id="discussion-2" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Eight States in a DiD</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-2xl" style="font-weight: 600;">You are clustering on state and you have 8 states.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px;">
+          <div style="padding: 14px 18px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color);">Think about:</p>
+            <p style="font-size: 15pt;">Rademacher gives each cluster one of two weights. With \(G\) clusters, how many distinct weight vectors exist? Write \(2^G\) at \(G = 8\) &mdash; and say what that implies for the <em>smallest \(p\)-value your bootstrap can ever report</em>.</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color);">Consider:</p>
+            <p style="font-size: 15pt;">Webb's six-point weights give each cluster one of six values. Why does that matter at 8 clusters and not at 50? And have you bought a better-behaved <em>test</em>, or merely a finer grid of reportable numbers?</p>
+          </div>
+        </div>
+        <p style="margin-top: 12px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">4 min. Debrief: 2^8 = 256 distinct Rademacher vectors, so the bootstrap distribution is supported on at most 256 points no matter how large B is &mdash; the p-value grid is coarse and its floor is bounded away from zero. Webb gives 6^8. Honest answer to the second half: both, and say which you rely on. A finer grid alone would be cosmetic, but the six-point distribution also improves the approximation. And with 8 clusters no bootstrap rescues a design that has 8 effective observations.</aside>
+    </section>
+
+    <!-- ============ I. GOING DEEPER: BAYESIAN BOOTSTRAP ============ -->
+    <section id="div-8" class="section-divider" data-state="is-section-divider">
+      <h1>8 &nbsp;&bull;&nbsp; Going Deeper</h1>
+      <p class="text-2xl" style="color: var(--primary-color);">The Bayesian bootstrap</p>
+      <p class="text-lg" style="color: var(--muted-color);">Same numbers, different sentence</p>
+    </section>
+
+    <section id="bayes-boot" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--secondary-color);"></i> Reweight Instead of Resample</h2>
+      <div class="content">
+        <p class="text-lg">Rubin (1981). Instead of resampling observations with probability \(1/n\), give each observation a random <em>weight</em>:</p>
+        <p style="font-size: 20pt; text-align: center; margin: 8px 0;">$$(w_1, w_2, \ldots, w_n) \sim \text{Dirichlet}(1, 1, \ldots, 1)$$</p>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px; margin-bottom: 10px;">
+          <p style="font-size: 14pt; margin: 2px 0;"><strong>Where:</strong> the weights are non-negative and sum to 1. A Dirichlet(1,&hellip;,1) draw is uniform over the simplex.</p>
+        </div>
+        <p class="text-lg"><strong>Interpretation.</strong> The ordinary bootstrap draws <em>counts</em> from a multinomial &mdash; an observation appears 0, 1, 2, &hellip; times. The Bayesian bootstrap replaces those integer counts with <em>continuous</em> weights from the closest continuous analogue. Compute the statistic as a weighted version, repeat, and the resulting distribution approximates the <strong>posterior</strong> under a non-informative prior.</p>
+        <div class="key-result">
+          <p><strong>Why an economist should care.</strong> Model-free Bayesian inference with no MCMC: trivially parallel, no chain to tune, no convergence diagnostics. And because the weights are continuous, it does not suffer the lumpiness that produced our degenerate median.</p>
+        </div>
+      </div>
+      <div class="footnote">Rubin, D.B. (1981), &ldquo;The Bayesian Bootstrap,&rdquo; <em>Annals of Statistics</em> 9(1), 130&ndash;134.</div>
+      <aside class="notes">3 min. The Dirichlet(1,...,1) is the limit of the normalised multinomial counts, which is why the two agree asymptotically. Lab 7's extension has them implement it in three lines and compare.</aside>
+    </section>
+
+    <section id="discussion-3" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Word That Cannot Move</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-2xl" style="font-weight: 600;">At \(n = 500\) the frequentist and Bayesian bootstrap intervals are numerically almost identical. They license different sentences.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px;">
+          <div style="padding: 14px 18px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color);">Think about:</p>
+            <p style="font-size: 15pt;"><em>Frequentist:</em> &ldquo;across repeated application, 95% of such intervals contain \(\theta\).&rdquo; <em>Bayesian bootstrap:</em> &ldquo;given the data, \(\theta\) lies in this interval with 95% probability.&rdquo; Mark the word that cannot be moved between them.</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color);">Consider:</p>
+            <p style="font-size: 15pt;">At what sample size would you expect the two intervals to visibly <em>disagree</em>, and why? What feature of the data would make the gap appear sooner?</p>
+          </div>
+        </div>
+        <p style="margin-top: 12px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">3 min. Debrief: the word is "probability" attached to theta. The frequentist statement puts the randomness in the procedure; the Bayesian one puts it in the parameter. Numbers agreeing does not make the sentences interchangeable, and a referee will notice. They come apart at small n and where the discreteness of multinomial counts bites.</aside>
+    </section>
+
+    <!-- ============ J. CLOSE ============ -->
+    <section id="div-9" class="section-divider" data-state="is-section-divider">
+      <h1>9 &nbsp;&bull;&nbsp; Two Samples, the Family, and the Close</h1>
+      <p class="text-lg" style="color: var(--muted-color);">Where Chapter 8 picks this up.</p>
+    </section>
+
+    <section id="two-sample" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-code-compare" style="color: var(--accent-color);"></i> Comparing Two Groups, Assumption-Free</h2>
+      <div class="content">
+        <p class="text-lg">Compute \(\hat\delta = \hat\theta_A - \hat\theta_B\). Resample each group separately at its own size. Recompute the difference. Build the interval from the bootstrap distribution of differences.</p>
+        <pre style="font-size: 13.5pt; background: #f8f6f3; padding: 15px 20px; border-radius: 8px; margin: 10px 0; line-height: 1.5;"><code>High income (&gt;50K):  n =  7,841   median age 44.0
+Low income  (&lt;=50K): n = 24,720   median age 34.0
+
+Difference in medians:        10.0 years
+Bootstrap percentile 95% CI:  [9.0, 10.0]</code></pre>
+        <p class="text-lg">The interval excludes zero, so the median ages differ &mdash; established without assuming anything about the shape of either age distribution. This is the foundation of the hypothesis tests in Chapter 8.</p>
+        <div class="key-result">
+          <p>Note the interval is <strong>ragged</strong> &mdash; 9.0 to 10.0, in whole years. That is the same discreteness from Section 4, now visible in a two-sample statistic rather than fatal to it. Degeneracy is a spectrum, not a switch.</p>
+        </div>
+      </div>
+      <div class="footnote">9,999 resamples, <code>random_state=42</code>, re-executed from the chapter's own code.</div>
+      <aside class="notes">2 min. Draw the connection explicitly: if this CI excludes zero we would reject the null that the medians are equal. Chapter 8 formalises it.</aside>
+    </section>
+
+    <section id="three-flavours" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-shuffle" style="color: var(--secondary-color);"></i> Three Flavours of Resampling</h2>
+      <div class="content">
+        <table class="table-standard">
+          <thead><tr><th>Method</th><th>Resamples from</th><th>Answers</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Monte Carlo</strong> (Ch 5)</td><td>a <em>known</em> distribution</td><td>&ldquo;what does this model imply?&rdquo;</td></tr>
+            <tr><td><strong>Bootstrap</strong> (today)</td><td>your data, <strong>with</strong> replacement</td><td>&ldquo;how uncertain is my estimate?&rdquo;</td></tr>
+            <tr><td><strong>Permutation</strong> (Ch 8&ndash;9)</td><td>label shuffles, <strong>without</strong> replacement</td><td>&ldquo;could this difference be chance?&rdquo;</td></tr>
+          </tbody>
+        </table>
+        <div class="key-result">
+          <p>All three are the same computational logic &mdash; repeated random sampling &mdash; pointed at three different questions. Choosing the wrong one is not a coding error; it is answering a question nobody asked.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 10px;">The wild cluster bootstrap of Section 7 is a fourth member of the family, and it sits between rows two and three: it resamples <em>signs</em> rather than observations, and it does so under an imposed null &mdash; which is why it produces a \(p\)-value rather than an interval.</p>
+      </div>
+      <aside class="notes">2 min. Write the three-column table on the board as a permanent artefact. The fourth-member observation is the graduate addition and worth saying slowly.</aside>
+    </section>
+
+    <section id="key-takeaways" style="padding: 30px 46px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-shuffle" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>It is a plug-in.</strong> \(\hat{F}\) for \(F\). It creates no information and inherits every bias in the sample.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-0" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>SE = 0.000000 is a measurement.</strong> The estimator does not move at this \(n\). BCa's <code>nan</code> is the jackknife acceleration dividing 0 by 0.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-arrow-trend-down" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>Accuracy has a rate.</strong> Percentile and CLT are both \(O(n^{-1/2})\). Studentizing buys \(O(n^{-1})\). More resamples buys none of it.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 12px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-ruler-combined" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>Report the MC SE.</strong> Refuse to rank two methods whose gap is inside their own simulation error.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 12px; text-align: center; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Dependence is the expensive failure:</strong> 19.5% coverage against 91.0% on the same panels. Cluster the resampling; with few clusters, wild cluster with Rademacher &mdash; or Webb six-point below about ten.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. If they retain one line, make it the third card. It is the line that separates this course from the undergraduate section, and the one that decides which method they reach for at work.</aside>
+    </section>
+
+    <section id="exit-ticket" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--success-color);"></i> Exit Ticket &amp; Today's Lab</h2>
+      <div class="content">
+        <div style="background: #EEF2F0; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 20px 26px;">
+          <p class="text-lg" style="font-style: italic;">A colleague reports a bootstrap 95% CI for the median of a right-skewed metric, computed with <code>method='percentile'</code> and <code>n_resamples=100000</code>, on data from 12 clustered sites.</p>
+          <p class="text-lg" style="font-weight: 600; margin-top: 10px;">Name the two things you would check first &mdash; and say which of them the 100,000 resamples has already taken care of.</p>
+        </div>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>Expected:</strong> (i) whether the resampling respected the site clustering &mdash; it almost certainly did not, and that is the 19.5% failure mode; (ii) whether percentile is adequate for a skewed statistic, or whether BCa is needed for the refinement. The 100,000 resamples has taken care of the Monte Carlo error <em>only</em> &mdash; neither of the two real problems.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 12px;"><strong>Next:</strong> Lab 7 &mdash; <code>lab-ch07-diagnostic.ipynb</code>. Three broken intervals to diagnose <em>before</em> the code tells you, the Bayesian bootstrap extension, and a take-home block bootstrap for dependence across time. Then Chapter 8, where this same sampling distribution becomes a decision rule.</p>
+      </div>
+      <aside class="notes">2 min. Collect on paper or in the LMS. The single most common wrong answer is naming the resample count as a fix, which is exactly the misconception Poll 3 was built to surface.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>
