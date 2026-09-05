@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regression Discontinuity</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax for equations -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$'], ['\\[','\\]']]}, svg: {fontCache: 'global'}, options: {ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <!-- SLIDE 1: Cover -->
+      <section id="cover" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+        <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 13</p>
+            <h1 style="font-size: 34pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Regression Discontinuity</h1>
+            <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+            <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.6;">The most credible design in observational economics &mdash; and the narrowest.</p>
+            <div style="margin-top: auto; padding-bottom: 15px;">
+              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+              <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+            </div>
+          </div>
+          <div style="overflow: hidden;">
+            <img src="figures/figure_000_cover.png" alt="Abstract scatter of points split by a vertical cutoff line, with separate fitted lines on each side and a visible jump at the threshold" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+        <aside class="notes">75 minutes. Chapter 13 closes the identification module — Ch 10 selection on observables, Ch 11 DiD, Ch 12 IV, Ch 13 RD. Say up front that this is the design most likely to appear in their own work, and the one with the sharpest limits.</aside>
+      </section>
+
+      <!-- SLIDE 2: Learning Objectives -->
+      <section id="learning-objectives" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 14px;">
+          <div style="display: grid; grid-template-columns: 74px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">LO1</p>
+            <p style="font-size: 14.5pt;"><strong>Understand</strong> the <strong>continuity assumption</strong> &mdash; why it is weaker than parallel trends or the exclusion restriction, and what &ldquo;local&rdquo; means in the estimand</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 74px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">LO2</p>
+            <p style="font-size: 14.5pt;"><strong>Apply</strong> sharp and fuzzy RD in <code>rdrobust</code> with correct <strong>sign conventions</strong>, robust bias-corrected inference, and data-driven bandwidths</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 74px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">LO3</p>
+            <p style="font-size: 14.5pt;"><strong>Analyze</strong> a design's validity &mdash; density tests for manipulation, covariate balance, placebo cutoffs &mdash; including how to read a <strong>false positive</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 74px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">LO4</p>
+            <p style="font-size: 14.5pt;"><strong>Evaluate</strong> whether an RD estimate supports a policy conclusion &mdash; separating what you estimated <em>at the cutoff</em> from what the decision-maker asked</p>
+          </div>
+        </div>
+        <aside class="notes">Read each one. LO4 is the one they will underuse and the one the exit ticket tests. Flag now that today's answer to several policy questions will be "this design is silent on that," and that saying so is the professional answer.</aside>
+      </section>
+
+      <!-- SLIDE 3: Retrieval Practice -->
+      <section id="retrieval" style="padding: 36px 55px;">
+        <h2><i class="fa-solid fa-rotate-left" style="color: var(--secondary-color);"></i> Retrieval: Where We Have Been</h2>
+        <div class="content">
+          <p style="font-size: 15pt; color: var(--muted-color); font-style: italic; margin-bottom: 14px;">No notes. Three questions, cold.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 16px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 12pt; font-weight: 700; color: var(--secondary-color); letter-spacing: 1.5px;">CH 11 &mdash; DiD</p>
+              <p style="font-size: 14.5pt; margin-top: 8px;">Identification is bought with <em>what</em>? What assumption pays for it?</p>
+            </div>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 16px 18px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 12pt; font-weight: 700; color: var(--accent-color); letter-spacing: 1.5px;">CH 12 &mdash; IV</p>
+              <p style="font-size: 14.5pt; margin-top: 8px;">Same two questions. And which units does the estimate describe?</p>
+            </div>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 16px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 12pt; font-weight: 700; color: var(--success-color); letter-spacing: 1.5px;">BOTH</p>
+              <p style="font-size: 14.5pt; margin-top: 8px;">Can you <em>test</em> either assumption? What is the honest answer?</p>
+            </div>
+          </div>
+          <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px; margin-top: 18px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 15.5pt;"><strong>Today the lever becomes a line</strong> &mdash; and for the first time this module, the identifying assumption has consequences you can go looking for.</p>
+          </div>
+        </div>
+        <aside class="notes">DiD: a parallel control group; parallel trends; ATT. IV: an exogenous lever; the exclusion restriction; LATE for compliers. Both untestable — pre-trends are weak evidence, not a test. Do not reveal the fragment until someone has said "no, you can't test them."</aside>
+      </section>
+
+      <!-- SLIDE 4: Hook -->
+      <section id="hook" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> A Confident Number, Pointing the Wrong Way</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 26px; align-items: start;">
+            <div>
+              <p style="font-size: 15pt; line-height: 1.6;">Ten thousand simulated households. Free tuition below <strong><span class="tex2jax_ignore">&#36;75,000</span></strong>. I built the data, so I know the answer exactly: eligibility raises first-year retention by <strong>exactly 5 percentage points</strong>.</p>
+              <p style="font-size: 15pt; line-height: 1.6; margin-top: 12px;">Here is the industry-standard package, called <em>correctly</em>, on that data:</p>
+              <pre style="margin-top: 10px;"><code style="font-size: 14pt;">Conventional coef = -0.0553
+Robust      coef  = -0.0556</code></pre>
+              <p style="font-size: 14.5pt; margin-top: 12px; color: var(--muted-color);">SE = 0.003. The plot looks clean. Every diagnostic passes.</p>
+            </div>
+            <div style="background: #fdf3f0; border-radius: 10px; padding: 22px 24px; border-left: 5px solid var(--danger-color);">
+              <p style="font-size: 20pt; font-weight: 700; color: var(--danger-color); line-height: 1.3;">Negative.</p>
+              <p style="font-size: 15pt; margin-top: 12px; line-height: 1.6;">The programme built to help students appears to <em>hurt</em> them &mdash; by almost exactly the magnitude of the benefit.</p>
+              <p style="font-size: 15pt; margin-top: 14px; line-height: 1.6;"><strong>Nothing is wrong except the sign, and the sign is the entire finding.</strong></p>
+              <p style="font-size: 13.5pt; margin-top: 14px; color: var(--muted-color); font-style: italic;">We resolve this in about fifteen minutes. Write your guesses down.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Do NOT explain it yet. State the contradiction, promise the resolution, move on. The unresolved thread is what buys attention through the next section. Graduate students will start theorising — take two or three guesses onto the board so you can come back to them at the payoff slide. This is a real error found in the Deep Research output that produced the chapter, which is worth mentioning.</aside>
+      </section>
+
+      <!-- DIVIDER 1 -->
+      <section id="divider-1" class="section-divider" data-state="is-section-divider">
+        <h1>A Line Instead of a Lever</h1>
+        <p class="subtitle">The design, the estimand, and the one thing it asks of you</p>
+        <aside class="notes">Section 13.1. Roughly 11 minutes including the poll.</aside>
+      </section>
+
+      <!-- SLIDE 6: The design, drawn -->
+      <section id="rd-design" style="padding: 30px 46px;">
+        <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Draw It Before You Write It</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.55fr 1fr; gap: 22px; align-items: start;">
+            <img src="figures/figure_001_rd_design.png" alt="Scatter of first-year retention against household income with a vertical cutoff at 75,000 dollars, separate local linear fits either side, and an arrow marking the vertical gap between the two limits" style="width: 100%; border-radius: 6px;">
+            <div>
+              <p style="font-size: 14.5pt; line-height: 1.6;">Administrative rules are arbitrary at the margin. Nobody believes <strong><span class="tex2jax_ignore">&#36;74,999</span></strong> and <strong><span class="tex2jax_ignore">&#36;75,001</span></strong> describe meaningfully different families.</p>
+              <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 12px;">The number was chosen because a number had to be chosen. <strong>That arbitrariness is the resource.</strong></p>
+              <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 14px 16px; margin-top: 16px; border-left: 4px solid var(--accent-color);">
+                <p style="font-size: 14pt; line-height: 1.55;">Fit each side separately. If the outcome is smooth in the running variable <em>except</em> for a jump at the threshold, <strong>the jump is the effect</strong> &mdash; because nothing else about people changes discontinuously at an arbitrary number.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Draw this on the board before showing the slide if you can. Ask what has to be true for the gap to be causal and let the class arrive at "nothing else jumps here." Other examples worth naming: class-size cap at 40 pupils, loan approval at a credit score of 680, a drug approved above a clinical threshold. Do not touch bandwidth yet.</aside>
+      </section>
+
+      <!-- SLIDE 7: Formal treatment -->
+      <section id="sharp-rd-formal" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-square-root-variable" style="color: var(--accent-color);"></i> The Estimand Is a Difference of Limits</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 12pt; letter-spacing: 1.5px; color: var(--secondary-color); font-weight: 700;">SHARP ASSIGNMENT</p>
+              <p style="font-size: 17pt; margin: 10px 0 8px;">\[ D_i = \mathbb{1}[R_i \geq c] \]</p>
+              <p style="font-size: 13.5pt; line-height: 1.55;"><strong>In words:</strong> treatment is a switch, and the running variable $R_i$ flips it at the cutoff $c$. By <em>universal convention</em> the switch is on <strong>above</strong> the line.</p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 12pt; letter-spacing: 1.5px; color: var(--accent-color); font-weight: 700;">THE ESTIMAND</p>
+              <p style="font-size: 14pt; margin: 10px 0 8px;">\[ \tau_{SRD} = \lim_{r \downarrow c} E[Y_i \mid R_i = r] - \lim_{r \uparrow c} E[Y_i \mid R_i = r] \]</p>
+              <p style="font-size: 13.5pt; line-height: 1.55;"><strong>In words:</strong> walk in from the right, walk in from the left, measure the gap where the two arrivals fail to meet. These are <em>limits</em>, not group averages.</p>
+            </div>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px; align-items: start;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 12pt; letter-spacing: 1.5px; color: var(--success-color); font-weight: 700;">THE ASSUMPTION &mdash; CONTINUITY</p>
+              <p style="font-size: 14pt; margin: 8px 0;">$E[Y_i(0)\mid R_i=r]$ and $E[Y_i(1)\mid R_i=r]$ are continuous in $r$ at $c$</p>
+              <p style="font-size: 13.5pt; line-height: 1.55;"><strong>In words:</strong> absent treatment, outcomes would have moved <em>smoothly</em> through the threshold.</p>
+            </div>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; border-left: 4px solid #7C3A5F;">
+              <p style="font-size: 12pt; letter-spacing: 1.5px; color: #7C3A5F; font-weight: 700;">THE RESULT &mdash; HAHN, TODD &amp; VAN DER KLAAUW (2001)</p>
+              <p style="font-size: 15pt; margin: 8px 0;">\[ \tau_{SRD} = E[Y_i(1) - Y_i(0) \mid R_i = c] \]</p>
+              <p style="font-size: 13.5pt; line-height: 1.55;"><strong>In words:</strong> the effect for people standing exactly <em>on the line</em>. Not for anyone else.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Say every interpretation line out loud — never present the math bare. Put the direction convention on the board in red and say you will come back to it; the hook has primed them and the payoff is two slides away. The conditioning on R_i = c in the bottom-right box is not a technicality: it is the whole character of the design and the last section of the lecture is about living with it.</aside>
+      </section>
+
+      <!-- SLIDE 8: Continuity is not comparability -->
+      <section id="continuity-not-comparability" style="padding: 32px 52px;">
+        <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Continuity, Not Comparability</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 24px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 16pt; line-height: 1.6;">RD does <strong>not</strong> assume the treated and untreated groups are similar. It assumes the conditional expectation function is <strong>smooth through the cutoff</strong>.</p>
+            <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 10px; color: var(--muted-color);">Richer families may have systematically higher retention &mdash; fine, if the relationship is smooth. Confounders may be arbitrarily strong &mdash; fine, if they vary smoothly with income. You are not claiming the groups are alike. You are claiming that whatever makes them differ does so <em>gradually</em>.</p>
+          </div>
+          <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">It fails in exactly two identifiable ways &mdash; and we test for both after the break:</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 10px;">
+            <div class="fragment fade-up" style="background: #fdf3f0; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">Manipulation</p>
+              <p style="font-size: 14pt; line-height: 1.55; margin-top: 7px;">People control which side they land on. Those just below are better informed, better advised, more able to restructure income. The <em>sorting</em> is not arbitrary, so the threshold stops being arbitrary.</p>
+            </div>
+            <div class="fragment fade-up" style="background: #fdf3f0; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">Compound treatment</p>
+              <p style="font-size: 14pt; line-height: 1.55; margin-top: 7px;">Something <em>else</em> uses the same cutoff. Your jump is the combined effect of both programmes, and no statistical care disentangles them. A design problem, not an estimation problem.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">This is the most common misunderstanding among students arriving from matching, and it is worth the whole slide. Note that "the groups are similar" is STRONGER than what RD needs, not weaker — students usually assume they are being asked for more, not less. Compound treatment is the objection a good referee raises first; flag that we return to it at the very end because no test detects it.</aside>
+      </section>
+
+      <!-- SLIDE 9: Four designs -->
+      <section id="four-designs" style="padding: 30px 48px;">
+        <h2><i class="fa-solid fa-table-columns" style="color: var(--secondary-color);"></i> The Module, on One Slide</h2>
+        <div class="content">
+          <table class="table-standard" style="font-size: 13.5pt; width: 100%;">
+            <thead>
+              <tr>
+                <th style="width: 17%;"></th>
+                <th>Ch 10</th>
+                <th>Ch 11</th>
+                <th>Ch 12</th>
+                <th style="background: #eef3f7;">Ch 13</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Strategy</strong></td>
+                <td>Selection on observables</td>
+                <td>Difference-in-differences</td>
+                <td>Instrumental variables</td>
+                <td style="background: #f6f9fb;"><strong>Regression discontinuity</strong></td>
+              </tr>
+              <tr>
+                <td><strong>What you need</strong></td>
+                <td>Every confounder, measured</td>
+                <td>A parallel control group</td>
+                <td>An exogenous lever</td>
+                <td style="background: #f6f9fb;"><strong>A strict threshold</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Key assumption</strong></td>
+                <td>No unmeasured confounding</td>
+                <td>Parallel trends</td>
+                <td>Exclusion restriction</td>
+                <td style="background: #f6f9fb;"><strong>Continuity at the cutoff</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Testable?</strong></td>
+                <td>No</td>
+                <td>No</td>
+                <td>No</td>
+                <td style="background: #f6f9fb; color: var(--success-color);"><strong>Partly &mdash; and that is the point</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Estimand</strong></td>
+                <td>ATE / ATT</td>
+                <td>ATT</td>
+                <td>LATE (compliers)</td>
+                <td style="background: #f6f9fb; color: var(--danger-color);"><strong>LATE (at the cutoff)</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+            <div style="background: #eef4ee; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 14pt;"><strong>Why RD is prized.</strong> The other three rest on assumptions unfalsifiable <em>in principle</em>. RD's has observable implications.</p>
+            </div>
+            <div style="background: #fdf3f0; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14pt;"><strong>What you pay.</strong> The estimand. An effect at the cutoff, for people at the line &mdash; often nobody's population of interest.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Spend most of the time on the "Testable?" row — it is why RD is held in the regard it is. You cannot prove continuity, but unlike parallel trends or exclusion you can go looking for evidence against it. Then immediately name the price, so the trade is on the table before the poll.</aside>
+      </section>
+
+      <!-- POLL 1 (vertical stack) -->
+      <section>
+        <section id="poll-1" style="padding: 34px 52px;">
+          <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Does RD Actually Require?</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+            <p style="font-size: 16pt; line-height: 1.6;">A sharp RD design identifies the effect at the cutoff. Which of these does it <strong>actually require</strong>?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch13-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>A.</strong> Households just above and just below the cutoff are similar on observables</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>B.</strong> The conditional expectation of the outcome is smooth through the cutoff</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>C.</strong> Treatment is randomly assigned within the bandwidth</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>D.</strong> The running variable is uncorrelated with the outcome</div>
+          </div>
+          <button class="reset-btn" onclick="clearPoll('ch13-econ5200-poll-1')" style="margin-top: 12px; padding: 6px 14px; font-size: 12pt; cursor: pointer;">Reset Poll</button>
+          <aside class="notes">Students click to vote on their devices; results render live on the next slide. Give them 60 seconds. If the room splits between A and B, that split is the most useful diagnostic of the whole lecture — run the "richer families have higher retention and RD is fine with that" example on the spot before revealing.</aside>
+        </section>
+
+        <section id="poll-1-results" data-poll-results="ch13-econ5200-poll-1" style="padding: 30px 52px;">
+          <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Smoothness, Not Similarity</h2>
+          <div class="poll-results-chart" data-poll-id="ch13-econ5200-poll-1" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 155px; margin: 10px 60px 28px;"></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="background: #fdf3f0; border-left: 4px solid var(--danger-color); padding: 13px 18px; border-radius: 8px;">
+              <p style="font-size: 13.5pt; line-height: 1.55;"><strong>A is the tempting one.</strong> It is the matching intuition &mdash; and note that it is <em>stronger</em> than what RD needs, not weaker.</p>
+            </div>
+            <div style="background: #fdf3f0; border-left: 4px solid var(--danger-color); padding: 13px 18px; border-radius: 8px;">
+              <p style="font-size: 13.5pt; line-height: 1.55;"><strong>C</strong> is what RD <em>approximates</em>, not what it assumes. <strong>D</strong> is false and would be fatal &mdash; the running variable is <em>supposed</em> to predict the outcome.</p>
+            </div>
+          </div>
+          <aside class="notes">Lee (2008) makes a local-randomisation argument, which is why C feels right — but the identification result of Hahn, Todd and Van der Klaauw rests on continuity, not randomisation. On D: if the running variable did not predict the outcome you would not need to model the smooth part at all, and the whole apparatus of local polynomials would be unnecessary.</aside>
+        </section>
+      </section>
+
+      <!-- DIVIDER 2 -->
+      <section id="divider-2" class="section-divider" data-state="is-section-divider">
+        <h1>Estimating the Jump</h1>
+        <p class="subtitle">Where the hook gets paid off &mdash; and why local beats global</p>
+        <aside class="notes">Section 13.2. About 13 minutes including the discussion. This section carries the hook's payoff; do not rush it.</aside>
+      </section>
+
+      <!-- SLIDE: Sign convention -->
+      <section id="sign-convention" style="padding: 24px 44px;">
+        <h2><i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--danger-color);"></i> Right Minus Left &mdash; Always</h2>
+        <div class="content">
+          <img src="figures/figure_002_sign_convention.png" alt="Two panels of the same threshold programme: with the raw running variable the treated units sit on the left and the estimate is minus 0.0553, and re-centred so treatment lies above zero the estimate is plus 0.0541" style="width: 88%; margin: 0 auto; display: block; border-radius: 6px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 12px; align-items: start;">
+            <div style="background: #fdf3f0; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;">Our programme covers tuition <strong>at or below <span class="tex2jax_ignore">&#36;75,000</span></strong>. Written the natural way &mdash; <code>R = income - 75_000</code>, <code>D = (R &lt;= 0)</code> &mdash; it is substantively correct and <strong>computationally poisonous</strong>. <code>rdrobust</code> estimates $\lim_{r \downarrow c} - \lim_{r \uparrow c}$: it reports the jump as you cross <em>upward into ineligibility</em>.</p>
+            </div>
+            <div style="background: #eef4ee; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;">The fix is one line. Define the running variable as <strong>distance below the threshold</strong>, so treatment lies above zero:</p>
+              <pre style="margin-top: 6px;"><code style="font-size: 12pt;">R = CUTOFF - income
+eligible = (R &gt;= 0).astype(int)</code></pre>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Here is the payoff. Go back to the guesses on the board first. If you can run this live, do: the wrong-sign version, let the room sit with minus 0.0553, then change the one line and rerun. The reaction is the point and no figure reproduces it. This figure is the fallback.</aside>
+      </section>
+
+      <!-- SLIDE: The fix + misconception -->
+      <section id="sign-fix" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-check-double" style="color: var(--success-color);"></i> Same Data, Same Call, One Line Apart</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start;">
+            <div>
+              <pre><code style="font-size: 12.5pt;">out = rdrobust(y=Y, x=R, c=0,
+               p=1, kernel='tri')</code></pre>
+              <pre style="margin-top: 10px;"><code style="font-size: 12.5pt;">Conventional: +0.0541  (SE 0.0032)
+Robust:       +0.0548
+      95% CI [+0.0474, +0.0622]
+
+h (MSE-optimal):  8,381
+b (bias bw):     13,459
+n used: 2,112 left, 2,175 right</code></pre>
+              <div style="background: #eef4ee; border-radius: 8px; padding: 12px 18px; margin-top: 12px; border-left: 4px solid var(--success-color);">
+                <p style="font-size: 14.5pt;"><strong>True effect = 0.05.</strong> The interval contains it.</p>
+              </div>
+            </div>
+            <div style="background: #fdf3f0; border-radius: 10px; padding: 18px 22px; border-left: 5px solid var(--danger-color);">
+              <p style="font-size: 12pt; letter-spacing: 1.5px; color: var(--danger-color); font-weight: 700;">COMMON MISCONCEPTION</p>
+              <p style="font-size: 15.5pt; font-weight: 700; margin-top: 8px;">&ldquo;The package knows which side is treated.&rdquo;</p>
+              <p style="font-size: 14pt; line-height: 1.55; margin-top: 10px;">It does not, and it cannot. <code>rdrobust</code> sees a running variable, a cutoff, and an outcome. Every means-tested benefit, every low-income subsidy, every &ldquo;you qualify if your score is <em>under</em> X&rdquo; rule assigns treatment below the line.</p>
+              <p style="font-size: 14pt; line-height: 1.55; margin-top: 10px;">Pass the raw variable and you get a correctly-computed number with the wrong sign, <strong>and no warning</strong>.</p>
+              <p style="font-size: 15pt; line-height: 1.55; margin-top: 12px; color: var(--danger-color);"><strong>The plot is the check.</strong> If the estimate says positive and the picture shows the treated side lower, believe the picture.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Tie it forward explicitly: Lab 13 opens on exactly this trap, so anyone who sleeps through this slide meets it again with their own grade attached. Also worth saying: this error is not hypothetical — it is what the automated research run that produced this chapter actually did.</aside>
+      </section>
+
+      <!-- DISCUSSION 1 -->
+      <section id="discussion-1" style="padding: 32px 52px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Which Side Is Treated?</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; padding: 22px 26px; border-radius: 12px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 600; line-height: 1.55;">Name three real programmes whose eligibility rule assigns treatment <em>below</em> a threshold.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+            <div style="padding: 15px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">For each one:</p>
+              <p style="font-size: 14.5pt; margin-top: 7px; line-height: 1.55;">What would <code>rdrobust</code> report if you passed the raw running variable?</p>
+            </div>
+            <div style="padding: 15px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">The harder half:</p>
+              <p style="font-size: 14.5pt; margin-top: 7px; line-height: 1.55;">How would you know something was wrong <em>without</em> knowing the truth?</p>
+            </div>
+          </div>
+          <p style="margin-top: 20px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span></p>
+        </div>
+        <aside class="notes">Expected: Medicaid and CHIP income limits, SNAP, Pell Grant EFC, subsidised school meals at 130/185% of the poverty line, insurance premium subsidies, credit approval below a risk score. Push hard on the detection half — the answer is not a statistic, it is the plot, plus the sanity check that the sign matches the direction the programme is supposed to work in. Close with: "Every one of these is a paper somebody has published. Some of them have the sign right."</aside>
+      </section>
+
+      <!-- SLIDE: Global vs local -->
+      <section id="global-vs-local" style="padding: 26px 46px;">
+        <h2><i class="fa-solid fa-crosshairs" style="color: var(--accent-color);"></i> Why Local, and Not Global</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; align-items: start;">
+            <img src="figures/figure_003_global_vs_local.png" alt="An S-shaped outcome in which a global linear fit with a treatment dummy manufactures a negative jump at the cutoff while a local linear fit inside the bandwidth recovers the true positive jump" style="width: 100%; border-radius: 6px;">
+            <div>
+              <p style="font-size: 14pt; line-height: 1.55;">A global fit must explain the outcome across the <em>entire</em> support. Whatever form it adopts to fit households at <span class="tex2jax_ignore">&#36;45,000</span> and <span class="tex2jax_ignore">&#36;105,000</span> is then <strong>imposed at the cutoff</strong>, where you actually care.</p>
+              <p style="font-size: 14pt; line-height: 1.55; margin-top: 10px;">A straight line cannot bend to follow an S-curve, so it does the only thing it can: it explains the curvature by <strong>inventing a jump</strong>.</p>
+              <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 13px 17px; margin-top: 13px; border-left: 4px solid var(--secondary-color);">
+                <p style="font-size: 13.5pt; line-height: 1.5;"><strong>RD is local twice over.</strong> Local in <em>estimation</em> &mdash; only observations inside $h$ contribute, nearer ones count more (<code>kernel='tri'</code>). Local in <em>interpretation</em> &mdash; the estimand is defined at the cutoff. You buy a very clean answer to a very small question.</p>
+              </div>
+              <p style="font-size: 13pt; line-height: 1.5; margin-top: 11px; color: var(--muted-color);">Gelman &amp; Imbens (2019): high-degree global polynomials are not the fix &mdash; degree three and above behave erratically near the data boundaries and give extreme weight to distant outliers.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footnote">Figure re-simulates the chapter's S-curve design with a fresh draw; the chapter's own draw reports a global degree-1 estimate of &minus;0.0137 against the same true jump of +0.0500. The lesson is the sign, not the third decimal.</div>
+        <aside class="notes">Show the global number and ask what went wrong BEFORE explaining — students usually spot that a line cannot follow the curve. Note this is the second wrong sign of the lecture and it has a completely different cause from the first: the hook's was a convention error, this one is a functional-form error. Both produce a confident number pointing the wrong way.</aside>
+      </section>
+
+      <!-- DIVIDER 3 -->
+      <section id="divider-3" class="section-divider" data-state="is-section-divider">
+        <h1>Bandwidth</h1>
+        <p class="subtitle">The bias&ndash;variance tradeoff, made literal &mdash; with a knob attached</p>
+        <aside class="notes">Section 13.3. About 14 minutes including the poll. This is the section that seeds Chapter 15.</aside>
+      </section>
+
+      <!-- SLIDE: The knob + MC table -->
+      <section id="bandwidth-knob" style="padding: 26px 46px;">
+        <h2><i class="fa-solid fa-sliders" style="color: var(--secondary-color);"></i> How Far Are You Willing to Look?</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 22px; align-items: start;">
+            <div>
+              <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+                <p style="font-size: 16pt; margin-bottom: 6px;">\[ \mathrm{MSE}(h) = \mathrm{Bias}(h)^2 + \mathrm{Var}(h) \]</p>
+                <p style="font-size: 13.5pt; line-height: 1.5;"><strong>In words:</strong> widening the window buys precision and sells comparability. There is a middle, and the selector is picking it.</p>
+              </div>
+              <p style="font-size: 14pt; line-height: 1.55; margin-top: 13px;"><strong>Narrow $h$:</strong> only households very close to the line, who are very comparable &mdash; <em>low bias</em> &mdash; but few of them, so the estimate is <em>noisy</em>.</p>
+              <p style="font-size: 14pt; line-height: 1.55; margin-top: 9px;"><strong>Wide $h$:</strong> more observations and more precision, but you drag in households the local linear fit only approximately corrects for &mdash; <em>bias</em>.</p>
+              <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 12px 17px; margin-top: 13px; border-left: 4px solid #7C3A5F;">
+                <p style="font-size: 13.5pt; line-height: 1.5;">This is not an analogy for the bias&ndash;variance tradeoff. It <strong>is</strong> the tradeoff. Ch 15 gives the formal decomposition; here you meet it as a parameter you must choose.</p>
+              </div>
+            </div>
+            <div>
+              <p style="font-size: 13pt; color: var(--muted-color); font-style: italic; margin-bottom: 6px;">One draw cannot separate bias from noise. 300 draws can &mdash; measured in Lab 13, true jump +0.0800:</p>
+              <table class="table-standard" style="font-size: 13pt; width: 100%;">
+                <thead>
+                  <tr><th style="text-align:right;">$h$</th><th style="text-align:right;">bias</th><th style="text-align:right;">MC sd</th><th style="text-align:right;">RMSE</th><th style="text-align:right;">bias %</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td style="text-align:right;">3</td><td style="text-align:right;">&minus;0.0003</td><td style="text-align:right;">0.0309</td><td style="text-align:right;">0.0309</td><td style="text-align:right;">&minus;0.3%</td></tr>
+                  <tr><td style="text-align:right;">5</td><td style="text-align:right;">&minus;0.0008</td><td style="text-align:right;">0.0242</td><td style="text-align:right;">0.0242</td><td style="text-align:right;">&minus;1.0%</td></tr>
+                  <tr><td style="text-align:right;">8</td><td style="text-align:right;">&minus;0.0020</td><td style="text-align:right;">0.0166</td><td style="text-align:right;">0.0168</td><td style="text-align:right;">&minus;2.6%</td></tr>
+                  <tr><td style="text-align:right;">12</td><td style="text-align:right;">&minus;0.0031</td><td style="text-align:right;">0.0141</td><td style="text-align:right;">0.0144</td><td style="text-align:right;">&minus;3.9%</td></tr>
+                  <tr style="background: #eef4ee;"><td style="text-align:right;"><strong>20</strong></td><td style="text-align:right;"><strong>&minus;0.0068</strong></td><td style="text-align:right;"><strong>0.0107</strong></td><td style="text-align:right;"><strong>0.0127</strong></td><td style="text-align:right;"><strong>&minus;8.5%</strong></td></tr>
+                  <tr><td style="text-align:right;">35</td><td style="text-align:right;">&minus;0.0194</td><td style="text-align:right;">0.0083</td><td style="text-align:right;">0.0211</td><td style="text-align:right;">&minus;24.2%</td></tr>
+                  <tr><td style="text-align:right;">50</td><td style="text-align:right;">&minus;0.0382</td><td style="text-align:right;">0.0071</td><td style="text-align:right;">0.0389</td><td style="text-align:right;">&minus;47.8%</td></tr>
+                </tbody>
+              </table>
+              <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 7px;">Bias grows roughly with $h^2$; the sd falls roughly with $1/\sqrt{h}$.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Have the class read the MC sd column BEFORE the bias column — the two move in opposite directions and that is the whole slide. Say plainly that this IS the bias-variance tradeoff and that Ch 15 will decompose it; graduate students appreciate knowing a formalism is coming rather than being told to take it on faith.</aside>
+      </section>
+
+      <!-- SLIDE: Bias-variance figure -->
+      <section id="bias-variance-figure" style="padding: 26px 46px;">
+        <h2><i class="fa-solid fa-chart-area" style="color: var(--accent-color);"></i> Both Ends of the Grid Are Wrong</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start;">
+            <img src="figures/figure_004_bias_variance.png" alt="Absolute bias rising with bandwidth, Monte Carlo standard deviation falling with bandwidth, and RMSE forming a U-shape minimised near h equals 20, with the rdrobust data-driven choice of 16.1 marked" style="width: 100%; border-radius: 6px;">
+            <div>
+              <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+                <p style="font-size: 14pt; line-height: 1.55;"><strong>At $h = 3$:</strong> bias is 0.3% of the truth &mdash; and the MC sd is <strong>0.031, nearly 40% of the jump itself</strong>. You could not distinguish the effect from zero in most single draws.</p>
+              </div>
+              <div style="background: #fdf3f0; border-radius: 8px; padding: 13px 18px; margin-top: 12px; border-left: 4px solid var(--danger-color);">
+                <p style="font-size: 14pt; line-height: 1.55;"><strong>At $h = 50$:</strong> the sd has fallen to 0.007 and the estimate is <strong>barely half the truth</strong>. Precisely wrong.</p>
+              </div>
+              <div style="background: #eef4ee; border-radius: 8px; padding: 13px 18px; margin-top: 12px; border-left: 4px solid var(--success-color);">
+                <p style="font-size: 14pt; line-height: 1.55;"><strong>RMSE minimised near $h = 20$.</strong> On the single draw, <code>rdrobust</code>'s data-driven selector chose <strong>16.1</strong> &mdash; the right neighbourhood, and slightly conservative.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Note the crossing point: |bias| and MC sd cross a little below h = 20, which is roughly where RMSE bottoms out. That crossing is the visual signature of every bias-variance tradeoff they will meet for the rest of the course, and it is worth naming as such now.</aside>
+      </section>
+
+      <!-- POLL 2 (vertical stack) -->
+      <section>
+        <section id="poll-2" style="padding: 34px 52px;">
+          <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Which Bandwidth Would You Use?</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+            <p style="font-size: 16pt; line-height: 1.6;">From the Monte Carlo table &mdash; true jump +0.0800, 300 replications &mdash; which bandwidth would you <strong>actually use</strong>?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch13-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>A.</strong> $h = 3$ &mdash; the bias is only 0.3% of the truth</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>B.</strong> $h = 20$ &mdash; RMSE is minimised there</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>C.</strong> $h = 50$ &mdash; the standard deviation is smallest</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>D.</strong> Whichever one <code>rdrobust</code> reports, without looking</div>
+          </div>
+          <button class="reset-btn" onclick="clearPoll('ch13-econ5200-poll-2')" style="margin-top: 12px; padding: 6px 14px; font-size: 12pt; cursor: pointer;">Reset Poll</button>
+          <aside class="notes">Leave the table visible if you can — this is a reading-comprehension poll, not a recall poll. D is the answer most of them actually practise, and the debrief is aimed squarely at it.</aside>
+        </section>
+
+        <section id="poll-2-results" data-poll-results="ch13-econ5200-poll-2" style="padding: 28px 52px;">
+          <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; And D Is the Dangerous One</h2>
+          <div class="poll-results-chart" data-poll-id="ch13-econ5200-poll-2" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 150px; margin: 8px 60px 24px;"></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div style="background: #fdf3f0; border-left: 4px solid var(--danger-color); padding: 12px 16px; border-radius: 8px;">
+              <p style="font-size: 13pt; line-height: 1.5;"><strong>A</strong> optimises bias alone and buys it with an MC sd of 0.031 against a jump of 0.08.</p>
+            </div>
+            <div style="background: #fdf3f0; border-left: 4px solid var(--danger-color); padding: 12px 16px; border-radius: 8px;">
+              <p style="font-size: 13pt; line-height: 1.5;"><strong>C</strong> optimises variance alone and returns half the truth. Precisely wrong.</p>
+            </div>
+            <div style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 12px 16px; border-radius: 8px;">
+              <p style="font-size: 13pt; line-height: 1.5;"><strong>D</strong> stings because it is what most people do &mdash; and it lands close to right <em>here</em> (16.1), which is exactly why it is dangerous.</p>
+            </div>
+          </div>
+          <div style="background: #eef4ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14.5pt; line-height: 1.55;">The selector is optimising <strong>asymptotic MSE under its own assumptions about the DGP</strong>. That is a choice, not a discovery &mdash; and it is why you still report the sensitivity table.</p>
+          </div>
+          <aside class="notes">The last box is the transferable lesson: an automated choice is still a choice, and the fact that it is defensible does not make it invisible. Same point will return in Ch 15 for hyperparameter tuning and in Ch 24 for nuisance-model selection.</aside>
+        </section>
+      </section>
+
+      <!-- SLIDE: Curvature placement -->
+      <section id="curvature-placement" style="padding: 22px 44px;">
+        <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Why the Lab's Curvature Sits <em>Off</em> the Cutoff</h2>
+        <div class="content">
+          <img src="figures/figure_005_curvature_placement.png" alt="Left panel comparing a data-generating process with curvature centred at the cutoff against one whose curvature differs by side; right panel showing that the symmetric process gives zero bias at every bandwidth while the asymmetric one has bias growing with the bandwidth" style="width: 80%; margin: 0 auto; display: block; border-radius: 6px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 12px;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;">If both sides curve <strong>identically</strong>, widening $h$ biases the left limit and the right limit by <em>exactly the same amount</em> &mdash; and the bias cancels in the difference. Every bandwidth looks unbiased.</p>
+            </div>
+            <div style="background: #eef4ee; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;">The lab curves <strong>differently by side</strong> &mdash; <code>-6e-5&middot;x&sup2;</code> below, <code>+3e-5&middot;x&sup2;</code> above. That asymmetry is what makes widening the window actually cost you.</p>
+            </div>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; margin-top: 11px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 14pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Think like an economist.</strong> When you build a simulation to study a method, ask what it has quietly assumed away. A symmetric DGP is not a neutral choice &mdash; it is a choice that makes the estimator look better than it is.</p>
+          </div>
+        </div>
+        <aside class="notes">Ninety seconds, no more, but do not cut it: this is a real trap in designing your own Monte Carlos, and the lab was rebuilt for exactly this reason. An earlier version put the curvature at the cutoff and the bandwidth exercise showed nothing at all — every h came back unbiased and the tradeoff was invisible.</aside>
+      </section>
+
+      <!-- SLIDE: MSE vs CE optimal -->
+      <section id="mse-vs-ce" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-scale-balanced" style="color: var(--secondary-color);"></i> The Bandwidth for the Estimate Is Not the Bandwidth for the Interval</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 12pt; letter-spacing: 1.5px; color: var(--secondary-color); font-weight: 700;">CALONICO, CATTANEO &amp; TITIUNIK (2014)</p>
+              <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">A data-driven bandwidth minimising the <strong>asymptotic MSE of the point estimator</strong>. <code>rdrobust</code> computes it by default.</p>
+            </div>
+            <div style="background: #fdf3f0; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 12pt; letter-spacing: 1.5px; color: var(--danger-color); font-weight: 700;">CALONICO, CATTANEO &amp; FARRELL (2020)</p>
+              <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">At $h_{MSE}$ the bias shrinks at the <em>same rate</em> as the standard deviation, so it never vanishes relative to the noise &mdash; and a nominal 95% interval can cover the truth <strong>substantially less than 95%</strong> of the time.</p>
+            </div>
+          </div>
+          <div class="fragment fade-up" style="background: #eef4ee; border-radius: 8px; padding: 14px 20px; margin-top: 14px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; line-height: 1.55;"><strong>Robust bias correction.</strong> Estimate the bias with a second, wider bandwidth $b$; subtract it; inflate the standard errors to account for having estimated it. That is what the &ldquo;Robust&rdquo; row reports &mdash; and why it differed from the conventional row earlier (+0.0548 vs +0.0541) and carried a wider interval.</p>
+            <p style="font-size: 16pt; margin-top: 10px; color: var(--success-color);"><strong>Report the robust row.</strong> The conventional row is the point estimate; the robust row is the one whose confidence interval means what it says.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; margin-top: 12px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 14pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Always report a sensitivity table.</strong> 0.054 at the optimal $h$, 0.055 at half, 0.053 at double &rarr; you have a result. 0.054, 0.011, 0.089 &rarr; you have an artifact and no finding. <strong>The table is not an appendix. It is the result.</strong></p>
+          </div>
+        </div>
+        <aside class="notes">This is the most technically exposed moment in the lecture. State the result and the intuition — the bias has to vanish faster than the variance for the interval to be honest — and do NOT derive it. Point the student who asks to Calonico, Cattaneo and Farrell (2020) and move on. Also worth naming the common misconception here: "a wider bandwidth uses more data so it must be better" — the extreme case is a bandwidth wide enough to include everyone, which is just the global regression that returned the wrong sign two sections ago.</aside>
+      </section>
+
+      <!-- DIVIDER 4 -->
+      <section id="divider-4" class="section-divider" data-state="is-section-divider">
+        <h1>Testing a Design That Can Be Tested</h1>
+        <p class="subtitle">Density, balance, placebos &mdash; and how to read a false positive</p>
+        <aside class="notes">Section 13.4. About 14 minutes including the discussion. This is where RD earns its reputation.</aside>
+      </section>
+
+      <!-- SLIDE: Density test -->
+      <section id="density-test" style="padding: 22px 44px;">
+        <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--danger-color);"></i> Test 1 &mdash; Manipulation, via the Density</h2>
+        <div class="content">
+          <img src="figures/figure_006_density_test.png" alt="Histograms of the running variable near the cutoff: clean data with a smooth density and a jackknife p-value of 0.759, and manipulated data with a hole just above the threshold, a pile-up just below it, and a p-value of 0.000" style="width: 90%; margin: 0 auto; display: block; border-radius: 6px;">
+          <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; margin-top: 12px;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;">Sorting leaves a fingerprint: a pile-up on the favourable side, a hole on the other. McCrary (2008) required <em>binning</em>, and the bin width was a researcher degree of freedom. <strong>Cattaneo, Jansson &amp; Ma (2020)</strong> replaced it with a local polynomial density estimator on the raw variable &mdash; no binning.</p>
+            </div>
+            <div style="background: #eef4ee; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;"><strong>When manipulation is implausible, say <em>why</em>.</strong> Financial aid uses prior-prior-year tax data, so a family applying in 2026 cannot restructure its 2024 income. That argument is worth more than any $p$-value &mdash; and you get it by reading the programme's rules, not its data.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Run the test on clean data first, then on manipulated data, and let the jump from p = 0.76 to p = 0.000 make the case. The diagnostic works in both directions, which is what you want. The `rddensity` call is one line: `rddensity(X=R, c=0)`, and you select `t_jk` / `p_jk` explicitly because the asymptotic rows come back NaN.</aside>
+      </section>
+
+      <!-- SLIDE: Covariate balance -->
+      <section id="covariate-balance" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--secondary-color);"></i> Test 2 &mdash; Covariate Balance at the Cutoff</h2>
+        <div class="content">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Under continuity, variables determined <strong>before</strong> treatment must not jump at the cutoff. So run the same RD with a pre-determined covariate as the outcome.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; align-items: start;">
+            <div>
+              <pre><code style="font-size: 12.5pt;">balance = rdrobust(y=hs_gpa, x=R,
+                   c=0, p=1, kernel='tri')</code></pre>
+              <pre style="margin-top: 10px;"><code style="font-size: 12.5pt;">HS GPA jump: +0.0286
+             (SE 0.0272)  p = 0.409</code></pre>
+              <div style="background: #eef4ee; border-radius: 8px; padding: 12px 18px; margin-top: 12px; border-left: 4px solid var(--success-color);">
+                <p style="font-size: 14.5pt;">GPA does not jump. <strong>Retention does</strong>, large and precisely estimated.</p>
+              </div>
+            </div>
+            <div>
+              <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 19px; border-left: 4px solid var(--secondary-color);">
+                <p style="font-size: 14.5pt; line-height: 1.55;"><strong>That contrast is the evidence</strong> &mdash; not the $p$-value on its own. A failure to reject can always reflect low power.</p>
+              </div>
+              <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 19px; margin-top: 13px; border-left: 4px solid #7C3A5F;">
+                <p style="font-size: 14.5pt; line-height: 1.55;"><strong>Callback to Ch 9.</strong> This is the balance table you run after a randomised experiment, applied at a threshold instead of across arms. The logic is identical because the claim is identical: <em>assignment is as good as random here</em>.</p>
+              </div>
+              <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; font-style: italic;">In the lab you write this test yourself &mdash; then deliberately break a covariate and confirm the test catches it.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Emphasise the contrast framing. A student who reports "p = 0.409, balance passes" and stops has missed the argument; the point is that the covariate is flat where the outcome is not, and the two were estimated the same way on the same data with the same bandwidth.</aside>
+      </section>
+
+      <!-- SLIDE: Placebo cutoffs -->
+      <section id="placebo-cutoffs" style="padding: 26px 44px;">
+        <h2><i class="fa-solid fa-vial" style="color: var(--accent-color);"></i> Test 3 &mdash; Placebo Cutoffs, and an Inconvenient One</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; align-items: start;">
+            <img src="figures/figure_007_placebo_cutoffs.png" alt="RD estimates with confidence intervals at four fake cutoffs and at the real cutoff; three fake cutoffs are null, the fake cutoff at minus ten thousand is a significant false positive, and the real cutoff is an order of magnitude larger than any of them" style="width: 100%; border-radius: 6px;">
+            <div>
+              <p style="font-size: 14pt; line-height: 1.55;">Run the analysis at thresholds where nothing happened. A design that finds effects at fake cutoffs is finding noise or misspecification.</p>
+              <div class="fragment fade-up" style="background: #fdf3f0; border-radius: 8px; padding: 13px 18px; margin-top: 12px; border-left: 4px solid var(--danger-color);">
+                <p style="font-size: 14pt; line-height: 1.5;">At $c = -10{,}000$: <strong>$p = 0.036$</strong>, on data where <em>by construction nothing whatsoever happened</em>.</p>
+                <p style="font-size: 14pt; line-height: 1.5; margin-top: 8px;">That is not a flaw in the demonstration. <strong>It is the demonstration.</strong></p>
+              </div>
+              <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 12px; border-left: 4px solid #7C3A5F;">
+                <p style="font-size: 13.5pt; line-height: 1.5;"><strong>Ch 8, inside a robustness check.</strong> Four tests at the 5% level on null data reject about one time in five. Read placebos as a <em>pattern</em>, not a series of hypothesis tests.</p>
+                <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 8px;">The question is not &ldquo;did any placebo reject?&rdquo; but &ldquo;is the real effect distinguishable from the distribution of fake ones?&rdquo; Here: <strong>+0.054</strong> against a spread of roughly <strong>&plusmn;0.01</strong>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Highest-value teaching moment in the section. Ask why a cutoff with nothing at it returned p = 0.036 and WAIT — someone will get to multiple testing, and the Ch 8 callback lands much harder coming from the room than from you. Then go straight into the discussion.</aside>
+      </section>
+
+      <!-- DISCUSSION 2 -->
+      <section id="discussion-2" style="padding: 32px 52px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Inconvenient Placebo</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; padding: 20px 26px; border-radius: 12px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 16.5pt; font-weight: 600; line-height: 1.55;">Your placebo at $c = -10{,}000$ returns $p = 0.036$ &mdash; on data where you <em>know</em> nothing happened. Your referee will find it.</p>
+            <p style="font-size: 15pt; line-height: 1.55; margin-top: 10px; color: var(--muted-color);">What goes in the paper?</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+            <div style="padding: 14px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">Think about:</p>
+              <p style="font-size: 14.5pt; margin-top: 6px; line-height: 1.5;">How do you present the placebos so the <em>pattern</em> is what the reader sees?</p>
+            </div>
+            <div style="padding: 14px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">Consider:</p>
+              <p style="font-size: 14.5pt; margin-top: 6px; line-height: 1.5;">What placebo result <em>would</em> make you abandon the design?</p>
+            </div>
+          </div>
+          <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span></p>
+        </div>
+        <aside class="notes">Push for three things. (1) Report it — a reader who finds it themselves assumes you hid it, which is a worse paper than one with an awkward number in it. (2) Interpret the pattern: show the distribution of placebo estimates with the real one against it; magnitude does the work p-values cannot. (3) Name what would change your mind — a placebo comparable in MAGNITUDE to the real effect, or one that survives varying the bandwidth, or several rejecting in the same direction. That third one is the honest answer and students rarely reach it unprompted.</aside>
+      </section>
+
+      <!-- DIVIDER 5 -->
+      <section id="divider-5" class="section-divider" data-state="is-section-divider">
+        <h1>Real Data, and Real Limits</h1>
+        <p class="subtitle">What the design buys, and what it refuses to tell you</p>
+        <aside class="notes">Sections 13.4b through 13.6. About 20 minutes including Poll 3 and the closing discussion.</aside>
+      </section>
+
+      <!-- SLIDE: Senate -->
+      <section id="senate-incumbency" style="padding: 28px 48px;">
+        <h2><i class="fa-solid fa-landmark" style="color: var(--secondary-color);"></i> A Real One &mdash; Incumbency Advantage</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+            <div>
+              <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+                <p style="font-size: 12pt; letter-spacing: 1.5px; color: var(--secondary-color); font-weight: 700;">DATA SNAPSHOT</p>
+                <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 7px;"><strong>U.S. Senate elections, 1914&ndash;2004.</strong> 1,297 state-level races. Running variable: the Democratic party's <strong>margin of victory in the previous election</strong> for that seat, centred at zero. Outcome: Democratic vote share in the <em>next</em> election for the same seat. Distributed with <code>rdrobust</code>; design descends from Lee (2008).</p>
+              </div>
+              <pre style="margin-top: 11px;"><code style="font-size: 12pt;">Conventional: +7.414  (SE 1.459)
+Robust:       +7.507
+      95% CI [+4.094, +10.919]
+h = 17.75 margin points
+n used: 360 left, 323 right
+density test p = 0.447</code></pre>
+            </div>
+            <div>
+              <p style="font-size: 14pt; line-height: 1.55;">The naive comparison is hopeless: parties that won last time are stronger, better funded and more popular &mdash; and all of that persists and also predicts winning next time. Among races decided by a hair, which party ended up ahead is close to a coin flip.</p>
+              <div class="fragment fade-up" style="background: #eef4ee; border-radius: 8px; padding: 14px 19px; margin-top: 13px; border-left: 4px solid var(--success-color);">
+                <p style="font-size: 14.5pt; line-height: 1.55;"><strong>The density test is the <em>less</em> important half of the argument.</strong></p>
+                <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">The important half is the mechanism: <strong>a candidate cannot fine-tune their vote margin.</strong> You can campaign harder, spend more, turn out more voters &mdash; you cannot arrange to win by 0.4 points rather than lose by 0.4.</p>
+              </div>
+              <p style="font-size: 13pt; line-height: 1.5; margin-top: 11px; color: var(--muted-color);">That is what a strong continuity argument sounds like. A test that fails to reject can reflect low power &mdash; exactly as with pre-trends in Ch 11. The statistic <em>supports</em> the argument; it does not substitute for it.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Run this live if you can — it is real data over a network in two lines, and the contrast with the simulation is the point. Ask BEFORE running the density test whether they expect manipulation, and make them articulate why not. "You cannot fine-tune your vote margin" is the single clearest institutional continuity defence in the book. Then ask what population the 7.5 points describes, which sets up the poll.</aside>
+      </section>
+
+      <!-- POLL 3 (vertical stack) -->
+      <section>
+        <section id="poll-3" style="padding: 34px 52px;">
+          <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Which Population?</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+            <p style="font-size: 16pt; line-height: 1.6;">The Senate estimate is <strong>+7.5 points</strong>, with $h = 17.75$ and 683 races inside the bandwidth. It is the causal effect of incumbency for which population?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch13-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>A.</strong> All 1,297 Senate races in the sample</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>B.</strong> The 683 races within 17.75 margin points of a tie</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>C.</strong> Races decided by a hair &mdash; seats at a zero-point margin</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;"><strong>D.</strong> Any seat a party currently holds</div>
+          </div>
+          <button class="reset-btn" onclick="clearPoll('ch13-econ5200-poll-3')" style="margin-top: 12px; padding: 6px 14px; font-size: 12pt; cursor: pointer;">Reset Poll</button>
+          <aside class="notes">Expect B to win the room. It is the sharpest wrong answer in the deck and the debrief is aimed at it. Do not soften it — the distinction between "observations used in estimation" and "the population the estimand is defined on" is the single most important idea in the last third of this lecture.</aside>
+        </section>
+
+        <section id="poll-3-results" data-poll-results="ch13-econ5200-poll-3" style="padding: 28px 52px;">
+          <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; The Bandwidth Is Not the Population</h2>
+          <div class="poll-results-chart" data-poll-id="ch13-econ5200-poll-3" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 150px; margin: 8px 60px 24px;"></div>
+          <div style="background: #fdf3f0; border-left: 4px solid var(--danger-color); padding: 14px 20px; border-radius: 8px;">
+            <p style="font-size: 15pt; line-height: 1.55;"><strong>B is the one worth the time.</strong> Those 683 races are the observations <em>used in estimation</em>. But the estimand is defined at $R_i = c$ &mdash; a limit, a point. <strong>The bandwidth is a computational device, not a description of the population.</strong></p>
+          </div>
+          <div style="background: #f8f6f3; border-left: 4px solid #7C3A5F; padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14.5pt; line-height: 1.55;"><strong>A and D</strong> are the extrapolation error in two flavours &mdash; and <strong>D</strong> is the one that shows up in policy memos, because it is what somebody wanted the answer to be.</p>
+          </div>
+          <aside class="notes">Whether incumbency is worth 7.5 points in a race won by 30 is a question this design does not answer and was never going to. Landslide seats differ from marginal seats in ways that go well beyond the margin itself. Hold that thought — it is exactly the closing discussion.</aside>
+        </section>
+      </section>
+
+      <!-- SLIDE: Elite illusion -->
+      <section id="elite-illusion" style="padding: 30px 52px;">
+        <h2><i class="fa-solid fa-school" style="color: var(--accent-color);"></i> Economist at Work: The Elite Illusion</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start;">
+            <div>
+              <p style="font-size: 14.5pt; line-height: 1.6;">Boston's exam schools admit by entrance-exam score, so every year some applicants clear the threshold by a point and others miss by a point. <strong>Abdulkadiro&#287;lu, Angrist &amp; Pathak</strong> (<em>Econometrica</em>, 2014) ran the fuzzy RD in Boston and New York.</p>
+              <div style="background: #fdf3f0; border-radius: 8px; padding: 14px 19px; margin-top: 13px; border-left: 4px solid var(--danger-color);">
+                <p style="font-size: 15pt; line-height: 1.55;">They found <strong>essentially nothing</strong> &mdash; across state tests, PSAT and SAT participation and scores, and AP outcomes. Students just above the line attended schools with dramatically higher-achieving peers, and did not on average learn measurably more.</p>
+              </div>
+            </div>
+            <div>
+              <p style="font-size: 14.5pt; line-height: 1.6;">The graduates really are outstanding. The schools really do produce them. But the schools <strong>select</strong> them rather than making them &mdash; and for the marginal applicant, the only one this design speaks to, the elite school added no measurable value.</p>
+              <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 14px 19px; margin-top: 13px; border-left: 4px solid #7C3A5F;">
+                <p style="font-size: 14.5pt; line-height: 1.55;">Set that against <strong>Chapter 12's Boston charter lotteries</strong>, which found large positive effects &mdash; same city, overlapping research group.</p>
+                <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 9px;"><strong>The two results are not in conflict.</strong> Different designs, different populations, different assumptions, answering different questions that sound identical in English.</p>
+              </div>
+              <p style="font-size: 13.5pt; margin-top: 12px; color: var(--muted-color); font-style: italic;">Learning to hear the difference is most of what this module has been for.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Ninety seconds by design, but expect pushback and let it run for a moment if it comes — arguing about which population an estimate describes IS the skill. Do not develop the charter-lottery result here; it belongs to Ch 12 and one sentence of contrast is the right dose.</aside>
+      </section>
+
+      <!-- SLIDE: Fuzzy RD -->
+      <section id="fuzzy-rd" style="padding: 28px 48px;">
+        <h2><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i> Fuzzy RD, or IV at the Cutoff</h2>
+        <div class="content">
+          <p style="font-size: 15pt; line-height: 1.55;">Some eligible students never claim the grant; some ineligible ones win an appeal. Crossing the cutoff changes the <em>probability</em> of treatment. You already know how to handle this &mdash; it is Chapter 12 in different clothing.</p>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px; margin-top: 13px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt; margin-bottom: 6px;">\[ \tau_{FRD} = \frac{\lim_{r \downarrow c} E[Y_i \mid R_i=r] - \lim_{r \uparrow c} E[Y_i \mid R_i=r]}{\lim_{r \downarrow c} E[D_i \mid R_i=r] - \lim_{r \uparrow c} E[D_i \mid R_i=r]} \]</p>
+            <p style="font-size: 13.5pt; line-height: 1.5;"><strong>In words:</strong> the jump in the outcome divided by the jump in the treatment probability. Numerator is the reduced form, denominator the first stage &mdash; <strong>Ch 12's Wald estimator, evaluated at a threshold</strong>. In <code>rdrobust</code> it is one argument: <code>fuzzy=D_actual</code>.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 13px;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;"><strong>Everything from Ch 12 transfers.</strong> Monotonicity is required. The estimand is a LATE for compliers &mdash; now <em>doubly</em> local, since they must also be at the cutoff. A treatment probability that rises from 0.62 to 0.71 at the threshold is a weak-instrument problem wearing a cutoff: report the first-stage jump alongside the estimate, exactly as you would an $F$-statistic.</p>
+            </div>
+            <div style="background: #fdf3f0; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 13.5pt; line-height: 1.5;"><strong>Fuzzy RD is not a weaker sharp RD.</strong> Sharp gives the effect of <em>crossing the threshold</em>; fuzzy gives the effect of <em>treatment</em> for compliers. A sharp specification on imperfectly-complied data estimates an <strong>intention-to-treat</strong> effect &mdash; legitimate, often the policy-relevant quantity, but attenuated toward zero by everyone who did not comply.</p>
+            </div>
+          </div>
+          <div class="fragment fade-up" style="background: #eef4ee; border-radius: 8px; padding: 12px 20px; margin-top: 12px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt; line-height: 1.5;"><strong>Angrist &amp; Lavy (1999).</strong> Israeli schools followed <strong>Maimonides' rule</strong>, a twelfth-century principle capping class size at 40: 40 pupils form one class, 41 split into two of roughly 20. Schools deviate, so crossing 40 changes the <em>probability</em> of a small class. The instrument's credibility rests on a religious ruling applied administratively eight hundred years later &mdash; which is the flavour of most good RD work. You are not designing an experiment; you are noticing that somebody else's arbitrary rule already ran one.</p>
+          </div>
+        </div>
+        <aside class="notes">Lead with the observation that the fuzzy formula IS the Wald estimator and write both on the board together. Students who understood Ch 12 will find this section easy and should be TOLD so. The ITT-versus-LATE distinction is the piece most often missed in applied work — a sharp specification on fuzzy data is not wrong, it answers a different question, and papers frequently fail to say which they intend.</aside>
+      </section>
+
+      <!-- SLIDE: Limits -->
+      <section id="rd-limits" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> What RD Cannot Tell You</h2>
+        <div class="content">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 22px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 15.5pt; line-height: 1.5;">Everything so far delivers $E[Y_i(1)-Y_i(0)\mid R_i=c]$: the average effect for units <em>at the threshold</em>. <strong>Almost nobody wants that number.</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 14px;">
+            <div style="background: #fdf3f0; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14.5pt; font-weight: 700; color: var(--danger-color);">1. Extrapolation</p>
+              <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 7px;">A legislator asking about raising the threshold <span class="tex2jax_ignore">&#36;75k</span> &rarr; <span class="tex2jax_ignore">&#36;90k</span> wants the effect <em>inside</em> the region RD is silent on. Extrapolating requires assumptions about how the effect varies with $R$ &mdash; exactly the assumptions the design was built to avoid.</p>
+              <p style="font-size: 12.5pt; line-height: 1.45; margin-top: 7px; color: var(--muted-color);">Cattaneo, Keele, Titiunik &amp; Vazquez-Bare (2021): <em>multiple</em> cutoffs partially identify effects away from any one of them. Most designs have only one.</p>
+            </div>
+            <div style="background: #fdf3f0; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14.5pt; font-weight: 700; color: var(--danger-color);">2. Discrete running variables</p>
+              <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 7px;">The limits presume you can get arbitrarily close to $c$. With integer test scores or age in whole years you cannot, and no amount of data closes the gap.</p>
+              <p style="font-size: 12.5pt; line-height: 1.45; margin-top: 7px; color: var(--muted-color);">Kolesár &amp; Rothe (2018): clustering SEs by the running variable substantially over-rejects. Use <strong>honest confidence intervals</strong> that bound the CEF's second derivative &mdash; paying for discreteness in width.</p>
+            </div>
+            <div style="background: #fdf3f0; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14.5pt; font-weight: 700; color: var(--danger-color);">3. Compound cutoffs</p>
+              <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 7px;">If a second programme shares your threshold, <strong>every diagnostic passes</strong> &mdash; density smooth, covariates balanced, placebos null &mdash; and the estimate is still the <em>combined</em> effect of two interventions.</p>
+              <p style="font-size: 12.5pt; line-height: 1.45; margin-top: 7px; color: var(--muted-color);">No statistical test detects this. Only reading the institutional rules does.</p>
+            </div>
+          </div>
+          <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 12px 20px; margin-top: 13px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 14pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Before running an RD, find out what else happens at your cutoff.</strong> Read the statute, the eligibility manual, the internal policy document. Programmes cluster at round numbers, and administrators reuse thresholds because it is convenient.</p>
+          </div>
+        </div>
+        <aside class="notes">Belabour the extrapolation limit — it is where RD results get misused in policy debates and students will encounter that misuse. Discrete running variables matter more than they sound: exam scores, ages, household size, days since an event are all discrete, so the default output is invalid in a great many real applications.</aside>
+      </section>
+
+      <!-- DISCUSSION 3 -->
+      <section id="discussion-3" style="padding: 32px 52px;">
+        <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Raise the Threshold?</h2>
+        <div class="content">
+          <div style="background: #f0f5f8; padding: 20px 26px; border-radius: 12px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 16.5pt; font-weight: 600; line-height: 1.55;">Your RD says the grant raises retention by 5.4 points at <span class="tex2jax_ignore">&#36;75,000</span>, with a tight interval. A state senator wants to raise the threshold to <span class="tex2jax_ignore">&#36;90,000</span> and asks what your estimate implies about the households who would <em>newly</em> qualify.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+            <div style="padding: 14px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">Think about:</p>
+              <p style="font-size: 14.5pt; margin-top: 6px; line-height: 1.5;">What do you tell her &mdash; in one sentence she can put in a memo?</p>
+            </div>
+            <div style="padding: 14px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">Consider:</p>
+              <p style="font-size: 14.5pt; margin-top: 6px; line-height: 1.5;">What would you <em>need</em> in order to say anything at all about those households?</p>
+            </div>
+          </div>
+          <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span></p>
+        </div>
+        <aside class="notes">Where to land: the estimate is silent on those households, and saying so is the professional answer, not a failure. What would help — multiple cutoffs across regions or cohorts; an explicit, defended structural assumption about how the effect varies with income; or a different design. What does not help: assuming a constant effect because it is convenient. Push on the fact that "I cannot answer that" is a complete and useful answer when it is followed by "here is what would let me."</aside>
+      </section>
+
+      <!-- SLIDE: Key takeaways -->
+      <section id="key-takeaways" style="padding: 28px 48px;">
+        <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px;">
+            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-ruler-horizontal" style="color: var(--secondary-color);"></i></p>
+              <p style="font-size: 14pt; line-height: 1.5;"><strong>Continuity is the whole assumption.</strong> Weaker than parallel trends or exclusion &mdash; and, uniquely in this module, it has observable implications you can test.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--danger-color);"></i></p>
+              <p style="font-size: 14pt; line-height: 1.5;"><strong>Right limit minus left limit, always.</strong> Treat people below the threshold and you get a correctly-computed number with the wrong sign. <em>The plot is the check.</em></p>
+            </div>
+            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-crosshairs" style="color: var(--accent-color);"></i></p>
+              <p style="font-size: 14pt; line-height: 1.5;"><strong>Estimate locally.</strong> A global polynomial must explain the whole support and imposes that structure at the cutoff &mdash; which flipped the sign at degree one.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 19pt;"><i class="fa-solid fa-sliders" style="color: var(--success-color);"></i></p>
+              <p style="font-size: 14pt; line-height: 1.5;"><strong>Bandwidth is bias&ndash;variance with a knob.</strong> Bias &minus;0.0003 &rarr; &minus;0.0382, sd 0.0309 &rarr; 0.0071, RMSE minimised near $h=20$. Report the <em>robust</em> row.</p>
+            </div>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px; margin-top: 13px; text-align: center; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 15.5pt; line-height: 1.5;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>The estimand is the effect at the cutoff</strong> &mdash; which is almost never the population a decision-maker is asking about. Every design in this module ultimately rests on knowing how the world that produced your data works, and that knowledge does not come from the data.</p>
+          </div>
+        </div>
+        <aside class="notes">The capstone line closes the identification module, not just the lecture. Deliver it slowly. Chapters 10 through 13 gave four ways to identify a causal effect, each with a characteristic assumption and a characteristic failure — and the tests get better every year, but none of them substitutes for reading the institutions.</aside>
+      </section>
+
+      <!-- SLIDE: Lab preview -->
+      <section id="lab-preview" style="padding: 28px 48px;">
+        <h2><i class="fa-solid fa-flask-vial" style="color: var(--secondary-color);"></i> Lab 13 &mdash; Diagnosing a Jump</h2>
+        <div class="content">
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic;">45 min core + 20 min extension &nbsp;&bull;&nbsp; deliverable: <code>src/rd_tools.py</code> &nbsp;&bull;&nbsp; three diagnoses</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 13px;">
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color);">1. The estimate that is a bandwidth</p>
+              <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 7px;">A grant at a need index of 50, true effect 8 points; an analyst's global quadratic reports 3.6. You run the 300-replication Monte Carlo and read the tradeoff off your own output.</p>
+            </div>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--accent-color);">2. The two tests that can refute you</p>
+              <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 7px;">Density test on clean data, then on a population that sorts. Then you write the covariate continuity test yourself &mdash; and break a covariate to confirm it catches it.</p>
+            </div>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">3. A real one</p>
+              <p style="font-size: 13.5pt; line-height: 1.5; margin-top: 7px;"><strong>Lee, Moretti &amp; Butler (2004)</strong>, &ldquo;Do Voters Affect or Elect Policies?&rdquo;, <em>QJE</em> 119(3). US House, 1946&ndash;1995, at the 50% Democratic vote-share threshold.</p>
+            </div>
+          </div>
+          <div style="background: #fdf3f0; border-radius: 8px; padding: 13px 20px; margin-top: 13px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt; line-height: 1.55;"><strong>Get the attribution right.</strong> The lab's outcome is the representative's <strong>inflation-adjusted ADA score</strong> (Americans for Democratic Action &mdash; the share of ADA-selected roll-call votes cast the liberal way, adjusted across congresses). Higher = more liberal; the estimate is about <strong>+46 ADA points</strong>. That is a test of <strong>partisan divergence</strong> against median-voter convergence &mdash; <em>not</em> Lee (2008)'s incumbency advantage, even though it uses Lee's close-election design and the same threshold.</p>
+          </div>
+          <p style="font-size: 13.5pt; margin-top: 11px; color: var(--muted-color);"><strong>Extension:</strong> fuzzy RD as IV &mdash; simulate a threshold that raises treatment probability from 0.2 to 0.7 and show the sharp estimate is attenuated by roughly the compliance rate.</p>
+        </div>
+        <aside class="notes">Say the attribution warning out loud. Students conflate these two every year, and the give-away is the OUTCOME: today's Senate example was vote share in the next election (incumbency advantage); the lab's is how the winner votes once seated (policy divergence). Same design, same threshold, completely different question. Also warn them the ADA score runs from about -28 to +129 in this sample rather than 0 to 100, because the Groseclose-Levitt-Snyder adjustment rescales it.</aside>
+      </section>
+
+      <!-- SLIDE: Exit ticket -->
+      <section id="exit-ticket" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
+        <div class="content">
+          <p style="font-size: 15pt; color: var(--muted-color); font-style: italic; margin-bottom: 16px;">Two sentences, on the way out.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px;">
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 24px; border-left: 5px solid var(--secondary-color);">
+              <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">1</p>
+              <p style="font-size: 15.5pt; line-height: 1.55; margin-top: 8px;"><strong>Name the population</strong> an RD estimate describes &mdash; precisely enough that a policy analyst could not misread it.</p>
+            </div>
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 24px; border-left: 5px solid var(--accent-color);">
+              <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">2</p>
+              <p style="font-size: 15.5pt; line-height: 1.55; margin-top: 8px;"><strong>Name one thing that could plausibly share the cutoff</strong> in a design you might actually run &mdash; and say how you would find out whether it does.</p>
+            </div>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px; margin-top: 20px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 15pt; line-height: 1.5;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> Question 2 is the one that matters. Almost every good answer involves <strong>reading a document</strong> rather than running a test &mdash; which is the note this module ends on.</p>
+          </div>
+        </div>
+        <aside class="notes">Collect these. Question 1 answers that say "everyone in the bandwidth" tell you Poll 3's debrief did not land and should be revisited at the start of the lab session. Question 2 answers that name a statistical test rather than a document tell you the compound-cutoff point did not land.</aside>
+      </section>
+
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

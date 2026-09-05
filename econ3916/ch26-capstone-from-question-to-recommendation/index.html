@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From Question to Recommendation</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 57% 43%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 40px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 26</p>
+          <h1 style="font-size: 31pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 22px;">From Question to Recommendation</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">The last topic. Twenty-five chapters of tools, and the one skill that decides whether any of them change a decision.</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch26-capstone.png" alt="A wide scatter of coloured result points funnelling downward through a narrowing channel into a single dark arrow labelled one recommendation" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">26.1</p>
+            <p style="font-size: 15pt;">Tell a <strong>prediction</strong> question from a <strong>causal</strong> one, and pick the method the question actually calls for</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">26.2</p>
+            <p style="font-size: 15pt;">Run the whole pipeline &mdash; framing, method, <strong>baseline</strong>, <strong>threshold</strong>, visualisation</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">26.3</p>
+            <p style="font-size: 15pt;">Judge whether a recommendation <strong>follows from the evidence</strong> and states its uncertainty honestly</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">26.4</p>
+            <p style="font-size: 15pt;">Deliver a recommendation out loud and <strong>defend it</strong> under adversarial questioning</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Say plainly that this is the last topic and that everything today is scored on the Final Project. 26.2 is where their own lab numbers show up.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; margin-bottom: 14px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Lab 17.</strong> Your classifier was right 90.4% of the time. What was the accuracy of a model that ignored <em>every feature</em> and predicted &ldquo;no default&rdquo; for everyone?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 19.</strong> Random Forest hands you a ranked list of feature importances. Name the one sentence you are <em>not</em> allowed to say about the top feature.</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both answers are the same failure: <strong>a number that looks like an answer and is not one.</strong></p>
+      </div>
+      <aside class="notes">2 min, cold-call two. QC1 answer is 90.4% &mdash; identical; do not let them off with "high". QC2: that it causes the outcome, or that changing it would change the outcome. Both come back today with figures attached.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-cbo" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--danger-color);"></i> The Same Analysis, Cited by Both Sides</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">By law the Congressional Budget Office must assume Social Security benefits are paid <em>in full</em> &mdash; including after the trust fund is projected to run out in 2033.</p>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 320px 1fr; gap: 28px; align-items: center; margin-top: 20px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 20px; text-align: center;">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color); line-height: 1.15;">+10%<br><span style="font-size: 15pt; color: #7a4a2f;">scores as</span><br>&minus;13%</p>
+          </div>
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">A legislated <strong>10% benefit increase</strong>, fully funded by new revenue, scores as a <strong>13% reduction</strong> &mdash; because the baseline already assumes 100% of unfunded benefits get paid.</p>
+            <p style="font-size: 15pt; line-height: 1.6; margin-top: 12px;">Both sides of the aisle cited the same analysis as proof the other side was wrong.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 20px; text-align: center; color: var(--primary-color);">The models were not wrong. The econometrics was not flawed. <strong>The failure was in the final mile.</strong></p>
+      </div>
+      <aside class="notes">2 min. Say "a ten percent increase scores as a thirteen percent cut" and then stop talking. Let it sit. Then ask: the math is right and both sides think it proves them right &mdash; what failed? Do not moralise; the rest of the lecture earns the point with their own numbers.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 -->
+    <section id="hook-bcg" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-chart-pie" style="color: var(--accent-color);"></i> And It Is Not One Anecdote</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">BCG (2024): <strong>74% of companies</strong> struggle to achieve and scale value from their AI and analytics investments. Where does the difficulty sit?</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px;">
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--danger-color); line-height: 1;">70%</p>
+            <p style="font-size: 14pt; margin-top: 8px;">people and process</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">20%</p>
+            <p style="font-size: 14pt; margin-top: 8px;">data and technology</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--success-color); line-height: 1;">10%</p>
+            <p style="font-size: 14pt; margin-top: 8px;">algorithms</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16.5pt; margin-top: 22px; text-align: center; color: var(--primary-color);">The binding constraint is almost never the model. <strong>You have spent twenty-five chapters on the 10%.</strong></p>
+      </div>
+      <aside class="notes">2 min. This converts the CBO anecdote into a claim about the field. The closing line is deliberately provocative &mdash; the rest of the lecture argues that the 10% was worth learning precisely because it lets you say the honest thing about the other 90%.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-question" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; Prediction or Causation?</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">The question you must answer before you write a line of code.</p>
+    </section>
+
+    <!-- SLIDE 7: Umbrella vs rain dance -->
+    <section id="umbrella-raindance" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-umbrella" style="color: var(--secondary-color);"></i> Umbrella Problems and Rain Dance Problems</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Kleinberg, Ludwig, Mullainathan &amp; Obermeyer (2015) named the split.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">Umbrella &mdash; prediction</p>
+            <p style="font-size: 15pt; margin-top: 10px; line-height: 1.55;">You do not care <em>why</em> it rains. You care whether to carry an umbrella tomorrow. A forecast is the whole deliverable.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 20px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">Rain dance &mdash; causation</p>
+            <p style="font-size: 15pt; margin-top: 10px; line-height: 1.55;">You must prove the dance <em>causes</em> rain, not merely that dances and rain co-occur. A forecast is worthless here.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 16px 22px; margin-top: 20px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-key" style="color: #7C3A5F;"></i> <strong>The decision rule.</strong> Ask what the stakeholder will <em>do</em> with the answer. <strong>Whom to target</strong> &rarr; prediction. <strong>Whether to intervene</strong> &rarr; causation.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The rule is the whole section in one line. Everything after this slide is either an application of it or a consequence of getting it wrong.</aside>
+    </section>
+
+    <!-- SLIDE 8: The two columns -->
+    <section id="two-columns" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-table-columns" style="color: var(--accent-color);"></i> Two Questions, Two of Everything</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%; margin-top: 4px; font-size: 13.5pt;">
+          <thead>
+            <tr><th style="width: 17%;"></th><th style="color: var(--secondary-color);">Prediction &mdash; &ldquo;umbrella&rdquo;</th><th style="color: var(--accent-color);">Causation &mdash; &ldquo;rain dance&rdquo;</th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="font-weight: 700;">Goal</td><td>Forecast $\hat{y}$ as accurately as possible</td><td>Estimate the effect $\tau$ of $T$ on $Y$</td></tr>
+            <tr><td style="font-weight: 700;">Method</td><td>Random Forest, LASSO, logistic (Ch 16&ndash;19)</td><td>RCT, DAG adjustment, DML (Ch 9, 10, 24)</td></tr>
+            <tr><td style="font-weight: 700;">Features</td><td>Everything predictive</td><td>Only exogenous controls &mdash; endogeneity destroys it</td></tr>
+            <tr><td style="font-weight: 700;">Metric</td><td>RMSE, AUC, <strong>expected cost</strong> (Ch 18)</td><td>CI for $\hat\tau$, balance checks, placebo tests</td></tr>
+            <tr><td style="font-weight: 700;">Sentence</td><td>&ldquo;Predicts X with Y% accuracy&rdquo;</td><td>&ldquo;Caused a Z-unit change (95% CI: [a, b])&rdquo;</td></tr>
+          </tbody>
+        </table>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 16px; text-align: center; color: var(--primary-color);">Every row differs. <strong>Getting the first question wrong makes every later choice wrong too.</strong></p>
+      </div>
+      <aside class="notes">2 min. Walk the Features row slowly &mdash; it is the least intuitive. Prediction wants the endogenous variable; causation must throw it out. Same column of data, opposite instruction.</aside>
+    </section>
+
+    <!-- SLIDE 9: Bank Marketing, two questions -->
+    <section id="bank-two-questions" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-phone" style="color: var(--secondary-color);"></i> One Dataset, Two Questions</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">UCI Bank Marketing &mdash; Portuguese bank telemarketing, binary outcome: did the customer subscribe to a term deposit? About <strong>11%</strong> did. The CEO asks two things.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">&ldquo;Which customers should we call next?&rdquo;</p>
+            <p style="font-size: 14.5pt; margin-top: 9px; line-height: 1.55;">Umbrella. You do not care why anyone subscribes. Fit a Random Forest, use every pre-call feature, rank by predicted probability.</p>
+            <p style="font-size: 14.5pt; margin-top: 8px; color: var(--secondary-color);"><strong>Deliverable:</strong> a call list.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">&ldquo;Does calling <em>cause</em> them to subscribe?&rdquo;</p>
+            <p style="font-size: 14.5pt; margin-top: 9px; line-height: 1.55;">Rain dance. Would they have subscribed anyway? You need randomisation, or a defensible DAG, or DML.</p>
+            <p style="font-size: 14.5pt; margin-top: 8px; color: var(--accent-color);"><strong>Deliverable:</strong> an effect with an interval.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 18px; text-align: center; color: var(--primary-color);">Same 45,211 rows. <strong>Completely different methods</strong>, because the decisions are different.</p>
+      </div>
+      <aside class="notes">3 min. Ask what goes wrong if you run DML for the first question. Answer: it strips out exactly the endogenous predictive signal targeting needs. Then flip it. That contrast is the single most important idea in the chapter.</aside>
+    </section>
+
+    <!-- SLIDE 10: duration / timing test -->
+    <section id="duration-trap" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-stopwatch" style="color: var(--danger-color);"></i> The Trap: <code>duration</code></h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Call length in seconds is enormously predictive &mdash; long calls end in subscriptions. It is also <strong>endogenous</strong>: the call is long <em>because</em> the customer was interested.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 12px;">And for targeting it is not even usable. You learn the call length <em>after</em> making the call you were trying to decide about.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 18px 24px; margin-top: 20px;">
+          <p style="font-size: 16.5pt;"><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-color);"></i> The test is not <em>&ldquo;does this sound like it leaks.&rdquo;</em> It is: <strong>when does this value become known, relative to the decision I am modelling?</strong></p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt;"><strong>Apply it to <code>poutcome</code>.</strong> It sounds like an outcome. It is the result of the <em>previous</em> campaign, already on file before the phone rings &mdash; so it is fair game, and in Lab 26 it is the single most important feature (MDI 0.167).</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Students reliably drop poutcome because the name pattern-matches to leakage. Make them state the timing test out loud before they touch the notebook &mdash; it is the same test that decides every feature in their Final Project.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Kind of Question Is This?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">A hospital administrator asks: <em>&ldquo;Which patients discharged today are most likely to be readmitted within 30 days, so we can schedule follow-up calls?&rdquo;</em></p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch26-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Causal &mdash; we need to know whether follow-up calls reduce readmission</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Prediction &mdash; we need to rank patients by readmission risk</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Causal &mdash; readmission is an outcome, so this is a treatment-effect question</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Neither &mdash; this needs a randomised trial before any model is appropriate</div>
+        </div>
+        <aside class="notes">1 min. Students click to vote on their devices; results appear on the next slide. C is the productive error &mdash; they have been trained all term that outcomes belong to causal inference.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch26-econ3916-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Prediction</h2>
+        <div class="poll-results-chart" data-poll-id="ch26-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The decision is <em>whom to call</em>. She is not asking whether calls work &mdash; she has already decided to make them and needs to know whom to spend them on.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is tempting but wrong:</strong> the presence of an outcome variable does not make a question causal. What makes it causal is asking whether an <em>intervention</em> moved it. Note the version that <em>would</em> be causal: &ldquo;do our follow-up calls actually reduce readmission?&rdquo; &mdash; same data, different question, different method entirely.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 12: method tree -->
+    <section id="method-tree" style="padding: 26px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-diagram-project" style="color: var(--accent-color);"></i> Your Toolkit, Indexed by the Question</h2>
+      <div class="content">
+        <img src="figures/figure_001_method_tree.png" alt="Method selection tree for ECON 3916: the stakeholder's decision splits into a prediction branch covering continuous outcomes with OLS and regularisation, binary outcomes with logistic regression and random forests, time series with ARIMA and Prophet, and unlabelled data with K-Means, PCA and TF-IDF; and a causal branch covering randomised A/B tests, DAG-based backdoor adjustment, and Double Machine Learning, with DiD, IV and regression discontinuity marked as ECON 5200 material" style="width: 78%; display: block; margin: 0 auto; border-radius: 6px;">
+      </div>
+      <aside class="notes">2 min. Read the causal branch honestly: 3916's causal toolkit is a randomised experiment, a DAG, and DML. DiD, IV and RD are ECON 5200. If a Final Project question needs one of them, that is a signal to reframe the question, not to improvise a method they have not been taught.</aside>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Classify Four Questions</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color);">For each: <strong>prediction</strong> or <strong>causation</strong>? And name the method.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+          <div style="padding: 15px 20px; border: 2px solid var(--secondary-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>1.</strong> &ldquo;Which of our 40,000 loan applicants should get a manual review?&rdquo;</p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>2.</strong> &ldquo;Did our new onboarding flow increase 90-day retention?&rdquo;</p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>3.</strong> &ldquo;What will regional unemployment be next quarter?&rdquo;</p>
+          </div>
+          <div style="padding: 15px 20px; border: 2px solid #7C3A5F; border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>4.</strong> &ldquo;Should we keep paying for the premium data feed?&rdquo;</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; share</span></p>
+      </div>
+      <aside class="notes">3 min, press 3 for the timer. (1) prediction, RF or logistic ranked by probability. (2) causation &mdash; A/B test if randomised, else DAG adjustment or DML. (3) prediction, ARIMA or Prophet. (4) is the interesting one: it is genuinely underdetermined until you say what decision follows. Let the disagreement run; that is the lesson.</aside>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section id="divider-baseline" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; A Model Is Worthless Until You Compare It</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">You already produced the proof. In Lab 17.</p>
+    </section>
+
+    <!-- SLIDE 15: baseline figure -->
+    <section id="baseline-trap" style="padding: 26px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-equals" style="color: var(--danger-color);"></i> Your Own 90.4%</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px; align-items: center;">
+          <img src="figures/figure_002_baseline_trap.png" alt="Two bars both reaching 90.4 percent accuracy: a grey no-skill baseline that predicts no default for everyone, and a blue Lab 17 classifier using every feature, with an annotation reading the gap your model bought is 0.0 percentage points" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">Lab 17, credit-default data at <strong>9.6% prevalence</strong>. Your tuned classifier: <strong>90.4%</strong>. A model with <em>no features at all</em>: <strong>90.4%</strong>.</p>
+            <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; margin-top: 14px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14.5pt;">Every hour of feature engineering bought exactly <strong>zero percentage points</strong> over a model that never looked at the data.</p>
+            </div>
+            <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin-top: 12px;">
+              <p style="font-size: 14.5pt;">The lesson is <em>not</em> &ldquo;accuracy is bad.&rdquo; It is that an accuracy number is <strong>uninterpretable without its baseline</strong> &mdash; and the baseline is a property of your data, not of your model.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">4 min. Land the identity before any explanation. At 9.6% prevalence the bar is 90.4%; on balanced data it is 50%. The same headline number is impressive against one and embarrassing against the other, and the number alone does not tell you which you are in.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Is This Model Good?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">A classmate reports: <em>&ldquo;My fraud model gets 99.2% accuracy on the test set.&rdquo;</em></p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 8px;">Fraud occurs in 0.7% of transactions.</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch26-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Excellent &mdash; 99.2% is near-perfect</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Cannot tell &mdash; and the baseline here is 99.3%</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Bad &mdash; accuracy is never a valid metric for any problem</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cannot tell &mdash; you need a bigger test set</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. Do not pre-empt the error in the setup &mdash; if A polls well straight after the 90.4% slide, that split is worth more than being told.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch26-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Below the Baseline</h2>
+        <div class="poll-results-chart" data-poll-id="ch26-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Predicting &ldquo;not fraud&rdquo; for every transaction is right <strong>99.3%</strong> of the time. The model is <em>below</em> the no-skill baseline. Ask for recall, precision, or expected cost.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is tempting but wrong:</strong> accuracy is not a broken metric, it is one that is meaningless <em>without its baseline</em>. &ldquo;Never use accuracy&rdquo; swaps one thoughtless rule for another. <strong>Why D is wrong:</strong> more data would tighten your estimate of a number that is already telling you the wrong thing.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 17: the same trap in bank marketing -->
+    <section id="bank-recall" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--accent-color);"></i> The Same Trap, in the Data You Are About to Model</h2>
+      <div class="content">
+        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 14px 22px; margin-top: 6px;"><code>              precision    recall  f1-score   support
+          No       0.94      0.98      0.96      7308
+         Yes       0.68      0.40      0.50       930
+    accuracy                           0.92      8238</code></pre>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">92%</p>
+            <p style="font-size: 14pt; margin-top: 6px;">the number the VP quotes in the board meeting</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 10px; padding: 16px 20px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--danger-color); line-height: 1;">40%</p>
+            <p style="font-size: 14pt; margin-top: 6px;">recall on subscribers &mdash; the number that decides whether the campaign works</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 16px; text-align: center;">The model misses <strong>three of every five</strong> people who would have subscribed. Against an 11% baseline the accuracy is doing real work here &mdash; and it still hides the failure that matters.</p>
+      </div>
+      <aside class="notes">4 min. Put the report on the board and ask which number the VP quotes, then which number determines whether the campaign works. They are different numbers. That gap is the whole section.</aside>
+    </section>
+
+    <!-- DIVIDER 3 -->
+    <section id="divider-threshold" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; The Threshold Is the Decision</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Your model outputs a probability. You output the decision.</p>
+    </section>
+
+    <!-- SLIDE 19: cost curve -->
+    <section id="cost-curve" style="padding: 26px 45px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-sliders" style="color: var(--accent-color);"></i> What Lab 18 Measured</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; align-items: center;">
+          <img src="figures/figure_003_cost_threshold.png" alt="Expected cost per case plotted against the classification threshold: the curve drops steeply, bottoms out at 0.4587 where the threshold is 0.068, then rises to 0.9437 at the default threshold of 0.5 and stays flat thereafter" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.55;">A missed positive costs <strong>ten times</strong> a false alarm. You swept the threshold.</p>
+            <table class="table-standard" style="width: 100%; margin-top: 12px; font-size: 13.5pt;">
+              <tbody>
+                <tr><td><strong>$t = 0.068$</strong> <span style="color: var(--success-color);">optimal</span></td><td style="text-align: right; font-weight: 700; color: var(--success-color);">0.4587</td></tr>
+                <tr><td><strong>$t = 0.5$</strong> <span style="color: var(--danger-color);">the default</span></td><td style="text-align: right; font-weight: 700; color: var(--danger-color);">0.9437</td></tr>
+              </tbody>
+            </table>
+            <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 8px; padding: 13px 17px; margin-top: 12px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14pt;">Accepting the default <strong>roughly doubles</strong> the cost of running the model &mdash; identical model, identical probabilities, decision rule chosen by nobody.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">5 min. Two things to say aloud. First: when false negatives cost more, the optimum moves DOWN &mdash; you buy false alarms to avoid expensive misses. Second: the curve is flat near its minimum, so you need the right region, not three decimal places. The default is not in the region.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Where Does the Threshold Go?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Your model flags equipment likely to fail. A <strong>missed failure costs \$50,000</strong>. A <strong>needless inspection costs \$500</strong>. You are classifying at the default 0.5.</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch26-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Raise it above 0.5 &mdash; be more certain before acting</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Lower it well below 0.5 &mdash; accept false alarms to avoid missed failures</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Keep 0.5 &mdash; it is the neutral, unbiased choice</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) It does not matter once the model is accurate enough</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. A is the intuitive answer &mdash; "be sure before you act" sounds responsible and is exactly backwards when misses are expensive.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch26-econ3916-poll-3" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Far Below 0.5</h2>
+        <div class="poll-results-chart" data-poll-id="ch26-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">At a <strong>100:1</strong> cost ratio you should be willing to inspect a great deal of healthy equipment to avoid one missed failure.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is tempting but wrong:</strong> 0.5 feels neutral because it is symmetric &mdash; but symmetry in the <em>probability</em> is only neutral if the two errors cost the same. Here one costs a hundred times the other, so the default encodes an assumption about your business that is simply false. <strong>Why D is wrong:</strong> a more accurate model at the wrong threshold can cost more than a worse model at the right one &mdash; which is exactly what you found in Lab 18 when you swept the cost ratio.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 21: dashboard implication -->
+    <section id="threshold-dashboard" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-gauge-high" style="color: var(--secondary-color);"></i> What This Means for the Dashboard You Are About to Build</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">The Final Project asks for <em>&ldquo;an input control that changes a prediction&rdquo;</em> and <em>&ldquo;an honest display of uncertainty.&rdquo;</em></p>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-arrows-left-right" style="color: var(--secondary-color);"></i> <strong>Threshold is the natural control.</strong> Let the user move it and watch the expected cost, the number flagged, and the recall move with it.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 18px 24px; margin-top: 14px;">
+          <p style="font-size: 16pt;">That dashboard shows the stakeholder <strong>their decision</strong>, not your model. It is the difference between a demo and a tool &mdash; and it is 14 rubric points.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the most directly actionable slide in the deck. Several students will have been planning a dashboard whose only control is a dropdown of feature values; redirect them now.</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-causal" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; Prediction Does Not License a Causal Claim</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">And the honest sentence that says so without hedging.</p>
+    </section>
+
+    <!-- SLIDE 23: feature importance -->
+    <section id="feature-importance" style="padding: 24px 45px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-ranking-star" style="color: var(--danger-color);"></i> The Most Misread Chart in Applied ML</h2>
+      <div class="content">
+        <img src="figures/figure_004_feature_importance.png" alt="Horizontal bar chart of Random Forest feature importance for Bank Marketing subscription, ranked by mean decrease in impurity with nr.employed at 0.15 and euribor3m at 0.13 on top, under a red banner reading predictive importance, not causal effect" style="width: 68%; display: block; margin: 0 auto; border-radius: 6px;">
+        <p style="font-size: 15pt; margin-top: 12px; text-align: center;">Every one of these you put in front of a stakeholder needs <strong>the banner</strong>.</p>
+      </div>
+      <aside class="notes">2 min. Note the two data releases before anyone finds the discrepancy: the chapter figure is bank-additional-full, where nr.employed tops the list; Lab 26 pulls fetch_ucirepo(id=222), which returns bank-full, where poutcome tops it at MDI 0.167. Different top row, identical lesson.</aside>
+    </section>
+
+    <!-- SLIDE 24: the confounder -->
+    <section id="confounder" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> What the VP Will Say Without Your Help</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 20px 26px;">
+          <p class="text-lg" style="font-style: italic;">&ldquo;Employment levels drive term deposit subscriptions. Let's wait until employment rises, then launch the campaign.&rdquo;</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; line-height: 1.6;">That is a <strong>causal recommendation extracted from a predictive ranking</strong>, and it is wrong in a specific way.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><code>nr.employed</code> moves the bank's marketing calendar <em>and</em> customers' willingness to save, independently. It is a <strong>confounder</strong>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;">Nobody at the bank can change the national employment level. It is <strong>not a lever</strong> they can pull.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 18px; text-align: center; color: var(--primary-color);">Recommending that they wait for it is recommending that they <strong>do nothing</strong>, dressed up as analysis.</p>
+      </div>
+      <aside class="notes">2 min. The closing line is the one to land. A recommendation that cannot be acted on is not a cautious recommendation &mdash; it is a non-recommendation with a chart attached.</aside>
+    </section>
+
+    <!-- SLIDE 25: the honest sentence -->
+    <section id="honest-sentence" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-quote-left" style="color: var(--secondary-color);"></i> The Honest Sentence</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #eef2ff, #dbeafe); border-radius: 12px; padding: 22px 28px;">
+          <p style="font-size: 17pt; line-height: 1.55;">&ldquo;<strong>X is the strongest predictor of Y.</strong> This is <strong>predictive importance, not a causal effect</strong> &mdash; and here is what it would take to know more: <strong>[the design].</strong>&rdquo;</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px;">The third clause is what separates a careful analyst from a hedging one. &ldquo;This is not causal&rdquo; alone sounds like a disclaimer bolted on to avoid blame. <strong>Naming the design turns the same sentence into a proposal.</strong></p>
+        <div class="fragment fade-up" style="background: #eef5ee; border-radius: 8px; padding: 14px 20px; margin-top: 14px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 14.5pt;"><em>&ldquo;To know whether calling causes subscription, we would randomise who gets called in the next campaign and compare &mdash; the Ch 9 A/B test, on 5% of the list.&rdquo;</em></p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-radius: 8px; padding: 14px 20px; margin-top: 10px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 14.5pt;"><em>&ldquo;If we cannot randomise, we need every confounder measured and a defensible DAG, or DML with the macro indicators as controls (Ch 24) &mdash; and I would want it to agree with an experiment before I trusted it.&rdquo;</em></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Make them hear the difference between the two-clause and three-clause versions read aloud. The two-clause version sounds evasive; the three-clause version sounds like someone who knows what they would do next.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-pen-nib" style="color: var(--secondary-color);"></i> Discussion: Write the Honest Sentence</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Take the top feature from <strong>your own Final Project model</strong> &mdash; or <code>nr.employed</code> if yours is not running yet.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 14px;">
+          <div style="padding: 16px 18px; border: 2px solid var(--secondary-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--secondary-color); font-size: 14.5pt;">1. The claim</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">X is the strongest predictor of Y.</p>
+          </div>
+          <div style="padding: 16px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 14.5pt;">2. The limit</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Why this is predictive and not causal, <em>in terms of your data</em>.</p>
+          </div>
+          <div style="padding: 16px 18px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 14.5pt;">3. The design</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">What experiment or strategy would let you say more &mdash; and what it costs.</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min write &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">5 min, press 5. Watch for clause 3 collapsing into "we would need more data" &mdash; more data does not convert a prediction into a causal estimate. Press for a design: who gets randomised, or what has to be measured and why that closes the backdoor path.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Which Sentence Would You Sign?</h2>
+        <div class="poll-grid" data-poll-id="ch26-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 14pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) &ldquo;Employment levels are the biggest driver of subscriptions, so we should time campaigns to the labour market.&rdquo;</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) &ldquo;<code>nr.employed</code> is our strongest predictor; it is a macro confounder we cannot act on, so the actionable signal is in the client-level features below it.&rdquo;</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) &ldquo;Our model achieves 92% accuracy, so its feature ranking is reliable.&rdquo;</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) &ldquo;Feature importance is unreliable, so we should not report it at all.&rdquo;</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. D is the overcorrection that appears right after a section on misreading &mdash; watch for it.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch26-econ3916-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; State It, Limit It, Redirect</h2>
+        <div class="poll-results-chart" data-poll-id="ch26-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">B states the finding, names why it does not license action, and points at the part of the ranking that <em>is</em> actionable. All three moves, one sentence.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting but wrong:</strong> suppressing the chart is not honesty, it is avoidance &mdash; the ranking is genuine information about where the predictive signal lives. Label it and use it. <strong>Why C is wrong:</strong> accuracy is a statement about predictions, not about whether a ranking carries causal meaning. A perfectly accurate model can rank a confounder first.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DIVIDER 5 -->
+    <section id="divider-recommendation" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; From Result to Recommendation</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Start with the answer. Everything else is appendix.</p>
+    </section>
+
+    <!-- SLIDE 29: SCR pyramid -->
+    <section id="scr-pyramid" style="padding: 24px 45px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-arrow-up-wide-short" style="color: var(--accent-color);"></i> Invert the Term Paper</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 22px; align-items: center;">
+          <img src="figures/figure_005_scr_pyramid.png" alt="The SCR communication pyramid: recommendation at the apex answering what should we do, supporting arguments in the middle answering why, and data and methodology at the base answering how do we know, with an arrow showing executives read top down while the academic instinct builds bottom up" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.55;"><strong>Situation</strong> &mdash; a baseline everyone accepts. <em>&ldquo;We contact 50,000 customers a month at 11% conversion.&rdquo;</em></p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 10px;"><strong>Complication</strong> &mdash; the anomaly you found. <em>&ldquo;Our targeting is effectively random; the top decile converts at about 23%.&rdquo;</em></p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 10px;"><strong>Resolution</strong> &mdash; the action. <em>&ldquo;Use model-based targeting next month. Expected uplift: about 2,400 subscriptions.&rdquo;</em></p>
+            <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; margin-top: 12px; border-left: 4px solid #7C3A5F;">
+              <p style="font-size: 14pt;">You <em>build</em> S &rarr; C &rarr; R. You <em>deliver</em> R first. Both orders are correct.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The chronological instinct &mdash; loaded, cleaned, explored, tuned, and on slide 47 the conclusion &mdash; is how they were taught to write a term paper, and how you lose every audience outside a seminar room.</aside>
+    </section>
+
+    <!-- SLIDE 30: minimum viable deliverable -->
+    <section id="mvd" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-cube" style="color: var(--secondary-color);"></i> The Minimum Viable Deliverable</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 8px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color);">One visual</p>
+            <p style="font-size: 14.5pt; margin-top: 8px;">readable in under ten seconds</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--success-color);">One claim</p>
+            <p style="font-size: 14.5pt; margin-top: 8px;">with honest uncertainty bounds</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--accent-color);">One recommendation</p>
+            <p style="font-size: 14.5pt; margin-top: 8px;">what to <em>do</em>, given the claim</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 20px;">
+          <p style="font-size: 15.5pt;"><i class="fa-solid fa-box-archive" style="color: var(--danger-color);"></i> Everything else is appendix. Adding your robustness checks to the main deck does not strengthen the argument &mdash; it triggers the <strong>paradox of choice</strong>, and a decision-maker facing too many numbers <em>defers</em> rather than decides.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Worth naming the counter-case: the full analysis IS appropriate for a technical review, a peer audit, or an academic submission. The rule is audience-dependent, not universal.</aside>
+    </section>
+
+    <!-- SLIDE 31: uncertainty -->
+    <section id="uncertainty" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-percent" style="color: var(--accent-color);"></i> Uncertainty, Honestly</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>Spiegelhalter (2017).</strong> Standalone percentages are misread. Use <strong>natural frequencies</strong>: not &ldquo;a 15% chance of recession&rdquo; but <em>&ldquo;out of 100 forecasts with this much uncertainty, about 15 end in recession.&rdquo;</em></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>Fischhoff (2014).</strong> &ldquo;A serious possibility&rdquo; is read as anywhere from <strong>20% to 80%</strong>. The IPCC fixed this by calibrating: <em>very likely</em> = 90&ndash;100%, <em>likely</em> = 66&ndash;100%.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;"><strong>1. Never a point estimate without bounds.</strong> Not &ldquo;23% conversion&rdquo; but &ldquo;23% (95% CI: 19&ndash;27%).&rdquo;</p>
+          <p style="font-size: 15pt; margin-top: 9px;"><strong>2. Translate the interval into English.</strong> &ldquo;Our best estimate is about \$0.90, but we cannot rule out anything from a slight decrease to a \$2.10 increase.&rdquo;</p>
+          <p style="font-size: 15pt; margin-top: 9px;"><strong>3. Say what you would need to know more.</strong> &ldquo;To halve that interval we would need roughly 5,000 participants.&rdquo;</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 14px; text-align: center; color: var(--primary-color);">Rule 3 is the most credibility-building sentence available to you, <strong>and it costs nothing.</strong></p>
+      </div>
+      <aside class="notes">2 min. Students believe admitting uncertainty weakens them. It is the opposite: the analyst who states the interval and the fix is the one who gets asked back.</aside>
+    </section>
+
+    <!-- SLIDE 32: Stripe -->
+    <section id="stripe" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-building-columns" style="color: var(--success-color);"></i> Economist at Work: Stripe Capital</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Stripe's lending arm had a textbook endogeneity problem: the variables that make a business <em>eligible</em> for a loan &mdash; revenue, longevity, credit &mdash; also predict success <em>without</em> it. Comparing funded to unfunded businesses measures selection, not lending.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 15px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--success-color); line-height: 1;">76,000</p>
+            <p style="font-size: 13.5pt; margin-top: 6px;">businesses randomised</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">+27pp</p>
+            <p style="font-size: 13.5pt; margin-top: 6px;">revenue growth, 2023&ndash;25</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--accent-color); line-height: 1;">+45%</p>
+            <p style="font-size: 13.5pt; margin-top: 6px;">funding YoY, 81,000 businesses</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;">Then the part most economists skip. Not an academic write-up &mdash; an SCR memo: <em>merchant growth is our growth</em> (S); <em>our lending causes it, not merely correlates with it</em> (C); <em>scale it</em> (R).</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 14px; text-align: center; color: var(--primary-color);">The RCT proved it was <strong>real</strong>. The memo proved it was <strong>worth scaling</strong>. You need both.</p>
+      </div>
+      <aside class="notes">2 min. Ask what would have happened if Stripe's economists had handed the CEO a fifty-page NBER-style working paper instead of a one-page memo. Same finding, no decision.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-screwdriver-wrench" style="color: var(--secondary-color);"></i> Discussion: Fix This Recommendation</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 18px 24px;">
+          <p style="font-size: 15pt; font-style: italic; line-height: 1.55;">&ldquo;Our Random Forest achieved 92% accuracy with an AUC of 0.79. Feature importance analysis reveals that <code>nr.employed</code> and <code>euribor3m</code> are the dominant predictors of subscription. We recommend that management monitor these macroeconomic indicators closely when planning future campaigns.&rdquo;</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 16px; text-align: center;">Name <strong>three</strong> things wrong with it &mdash; and rewrite the last sentence.</p>
+        <p style="margin-top: 14px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs</span></p>
+      </div>
+      <aside class="notes">3 min, press 3. Expect: leads with methodology; 92% quoted without the 11% baseline or the 40% recall; converts a predictive ranking into a causal recommendation about a variable the bank cannot move. Also fair: no uncertainty anywhere, and "monitor closely" is not an action anyone can take on Monday. Read the model rewrite on the next slide if they stall.</aside>
+    </section>
+
+    <!-- DIVIDER 6 -->
+    <section id="divider-final" class="section-divider" data-state="is-section-divider">
+      <h1>6 &nbsp;&bull;&nbsp; Into the Final Project</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Everything above is a rubric line. Here is which one.</p>
+    </section>
+
+    <!-- SLIDE 35: rubric map -->
+    <section id="rubric-map" style="padding: 24px 45px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-map" style="color: var(--accent-color);"></i> Where Today's Threads Score Points</h2>
+      <div class="content">
+        <img src="figures/figure_006_final_project_map.png" alt="Map linking the four lecture threads on the left to Final Project rubric lines on the right: prediction versus causation feeds problem framing worth 7 points, baseline before accuracy feeds modeling worth 14, threshold as the decision feeds both modeling and the Streamlit dashboard worth 14, and SCR with honest uncertainty feeds the report worth 11 and the repository and AI appendix worth 14" style="width: 76%; display: block; margin: 0 auto; border-radius: 6px;">
+      </div>
+      <aside class="notes">2 min. Say the totals out loud: 70 points on the project, 30 already committed in milestones. Today is not background reading.</aside>
+    </section>
+
+    <!-- SLIDE 36: the constraint + deliverables -->
+    <section id="deliverables" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> Four Deliverables &mdash; and One Constraint</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 15px 22px;">
+          <p style="font-size: 15.5pt;"><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> <strong>Hear this now, not in December.</strong> The question must be a <strong>prediction</strong> question. If it starts with &ldquo;does X cause Y&rdquo;, reframe it or choose again &mdash; the causal projects belong to ECON 5200.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 14pt;"><strong>1. GitHub repo</strong> &mdash; a stranger clones it and reproduces your headline number.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);"><p style="font-size: 14pt;"><strong>2. Streamlit dashboard</strong> &mdash; live at grading time, a control that changes the prediction, uncertainty shown.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--success-color);"><p style="font-size: 14pt;"><strong>3. Report</strong> &mdash; 5 pages max, SCR structure, recommendation first.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid #7C3A5F;"><p style="font-size: 14pt;"><strong>4. AI appendix</strong> &mdash; 3+ P.R.I.M.E. entries showing judgment, not volume.</p></div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 16px; text-align: center; color: var(--primary-color);">A dashboard showing a single number with no interval <strong>is not finished.</strong></p>
+      </div>
+      <aside class="notes">2 min. AI is permitted throughout &mdash; the condition is that they can explain every line they submit. One appendix entry where the model was wrong and they caught it beats five where they pasted and moved on.</aside>
+    </section>
+
+    <!-- SLIDE 37: Lab 26 -->
+    <section id="lab-preview" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Lab 26 Today: The Whole Pipeline in Miniature</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt;"><code>lab-ch26-guided.ipynb</code> &mdash; Bank Marketing, end to end: frame the question &rarr; justify the method &rarr; drop <code>duration</code> and defend it &rarr; fit the Random Forest &rarr; feature importance <em>with the banner</em> &rarr; decile targeting and the cumulative gains curve &rarr; an SCR recommendation &rarr; a two-minute verbal script.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 15pt;"><strong>Then Part 5.</strong> Hand your recommendation to an LLM with a P.R.I.M.E. prompt that asks it to play a <strong>skeptical VP</strong> and produce the three hardest questions &mdash; on prediction-versus-causation, on model drift, and on fairness in who gets called.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 18px; text-align: center; color: var(--primary-color);">That last step is the rehearsal for the defence. <strong>Do it before the Final Project, not after.</strong></p>
+      </div>
+      <aside class="notes">1 min. Emphasise that the adversarial critique is the cheapest possible dress rehearsal &mdash; the questions the LLM generates are close to the ones a co-op interviewer will ask.</aside>
+    </section>
+
+    <!-- SLIDE 38: takeaways -->
+    <section id="takeaways" style="padding: 28px 50px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Five Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 11px 17px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt;"><i class="fa-solid fa-signs-post" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>Ask the question before you pick the method.</strong> Whom to target is prediction. Whether to intervene is causation.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #eef5ee; border-radius: 8px; padding: 11px 17px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 17pt;"><i class="fa-solid fa-equals" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>An accuracy number without its baseline is not a result.</strong> Lab 17: 90.4% against a 90.4% no-skill baseline. Report the gap, never the level alone.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 11px 17px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt;"><i class="fa-solid fa-sliders" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>The threshold is the decision.</strong> Lab 18: cost 0.4587 at $t = 0.068$ against 0.9437 at the default. The default was chosen by someone who never saw your costs.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 11px 17px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 17pt;"><i class="fa-solid fa-quote-left" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 13.5pt;"><strong>Say the honest sentence.</strong> &ldquo;X is the strongest predictor of Y; this is predictive importance, not a causal effect&rdquo; &mdash; then name the design that would let you say more.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 11px 17px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 17pt;"><i class="fa-solid fa-bullhorn" style="color: #7C3A5F;"></i></p>
+            <p style="font-size: 13.5pt;"><strong>Lead with the answer.</strong> One visual, one claim with bounds, one recommendation. California Housing, FRED, Lalonde and FedSpeak taught you the tools &mdash; they are worth what your ability to choose one and defend it is worth.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the fifth one last and slowly, naming the four recurring threads as you go &mdash; that is the whole course's victory lap in one sentence, and it belongs here rather than as its own section.</aside>
+    </section>
+
+    <!-- SLIDE 39: exit ticket -->
+    <section id="exit-ticket" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket (2 min)</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #eef2ff, #dbeafe); border-radius: 12px; padding: 24px 30px; margin-top: 6px;">
+          <p class="text-lg" style="text-align: center; margin-bottom: 16px;">In <strong>three sentences</strong>, about <em>your own</em> Final Project:</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div><p style="font-size: 14.5pt;"><strong>(a)</strong> Your prediction question &mdash; and one clause on why it is not causal.</p></div>
+            <div><p style="font-size: 14.5pt;"><strong>(b)</strong> Your <strong>baseline</strong> &mdash; the number your model has to beat, and where it comes from.</p></div>
+            <div><p style="font-size: 14.5pt;"><strong>(c)</strong> The decision your <strong>threshold</strong> encodes, and who bears the cost of each error.</p></div>
+          </div>
+        </div>
+        <p style="margin-top: 18px; text-align: center; font-size: 14pt; color: var(--muted-color);">Submit on paper or device &bull; Not graded &bull; Assesses LO 26.1 and 26.3</p>
+      </div>
+      <aside class="notes">2 min. Collect these. Parts (b) and (c) will tell you within a minute which projects are in trouble &mdash; a student who cannot name a baseline has not framed a problem yet, and there is still time to fix that.</aside>
+    </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>

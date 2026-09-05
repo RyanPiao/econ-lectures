@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instrumental Variables</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 12</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Instrumental Variables</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Identification without measuring a single confounder &mdash; and why that power is so hard to wield</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch12-iv.png" alt="Abstract illustration of a lever pulling one clean strand free from a tangled cluster" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">12.1</p>
+            <p style="font-size: 15pt;">State <strong>relevance</strong> and <strong>exclusion</strong>, and say precisely which is testable and which is not</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">12.2</p>
+            <p style="font-size: 15pt;">Estimate IV with <strong>correct standard errors</strong>, and compute the Wald estimator by hand</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">12.3</p>
+            <p style="font-size: 15pt;">Diagnose <strong>weak instruments</strong>, and explain why 2SLS is biased <em>toward OLS</em> rather than toward zero</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">12.4</p>
+            <p style="font-size: 15pt;">Say which <strong>population</strong> an IV estimate belongs to, and judge whether an exclusion restriction is defensible</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 12.3 as today's centre of gravity &mdash; it is the one that overturns something they were taught last year.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 10.</strong> A DAG's strongest claims are its <em>absences</em>. Name one arrow you had to argue was missing.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 11.</strong> TWFE under staggered adoption can return the wrong sign for a policy that helped everyone. What produced the negative weights?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both answers converge on today: <strong>a linear specification silently imposes assumptions you never chose.</strong></p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. Target for QC2: "a linear two-way specification aggregating heterogeneous 2&times;2 comparisons." You will use this exact sentence again in Section 3 when Blandhol et al. lands.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook part 1 -->
+    <section id="hook-104" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> The Rule Everyone Teaches</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">First-stage $F > 10$ and you may proceed. Staiger &amp; Stock (1997). Twenty-five years, in the output of every statistics package you have ever run.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 14px;">In 2022, four econometricians worked out what $F$ a nominal 5% test actually needs in order to <em>have</em> 5% size.</p>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: center; margin-top: 22px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 22px; text-align: center;">
+            <p style="font-size: 48pt; font-weight: 700; color: var(--accent-color); line-height: 1;">104.7</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 8px;">the $F$ you actually need</p>
+          </div>
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">Across 61 <em>AER</em> papers, correctly adjusted standard errors were at least <strong>49% larger</strong> at the 5% level for a quarter of the specifications &mdash; and <strong>136% larger</strong> at the 1% level.</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">Lee, McCrary, Moreira &amp; Porter (2022), <em>AER</em> 112(10).</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say "one hundred four point seven" and then stop talking. Let the silence do the work. Do NOT explain it yet &mdash; the mechanism is Section 4. Right now it is just a number that should not be possible.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook part 2 -->
+    <section id="hook-card" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-graduation-cap" style="color: var(--accent-color);"></i> Now the Most Famous Instrument in Labour Economics</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">David Card used <strong>growing up near a four-year college</strong> as an instrument for years of schooling. It is in every textbook, including ours. You will replicate it today and again in Lab 12.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 22px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 22px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 40pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">59.07</p>
+            <p style="font-size: 14pt; margin-top: 8px;">its first-stage $F$</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">clears the rule &bull; misses the requirement by nearly 2&times;</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 12px; padding: 22px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 40pt; font-weight: 700; color: var(--danger-color); line-height: 1;">2.78&times;</p>
+            <p style="font-size: 14pt; margin-top: 8px;">2SLS &divide; OLS</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">correcting upward ability bias should push the estimate <em>down</em></p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 20px; text-align: center; color: var(--primary-color);"><strong>That direction should trouble you.</strong> Hold onto it &mdash; we come back to it in 50 minutes with an explanation.</p>
+      </div>
+      <aside class="notes">2 min. Reveal 59.07 first, let them notice it beats 10. Then the 2.78&times;. Do not resolve the tension &mdash; you are opening a loop you close in Section 4 with the simulation.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-what-is-an-instrument" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; What an Instrument Is</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Two assumptions. One you can test. One you must argue.</p>
+    </section>
+
+    <!-- SLIDE 7: Endogeneity -->
+    <section id="endogeneity" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-link-slash" style="color: var(--danger-color);"></i> The Problem: Endogeneity</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">We want $\beta$ in &nbsp; $Y_i = \alpha + \beta D_i + \varepsilon_i$ &nbsp; &mdash; $Y_i$ log earnings, $D_i$ years of schooling, $\varepsilon_i$ everything else, <em>including unobserved ability</em>.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-top: 16px;">
+          <p style="font-size: 16pt; text-align: center;">$\text{Cov}(D_i, \varepsilon_i) \neq 0$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); text-align: center; margin-top: 6px;"><strong>Interpretation:</strong> high-ability people get more schooling <em>and</em> earn more anyway. OLS is inconsistent.</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 26px; margin-top: 14px;">
+          <p style="font-size: 16pt; text-align: center;">$\text{plim}\,\hat\beta^{OLS} = \beta + \dfrac{\text{Cov}(D_i,\varepsilon_i)}{\text{Var}(D_i)}$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); text-align: center; margin-top: 6px;"><strong>Interpretation:</strong> the second term is omitted-variable bias &mdash; and it does <em>not</em> shrink with $n$.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 16px; text-align: center; color: var(--primary-color);">More data estimates <strong>the wrong number</strong> more precisely. Ch 6's data defect identity, again.</p>
+      </div>
+      <aside class="notes">3 min. Ch 10 would tell you to measure every confounder and condition on it. Ability alone defeats that. Make sure the plim line is read aloud as a sentence, not as symbols.</aside>
+    </section>
+
+    <!-- SLIDE 8: The trick -->
+    <section id="the-trick" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-lever" style="color: var(--secondary-color);"></i> The Trick: Find a Lever</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Suppose something pushes people into more schooling for a reason that has nothing to do with how much they would earn. <strong>Growing up within commuting distance of a college</strong>, say. It makes college cheaper, so more people go. It does not, by itself, make you a more productive worker.</p>
+        <p class="text-lg" style="line-height: 1.6; margin-top: 16px;">Then the variation in schooling <em>caused by</em> proximity is clean &mdash; as good as randomly assigned. Throw away all the other variation, the part driven by ability and ambition and family money, and use only that slice.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 18px 24px; margin-top: 20px;">
+          <p style="font-size: 17pt;"><i class="fa-solid fa-scissors" style="color: var(--accent-color);"></i> An instrument does not fix your data. It <strong>discards</strong> most of it &mdash; keeping only the variation you can defend, and paying for that defensibility in precision.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The word "discards" is the one to land. Everything about IV &mdash; the wide standard errors, the LATE, the fragility &mdash; follows from the fact that it throws data away on purpose.</aside>
+    </section>
+
+    <!-- SLIDE 9: Two assumptions -->
+    <section id="two-assumptions" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i> Two Assumptions &mdash; and They Are Not Symmetric</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-top: 8px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 20px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">Relevance</p>
+            <p style="font-size: 17pt; text-align: center; margin: 12px 0;">$\text{Cov}(Z_i, D_i) \neq 0$</p>
+            <p style="font-size: 14pt;"><strong>Interpretation:</strong> the instrument actually moves the treatment.</p>
+            <p style="font-size: 15pt; margin-top: 10px; color: var(--success-color);"><strong>TESTABLE</strong> &mdash; you observe both $Z_i$ and $D_i$.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 20px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--danger-color);">Exclusion (validity)</p>
+            <p style="font-size: 17pt; text-align: center; margin: 12px 0;">$\text{Cov}(Z_i, \varepsilon_i) = 0$</p>
+            <p style="font-size: 14pt;"><strong>Interpretation:</strong> $Z_i$ reaches $Y_i$ <em>only</em> through $D_i$.</p>
+            <p style="font-size: 15pt; margin-top: 10px; color: var(--danger-color);"><strong>UNTESTABLE IN PRINCIPLE</strong> &mdash; $\varepsilon_i$ is unobservable by construction.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-key" style="color: #7C3A5F;"></i> No sample size, no diagnostic and no robustness table establishes exclusion. <strong>An IV paper is an argument about institutions with a regression attached.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Section 4 will show that even the TESTABLE one has been tested wrong for twenty-five years. Say that now &mdash; it stops students filing relevance away as "solved."</aside>
+    </section>
+
+    <!-- SLIDE 10: Estimand -->
+    <section id="estimand" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-divide" style="color: var(--secondary-color);"></i> The Estimand, in Two Lines</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Take the covariance of the structural equation with $Z_i$:</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; margin-top: 8px;">
+          <p style="font-size: 15pt; text-align: center;">$\text{Cov}(Z_i, Y_i) = \beta\,\text{Cov}(Z_i, D_i) + \underbrace{\text{Cov}(Z_i, \varepsilon_i)}_{=\,0\ \text{by exclusion}}$</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 10px;">Rearrange &mdash; which requires $\text{Cov}(Z_i, D_i) \neq 0$, so <strong>relevance is exactly the condition that lets you divide</strong>:</p>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 24px; margin-top: 8px;">
+          <p style="font-size: 19pt; text-align: center;">$\beta = \dfrac{\text{Cov}(Z_i, Y_i)}{\text{Cov}(Z_i, D_i)} = \dfrac{\textbf{reduced form}}{\textbf{first stage}}$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); text-align: center; margin-top: 6px;"><strong>Interpretation:</strong> the effect of the instrument on the outcome, divided by its effect on the treatment. That ratio is the entire method.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt;"><strong>Plainly.</strong> A nudge raises college attendance by 8pp and raises average earnings by 1.6%. If the nudge touches earnings <em>only</em> through college, the effect on those it moved is $0.016 / 0.08 = 20\%$. You scale the nudge's total effect by the fraction who actually complied.</p>
+        </div>
+      </div>
+      <aside class="notes">4 min. Derive this on the board, not from the slide. Two lines. The pedagogical payoff is that relevance and exclusion each do visible work &mdash; exclusion kills a term, relevance permits a division.</aside>
+    </section>
+
+    <!-- SLIDE 11: DAG -->
+    <section id="iv-dag" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-diagram-project" style="color: var(--accent-color);"></i> The Exclusion Restriction Is a Missing Arrow</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; align-items: start;">
+          <img src="figures/figure_001_iv_dag.png" alt="Directed acyclic graph: unobserved confounder U points into both treatment D and outcome Y; instrument Z points only into D; the direct arrow from Z to Y is drawn crossed out" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">$U$ confounds $D$ and $Y$ &mdash; that is the endogeneity. There is <strong>no arrow into $Z$</strong>, and <strong>no arrow from $Z$ to $Y$</strong> except through $D$.</p>
+            <p style="font-size: 15pt; line-height: 1.6; margin-top: 14px;">When someone attacks your instrument, they are <em>drawing that arrow</em> and asking you to rule it out.</p>
+            <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 14pt;">For college proximity: better local labour markets? Better schools? Different industry mix? Every one is a candidate arrow, and each must be argued away or controlled for.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Ch 10 said a graph's strongest claims are its absences. This is the sharpest instance of that in the whole book &mdash; harvest the recognition.</aside>
+    </section>
+
+    <!-- SLIDE 12: Misconception -->
+    <section id="misconception-random" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 22px 28px;">
+          <p class="text-xl" style="font-style: italic;">&ldquo;My instrument is randomly assigned, so the exclusion restriction holds.&rdquo;</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">Randomisation gives you</p>
+            <p style="font-size: 15pt; margin-top: 8px;"><strong>Independence.</strong> The instrument is unrelated to everything at baseline. Free.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">Exclusion is separate</p>
+            <p style="font-size: 15pt; margin-top: 8px;"><strong>And stronger.</strong> That it reaches the outcome through <em>no channel except treatment</em>. Never free.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 15pt;"><i class="fa-solid fa-envelope" style="color: var(--accent-color);"></i> A randomised email encouraging users to try a feature is <em>perfectly independent</em> &mdash; and it violates exclusion the moment it also reminds them their subscription exists. Randomisation buys the first assumption. The second one you still have to argue, and it is the one that usually fails.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This example returns in Section 5 as the encouragement design. Plant it now so the callback lands.</aside>
+    </section>
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Did the $F$ Actually Check?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">A colleague says: <em>&ldquo;I ran the first-stage regression, $F = 42$, so the instrument checks out.&rdquo;</em></p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Which assumption have they actually checked?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch12-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Both relevance and exclusion</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Relevance only &mdash; exclusion is untestable</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Exclusion only &mdash; relevance is untestable</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Neither &mdash; $F$-statistics say nothing about instruments</div>
+        </div>
+        <aside class="notes">1 min. Students click to vote on their devices; results appear on the next slide. Expect a meaningful D share after the hook &mdash; that is the productive error.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch12-econ5200-poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Relevance Only</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ5200-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">The first stage involves only $Z_i$ and $D_i$ &mdash; both observed. Exclusion is a statement about $\varepsilon_i$, which is <em>unobservable by construction</em>. There is no regression that can check it.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting but wrong:</strong> after the 104.7 hook it feels like the $F$ is worthless. It is not &mdash; the $F$ <em>is</em> the relevance test. The problem is the threshold everyone applies to it, not the statistic.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Attack the Instrument</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 20px 26px; border-radius: 12px;">
+          <p class="text-xl" style="font-weight: 600;">Card's instrument: growing up within commuting distance of a four-year college.</p>
+          <p style="font-size: 15pt; margin-top: 8px; color: var(--muted-color);">You are the referee. Your job is to draw the arrow that is not supposed to be there.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Name one path from proximity to <em>earnings</em> that does <strong>not</strong> run through schooling.</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">For that path &mdash; can you <strong>control</strong> for it, <strong>bound</strong> it, or only <strong>argue</strong> about it?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4 for the timer. Expect: local labour markets, school quality, urbanicity, industry mix, family sorting into college towns. Card controls SMSA and region and argues the rest. Debrief line: "you just generated the standard thirty-year critique in two minutes &mdash; that tells you how much protection the assumption offers."</aside>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section id="divider-wald-2sls" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; From Wald to Two-Stage Least Squares</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Four sample means, and then everything else.</p>
+    </section>
+
+    <!-- SLIDE: Wald -->
+    <section id="wald" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--secondary-color);"></i> The Wald Estimator: Four Sample Means</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">When the instrument is binary, the ratio has an immediate sample analogue.</p>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 26px; margin-top: 12px;">
+          <p style="font-size: 19pt; text-align: center;">$\hat\beta^{Wald} = \dfrac{\bar Y_{Z=1} - \bar Y_{Z=0}}{\bar D_{Z=1} - \bar D_{Z=0}}$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); text-align: center; margin-top: 8px;"><strong>Interpretation:</strong> the difference in average outcomes between instrument groups, divided by the difference in average treatment. Four numbers. No matrix algebra.</p>
+        </div>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--secondary-color);"><p style="font-size: 14pt;"><strong>Reduced form</strong> ($Z \to Y$)<br><span style="font-size: 20pt; color: var(--secondary-color);">0.1559</span></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--success-color);"><p style="font-size: 14pt;"><strong>First stage</strong> ($Z \to D$)<br><span style="font-size: 20pt; color: var(--success-color);">0.8290</span></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--accent-color);"><p style="font-size: 14pt;"><strong>Wald = RF / FS</strong><br><span style="font-size: 20pt; color: var(--accent-color);">0.1881</span></p></div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 16px; text-align: center;">And <code>IV2SLS</code> with no covariates returns <strong>0.1881</strong>, exactly. <strong>2SLS is the Wald estimator generalised.</strong></p>
+      </div>
+      <aside class="notes">4 min. Do the arithmetic on the board from the four means BEFORE showing any code &mdash; students should watch 0.1881 emerge. Card's proximity raises schooling by 0.83 years and log wages by 0.156.</aside>
+    </section>
+
+    <!-- SLIDE: 2SLS mechanics -->
+    <section id="tsls-mechanics" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> 2SLS Mechanics</h2>
+      <div class="content">
+        <div style="background: #eef5ee; border-radius: 10px; padding: 16px 24px;">
+          <p style="font-size: 14pt; font-weight: 700; color: var(--success-color);">FIRST STAGE &mdash; project the endogenous variable onto the instrument and controls</p>
+          <p style="font-size: 17pt; text-align: center; margin-top: 6px;">$D_i = \gamma_0 + \pi Z_i + \mathbf{X}_i'\boldsymbol\gamma + \nu_i$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); margin-top: 6px;"><strong>Interpretation:</strong> $\pi$ is how hard the instrument pushes. Relevance is exactly the claim $\pi \neq 0$.</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 24px; margin-top: 14px;">
+          <p style="font-size: 14pt; font-weight: 700; color: var(--secondary-color);">SECOND STAGE &mdash; regress the outcome on the <em>fitted</em> treatment</p>
+          <p style="font-size: 17pt; text-align: center; margin-top: 6px;">$Y_i = \alpha + \beta \hat D_i + \mathbf{X}_i'\boldsymbol\delta + \eta_i$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); margin-top: 6px;"><strong>Interpretation:</strong> $\hat D_i$ holds only the variation the instrument explains &mdash; the part that is, by assumption, unrelated to $\varepsilon_i$. Everything else has been thrown away.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 16px; text-align: center; color: var(--primary-color);">That discarding is <strong>why IV estimates are so much less precise than OLS</strong> &mdash; a cost Card makes vivid in two slides.</p>
+      </div>
+      <aside class="notes">3 min. Every symbol gets a name out loud. Do not introduce the SE problem yet; the next slide is better as a surprise.</aside>
+    </section>
+
+    <!-- SLIDE: SE trap -->
+    <section id="se-trap" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-bug" style="color: var(--danger-color);"></i> The Trap: Never Hand-Roll the Second Stage</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Running those two regressions yourself gives the right coefficient and the <strong>wrong standard error</strong>. Worth doing once, deliberately &mdash; it is a bug that survives code review.</p>
+        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 12px;"><code>manual 2SLS   coef=0.2587  SE=0.0284  t=9.11
+linearmodels  coef=0.2587  SE=0.0340  t=7.61</code></pre>
+        <p style="font-size: 16pt; margin-top: 12px;">Identical coefficients. Standard errors understated by <strong>20%</strong>, and $t$ inflated from 7.61 to 9.11.</p>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 14.5pt;"><strong>Mechanism.</strong> The hand-rolled stage computes residuals as $Y_i - \hat D_i\hat\beta$, using the <em>fitted</em> treatment. The correct structural residual uses the <em>actual</em> one, $Y_i - D_i\hat\beta$. A projection has strictly less variance than what it projects &mdash; so the residuals are too small, the error variance is too small, and every standard error inherits it. <strong>The bias is always toward overconfidence.</strong></p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 12px; text-align: center; color: var(--muted-color); font-style: italic;">Here it turns 7.6 into 9.1 and changes nothing. In a marginal case it manufactures a discovery.</p>
+      </div>
+      <aside class="notes">4 min. Run this live if you can. The identical coefficients with different standard errors is a genuine surprise, and the projection explanation is the kind of thing that sticks after one hearing.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Same Coefficient, Different SE</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Two-stage-by-hand and <code>IV2SLS</code> return <strong>exactly the same coefficient</strong> but different standard errors.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Why?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch12-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) <code>linearmodels</code> uses a different estimator</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The manual version uses $\hat D_i$ in its residuals; the structural residual needs $D_i$</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Rounding in the first-stage fitted values</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The manual version forgot the constant</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. If A leads, that is worth naming out loud &mdash; it is the intuitive-but-wrong model of what a package does for you.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch12-econ5200-poll-2" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; The Wrong Residual</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ5200-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">The projection $\hat D_i$ has less variance than $D_i$, so the manual residuals are too small, the estimated error variance is too small, and every standard error comes out too tight &mdash; always in the direction of overconfidence.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting but wrong:</strong> the two estimators are algebraically identical for the <em>point estimate</em> &mdash; that is why the coefficients match to four decimals. The divergence is entirely in the variance formula.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE: Card replication -->
+    <section id="card-replication" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-chart-simple" style="color: var(--secondary-color);"></i> Replicating Card (1995)</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--secondary-color);"><p style="font-size: 13pt;"><strong>n:</strong> 3,010 young men</p></div>
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--accent-color);"><p style="font-size: 13pt;"><strong>Source:</strong> NLS of Young Men, 1966</p></div>
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--success-color);"><p style="font-size: 13pt;"><strong>$Z$:</strong> <code>nearc4</code></p></div>
+          <div style="background: #f0f5f8; padding: 9px 13px; border-radius: 6px; border-left: 3px solid var(--danger-color);"><p style="font-size: 13pt;"><strong>Loaded via:</strong> <code>wooldridge</code></p></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start;">
+          <img src="figures/figure_002_card_precision.png" alt="OLS and 2SLS return-to-schooling estimates with 95% confidence intervals, showing the 2SLS estimate nearly three times larger with an interval roughly nine times wider" style="width: 100%; border-radius: 6px;">
+          <div>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 14.5pt;"><strong>1. The precision cost.</strong> SE 0.0037 &rarr; 0.0337. <strong>Nine times wider.</strong> That is the price of discarding all schooling variation except the sliver proximity explains.</p>
+            </div>
+            <div style="background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color); margin-top: 12px;">
+              <p style="font-size: 14.5pt;"><strong>2. The direction.</strong> OLS says 9.3% per year. 2SLS says 25.9%. If ability biases OLS <em>upward</em>, the correction should push it <strong>down</strong>. It nearly tripled.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Get the class to react to the 2.78&times; ratio BEFORE you offer any explanation. They will produce the LATE story and the measurement-error story unprompted, which sets up the next two sections perfectly.</aside>
+    </section>
+
+    <!-- SLIDE: The tell -->
+    <section id="the-tell" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--accent-color);"></i> Honest Stories &mdash; and the Tell</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div style="background: #eef5ee; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>Story 1 &mdash; LATE.</strong> The people proximity moved were liquidity-constrained. Their return to schooling may genuinely be higher than the average person's. (Section 3.)</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 8px; padding: 15px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>Story 2 &mdash; measurement error.</strong> Classical error in self-reported schooling attenuates OLS toward zero; IV corrects for it.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px;">Both are respectable. But Lal, Lockhart, Xu &amp; Zu (2024) replicated <strong>67 IV studies</strong> and found 2SLS $\gg$ OLS in the majority &mdash; and something worse:</p>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 12px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-arrow-trend-down" style="color: var(--danger-color);"></i> <strong>The ratio is negatively correlated with instrument strength</strong> wherever the instrument was not experimentally generated. Under robust inference, roughly <strong>19&ndash;30%</strong> of published 2SLS estimates are underpowered.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 14px; text-align: center;">If 2SLS were simply correcting bias, <strong>the size of the correction would have no reason to track how weak the instrument is.</strong></p>
+      </div>
+      <aside class="notes">3 min. This is the pivot into Section 4. The correlation with strength is the decisive piece of evidence &mdash; it is what turns "IV is bigger than OLS" from a curiosity into a diagnosis.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: How Should You Read That Pattern?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Across a large replication literature, IV estimates run far above OLS &mdash; and <strong>the gap widens as instruments get weaker.</strong></p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">The best reading is:</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch12-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) IV is correcting a large downward bias in OLS</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) A diagnostic warning: weak first stages amplify small exclusion violations</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Evidence that OLS should be abandoned for causal work</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Sampling noise &mdash; with enough studies anything correlates</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. A is the field's own historical reading, so a large A share is the honest starting point rather than an embarrassment.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch12-econ5200-poll-3" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Read It as a Warning</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ5200-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">A correction that tracks instrument <em>strength</em> is not a correction. It is an artefact of dividing by a small, noisy denominator &mdash; any tiny breach of exclusion gets divided by a near-zero first stage and blown up.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting but wrong:</strong> it was the discipline's own reading for decades, and it is not refutable from a single study. What refutes it is the <em>correlation with strength</em> &mdash; bias correction has no reason to scale with how weak your lever is.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+    <!-- DIVIDER 3 -->
+    <section id="divider-late" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; Whose Effect Did You Estimate?</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">A number for a group you cannot name, cannot count, and did not choose.</p>
+    </section>
+
+    <!-- SLIDE: Four types -->
+    <section id="four-types" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-users" style="color: var(--secondary-color);"></i> Four Types (Imbens &amp; Angrist 1994)</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 92%; margin: 6px auto 0;">
+          <thead>
+            <tr><th style="width: 26%;"></th><th>$D_i(0) = 0$ &nbsp;<span style="font-weight: 400; color: var(--muted-color);">untreated without the push</span></th><th>$D_i(0) = 1$ &nbsp;<span style="font-weight: 400; color: var(--muted-color);">treated anyway</span></th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="font-weight: 700;">$D_i(1) = 1$</td><td style="background: #eef5ee; color: var(--success-color); font-weight: 700;">COMPLIER &mdash; moves when pushed</td><td>Always-taker</td></tr>
+            <tr><td style="font-weight: 700;">$D_i(1) = 0$</td><td>Never-taker</td><td style="background: #fdf0ea; color: var(--danger-color);"><s>Defier</s> &mdash; assumed away</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size: 15.5pt; margin-top: 16px;">The instrument creates variation <strong>only among compliers</strong>. Always-takers and never-takers do not move, so they contribute nothing to the numerator and nothing to the denominator.</p>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 16pt;">IV therefore recovers the average effect <strong>for compliers only</strong> &mdash; the <strong>Local Average Treatment Effect</strong>. &ldquo;Local&rdquo; does not mean &ldquo;in a region.&rdquo; It means <em>for the subpopulation this particular instrument happens to move.</em></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Draw the 2&times;2 on the board as $D_i(0)$ against $D_i(1)$ &mdash; the defier cell is the one you assume away, and drawing it is what makes monotonicity concrete two slides from now.</aside>
+    </section>
+
+    <!-- SLIDE: cannot identify compliers -->
+    <section id="cannot-name" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-user-secret" style="color: var(--danger-color);"></i> You Cannot Identify Who the Compliers Are</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Compliance is defined by a <strong>counterfactual</strong> &mdash; what someone would do under <em>both</em> values of the instrument. You observe each person under one.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #eef5ee; border-radius: 8px; padding: 16px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">What you can do</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Estimate the complier <em>share</em> &mdash; it is the first stage. With more work, describe their characteristics.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">What you can never do</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Produce a list. Not with more data, not with a better model. It is not a sample-size problem.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 15.5pt;"><strong>So a different instrument for the same treatment estimates a different parameter.</strong> Card's proximity moves people for whom distance was the binding constraint &mdash; plausibly poorer, liquidity-constrained, plausibly higher return. Angrist &amp; Krueger's quarter-of-birth moves people who wanted to leave at the minimum legal age &mdash; a very different group with plausibly a much lower return.</p>
+          <p style="font-size: 16pt; margin-top: 10px; color: #7C3A5F;"><strong>Two valid instruments, two different numbers, and neither is wrong.</strong> They are estimates of different estimands.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The "cannot identify individually" point reliably produces resistance. Let a student argue it out rather than settling it yourself &mdash; the objection dies when they try to state what data would settle it.</aside>
+    </section>
+
+    <!-- SLIDE: monotonicity -->
+    <section id="monotonicity" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-arrow-up-right-dots" style="color: var(--accent-color);"></i> Monotonicity: No Defiers</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 26px;">
+          <p style="font-size: 19pt; text-align: center;">$D_i(1) \geq D_i(0) \quad \text{for all } i$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); text-align: center; margin-top: 6px;"><strong>Interpretation:</strong> the instrument pushes everyone in the same direction, or not at all. This is a statement about <em>every individual</em>, not about an average.</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px;">Monotonicity is what makes the <strong>denominator interpretable</strong>. Without it the first stage is a <em>net</em> movement &mdash; some people pushed in, others pushed out &mdash; and the ratio no longer corresponds to any average effect at all.</p>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;"><strong>Where this bites: judge-leniency designs.</strong> Cases are randomly assigned to decision-makers with different approval rates. Frandsen, Lefgren &amp; Leslie (2023) show that if judges are Bayesian decision-makers weighing multidimensional signals, average monotonicity is routinely violated &mdash; a lenient judge may deny a case a strict judge would grant, because they weight the evidence differently. When that happens the 2SLS estimate loses its causal interpretation <em>entirely</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Point back at the 2&times;2: monotonicity is exactly "the bottom-right cell is empty." Judge designs return in Section 5 as one of three modern families.</aside>
+    </section>
+
+    <!-- SLIDE: saturation -->
+    <section id="saturation" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-repeat" style="color: var(--danger-color);"></i> The Saturation Problem &mdash; Chapter 11, Second Sighting</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Standard practice reads 2SLS-with-covariates as a <em>positively weighted</em> average of covariate-specific LATEs. Blandhol, Bonney, Mogstad &amp; Torgovitsky (2022) proved this is <strong>false</strong> unless the specification is <strong>non-parametrically saturated</strong> &mdash; the instrument interacted with every combination of covariate values.</p>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 12px;">
+          <p style="font-size: 15pt;">Include covariates <strong>linearly</strong>, as essentially every applied paper does, and 2SLS assigns <strong>negative weights</strong> to the treatment effects of always-takers and never-takers. The estimate can come back <em>negative</em> when the treatment strictly helped every single person in the population.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 14px 22px; margin-top: 12px;">
+          <p style="font-size: 15pt;"><i class="fa-solid fa-link" style="color: #7C3A5F;"></i> <strong>You have seen this before.</strong> TWFE under staggered adoption; 2SLS with linear covariates. Same pathology, different estimator: <em>a linear specification imposing a weighting scheme the researcher never chose and cannot see in the output.</em> Blandhol et al. is to IV what Goodman-Bacon is to DiD.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 12px; color: var(--muted-color);"><strong>Remedy:</strong> saturate &mdash; estimate a LATE within each covariate cell and aggregate with weights you choose and report. Expensive in degrees of freedom. The alternative is an estimate whose sign you cannot vouch for.</p>
+      </div>
+      <aside class="notes">4 min. Draw the Ch 11 parallel on the board explicitly. For a graduate cohort, seeing the same pathology twice in two weeks is the single most valuable thing in this module &mdash; the 2020s reckoning is one discovery repeated across designs.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Charter Cap</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 16px 24px; border-radius: 12px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;"><strong>Boston's charter lotteries.</strong> Oversubscribed urban charters were legally required to admit by random lottery &mdash; a randomised instrument embedded in real policy. A year of attendance raised math achievement by roughly <strong>0.4 SD</strong> and ELA by about <strong>0.2 SD</strong>. The estimates entered Massachusetts' debate over lifting the statewide cap.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px;">
+          <div style="padding: 14px 18px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 14.5pt;">Who are the compliers here? Name them in one sentence.</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 14.5pt;">Does lifting a statewide cap <em>scale the treatment for the compliers</em>, or extend it to someone else?</p>
+          </div>
+        </div>
+        <p style="margin-top: 14px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4. Debrief with the two sharpeners: effects are LARGEST for disadvantaged, low-achieving and non-white applicants &mdash; so the compliers are exactly the students the treatment works best for, and averaging them into a statewide projection overstates what expansion delivers. And across 113 schools the estimated effect ranges from &minus;0.57 to +1.16 SD. "The charter effect" is a distribution, not a number.</aside>
+    </section>
+
+    <!-- SLIDE: Think Like an Economist -->
+    <section id="think-like-economist" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-briefcase" style="color: var(--accent-color);"></i> Think Like an Economist</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p class="text-lg" style="font-style: italic;">A product manager sees your significant IV estimate and asks whether rolling the treatment out to everyone will deliver that lift.</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 16px; color: var(--danger-color); font-weight: 600;">The answer is no &mdash; and the useful version explains why.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #eef5ee; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--success-color);"><p style="font-size: 14.5pt;"><strong>Compliers</strong><br>The slice a nudge could tip. Your estimate is about <em>them</em>.</p></div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--secondary-color);"><p style="font-size: 14.5pt;"><strong>Always-takers</strong><br>Already had the treatment. The rollout does nothing for them.</p></div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; border-left: 3px solid var(--danger-color);"><p style="font-size: 14.5pt;"><strong>Never-takers</strong><br>Will not adopt whatever you do.</p></div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt;"><strong>The professional move:</strong> state the estimate, describe the compliers <em>concretely</em>, and say what would have to be true about everyone else for the number to generalise.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the interview answer. Students who can say it in this order &mdash; estimate, compliers, extrapolation condition &mdash; sound like they have done the work, because they have.</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-weak" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; The Weak Instrument Crisis</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Where the field spent twenty-five years being wrong about the assumption it <em>could</em> test.</p>
+    </section>
+
+    <!-- SLIDE: mechanism -->
+    <section id="weak-mechanism" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-divide" style="color: var(--danger-color);"></i> The Mechanism Is the Ratio</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">The problem is <em>not</em> that a weak instrument gives an imprecise estimate. It does &mdash; but that would be honest: wide intervals telling you that you have learned little.</p>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 14px;">
+          <p style="font-size: 16pt;">The problem is that it gives an estimate <strong>biased in a specific direction &mdash; toward OLS</strong> &mdash; while reporting standard errors that suggest more confidence than you have.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 16px; line-height: 1.6;">IV <strong>divides by the first stage</strong>. As the first stage approaches zero you are dividing by something small and noisy. Any tiny correlation between instrument and error &mdash; <em>any small breach of exclusion</em> &mdash; gets divided by that small number and blown up.</p>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 14px; text-align: center; color: var(--primary-color);">In the limit of a useless instrument, <strong>2SLS converges on the OLS estimate you were trying to escape.</strong></p>
+      </div>
+      <aside class="notes">2 min. Point back at the estimand slide: $\beta = $ RF / FS. Everything here is a consequence of what happens to a ratio when the denominator goes to zero.</aside>
+    </section>
+
+    <!-- SLIDE: Bound Jaeger Baker -->
+    <section id="bound-jaeger-baker" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-dice" style="color: var(--accent-color);"></i> Instruments Made of Pure Noise</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Bound, Jaeger &amp; Baker (1995) took Angrist &amp; Krueger's celebrated quarter-of-birth study &mdash; hundreds of thousands of observations, a beautifully clean natural experiment &mdash; and replaced the real instruments with <strong>randomly generated ones</strong>.</p>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 12px; padding: 24px 30px; margin-top: 20px; text-align: center;">
+          <p class="text-2xl" style="color: var(--danger-color); font-weight: 700;">They reproduced results resembling the published estimates.</p>
+          <p style="font-size: 15pt; margin-top: 10px;">The instruments contained essentially <strong>no information</strong>. The procedure still produced a plausible-looking number, with a standard error, in a table.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 18px; text-align: center; color: var(--muted-color); font-style: italic;">This is why the field started caring. Not a theoretical worry &mdash; a demonstration that the output is indistinguishable from the output of nothing.</p>
+      </div>
+      <aside class="notes">2 min. Tell this one in full. It is short, it is shocking, and it is the historical hinge &mdash; it converted weak instruments from a footnote into a literature.</aside>
+    </section>
+
+    <!-- SLIDE: simulation table -->
+    <section id="sim-table" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> Build It: You Only Know Because You Simulated</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">True effect $\beta = 1.0$. A confounder $U$ raises both treatment and outcome, so OLS is biased upward &mdash; toward <strong>2.0</strong> when the instrument is weak. Watch the OLS column drift down as $\pi$ rises: a stronger instrument explains more of $D$, so $U$'s share of its variance falls and the OLS bias shrinks with it. Measured, $n = 2{,}000$ &mdash; these are the numbers you will reproduce in Lab 12.</p>
+        <table class="table-standard" style="width: 94%; margin: 12px auto 0;">
+          <thead><tr><th>$\pi$ (first stage)</th><th>OLS</th><th>2SLS</th><th>SE(2SLS)</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td>1.00</td><td>1.698</td><td style="color: var(--success-color); font-weight: 700;">1.029</td><td>0.052</td><td>recovers the truth</td></tr>
+            <tr><td>0.50</td><td>1.915</td><td style="color: var(--success-color); font-weight: 700;">1.058</td><td>&mdash;</td><td>recovers the truth</td></tr>
+            <tr><td>0.05</td><td>2.017</td><td style="color: var(--accent-color); font-weight: 700;">1.583</td><td>0.851</td><td>$t = 1.86$, $p = 0.063$</td></tr>
+            <tr><td>0.01</td><td>2.018</td><td style="color: var(--danger-color); font-weight: 700;">3.949</td><td>7.620</td><td style="color: var(--danger-color);">worse than the OLS it replaced</td></tr>
+          </tbody>
+        </table>
+        <p class="fragment fade-up" style="font-size: 14pt; margin-top: 12px; text-align: center;">At a strong first stage 2SLS lands on <strong>1.03</strong> and <strong>1.06</strong> and reproduces Card's published estimates to the printed digits.<br>The <strong>3.949</strong> is <em>one draw</em>. Over the 500 draws on the next slide the median 2SLS at $\pi = 0.01$ is <strong>2.038</strong> against a median OLS of <strong>1.998</strong> &mdash; weak 2SLS does not scatter wildly around the truth, it collapses <em>onto the bias it was meant to remove</em>. The mean is undefined: just-identified 2SLS has no finite moments.</p>
+      </div>
+      <aside class="notes">3 min. Build the table one row at a time if you can. Do not editorialise until the last row is up &mdash; the shape of the column does the arguing.</aside>
+    </section>
+
+    <!-- SLIDE: simulation figure -->
+    <section id="sim-figure" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--danger-color);"></i> A Weak Instrument Is Worse Than No Instrument</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_003_weak_instrument.png" alt="2SLS estimates plotted against first-stage strength: near the true effect of one when the first stage is strong, and rising past the OLS bias level to 3.949 as the first stage approaches zero" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">OLS was biased by <strong>+1.0</strong>. The IV estimate hired to fix it is off by <strong>+2.9</strong>.</p>
+            <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; margin-top: 14px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14.5pt;">A weak instrument is not a <em>weaker correction</em>. It is a <strong>different, larger and less legible error</strong> &mdash; dressed in the language of causal identification.</p>
+            </div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin-top: 12px;">
+              <p style="font-size: 14pt;">No instrument leaves you with an OLS bias you can at least reason about. A weak one gives you a different bias you cannot.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the payoff of the hook. Say it plainly: the method that was supposed to rescue you from bias handed you a bigger one and called it identification.</aside>
+    </section>
+
+    <!-- SLIDE: confident wrong answer -->
+    <section id="confident-wrong" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-mask" style="color: var(--danger-color);"></i> The Confident Wrong Answer</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">One draw is not evidence. Across <strong>500 draws</strong> of the same DGP:</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">$\pi = 0.05$</p>
+            <p style="font-size: 15pt; margin-top: 8px;"><strong>31.4%</strong> of studies reject $\beta = 0$ at the 5% level.</p>
+            <p style="font-size: 15pt; margin-top: 6px;">Of those significant results, <strong>75.2%</strong> are off the truth by more than 0.5.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">$\pi = 0.01$</p>
+            <p style="font-size: 15pt; margin-top: 8px;"><strong>21.0%</strong> reject $\beta = 0$.</p>
+            <p style="font-size: 15pt; margin-top: 6px;">Of those, <strong>98.1%</strong> are wrong by more than 0.5.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><strong>You do not run 500 studies. You run one.</strong> &ldquo;My second stage was significant&rdquo; is therefore not a defence &mdash; under a weak instrument, significance is evidence of a lucky draw from a distribution with no finite moments, not evidence of identification.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Stop hard here. Ask the room whether an estimator that is right on the median is behaving; let them say yes; then reveal the conditional-on-significance column. That is the moment the lecture's thesis lands.</aside>
+    </section>
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Does That Tell You?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">At $\pi = 0.05$, about <strong>31%</strong> of draws are statistically significant &mdash; and <strong>75%</strong> of <em>those</em> are off the true effect by more than 0.5.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">The right conclusion is:</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch12-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Weak instruments produce obviously noisy, easily spotted results</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Significance under a weak instrument is close to worthless as evidence</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Increase the sample size and the problem resolves</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Use a one-sided test to recover the lost power</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. C is the reflex answer of anyone trained to treat every inference problem as a sample-size problem &mdash; worth surfacing.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch12-econ5200-poll-4" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Confident, Not Noisy</h2>
+        <div class="poll-results-chart" data-poll-id="ch12-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">A weak instrument produces a <em>confident</em> wrong answer, not a visibly noisy one. That is exactly why these results survive peer review &mdash; nothing in the output looks broken.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is tempting but wrong:</strong> weak-instrument bias does not vanish with $n$. The bias is governed by the <em>concentration parameter</em>, and more data on a lever that does not move anything buys you nothing.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE: F thresholds -->
+    <section id="f-thresholds" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-ruler-horizontal" style="color: var(--accent-color);"></i> Stop Using $F > 10$</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; align-items: start;">
+          <img src="figures/figure_004_f_thresholds.png" alt="Horizontal bars comparing first-stage F thresholds: the conventional rule of ten, Card's first stage of 59.07, and the Lee et al. requirement of 104.7 for a valid five percent test" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.6;">Lee, McCrary, Moreira &amp; Porter (2022): a genuine 5% test in the just-identified model needs <strong>$F > 104.7$</strong>.</p>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 14pt;">Their <strong>$tF$ procedure</strong> gives an adjusted standard error as a smooth function of the first-stage $F$. Keep $F$ near 10 and you must inflate the critical value from <strong>1.96 to about 3.43</strong> to preserve valid inference.</p>
+            </div>
+            <div style="background: #eef5ee; border-radius: 8px; padding: 13px 18px; margin-top: 12px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 14pt;"><strong>And use an <em>effective</em> $F$.</strong> The conventional first-stage $F$ assumes homoskedastic, unclustered errors. Real data have neither. Montiel Olea&ndash;Pflueger (Andrews, Stock &amp; Sun 2019).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Lal et al. identify ignoring clustered errors as a leading source of overstated instrument strength &mdash; researchers are not just using the wrong threshold, they are using it on the wrong statistic.</aside>
+    </section>
+
+    <!-- SLIDE: effective F misconception -->
+    <section id="effective-f-misconception" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 22px 28px;">
+          <p class="text-xl" style="font-style: italic;">&ldquo;<code>linearmodels</code> gives me the effective $F$ in <code>first_stage</code>.&rdquo;</p>
+        </div>
+        <p class="text-lg" style="margin-top: 18px;">It does not. That property reports R&sup2;, partial R&sup2;, Shea's R&sup2;, and a partial $F$ &mdash; and under a robust covariance that partial $F$ is reported on a chi-squared distribution. <strong>There is no Montiel Olea&ndash;Pflueger effective $F$ in that table.</strong></p>
+        <p class="text-lg" style="margin-top: 14px;">Compute it separately, or use a package that implements it (<code>ivDiag</code> in R).</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16.5pt;"><i class="fa-solid fa-triangle-exclamation" style="color: #7C3A5F;"></i> <strong>Believing you have checked something you have not is a worse position than knowing you have not checked it.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Worth being blunt: this is a real bug in real papers, and it comes from reading a table heading rather than the documentation.</aside>
+    </section>
+
+    <!-- SLIDE: Anderson-Rubin -->
+    <section id="anderson-rubin" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-shield-halved" style="color: var(--success-color);"></i> Report a Weak-Instrument-Robust Confidence Set</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Anderson&ndash;Rubin sidesteps the whole problem by <strong>never dividing by the first stage</strong>. Under $H_0: \beta = \beta_0$, the restricted residual $Y_i - \beta_0 D_i$ must be uncorrelated with $Z_i$. Test that directly, sweep a grid of candidate $\beta_0$, and keep every value you cannot reject.</p>
+        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 12px;"><code>Anderson-Rubin 95% CI: [0.2020, 0.3390]
+Conventional Wald CI:  [0.1926, 0.3248]</code></pre>
+        <p style="font-size: 14.5pt; margin-top: 10px;">At Card's $F = 59$ the two are close &mdash; the AR set is shifted up and about 4% wider. That is the honest picture for a moderately strong instrument, and it is reassuring here.</p>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 15.5pt;">The value of AR is what it does when the instrument is <em>genuinely</em> weak: the set becomes <strong>unbounded, or empty</strong> &mdash; the method correctly reporting that the data do not identify $\beta$.</p>
+          <p style="font-size: 15.5pt; margin-top: 8px; color: var(--success-color);"><strong>A Wald interval never tells you that. An AR set does.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The unbounded-set property is the single most useful thing about the method and students find it strange &mdash; spend the time. An empty set is not a bug; it is the estimator refusing to answer.</aside>
+    </section>
+
+    <!-- DIVIDER 5 -->
+    <section id="divider-nearly-true" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; When Exclusion Is Only Nearly True</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">The third instance of one idea.</p>
+    </section>
+
+    <!-- SLIDE: plausibly exogenous -->
+    <section id="plausibly-exogenous" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ruler-combined" style="color: var(--secondary-color);"></i> Plausibly Exogenous</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Every serious objection to an IV paper is an argument that exclusion fails <strong>a little</strong>. Not catastrophically &mdash; a little. The conventional response is to insist it holds exactly: a binary claim about an untestable assumption.</p>
+        <p style="font-size: 15pt; margin-top: 10px;">Conley, Hansen &amp; Rossi (2012) formalise the mature alternative. Allow the instrument a direct effect:</p>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 26px; margin-top: 10px;">
+          <p style="font-size: 18pt; text-align: center;">$Y_i = \alpha + \beta D_i + \gamma Z_i + \varepsilon_i$</p>
+          <p style="font-size: 14pt; color: var(--accent-color); text-align: center; margin-top: 6px;"><strong>Interpretation:</strong> $\gamma$ is exactly the arrow the DAG said was absent. Standard IV asserts $\gamma = 0$.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt;">Instead of asserting it, place $\gamma$ in a plausible range and trace $\hat\beta$ across it &mdash; the <strong>union of confidence intervals</strong>, or the local-to-zero approximation. The output is a <em>set</em>, and the reported claim becomes conditional and defensible:</p>
+          <p style="font-size: 15.5pt; margin-top: 8px; font-style: italic; color: var(--success-color);">&ldquo;Our conclusion survives any direct effect of the instrument on the outcome smaller than $\bar\gamma$.&rdquo;</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is exactly the &gamma;-sweep you will build in Diagnosis 3 of Lab 12 &mdash; say so, so the lab reads as a continuation rather than a new task.</aside>
+    </section>
+
+    <!-- SLIDE: portable pattern -->
+    <section id="portable-pattern" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-arrows-turn-to-dots" style="color: #7C3A5F;"></i> The Portable Pattern</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 96%; margin: 6px auto 0;">
+          <thead><tr><th style="width: 16%;">Chapter</th><th>The untestable assumption</th><th>The bound you report instead</th></tr></thead>
+          <tbody>
+            <tr><td><strong>10</strong></td><td>No unmeasured confounding</td><td style="color: var(--secondary-color); font-weight: 700;">E-value</td></tr>
+            <tr><td><strong>11</strong></td><td>Parallel trends</td><td style="color: var(--accent-color); font-weight: 700;">Honest DiD breakdown point</td></tr>
+            <tr><td><strong>12</strong></td><td>Exclusion restriction</td><td style="color: var(--success-color); font-weight: 700;">Plausibly exogenous $\bar\gamma$</td></tr>
+          </tbody>
+        </table>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid #7C3A5F; border-radius: 10px; padding: 20px 26px; margin-top: 22px; text-align: center;">
+          <p class="text-xl" style="color: #7C3A5F;"><strong>When an assumption cannot be tested, do not assert it &mdash; bound it, and report the breakdown value.</strong></p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 16px; text-align: center; color: var(--muted-color);">That sentence is the most portable thing in this module, and it is worth more than any individual estimator in it.</p>
+      </div>
+      <aside class="notes">2 min. Put all three side by side on the board. Graduate students should leave with the pattern, not with three disconnected techniques.</aside>
+    </section>
+
+    <!-- SLIDE: three design families -->
+    <section id="design-families" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-sitemap" style="color: var(--accent-color);"></i> Three Modern Design Families, Three Failure Modes</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 97%; margin: 6px auto 0;">
+          <thead><tr><th style="width: 24%;">Design</th><th style="width: 34%;">What is random</th><th>Its specific failure mode</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Judge / examiner leniency</strong></td><td>Case assignment to decision-makers of differing strictness</td><td><strong style="color: var(--danger-color);">Monotonicity</strong> (Frandsen et al. 2023); plus many-instrument bias when each judge is a dummy</td></tr>
+            <tr><td><strong>Shift-share (Bartik)</strong></td><td>Either the <em>shocks</em> (Borusyak et al.) <em>or</em> the <em>shares</em> (Goldsmith-Pinkham et al.)</td><td><strong style="color: var(--danger-color);">Not knowing which framework you are invoking</strong> &mdash; the referee's question is only answerable if you have chosen</td></tr>
+            <tr><td><strong>Encouragement</strong></td><td>The nudge you send. Independence is guaranteed &mdash; you control it</td><td><strong style="color: var(--danger-color);">Exclusion</strong> &mdash; an email that also reminds the user their subscription exists</td></tr>
+          </tbody>
+        </table>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 20px; margin-top: 16px;">
+          <p style="font-size: 14.5pt;"><strong>Encouragement designs are the industry default</strong> and the interview favourite. When a product must ship to everyone you cannot withhold it &mdash; so you randomise the <em>nudge</em>. The estimand is the LATE for users the nudge tipped, which is, usefully, exactly the population a marketing budget should be sized against: always-takers would have adopted anyway.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Encouragement gets the weight &mdash; it is what 5200 students will actually build. One line each on judge and shift-share; the reading carries the rest.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-hammer" style="color: var(--danger-color);"></i> Discussion: Break Your Own Instrument</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-xl" style="font-weight: 600;">Before you defend an instrument, try to break it.</p>
+          <p style="font-size: 15pt; margin-top: 8px; color: var(--muted-color);">Use your own project if you have one, or Card's proximity if you do not.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--danger-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Write down the <strong>three</strong> most plausible direct paths from your instrument to your outcome that do <em>not</em> pass through the treatment.</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">For each: can you <strong>control</strong> it, <strong>bound</strong> it, or only <strong>argue</strong> about it?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs</span></p>
+      </div>
+      <aside class="notes">3 min, press 3. Debrief in one line: if you cannot generate three, you do not understand the setting well enough to defend the design. That exercise &mdash; not the first-stage $F$ &mdash; separates a credible IV paper from a fragile one, and a referee will do it to you anyway.</aside>
+    </section>
+
+    <!-- SLIDE: takeaways -->
+    <section id="key-takeaways" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>An instrument discards data.</strong> Identification without measuring a confounder, bought by keeping only the slice a lever explains &mdash; which is why IV costs so much precision.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>One assumption is testable, one is not.</strong> Randomisation delivers independence, never exclusion. Exclusion is an argument about institutions with a regression attached.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #eef5ee; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-users" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>IV estimates the LATE.</strong> Compliers only &mdash; a group you cannot enumerate. Different valid instruments recover genuinely different parameters, and neither is wrong.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>$F > 10$ is wrong by an order of magnitude.</strong> Valid 5% inference needs $F > 104.7$; at $\pi = 0.01$ our simulation returned 3.949 against a truth of 1.0 and an OLS bias of 2.018.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 12px; text-align: center; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Unless you saturate, 2SLS with covariates carries negative weights</strong> &mdash; Chapter 11's pathology in a second estimator. And: <em>when an assumption cannot be tested, bound it and report the breakdown value.</em></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the fifth one last and slowly. If they remember one sentence from this module, it should be that one.</aside>
+    </section>
+
+    <!-- SLIDE: exit ticket -->
+    <section id="exit-ticket" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket (2 min)</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #eef2ff, #dbeafe); border-radius: 12px; padding: 28px 34px; margin-top: 10px;">
+          <p class="text-xl" style="line-height: 1.5; text-align: center;">In <strong>three sentences</strong>, for an instrument in your own project &mdash; or for Card (1995):</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px;">
+            <div><p style="font-size: 15pt;"><strong>(a)</strong> State the exclusion restriction.</p></div>
+            <div><p style="font-size: 15pt;"><strong>(b)</strong> Name the compliers.</p></div>
+            <div><p style="font-size: 15pt;"><strong>(c)</strong> Name one direct path you cannot rule out &mdash; and say whether you would control it, bound it, or argue it.</p></div>
+          </div>
+        </div>
+        <p style="margin-top: 20px; text-align: center; font-size: 14pt; color: var(--muted-color);">Submit on paper or device &bull; Not graded &bull; Assesses LO 12.1 and 12.4</p>
+      </div>
+      <aside class="notes">2 min. Collect these. Part (c) is the one that separates students who understood the module from students who memorised the estimator.</aside>
+    </section>
+
+    <!-- SLIDE: looking ahead -->
+    <section id="looking-ahead" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-road" style="color: var(--secondary-color);"></i> Next: Lab 12, and Chapter 13</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt;"><strong>Lab 12 &mdash; <code>lab-ch12-diagnostic.ipynb</code>.</strong> Three analyses that are wrong before you read them: the instrument that barely moves anything, the estimate that belongs to someone else, and exclusion that is only nearly true. You ship <code>src/iv_tools.py</code> &mdash; a module that <em>will not report a second stage without the first-stage diagnostics beside it.</em></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 15px 20px; text-align: center;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--success-color);">Ch 13 &mdash; RD</p>
+            <p style="font-size: 14pt; margin-top: 8px;">The fourth identification strategy, and arguably the most credible. <strong>Fuzzy RD literally <em>is</em> IV</strong>, with distance-to-cutoff as the instrument.</p>
+          </div>
+          <div style="background: #f3e8ff; border-radius: 10px; padding: 15px 20px; text-align: center;">
+            <p style="font-size: 18pt; font-weight: 700; color: #7c3aed;">Ch 24 &mdash; Double ML</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Belloni et al. (2012) &mdash; a penalised first stage that preserves valid inference &mdash; is DML's direct ancestor. Where this course's econometrics and ML halves converge.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 14px; text-align: center; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 16pt;"><strong>The rule to carry out of this room:</strong> never report a second stage without the first-stage diagnostics beside it.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Close by returning to Card: $F = 59$, ratio 2.78, and an exclusion restriction that has been argued about for thirty years. The honest summary is that it is a good instrument by the standards of its time and an open question by ours.</aside>
+    </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

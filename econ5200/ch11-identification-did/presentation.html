@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identification Strategy & Difference-in-Differences</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <!-- SLIDE 1: Cover -->
+      <section class="section-divider" data-state="is-section-divider" id="title" style="padding: 0;">
+        <div style="display: grid; grid-template-columns: 58% 42%; height: 720px; width: 100%;">
+          <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 40px 50px 60px; text-align: left;">
+            <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 11</p>
+            <h1 style="font-size: 27pt; line-height: 1.28; color: var(--primary-color); margin-bottom: 20px; text-align: left;">Identification Strategy<br>&amp; Difference-in-Differences</h1>
+            <div style="width: 50px; height: 3px; background: var(--secondary-color);"></div>
+            <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; margin-top: 22px;">Identification is an argument, not a function call.</p>
+            <div style="margin-top: auto; padding-bottom: 10px;">
+              <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 6px;">Dr. Richeng Piao</p>
+              <p style="font-size: 12pt; color: var(--muted-color); font-style: italic; line-height: 1.7;">Department of Economics<br>Northeastern University</p>
+            </div>
+          </div>
+          <div style="overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 30px 40px 30px 0;">
+            <img alt="Parallel trends: observed treated and control paths with the never-observed counterfactual as a dashed line and the ATT as the vertical gap" src="figures/figure_001_parallel_trends.png" style="width: 100%; object-fit: contain;">
+          </div>
+        </div>
+        <aside class="notes">75-minute graduate block. Open by naming the thesis on the cover: identification is an argument, not a function call. Companion lab is lab-ch11-diagnostic.ipynb.</aside>
+      </section>
+
+      <!-- SLIDE 2: Learning Objectives -->
+      <section id="learning-objectives" style="padding: 40px 50px;">
+        <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 18px;">
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 21pt; font-weight: 700; color: var(--secondary-color);">LO1</p>
+            <p style="font-size: 14.5pt;"><strong>Understand</strong> &mdash; state <strong>parallel trends</strong> formally, explain why it is fundamentally untestable, and say what a pre-trend test does and does not establish</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 21pt; font-weight: 700; color: var(--accent-color);">LO2</p>
+            <p style="font-size: 14.5pt;"><strong>Apply</strong> &mdash; estimate a canonical 2&times;2 by hand, by regression, and with cluster-robust inference; replicate <strong>Card &amp; Krueger (1994)</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 21pt; font-weight: 700; color: var(--success-color);">LO3</p>
+            <p style="font-size: 14.5pt;"><strong>Analyze</strong> &mdash; diagnose why <strong>two-way fixed effects</strong> fails under staggered adoption, using Goodman-Bacon to quantify the weight on forbidden comparisons</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 21pt; font-weight: 700; color: var(--danger-color);">LO4</p>
+            <p style="font-size: 14.5pt;"><strong>Evaluate</strong> &mdash; select and defend a heterogeneity-robust estimator, and report <strong>partial-identification bounds</strong> under formalised violations of parallel trends</p>
+          </div>
+        </div>
+        <aside class="notes">Read each LO. Flag that LO3 and LO4 are where most of today's time goes -- the 2x2 is revision for most of this room, the TWFE reckoning is not.</aside>
+      </section>
+
+      <!-- SLIDE 3: Retrieval Practice -->
+      <section id="retrieval" style="padding: 40px 60px;">
+        <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+        <div style="margin-top: 22px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px;">
+            <p class="text-lg"><strong>Chapter 10.</strong> What does the backdoor criterion require of you before it will license a causal claim?</p>
+            <p class="fragment fade-up" style="font-size: 14.5pt; color: var(--secondary-color); margin-top: 8px;">That you <em>name</em> and <em>measure</em> every confounder on a backdoor path. The heroic part is the measuring.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px;">
+            <p class="text-lg"><strong>Chapter 9.</strong> What does randomisation buy that observational adjustment does not?</p>
+            <p class="fragment fade-up" style="font-size: 14.5pt; color: var(--secondary-color); margin-top: 8px;">Balance on <em>unobservables</em>, not just on the covariates you happened to collect.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px;">
+            <p class="text-lg"><strong>Chapter 8.</strong> At what level should standard errors be clustered?</p>
+            <p class="fragment fade-up" style="font-size: 14.5pt; color: var(--secondary-color); margin-top: 8px;">At the level treatment is <em>assigned</em> &mdash; not the level at which data happens to be observed. Hold that one; it returns at minute 60.</p>
+          </div>
+        </div>
+        <aside class="notes">Cold-call, do not wait for volunteers. Bridge line: today we buy identification a third way -- and then spend most of the hour on the machinery that was supposed to deliver it and quietly did not.</aside>
+      </section>
+
+      <!-- SLIDE 4: Hook -->
+      <section id="hook" style="padding: 38px 60px;">
+        <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> The Regression That Lies</h2>
+        <p class="text-lg" style="margin-top: 14px;">You evaluate a policy that helped <strong>everyone it touched</strong>. Clean panel, staggered rollout across states, and the standard specification since the early 1990s: outcome on a treatment indicator with unit and time fixed effects.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #f8f6f3; border-left: 4px solid var(--muted-color); border-radius: 8px; padding: 16px 20px;">
+            <p style="font-size: 13pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">The truth</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--primary-color);">+8.65</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 20px;">
+            <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">What the regression reports</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--danger-color);">+4.70 <span style="font-size: 14pt; font-weight: 400;">(SE 0.27)</span></p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f7efee; border-radius: 8px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;">Nothing is wrong with the data or the code. <strong>The truth is more than fourteen standard errors away.</strong> And when every unit is eventually treated &mdash; which describes a great many real rollouts &mdash; the same specification returns <strong style="color: var(--danger-color);">&minus;0.97</strong> for a policy whose true effect is <strong>+9.56</strong>.</p>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 14px; color: var(--accent-color); font-weight: 700;">Today's thesis: identification is an argument, not a function call.</p>
+        <aside class="notes">State the numbers, do not tease them. Ask for a show of hands: who has run a two-way fixed effects regression on a staggered rollout? Most hands go up. Tell them they will build this failure from scratch in Section 4.</aside>
+      </section>
+
+      <!-- DIVIDER 1 -->
+      <section class="section-divider" data-state="is-section-divider" id="divider-canonical">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 1</p>
+        <h1 style="font-size: 38pt;">The Canonical Two-by-Two</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">Two groups. Two periods. One assumption doing all the work.</p>
+      </section>
+
+      <!-- SLIDE: intuition -->
+      <section id="two-differences" style="padding: 38px 55px;">
+        <h2><i class="fa-solid fa-code-compare" style="color: var(--secondary-color);"></i> Why <em>Two</em> Differences</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; align-items: start;">
+          <div style="background: #f7efee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">Naive move 1 &mdash; before vs after</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Look at the treated group before and after. Confounded by <em>everything else</em> that happened in the meantime: a recession, a seasonal cycle, a wage change next door.</p>
+          </div>
+          <div style="background: #f7efee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">Naive move 2 &mdash; treated vs control, after</p>
+            <p style="font-size: 14pt; margin-top: 8px;">Compare the two groups in the post period. Confounded by whatever made the groups different in the first place &mdash; the selection problem from Chapter 9.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #eef2f5; border-radius: 10px; padding: 18px 24px; margin-top: 20px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15.5pt;"><strong>Take both differences.</strong> The change in the treated group, minus the change in the control group. The <strong>first</strong> subtraction removes anything <em>fixed about each group</em>. The <strong>second</strong> removes anything <em>common to both over time</em>.</p>
+          <p style="font-size: 15.5pt; margin-top: 10px;">What survives is the treatment effect &mdash; <em>if</em> the only remaining difference between the groups' trajectories is the treatment.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 14px; color: var(--accent-color);"><strong>The trade:</strong> Chapter 10 asked you to <em>measure</em> the confounders. DiD asks you to find a group that would have moved the same way without the treatment, and lets that group absorb everything you cannot see.</p>
+        <aside class="notes">Two minutes maximum -- most of this room has seen a 2x2. The payoff line is the last one: a weaker demand on your data, a much stronger demand on your judgment.</aside>
+      </section>
+
+      <!-- SLIDE: estimand + ATT -->
+      <section id="estimand" style="padding: 36px 55px;">
+        <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> The Estimand, and the Target</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt;">$$\delta = \big(E[Y_{i1} \mid G_i = 1] - E[Y_{i0} \mid G_i = 1]\big) - \big(E[Y_{i1} \mid G_i = 0] - E[Y_{i0} \mid G_i = 0]\big)$$</p>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 10px;"><strong>In words:</strong> the treated group's change, net of the control group's change over the same window. $G_i = 1$ marks the group that gets treated; $\delta$ is the difference-in-differences estimand.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;">$$\text{ATT} = E[Y_{i1}(1) - Y_{i1}(0) \mid G_i = 1]$$</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 10px;"><strong>In words:</strong> the average effect of treatment <em>on the units that were actually treated</em>, in the post period.</p>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 14.5pt;"><strong>Not the ATE.</strong> This is not the $\tau$ from Chapter 9. DiD identifies the effect for the <em>treated</em> group, which may differ from the effect treatment would have had on the controls. When treatment is targeted &mdash; and policy treatment usually is &mdash; that distinction is substantive, not pedantic.</p>
+        </div>
+        <aside class="notes">Do not let the ATT/ATE distinction pass as bookkeeping. Ask: name a policy where the effect on the treated and the effect on the untreated would differ sharply. Job training, targeted subsidies, means-tested transfers.</aside>
+      </section>
+
+      <!-- SLIDE: parallel trends + figure -->
+      <section id="parallel-trends" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Parallel Trends</h2>
+        <div style="display: grid; grid-template-columns: 46% 54%; gap: 24px; margin-top: 10px; align-items: start;">
+          <div>
+            <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 16px;">
+              <p style="font-size: 12.5pt;">$$E[Y_{i1}(0) - Y_{i0}(0) \mid G_i {=} 1]$$ $$= E[Y_{i1}(0) - Y_{i0}(0) \mid G_i {=} 0]$$</p>
+            </div>
+            <p style="font-size: 14pt; margin-top: 12px;"><strong>In words:</strong> in the world where treatment never happened, both groups' average outcomes <em>would have changed by the same amount</em>.</p>
+            <p style="font-size: 14pt; margin-top: 10px; color: var(--accent-color);"><strong>Not been equal &mdash; changed equally.</strong> Levels may differ by any amount at all.</p>
+            <div style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 12px 16px; margin-top: 12px;">
+              <p style="font-size: 13.5pt;">The dashed line is <strong>never observed</strong>. That is not a data limitation you can spend your way out of &mdash; it is the fundamental problem of causal inference, in a new place.</p>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="Parallel trends figure: treated and control observed paths, the never-observed counterfactual as a dashed line parallel to the control, the ATT as the vertical gap at the post period, and the level gap absorbed by the group fixed effect" src="figures/figure_001_parallel_trends.png" style="max-height: 430px; max-width: 100%; object-fit: contain;">
+          </div>
+        </div>
+        <aside class="notes">Draw this on the board as well as showing it. The chapter is explicit: the dashed line does more work than any equation. Emphasise that the ATT is the gap between the solid orange endpoint and a point that does not exist.</aside>
+      </section>
+
+      <!-- SLIDE: the proof -->
+      <section id="proof" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-pen-nib" style="color: var(--accent-color);"></i> Three Lines, One Bracket</h2>
+        <p style="font-size: 14.5pt; margin-top: 8px;"><strong>Result.</strong> Under parallel trends and no anticipation, $\delta = \text{ATT}$.</p>
+        <p style="font-size: 14pt; margin-top: 8px; color: var(--muted-color);">Add and subtract $E[Y_{i1}(0) \mid G_i = 1]$. The treated group is untreated at $t=0$, so $Y_{i0} = Y_{i0}(0)$; it is treated at $t=1$, so $Y_{i1} = Y_{i1}(1)$. Then:</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 18px; margin-top: 10px;">
+          <p style="font-size: 13pt;">$$\delta = \underbrace{E[Y_{i1}(1) - Y_{i1}(0) \mid G_i {=} 1]}_{\text{ATT}} + \underbrace{E[Y_{i1}(0) - Y_{i0}(0) \mid G_i {=} 1] - E[Y_{i1}(0) - Y_{i0}(0) \mid G_i {=} 0]}_{= \, 0 \text{ by parallel trends}}$$</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 15.5pt;"><strong>Internalise the shape, not the algebra.</strong> The entire identifying content of difference-in-differences sits in that <em>second bracket</em>.</p>
+          <p style="font-size: 15pt; margin-top: 10px;">Everything else in this lecture &mdash; event studies, Goodman-Bacon, Callaway&ndash;Sant'Anna, Honest DiD &mdash; is an attempt to make that bracket <strong>credible</strong>, <strong>bound it</strong>, or <strong>estimate it under weaker conditions</strong>.</p>
+        </div>
+        <aside class="notes">Derive it on the board rather than reading the slide. Roughly three minutes. The takeaway is structural: one bracket carries the assumption, and the rest of the field is spent arguing about that bracket.</aside>
+      </section>
+
+      <!-- SLIDE: regression form + slopes not levels -->
+      <section id="regression-form" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-equals" style="color: var(--secondary-color);"></i> The Regression Form</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 22px; margin-top: 10px;">
+          <p style="font-size: 15pt;">$$Y_{it} = \alpha + \beta G_i + \gamma\,\text{Post}_t + \delta\,(G_i \times \text{Post}_t) + \varepsilon_{it}$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 26px; margin-top: 12px;">
+          <p style="font-size: 13.5pt;">$\alpha$ &mdash; intercept: the control group in the pre period</p>
+          <p style="font-size: 13.5pt;">$\gamma$ &mdash; the common time trend</p>
+          <p style="font-size: 13.5pt;">$\beta$ &mdash; the fixed level difference between groups</p>
+          <p style="font-size: 13.5pt; color: var(--accent-color);"><strong>$\delta$ &mdash; the DiD estimate, on the interaction</strong></p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px;"><strong>In words:</strong> $\delta$ is <em>numerically identical</em> to the four-means calculation. The regression is preferred because it gives you standard errors and takes covariates &mdash; not because it does anything different. (Watch the notation: $\alpha$ here is a regression intercept, not Chapter 8's significance level.)</p>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 14pt; color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px;">Key concept &mdash; slopes, not levels</p>
+          <p style="font-size: 14.5pt; margin-top: 6px;">DiD does <strong>not</strong> require the groups to be similar. New Jersey and Pennsylvania restaurants differ in wages, rents and clientele, and it does not matter &mdash; any time-invariant difference is absorbed by $\beta$. What must hold is that the two groups' <em>untreated trajectories</em> would have moved in parallel.</p>
+          <p style="font-size: 14pt; margin-top: 8px;">This is why <em>"the groups aren't comparable"</em> is usually a misdirected criticism &mdash; and why <em>"employment in your control state was already trending differently"</em> is a devastating one.</p>
+        </div>
+        <aside class="notes">This slide is the setup for Poll 1. Do not pre-empt the answer -- let the poll surface the levels-versus-slopes confusion before you resolve it.</aside>
+      </section>
+
+      <!-- SLIDE: Card & Krueger -->
+      <section id="card-krueger" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-burger" style="color: var(--accent-color);"></i> Card &amp; Krueger (1994)</h2>
+        <div style="display: grid; grid-template-columns: 54% 46%; gap: 22px; margin-top: 8px; align-items: start;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="Card and Krueger four cell means: New Jersey full-time-equivalent employment rises from 20.44 to 21.03 while Pennsylvania falls from 23.33 to 21.17, giving a difference-in-differences of plus 2.75" src="figures/figure_002_card_krueger.png" style="max-height: 425px; max-width: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <p style="font-size: 14pt;"><strong>1 April 1992.</strong> New Jersey raised its minimum wage from \$4.25 to \$5.05. Pennsylvania did not. 410 fast-food restaurants &mdash; Burger King, KFC, Wendy's, Roy Rogers &mdash; surveyed in February and November 1992.</p>
+            <p style="font-size: 14pt; margin-top: 10px;">Standard competitive theory makes a clean prediction: raise the price of labour above market clearing and employers buy less of it. <strong>Employment in NJ should fall relative to PA.</strong></p>
+            <p class="fragment fade-up" style="font-size: 14pt; margin-top: 10px; color: var(--accent-color);"><strong>It did not.</strong> The result was contested for a decade, generated a large replication literature, and is part of the body of work for which Card shared the 2021 Nobel Prize.</p>
+            <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 12px 16px; margin-top: 12px;">
+              <p style="font-size: 13.5pt;"><strong>What matters is the design.</strong> They did not measure and control for everything that differs between NJ and PA restaurants &mdash; an impossible task. They found a control group whose employment path plausibly tracked New Jersey's, and let it absorb the confounders wholesale.</p>
+            </div>
+            <p class="fragment fade-up" style="font-size: 13pt; margin-top: 10px; color: var(--muted-color);"><strong>Lab 11</strong> parses this from the original archive &mdash; fixed-width <code>public.dat</code> plus codebook &mdash; and lands on <strong>+2.75</strong> against the published <strong>+2.76</strong>.</p>
+          </div>
+        </div>
+        <aside class="notes">Thread 7. Card and Krueger is reserved to this chapter and returns in Ch 14 for cluster-robust inference. Note the lab downloads from davidcard.berkeley.edu directly -- students who want the file offline should grab it before lab.</aside>
+      </section>
+
+      <!-- POLL 1 -->
+      <section>
+        <section id="poll-1" style="padding: 36px 50px;">
+          <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll: The Referee's Objection</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 12px;">
+            <p style="font-size: 15.5pt; line-height: 1.6;">A referee writes: <em>"Pennsylvania restaurants employ 14% more staff than New Jersey restaurants on average, so they are not a valid control group."</em></p>
+            <p style="font-size: 15.5pt; font-weight: 600; margin-top: 10px;">What is the correct response?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch11-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Agree &mdash; the groups must be balanced on levels for DiD to work</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Re-weight the PA sample to match NJ's employment distribution</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The level gap is absorbed by the group fixed effect &mdash; only the <em>trends</em> need to be parallel</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Drop the largest PA restaurants until the group means match</div>
+          </div>
+          <aside class="notes">Students click to vote on their devices. Results appear on the reveal slide. Expect a real split between B and C -- B is the matching reflex.</aside>
+        </section>
+        <section id="poll-1-reveal" data-poll-results="ch11-econ5200-poll-1" style="padding: 34px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: C &mdash; slopes, not levels</h2>
+          <div class="poll-results-chart" data-poll-id="ch11-econ5200-poll-1" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 165px; margin: 12px 60px;"></div>
+          <div style="padding: 4px 50px;">
+            <p style="font-size: 14.5pt; line-height: 1.6;">Any time-invariant difference is differenced away by the group fixed effect. The <em>devastating</em> version of this criticism is about slopes: <strong>"PA employment was already trending differently."</strong> That one you must answer.</p>
+            <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 12px;">
+              <p style="font-size: 13.5pt; margin: 0;"><strong>Why B and D are tempting:</strong> they import a matching intuition from selection-on-observables designs, where balance on levels really does matter. DiD buys identification differently. The balance requirement travels with the design you came from, not the one you are using.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- DIVIDER 2 -->
+      <section class="section-divider" data-state="is-section-divider" id="divider-assumption">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 2</p>
+        <h1 style="font-size: 38pt;">Parallel Trends Is an Assumption,<br>Not a Test</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">What a flat pre-trend does &mdash; and does not &mdash; establish.</p>
+      </section>
+
+      <!-- SLIDE: untestable + event study spec -->
+      <section id="event-study-spec" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> You Cannot Verify It</h2>
+        <p style="font-size: 15pt; margin-top: 8px;">The assumption is about a <strong>counterfactual</strong> &mdash; what the treated group's outcome <em>would have done</em> absent treatment. That path is unobserved by construction.</p>
+        <p style="font-size: 15pt; margin-top: 8px;">What researchers check instead is whether the groups moved in parallel <em>before</em> treatment. With several pre-periods, estimate a coefficient for each and see whether they are flat. This is the <strong>event study</strong>, and it is genuinely informative.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 22px; margin-top: 12px;">
+          <p style="font-size: 14pt;">$$Y_{it} = \alpha_i + \gamma_t + \sum_{e \neq -1} \delta_e \cdot \mathbb{1}[t - g_i = e] + \varepsilon_{it}$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 26px; margin-top: 10px;">
+          <p style="font-size: 13.5pt;">$\alpha_i, \gamma_t$ &mdash; unit and time fixed effects</p>
+          <p style="font-size: 13.5pt;">$e = t - g_i$ &mdash; <strong>event time</strong></p>
+          <p style="font-size: 13.5pt;">$g_i$ &mdash; the <strong>cohort</strong>: the period unit $i$ is first treated</p>
+          <p style="font-size: 13.5pt;">$\delta_e$ &mdash; the effect at event time $e$</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 10px;"><strong>In words:</strong> each $\delta_e$ for $e < 0$ is a pre-trend coefficient and should sit near zero; each $\delta_e$ for $e \ge 0$ traces the dynamic path of the effect. We omit $e = -1$, normalising $\delta_{-1} = 0$.</p>
+        <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 12px 20px; margin-top: 12px;">
+          <p style="font-size: 13.5pt;"><strong>Two cautions.</strong> The reference period is a <em>normalisation, not a fact</em> &mdash; every coefficient is measured relative to $e = -1$, and a different base period shifts the whole picture. And in staggered designs this specification is itself contaminated, for reasons that occupy the next two sections.</p>
+        </div>
+        <aside class="notes">Flag the contamination caution now and cash it in during Section 3. Students often assume the event study is immune to the TWFE problem; it is not -- it is the same regression with more indicators.</aside>
+      </section>
+
+      <!-- SLIDE: event study figure -->
+      <section id="event-study-read-twice" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--secondary-color);"></i> Read This Plot Twice</h2>
+        <div style="display: grid; grid-template-columns: 56% 44%; gap: 22px; margin-top: 8px; align-items: start;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="Event study with wide confidence intervals: pre-treatment coefficients are individually indistinguishable from zero, yet the intervals still admit a dotted pre-trend line steep enough to explain the entire post-treatment effect" src="figures/figure_003_event_study_wide.png" style="max-height: 440px; max-width: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 18px;">
+              <p style="font-size: 13.5pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">First pass</p>
+              <p style="font-size: 14.5pt; margin-top: 6px;">"Pre-trends are flat." Every pre-treatment coefficient is individually indistinguishable from zero. This is what gets reported.</p>
+            </div>
+            <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 13.5pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">Second pass</p>
+              <p style="font-size: 14.5pt; margin-top: 6px;">The intervals also admit the dotted line &mdash; a pre-trend large enough to generate <strong>the entire post-treatment effect</strong>.</p>
+            </div>
+            <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 14px; color: var(--accent-color);"><strong>The plot is consistent with both stories.</strong> Nothing in it distinguishes them.</p>
+          </div>
+        </div>
+        <aside class="notes">Ask the class first: are these pre-trends flat? They will say yes. Then reveal the dotted line. This inversion sets up everything in Section 6 -- do not rush it.</aside>
+      </section>
+
+      <!-- SLIDE: three problems -->
+      <section id="pretest-problems" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-layer-group" style="color: var(--danger-color);"></i> Three Problems That Compound</h2>
+        <div style="display: flex; flex-direction: column; gap: 13px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">1. Low power</p>
+            <p style="font-size: 14pt; margin-top: 5px;">Few periods, wide standard errors. Failing to reject a null of zero pre-trends is weak evidence when you had little chance of rejecting it. <strong>The honest diagnostic is not the $p$-value on the pre-trends but the <em>power</em> of that test against an economically meaningful violation.</strong></p>
+          </div>
+          <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">2. Pre-test bias</p>
+            <p style="font-size: 14pt; margin-top: 5px;">Conditioning your analysis on having <em>passed</em> a pre-test changes the sampling distribution of the estimator you report, and conventional standard errors do not reflect that conditioning. Structurally this is Chapter 10's <strong>collider</strong> problem, with your own publication decision as the collider.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">3. Flat pre-trends &ne; parallel counterfactual trends</p>
+            <p style="font-size: 14pt; margin-top: 5px;">The assumption concerns the <em>post</em> period. A policy adopted precisely because a shock was anticipated can show perfectly flat pre-trends and violently non-parallel counterfactual trends. Anticipation effects do the same in reverse, contaminating the pre-period itself.</p>
+          </div>
+        </div>
+        <aside class="notes">Roth (2022) made all three precise. Point 2 is the one graduate students find most uncomfortable because it implicates their own workflow, not a dataset.</aside>
+      </section>
+
+      <!-- SLIDE: misconception + think like an economist -->
+      <section id="misconception-pretrends" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> The Sentence Not To Write</h2>
+        <div style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 12px;">
+          <p style="font-size: 13.5pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">Common misconception</p>
+          <p style="font-size: 15.5pt; margin-top: 6px;"><em>"Insignificant pre-trends prove that parallel trends holds."</em></p>
+          <p style="font-size: 14pt; margin-top: 8px;">They do not, for three separate reasons: the test may lack the power to detect the violations that matter; conditioning on passing it biases the subsequent inference; and the assumption is about the post-treatment counterfactual, which the pre-period does not observe.</p>
+          <p style="font-size: 14pt; margin-top: 8px;">A flat event study is a <strong>necessary condition</strong>, weak evidence, and a reasonable thing to show. It is not a proof &mdash; and describing it as one in a seminar will not go well.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 13.5pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Think like an economist</p>
+          <p style="font-size: 14.5pt; margin-top: 6px;">The right question is not <em>"did my pre-trend test pass?"</em> It is: <strong>what would have had to be happening in the world, absent this policy, for my estimate to be spurious &mdash; and is that story plausible?</strong></p>
+          <p style="font-size: 14pt; margin-top: 8px;">If a state adopted a job-training subsidy because its manufacturing base was already collapsing, its untreated path was heading down while the control's was flat. Parallel trends fails regardless of what the pre-period shows. The assumption is defended with <strong>institutional knowledge about why treatment happened where and when it did</strong>. No test substitutes for knowing the policy's history.</p>
+        </div>
+        <aside class="notes">This is the slide to linger on. Selection into treatment is the thing they must reason about. Ask for one example from their own research area where the timing of adoption was obviously endogenous.</aside>
+      </section>
+
+      <!-- DISCUSSION 1 -->
+      <section>
+        <section id="discussion-1" style="padding: 36px 55px;">
+          <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Test That Fires</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 14px;">
+            <p style="font-size: 15pt; line-height: 1.6;">In <strong>Lab 11</strong> you meet a dataset where the true treatment effect is <strong>exactly zero</strong>, the groups are on visibly diverging trends, and the DiD estimate comes back large and significant. The pre-trend test <strong>fires</strong> &mdash; it catches the problem.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+            <div style="background: #eef2f5; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 14.5pt;"><strong>1.</strong> Why is that the <em>lucky</em> case rather than the reassuring one?</p>
+            </div>
+            <div style="background: #eef2f5; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--accent-color);">
+              <p style="font-size: 14.5pt;"><strong>2.</strong> Write the sentence you would put in a paper describing a pre-trend test that did <em>not</em> fire &mdash; without overclaiming.</p>
+            </div>
+          </div>
+          <p style="font-size: 13.5pt; margin-top: 16px; color: var(--muted-color);">Pairs, three minutes. Press <strong>3</strong> for the timer. Then two cold-calls.</p>
+          <aside class="notes">Do not accept "pre-trends are satisfied" from any pair. Push until someone writes a sentence about power rather than significance.</aside>
+        </section>
+        <section id="discussion-1-debrief" style="padding: 34px 55px;">
+          <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Debrief: The Asymmetry</h2>
+          <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 16px 22px; margin-top: 12px;">
+            <p style="font-size: 15.5pt;">A test that <strong>fires</strong> is informative. A test that does <strong>not</strong> fire is <em>not</em> evidence of parallel trends &mdash; it is evidence that you lacked the power to detect a violation.</p>
+            <p style="font-size: 13.5pt; margin-top: 8px; color: var(--muted-color);">That is the lab's own wording, and it is the sentence to carry out of this room.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 16px;">
+            <p style="font-size: 13.5pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">A sentence you can defend</p>
+            <p style="font-size: 14.5pt; margin-top: 6px; font-style: italic;">"Pre-treatment coefficients are individually indistinguishable from zero, but the confidence intervals do not exclude a differential trend of the magnitude that would account for our estimate; we therefore report sensitivity bounds in Table 5."</p>
+          </div>
+          <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 14px;">Note what that sentence does: it names the <strong>power</strong>, not the $p$-value, and it commits you to producing something better later. We build that something in Section 6.</p>
+        </section>
+      </section>
+
+      <!-- DIVIDER 3 -->
+      <section class="section-divider" data-state="is-section-divider" id="divider-staggered">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 3</p>
+        <h1 style="font-size: 38pt;">Staggered Adoption<br>and the Forbidden Comparison</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">What the most-run regression in the discipline actually computes.</p>
+      </section>
+
+      <!-- SLIDE: TWFE spec -->
+      <section id="twfe-spec" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-layer-group" style="color: var(--secondary-color);"></i> Two-Way Fixed Effects</h2>
+        <p style="font-size: 15pt; margin-top: 8px;">Real policies do not roll out everywhere at once. States adopt at different times; firms enter a programme in waves. This is <strong>staggered adoption</strong>, and for thirty years the standard response was to extend the two-by-two:</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 22px; margin-top: 12px;">
+          <p style="font-size: 15pt;">$$Y_{it} = \alpha_i + \gamma_t + \delta D_{it} + \varepsilon_{it}$$</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 10px;"><strong>In words:</strong> $D_{it} = 1$ once unit $i$ is treated and thereafter. Unit fixed effects $\alpha_i$ absorb time-invariant differences; time fixed effects $\gamma_t$ absorb common shocks; $\delta$ is read as "the" average treatment effect.</p>
+        <p style="font-size: 14pt; margin-top: 10px;">It is one of the most-run regressions in the discipline &mdash; in every applied paper, every problem set, and probably your last employer's measurement dashboard.</p>
+        <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt;"><strong>Goodman-Bacon (2021) asked what $\hat{\delta}$ actually <em>is</em>.</strong></p>
+          <p style="font-size: 14.5pt; margin-top: 8px;">It is a weighted average of <strong>every available two-by-two comparison in the panel</strong>, with weights determined by group sizes and treatment-timing variance &mdash; not by anything the researcher chose.</p>
+        </div>
+        <aside class="notes">Fifteen minutes for Sections 3 and 4 combined. Do not run code in Section 3 -- the chapter is explicit that the anticipation is useful.</aside>
+      </section>
+
+      <!-- SLIDE: bacon timeline figure -->
+      <section id="bacon-timeline" style="padding: 32px 45px;">
+        <h2><i class="fa-solid fa-timeline" style="color: var(--secondary-color);"></i> Four Comparisons Live In This Panel</h2>
+        <div style="display: flex; align-items: center; justify-content: center; margin-top: 10px;">
+          <img alt="Goodman-Bacon timeline with an early cohort treated at period 4, a late cohort at period 8, and a never-treated group, showing the four available two-by-two comparison windows with the fourth marked forbidden" src="figures/figure_004_bacon_timeline.png" style="max-height: 470px; max-width: 92%; object-fit: contain;">
+        </div>
+        <p style="font-size: 14pt; margin-top: 8px; text-align: center;">Three groups &mdash; early-treated, late-treated, never-treated. TWFE forms and weights <strong>all four</strong> of these, whether or not you meant it to.</p>
+        <aside class="notes">Do not name the forbidden comparison yet. Ask the class to identify which window uses already-treated units as controls. Someone always spots window 4.</aside>
+      </section>
+
+      <!-- SLIDE: the forbidden comparison -->
+      <section id="forbidden" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-circle-xmark" style="color: var(--danger-color);"></i> The Forbidden Comparison</h2>
+        <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 14px;">
+          <div style="background: #eef2f5; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 14.5pt;"><strong>1.</strong> Early vs never-treated &mdash; <span style="color: var(--success-color); font-weight: 700;">valid</span></p></div>
+          <div style="background: #eef2f5; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 14.5pt;"><strong>2.</strong> Late vs never-treated &mdash; <span style="color: var(--success-color); font-weight: 700;">valid</span></p></div>
+          <div style="background: #eef2f5; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 14.5pt;"><strong>3.</strong> Early vs late, in the window where early is treated and late is not &mdash; <span style="color: var(--success-color); font-weight: 700;">valid</span></p></div>
+          <div style="background: #f7efee; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14.5pt;"><strong>4.</strong> <strong style="color: var(--danger-color);">Late vs early, in the window where both are treated &mdash; FORBIDDEN</strong></p></div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 14.5pt;">Comparison 4 uses the <strong>already-treated early group as a control</strong> for the newly-treated late group. That is legitimate only if the early group's treatment effect has <em>stopped changing</em>.</p>
+          <p style="font-size: 14.5pt; margin-top: 8px;">If the effect is still growing &mdash; as effects usually are &mdash; then the "control" group's outcome is rising for reasons that have nothing to do with the late group, and the comparison <strong>subtracts that growth from the estimate</strong>.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--danger-color); font-weight: 700;">It enters the weighted average with a negative weight.</p>
+        <aside class="notes">"Forbidden comparison" is memorable language and worth using repeatedly. de Chaisemartin and D'Haultfoeuille (2020) established the negative-weights result alongside Goodman-Bacon.</aside>
+      </section>
+
+      <!-- SLIDE: formal statement -->
+      <section id="bacon-formal" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--secondary-color);"></i> TWFE Chooses Its Own Weights</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 22px; margin-top: 12px;">
+          <p style="font-size: 15pt;">$$\hat{\delta}^{TWFE} = \sum_{k} w_k \, \hat{\delta}_k, \qquad \sum_k w_k = 1$$</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 10px;"><strong>In words:</strong> $\hat{\delta}_k$ is the estimate from the $k$-th two-by-two; $w_k$ is its <strong>Bacon weight</strong>, set by subsample size and the variance of treatment within it. TWFE is a weighted average whose weights <em>you did not choose and cannot see without decomposing</em>.</p>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 14.5pt;"><strong>Why it survived thirty years.</strong> Under <strong>homogeneous, constant</strong> treatment effects, every $\hat{\delta}_k$ equals the same $\delta$, the weights sum to one, and TWFE is exactly fine. The forbidden comparison is harmless when there is nothing moving for it to subtract.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 14.5pt;"><strong>The counterintuitive part.</strong> Under heterogeneous or dynamic effects, the estimate is not merely noisy or attenuated. $\hat{\delta}^{TWFE}$ <strong>need not lie in the convex hull of the underlying effects at all</strong> &mdash; it can sit outside the range of every true effect in your data.</p>
+        </div>
+        <aside class="notes">The convex-hull point is the one to slow down on. Most students assume bias means attenuation. This is not attenuation.</aside>
+      </section>
+
+      <!-- POLL 2 -->
+      <section>
+        <section id="poll-2" style="padding: 36px 50px;">
+          <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll: What Makes It Dangerous?</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 14px;">
+            <p style="font-size: 15.5pt; line-height: 1.6;">You are handed a staggered-adoption panel and a TWFE coefficient.</p>
+            <p style="font-size: 15.5pt; font-weight: 600; margin-top: 8px;">Which single feature of the design makes the forbidden comparison <em>most</em> dangerous?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch11-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) A large number of adoption cohorts</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Treatment effects that grow over time since adoption</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) An unbalanced panel with missing periods</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Very different group sizes across cohorts</div>
+          </div>
+          <aside class="notes">Students click to vote. Take the vote before saying anything -- A and D draw real support because both genuinely affect the weights.</aside>
+        </section>
+        <section id="poll-2-reveal" data-poll-results="ch11-econ5200-poll-2" style="padding: 34px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; dynamic effects</h2>
+          <div class="poll-results-chart" data-poll-id="ch11-econ5200-poll-2" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 165px; margin: 12px 60px;"></div>
+          <div style="padding: 4px 50px;">
+            <p style="font-size: 14.5pt; line-height: 1.6;">The already-treated "control" only misleads if its <em>own</em> effect is still moving. Constant effects make the forbidden comparison harmless &mdash; which is exactly why TWFE looked fine for thirty years.</p>
+            <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 12px;">
+              <p style="font-size: 13.5pt; margin: 0;"><strong>Why A and D are tempting:</strong> both change the <em>weights</em>, and that matters. But weights only bite once the underlying $\hat{\delta}_k$ differ from each other. <strong>Dynamics are what make them differ.</strong></p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- DIVIDER 4 -->
+      <section class="section-divider" data-state="is-section-divider" id="divider-failure">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 4</p>
+        <h1 style="font-size: 38pt;">Building the Failure</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">The only way to prove an estimator is wrong is to run it on data where you know the answer.</p>
+      </section>
+
+      <!-- SLIDE: simulation design -->
+      <section id="simulation" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> A Panel Where We Know the Answer</h2>
+        <p style="font-size: 14.5pt; margin-top: 8px;"><strong>Design.</strong> 300 units over 12 periods. Roughly 35% first treated at $t{=}4$, 35% at $t{=}8$, 30% never. The effect <strong>grows by 2.0 for every period a unit has been treated</strong> &mdash; the dynamic pattern that breaks TWFE, and the pattern most real policies exhibit.</p>
+        <pre style="margin-top: 10px;"><code style="font-size: 11.5pt; line-height: 1.45;">first_treat = rng.choice([4, 8, 0], n_units, p=[0.35, 0.35, 0.30])   # 0 = never
+effect = 2.0 * (t - g + 1) if (g &gt; 0 and t &gt;= g) else 0.0
+y = 10 + unit_fe[i] + 0.5 * t + effect + rng.normal(0, 1)
+
+true_att = panel.loc[panel.treated == 1, "true_effect"].mean()
+# True ATT on the treated:    8.65</code></pre>
+        <pre class="fragment fade-up" style="margin-top: 10px;"><code style="font-size: 11.5pt; line-height: 1.45;">twfe = smf.ols("y ~ treated + C(unit) + C(period)", data=panel).fit(
+    cov_type="cluster", cov_kwds={"groups": panel["unit"]})
+# TWFE estimate:              4.70   (SE 0.27)</code></pre>
+        <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 12px; color: var(--danger-color);"><strong>Write 8.65 down before you look at the next slide.</strong> Then compute how many standard errors away the truth is.</p>
+        <aside class="notes">Do not live-code. Print the true ATT first and have students write it down, then the estimate, then the SE. Someone should say "fourteen" out loud before you show it.</aside>
+      </section>
+
+      <!-- SLIDE: result figure -->
+      <section id="twfe-result" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-chart-column" style="color: var(--danger-color);"></i> Confidently Wrong</h2>
+        <div style="display: grid; grid-template-columns: 56% 44%; gap: 22px; margin-top: 8px; align-items: start;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="True ATT of 8.65 against a TWFE estimate of 4.70 with standard error 0.27 and a Callaway-Sant Anna estimate of 8.49 with standard error 0.18" src="figures/figure_005_twfe_vs_truth.png" style="max-height: 440px; max-width: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <p style="font-size: 14.5pt;">True effect <strong>8.65</strong>. TWFE reports <strong>4.70</strong> &mdash; a <strong>46% understatement</strong> &mdash; with a standard error of 0.27.</p>
+            <p style="font-size: 14.5pt; margin-top: 10px;">The 95% confidence interval is roughly <strong>[4.17, 5.23]</strong>.</p>
+            <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 14.5pt;">The truth is not merely outside the interval. It is <strong>more than fourteen standard errors away</strong>.</p>
+            </div>
+            <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 14px;">This is <strong>not an inference problem that more data would fix</strong>. More data would tighten the interval around the wrong number.</p>
+          </div>
+        </div>
+        <aside class="notes">Hold on this slide. The Callaway-Sant'Anna bar is on the chart deliberately -- point at it and say "we get there in ten minutes," then move on.</aside>
+      </section>
+
+      <!-- SLIDE: bacon weights -->
+      <section id="bacon-weights" style="padding: 30px 45px;">
+        <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--secondary-color);"></i> Decomposing It</h2>
+        <div style="display: grid; grid-template-columns: 40% 60%; gap: 24px; margin-top: 6px; align-items: start;">
+          <div>
+            <pre style="margin: 0;"><code style="font-size: 10.5pt; line-height: 1.4;">bacon = BaconDecomposition().fit(
+    panel, outcome="y", unit="unit",
+    time="period",
+    first_treat="first_treat")</code></pre>
+            <p style="font-size: 13.5pt; margin-top: 12px;"><strong>Read the third row.</strong> The forbidden comparisons carry <strong>24.3%</strong> of the weight and return an average "effect" of <strong style="color: var(--danger-color);">&minus;3.05</strong> &mdash; negative, in data where every true effect is positive and growing.</p>
+            <p style="font-size: 13.5pt; margin-top: 10px;">The clean comparisons against never-treated units return <strong>7.68</strong>, close to the truth. They are dragged down by comparisons that should never have been made.</p>
+            <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 12px 16px; margin-top: 12px;">
+              <p style="font-size: 13pt;">The decomposition is <strong>exact</strong> &mdash; the weighted sum reproduces the TWFE estimate to machine precision. This is not an approximation or a diagnostic heuristic. <strong>It is what the regression computed.</strong></p>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="Bacon decomposition: never-treated comparisons carry 61.2 percent of the weight with an average effect of plus 7.68, earlier versus later 14.5 percent at plus 5.09, and the forbidden comparisons 24.2 percent at minus 3.05, contributing minus 0.74 to a total of 4.70" src="figures/figure_006_bacon_weights.png" style="max-height: 490px; max-width: 100%; object-fit: contain;">
+          </div>
+        </div>
+        <aside class="notes">Walk across the forbidden row and let the minus 3.05 sit there in silence. This is the payoff of the section.</aside>
+      </section>
+
+      <!-- SLIDE: sign flip -->
+      <section id="sign-flip" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-arrows-turn-to-dots" style="color: var(--danger-color);"></i> It Gets Worse Without a Never-Treated Group</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 22px; margin-top: 8px; align-items: start;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="Two staggered designs compared: with 30 percent never-treated the true effect is plus 8.65 and TWFE returns plus 4.70, while with everyone eventually treated the true effect is plus 9.56 and TWFE returns minus 0.97" src="figures/figure_009_sign_flip.png" style="max-height: 430px; max-width: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <p style="font-size: 14pt;">In our panel, 30% of units are never treated and those clean comparisons carry <strong>61%</strong> of the weight &mdash; which holds the damage to an understatement.</p>
+            <p style="font-size: 14pt; margin-top: 10px;">Re-run with <strong>every unit eventually treated</strong>: two cohorts, no never-treated group. The forbidden comparisons now carry <strong>75%</strong> of the weight.</p>
+            <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 18px; margin-top: 12px;">
+              <p style="font-size: 14pt;">TWFE returns <strong>&minus;0.97</strong> &mdash; precisely estimated and highly significant &mdash; for a policy whose true average effect is <strong>+9.56</strong>. <strong>The sign is wrong.</strong></p>
+            </div>
+            <p class="fragment fade-up" style="font-size: 13.5pt; margin-top: 12px; color: var(--muted-color);">That design &mdash; everyone eventually treated &mdash; describes a great many real policy rollouts. It is also exactly the panel <strong>Lab 11 hands you in Diagnosis 2</strong>.</p>
+          </div>
+        </div>
+        <aside class="notes">Report this variant rather than running it. Note the practical diagnostic: on every DiD paper you read, check whether a never-treated group exists.</aside>
+      </section>
+
+      <!-- SLIDE: misconception -->
+      <section id="misconception-smallsample" style="padding: 36px 55px;">
+        <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Precision Is Not Accuracy</h2>
+        <div style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 18px 24px; margin-top: 16px;">
+          <p style="font-size: 13.5pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">Common misconception</p>
+          <p style="font-size: 16pt; margin-top: 8px;"><em>"TWFE bias is a small-sample or precision problem."</em></p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 15pt;">The bias is <strong>structural</strong> and does not vanish asymptotically. In our simulation the standard error is <strong>0.27</strong> and the error is <strong>3.95</strong>. The estimator is <em>confidently</em> wrong, and increasing $n$ makes it <strong>more confident without making it less wrong</strong>.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 18px;">This is the same lesson as Chapter 6's <strong>data defect identity</strong> and Chapter 10's <strong>confounding</strong>: precision and accuracy are different quantities, and only one of them responds to sample size.</p>
+        <aside class="notes">Set up Poll 3 directly from this slide but do not answer it here. The vote is more useful if some of the room is still holding the "more data helps" intuition.</aside>
+      </section>
+
+      <!-- POLL 3 -->
+      <section>
+        <section id="poll-3" style="padding: 36px 50px;">
+          <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll: Ten Times the Data</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 14px;">
+            <p style="font-size: 15.5pt; line-height: 1.6;">Your TWFE estimate is <strong>4.70 (SE 0.27)</strong> against a true effect of <strong>8.65</strong>. Your data vendor offers you <strong>ten times</strong> as many units, same design.</p>
+            <p style="font-size: 15.5pt; font-weight: 600; margin-top: 8px;">What happens?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch11-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The estimate converges toward 8.65</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The standard error shrinks and the estimate stays near 4.70</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The estimate becomes unbiased once $n$ exceeds the number of fixed effects</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The bias falls at rate $1/\sqrt{n}$</div>
+          </div>
+          <aside class="notes">Take the vote before revealing anything. Students who have run TWFE in their own work will look uncomfortable, which is the appropriate response.</aside>
+        </section>
+        <section id="poll-3-reveal" data-poll-results="ch11-econ5200-poll-3" style="padding: 34px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; more confident, equally wrong</h2>
+          <div class="poll-results-chart" data-poll-id="ch11-econ5200-poll-3" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 165px; margin: 12px 60px;"></div>
+          <div style="padding: 4px 50px;">
+            <p style="font-size: 14.5pt; line-height: 1.6;">The bias lives in the <strong>estimand the weights define</strong>, not in the sampling error. More data narrows the interval around the wrong number &mdash; and makes you more confident in it.</p>
+            <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 12px;">
+              <p style="font-size: 13.5pt; margin: 0;"><strong>Why D is tempting:</strong> it imports the finite-sample-bias intuition from maximum likelihood, where more data really does help. This bias does not have that form. There is no $n$ at which the forbidden comparisons stop being forbidden.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- DIVIDER 5 -->
+      <section class="section-divider" data-state="is-section-divider" id="divider-estimators">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 5</p>
+        <h1 style="font-size: 38pt;">Estimators That Work</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">Stop letting the regression choose comparisons. Build only the legitimate ones.</p>
+      </section>
+
+      <!-- SLIDE: ATT(g,t) -->
+      <section id="att-gt" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-table-cells" style="color: var(--success-color);"></i> Group-Time Average Treatment Effects</h2>
+        <p style="font-size: 14.5pt; margin-top: 8px;">Callaway and Sant'Anna (2021) define one parameter for every (cohort, period) pair:</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 22px; margin-top: 10px;">
+          <p style="font-size: 15pt;">$$\text{ATT}(g,t) = E\big[Y_{it}(g) - Y_{it}(0) \mid G_i = g\big]$$</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 10px;"><strong>In words:</strong> the average effect at calendar time $t$ for units first treated in cohort $g$. Each one is estimated from a <strong>clean two-by-two</strong>: cohort $g$ against a control group that is either <strong>never treated</strong> or <strong>not yet treated</strong> at $t$, using periods $g{-}1$ and $t$ as the two time points.</p>
+        <div class="fragment fade-up" style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt;"><strong>Already-treated units are never used as controls.</strong> The forbidden comparison is excluded <em>by construction</em> rather than by correction.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 14.5pt;">That produces a great many parameters, aggregated into whatever summary the question calls for &mdash; an overall ATT, an effect by cohort, or a dynamic path by event time. The aggregation is an <strong>explicit choice with visible weights</strong>.</p>
+          <p style="font-size: 14.5pt; margin-top: 8px; color: var(--accent-color);"><strong>That is the essential difference from TWFE: the weights are yours.</strong></p>
+        </div>
+        <aside class="notes">The phrase "the weights are yours" is the one-line summary of the whole fix. Say it twice.</aside>
+      </section>
+
+      <!-- SLIDE: CS result -->
+      <section id="cs-result" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> The Same Data, The Right Answer</h2>
+        <pre style="margin-top: 12px;"><code style="font-size: 12pt; line-height: 1.45;">cs = CallawaySantAnna(control_group="never_treated").fit(
+    panel, outcome="y", unit="unit", time="period",
+    first_treat="first_treat")
+overall = cs.aggregate("simple")
+# Callaway-Sant'Anna:         8.49   (SE 0.18)</code></pre>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px;">
+          <div style="background: #f8f6f3; border-left: 4px solid var(--muted-color); border-radius: 8px; padding: 16px 18px;">
+            <p style="font-size: 12.5pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">Truth</p>
+            <p style="font-size: 26pt; font-weight: 700; color: var(--primary-color);">8.65</p>
+          </div>
+          <div style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 18px;">
+            <p style="font-size: 12.5pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">TWFE</p>
+            <p style="font-size: 26pt; font-weight: 700; color: var(--danger-color);">4.70</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 16px 18px;">
+            <p style="font-size: 12.5pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 2px;">Callaway&ndash;Sant'Anna</p>
+            <p style="font-size: 26pt; font-weight: 700; color: var(--success-color);">8.49</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 20px;">Estimate <strong>8.49</strong> with a standard error of <strong>0.18</strong>; the truth sits comfortably inside the interval. <strong>The same data that produced 4.70 under TWFE produces 8.49 once the forbidden comparisons are removed.</strong></p>
+        <aside class="notes">Run this immediately after the TWFE result so the contrast lands in one breath. Nothing changed except which comparisons were allowed to form.</aside>
+      </section>
+
+      <!-- SLIDE: event study aggregation -->
+      <section id="cs-event-study" style="padding: 30px 45px;">
+        <h2><i class="fa-solid fa-chart-line" style="color: var(--success-color);"></i> Aggregating by Event Time</h2>
+        <div style="display: grid; grid-template-columns: 58% 42%; gap: 20px; margin-top: 6px; align-items: start;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="Callaway-Sant Anna event study aggregation: pre-treatment coefficients flat at zero, post-treatment coefficients climbing by about 2.0 per period from 1.94 at event time zero to 17.91 at event time eight, tracking the true effect path" src="figures/figure_007_cs_event_study.png" style="max-height: 450px; max-width: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <p style="font-size: 13.5pt;"><strong>Two things to read.</strong> Every pre-treatment coefficient is statistically indistinguishable from zero &mdash; as it must be, since we generated the data with no pre-trend. And the post-treatment coefficients climb by very nearly <strong>2.0 per period</strong>, recovering the exact dynamic we injected.</p>
+            <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 13px 16px; margin-top: 12px;">
+              <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">This explains TWFE in one line</p>
+              <p style="font-size: 13.5pt; margin-top: 6px;">The effect at $e{=}8$ is <strong>17.91</strong>. The effect at $e{=}0$ is <strong>1.94</strong>.</p>
+              <p style="font-size: 13.5pt; margin-top: 6px;">When TWFE uses a unit <em>eight periods into treatment</em> as a control for a unit <em>just entering treatment</em>, it subtracts 17.91 worth of ongoing treatment effect and attributes the difference to the newly treated unit.</p>
+            </div>
+            <p class="fragment fade-up" style="font-size: 13.5pt; margin-top: 12px; color: var(--accent-color);"><strong>This is the moment the whole chapter clicks.</strong></p>
+          </div>
+        </div>
+        <aside class="notes">Put the numbers on a plot, never a table -- the flat pre-period and linear climb are visually unmistakable. Lab 11's extension asks students to rebuild this plot themselves.</aside>
+      </section>
+
+      <!-- SLIDE: DDD -->
+      <section id="ddd" style="padding: 34px 52px;">
+        <h2><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i> When You Doubt Parallel Trends: A Third Difference</h2>
+        <p style="font-size: 14pt; margin-top: 8px;">Suppose a state policy applies only to workers under 30. You have the usual treated/control state contrast &mdash; but <em>within each state</em> you also have a group the policy could not touch.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 18px; margin-top: 10px;">
+          <p style="font-size: 12.5pt;">$$\text{DDD} = \underbrace{\big(\Delta^{\text{treated st.}}_{<30} - \Delta^{\text{control st.}}_{<30}\big)}_{\text{usual DiD, eligible group}} - \underbrace{\big(\Delta^{\text{treated st.}}_{\geq 30} - \Delta^{\text{control st.}}_{\geq 30}\big)}_{\text{same DiD, ineligible group}}$$</p>
+        </div>
+        <p style="font-size: 13.5pt; margin-top: 10px;"><strong>In words:</strong> the second bracket estimates whatever was happening to the treated state relative to the control state <em>that had nothing to do with the policy</em> &mdash; a state-specific shock, a divergent local labour market, a data revision. Subtracting it removes that contamination from the first bracket.</p>
+        <div class="fragment fade-up" style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 13px 20px; margin-top: 12px;">
+          <p style="font-size: 14pt;"><strong>The requirement is weaker than it looks.</strong> DDD does <strong>not</strong> require parallel trends to hold in either group separately. It requires only that any <em>violation</em> be common to both, so that it cancels in the subtraction (Olden &amp; M&oslash;en 2022).</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 13px 20px; margin-top: 12px;">
+          <p style="font-size: 14pt;"><strong>The cost.</strong> You are differencing three times on the same data, so standard errors widen. And if the policy affects the supposedly ineligible group at all &mdash; over-30 workers hired instead of under-30s &mdash; the second bracket contains part of the treatment effect and you have differenced away the thing you were measuring. <em>Choosing a comparison group the treatment genuinely cannot reach is the entire art.</em></p>
+        </div>
+        <aside class="notes">This is the cheapest repair and the one most likely to be usable in a student's own project. Keep it to two minutes.</aside>
+      </section>
+
+      <!-- SLIDE: estimator menu -->
+      <section id="estimator-menu" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> The Menu</h2>
+        <table style="width: 100%; margin-top: 12px; font-size: 13pt; border-collapse: collapse;">
+          <thead><tr style="border-bottom: 2px solid var(--line-color);">
+            <th style="text-align: left; padding: 7px 10px; width: 34%;">Estimator</th><th style="text-align: left; padding: 7px 10px;">Idea</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 10px;"><strong>Callaway &amp; Sant'Anna (2021)</strong></td><td style="padding: 7px 10px;">ATT(g,t) against never- or not-yet-treated; aggregate explicitly</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 10px;"><strong>Sun &amp; Abraham (2021)</strong></td><td style="padding: 7px 10px;">Interaction-weighted; saturates cohort &times; event-time, decontaminating the event study</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 10px;"><strong>Wooldridge ETWFE (2025)</strong></td><td style="padding: 7px 10px;">Fully saturated OLS with cohort-period interactions &mdash; stays inside a regression framework with familiar inference</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 10px;"><strong>Borusyak, Jaravel &amp; Spiess (2024)</strong></td><td style="padding: 7px 10px;">Imputation: fit the untreated model, impute $Y_{it}(0)$, average the residuals</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 10px;"><strong>de Chaisemartin &amp; D'Haultf&oelig;uille (2020)</strong></td><td style="padding: 7px 10px;">Robust to heterogeneity <em>and</em> to treatment switching back off again</td></tr>
+            <tr><td style="padding: 7px 10px;"><strong>Synthetic DiD (Arkhangelsky+ 2021)</strong></td><td style="padding: 7px 10px;">Weights units <em>and</em> periods when parallel trends fails structurally</td></tr>
+          </tbody>
+        </table>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 13px 20px; margin-top: 14px;">
+          <p style="font-size: 14pt;">All are implemented in <code>diff-diff</code>, and in a well-behaved design the estimates should agree. <strong>When they disagree materially, that disagreement is itself the finding</strong> &mdash; it means the answer depends on the weighting, and the weighting depends on assumptions you should state.</p>
+        </div>
+        <aside class="notes">Do not lecture through the table. Point at it, name two, and move to the disagreement box, which is what Discussion 2 is about.</aside>
+      </section>
+
+      <!-- SLIDE: Massachusetts -->
+      <section id="massachusetts" style="padding: 32px 52px;">
+        <h2><i class="fa-solid fa-prescription-bottle-medical" style="color: var(--accent-color);"></i> Economist at Work: A Standing Order in Massachusetts</h2>
+        <p style="font-size: 13.5pt; margin-top: 8px;">August 2022: Massachusetts allowed pharmacists to dispense emergency contraception &mdash; over-the-counter levonorgestrel and prescription-only ulipristal &mdash; without an individual prescription. Evaluated with DiD over July 2021 &ndash; December 2023 against non-adopting states (<em>JAMA</em>, July 2024).</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 13px 16px;">
+            <p style="font-size: 12pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 1.5px;">Massachusetts</p>
+            <p style="font-size: 14pt; margin-top: 4px;">78.5 &rarr; 105.3</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">&Delta; +26.8</p>
+          </div>
+          <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 13px 16px;">
+            <p style="font-size: 12pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 1.5px;">Comparison states</p>
+            <p style="font-size: 14pt; margin-top: 4px;">45.8 &rarr; 48.4</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">&Delta; +2.6</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 13px 16px;">
+            <p style="font-size: 12pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 1.5px;">Adjusted effect</p>
+            <p style="font-size: 14pt; margin-top: 4px;">per 100k women</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--success-color);">+25.2 (&asymp;32%)</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 13.5pt; margin-top: 14px;"><strong>The gap between 26.8 and 25.2 is small, and that is the lesson.</strong> The second difference is cheap insurance. Had the comparison states moved by 15 instead of 2.6, the naive before-and-after would have overstated the policy's effect by more than half &mdash; and nothing in the Massachusetts data alone would have revealed it.</p>
+        <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 12px 18px; margin-top: 12px;">
+          <p style="font-size: 13.5pt;"><strong>What the design surfaces that a headline hides.</strong> The increase was driven by <strong>ulipristal</strong> &mdash; the prescription-only product, precisely the one a pharmacist could not previously dispense. A mechanism consistent with the policy operating through its designed channel is the kind of internal coherence that makes a DiD credible <em>beyond</em> its parallel-trends assumption.</p>
+        </div>
+        <aside class="notes">Source: Qato, Guadamuz & Myerson (2024), JAMA, 2 July 2024. The mechanism point is the transferable one -- teach them to look for it in every DiD paper they read.</aside>
+      </section>
+
+      <!-- DISCUSSION 2 -->
+      <section>
+        <section id="discussion-2" style="padding: 36px 55px;">
+          <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: When the Estimators Disagree</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 16px;">
+            <p style="font-size: 15.5pt; line-height: 1.6;">You run three heterogeneity-robust estimators on the same staggered panel.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px;">
+            <div style="background: #eef2f5; border-radius: 10px; padding: 16px; text-align: center;"><p style="font-size: 13pt; color: var(--muted-color);">Callaway&ndash;Sant'Anna</p><p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color);">+6.1</p></div>
+            <div style="background: #eef2f5; border-radius: 10px; padding: 16px; text-align: center;"><p style="font-size: 13pt; color: var(--muted-color);">Sun&ndash;Abraham</p><p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color);">+5.8</p></div>
+            <div style="background: #f7efee; border-radius: 10px; padding: 16px; text-align: center;"><p style="font-size: 13pt; color: var(--muted-color);">Borusyak+</p><p style="font-size: 24pt; font-weight: 700; color: var(--danger-color);">+1.4</p></div>
+          </div>
+          <p style="font-size: 15.5pt; font-weight: 600; margin-top: 18px;">What do you do &mdash; and what do you write?</p>
+          <p style="font-size: 13.5pt; margin-top: 10px; color: var(--muted-color);">Whole class, hands. Two minutes.</p>
+          <aside class="notes">Expect someone to propose averaging them. Do not let that stand.</aside>
+        </section>
+        <section id="discussion-2-debrief" style="padding: 34px 55px;">
+          <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Debrief: Disagreement Is the Result</h2>
+          <div style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+            <p style="font-size: 14.5pt;"><strong>The wrong moves:</strong> picking the one you like; averaging them; reporting all three without comment.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+            <p style="font-size: 14.5pt;">These estimators differ in <strong>which comparisons they form</strong> and <strong>how they weight them</strong>. Material disagreement therefore says your answer is <em>sensitive to the weighting</em> &mdash; and the weighting encodes assumptions.</p>
+          </div>
+          <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 16px;"><strong>The write-up:</strong> name the assumption each estimator leans on hardest, identify which one your design plausibly violates, and report the range as a range. An imputation estimator that disagrees with a not-yet-treated estimator is telling you something specific about your untreated-outcome model.</p>
+          <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 14px; color: var(--accent-color);">This is the same stance as reporting a <strong>breakdown point</strong> instead of a pre-test &mdash; which is where we go next.</p>
+        </section>
+      </section>
+
+      <!-- DIVIDER 6 -->
+      <section class="section-divider" data-state="is-section-divider" id="divider-inference">
+        <p style="font-size: 14pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase;">Section 6</p>
+        <h1 style="font-size: 38pt;">Inference and Honest Bounds</h1>
+        <p style="font-size: 16pt; color: var(--muted-color); margin-top: 15px;">Replace an assertion nobody can check with a number an expert can argue about.</p>
+      </section>
+
+      <!-- SLIDE: few clusters -->
+      <section id="few-clusters" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-object-group" style="color: var(--danger-color);"></i> Few Clusters</h2>
+        <p style="font-size: 15pt; margin-top: 8px;">The unit of randomisation in a policy DiD is usually the <strong>state</strong>, not the restaurant. Chapter 8 taught you to cluster standard errors. Here the problem is that the number of clusters is often small &mdash; sometimes two.</p>
+        <div style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 14.5pt;">Cluster-robust standard errors are consistent <em>as the number of clusters grows</em>. With few clusters the asymptotics fail badly &mdash; and they fail in the <strong>dangerous direction</strong>: standard errors are too small and tests <strong>over-reject</strong>. With a handful of treated clusters, a nominal 5% test can reject a true null far more often than 5% of the time.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt;"><strong>Card and Krueger's design has exactly two states.</strong></p>
+          <p style="font-size: 14pt; margin-top: 8px; color: var(--muted-color);">Bertrand, Duflo and Mullainathan found DiD papers rejecting true nulls far more often than 5% &mdash; Lab 11's Diagnosis 3 reproduces that, on a panel whose true effect is zero, and asks you to say what the effective sample size for inference really is.</p>
+        </div>
+        <aside class="notes">Ten thousand observations, twenty states. Ask the class what n is for inference on a state-level policy. The answer is twenty, and it takes a moment for that to land.</aside>
+      </section>
+
+      <!-- SLIDE: wild bootstrap -->
+      <section id="wild-bootstrap" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-shuffle" style="color: var(--secondary-color);"></i> The Wild Cluster Bootstrap</h2>
+        <p style="font-size: 14.5pt; margin-top: 8px;"><strong>The remedy.</strong> Impose the null. Resample by flipping the sign of each cluster's residual vector according to random <strong>Rademacher weights</strong> ($\pm 1$ with equal probability). Re-estimate, and build the reference distribution from the bootstrap $t$-statistics.</p>
+        <p style="font-size: 14.5pt; margin-top: 10px;"><strong>Why it works:</strong> because the resampling operates on <em>whole clusters</em>, the within-cluster correlation structure is preserved without relying on a large-cluster limit.</p>
+        <pre style="margin-top: 12px;"><code style="font-size: 12pt; line-height: 1.45;">fit = TwoWayFixedEffects(
+    cluster="state",
+    inference="wild_bootstrap",   # Rademacher weights, null imposed
+    n_bootstrap=9999,
+    seed=42,
+)</code></pre>
+        <div class="fragment fade-up" style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt;">Expect the confidence interval to widen substantially relative to the analytical one. <strong>That widening is not a loss of information &mdash; it is the recovery of information you never had.</strong></p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 13.5pt; margin-top: 12px; color: var(--muted-color);">MacKinnon, Nielsen and Webb (2022) give fast algorithms and practical guidance on when the bootstrap itself becomes unreliable &mdash; which it does when the number of <em>treated</em> clusters is very small.</p>
+        <aside class="notes">Best shown, not told: report the analytical and bootstrap intervals side by side for Card and Krueger and let the width difference speak.</aside>
+      </section>
+
+      <!-- SLIDE: honest DiD -->
+      <section id="honest-did" style="padding: 30px 45px;">
+        <h2><i class="fa-solid fa-arrows-left-right-to-line" style="color: var(--secondary-color);"></i> Honest DiD: The Breakdown Point</h2>
+        <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-top: 6px; align-items: start;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img alt="Honest DiD identified set widening as M-bar increases, with the point estimate at plus 6 percent and the identified set first including zero at a breakdown point of M-bar equal to 1.78" src="figures/figure_008_honest_did.png" style="max-height: 440px; max-width: 100%; object-fit: contain;">
+          </div>
+          <div>
+            <p style="font-size: 13.5pt;">Rambachan and Roth (2023) turn Section 2's objection into a method. Rather than assuming parallel trends holds <em>exactly</em>, assume the post-treatment violation is <strong>bounded relative to the pre-treatment variation you can see</strong>: no larger than $\bar{M}$ times the maximum pre-treatment differential trend.</p>
+            <p style="font-size: 13.5pt; margin-top: 10px;">Then invert. Instead of a point estimate, report the <strong>identified set</strong> &mdash; the range of treatment effects consistent with the data and that bound.</p>
+            <div class="fragment fade-up" style="background: #eef2f5; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 12px 16px; margin-top: 12px;">
+              <p style="font-size: 13pt;"><strong>In words:</strong> $\bar{M} = 0$ recovers standard DiD. As $\bar{M}$ grows the set widens, and at some value it includes zero. That value is the <strong>breakdown point</strong>: how large a violation of parallel trends &mdash; measured in units of pre-trend variation you can actually observe &mdash; would be needed before you could no longer conclude the effect is non-zero.</p>
+            </div>
+            <p class="fragment fade-up" style="font-size: 13pt; margin-top: 10px; color: var(--accent-color);">Same move as Chapter 10's <strong>E-value</strong>: quantify how large the unverifiable thing would have to be.</p>
+          </div>
+        </div>
+        <aside class="notes">Draw the set widening and mark where it crosses zero. Connect explicitly to the E-value -- students should leave seeing sensitivity analysis as a general stance toward untestable assumptions, not a trick for one design.</aside>
+      </section>
+
+      <!-- SLIDE: two-period case -->
+      <section id="two-period" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-scale-balanced" style="color: var(--accent-color);"></i> Report the Breakdown Point, Not the Pre-Test</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 12px;">
+          <div style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 15px 18px;">
+            <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">Tells them about your test</p>
+            <p style="font-size: 14pt; margin-top: 6px; font-style: italic;">"Our pre-trends are insignificant."</p>
+          </div>
+          <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 15px 18px;">
+            <p style="font-size: 13pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 2px;">Tells them about your finding</p>
+            <p style="font-size: 14pt; margin-top: 6px; font-style: italic;">"Our conclusion survives any violation of parallel trends up to 1.8 times the largest pre-treatment deviation we observe."</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 14px;">The second is harder to produce, enormously more informative, and &mdash; unlike the first &mdash; <strong>cannot be gamed by having a small sample</strong>.</p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 13.5pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">And the case you will most often actually face</p>
+          <p style="font-size: 14pt; margin-top: 6px;">Everything above presumes <strong>multiple pre-treatment periods</strong>. With exactly two periods and two groups &mdash; the canonical Card and Krueger setup &mdash; <strong>none of it is available</strong>. A single pre-period defines a level, not a trend, and there is nothing for a sensitivity bound to be expressed relative to.</p>
+          <p style="font-size: 14pt; margin-top: 8px;">That does not make the design invalid. It means parallel trends is carried <em>entirely by institutional argument</em>, and <strong>the honest presentation says so</strong> rather than implying a check was performed.</p>
+        </div>
+        <aside class="notes">If additional pre-periods exist, use them even when the headline estimate does not -- their value is precisely that they let a reader disagree with you on evidence.</aside>
+      </section>
+
+      <!-- POLL 4 -->
+      <section>
+        <section id="poll-4" style="padding: 36px 50px;">
+          <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--accent-color);"></i> Poll: Reading a Breakdown Point</h2>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 16px;">
+            <p style="font-size: 15.5pt; line-height: 1.6;">A paper reports an Honest DiD <strong>breakdown point of $\bar{M} = 0.4$</strong>.</p>
+            <p style="font-size: 15.5pt; font-weight: 600; margin-top: 8px;">What does that tell you?</p>
+          </div>
+          <div class="poll-grid" data-poll-id="ch11-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The estimate is robust &mdash; it survives violations up to 40% of the pre-trend</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The result is fragile &mdash; a violation smaller than half the largest pre-trend already admits zero</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The pre-trend test was significant at the 40% level</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 16px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) 40% of the Bacon weight sits on forbidden comparisons</div>
+          </div>
+          <aside class="notes">Students click to vote. Fast poll, ninety seconds. The units are the whole question.</aside>
+        </section>
+        <section id="poll-4-reveal" data-poll-results="ch11-econ5200-poll-4" style="padding: 34px 50px;">
+          <h2><i class="fa-solid fa-check-circle" style="color: var(--success-color);"></i> Answer: B &mdash; fragile</h2>
+          <div class="poll-results-chart" data-poll-id="ch11-econ5200-poll-4" style="display: flex; gap: 20px; align-items: flex-end; justify-content: center; height: 165px; margin: 12px 60px;"></div>
+          <div style="padding: 4px 50px;">
+            <p style="font-size: 14.5pt; line-height: 1.6;">$\bar{M}$ is measured in units of the <strong>largest pre-treatment deviation you already observe</strong>. A breakdown point below 1 means a violation <em>smaller than something visible in your own pre-period</em> is enough to kill the conclusion.</p>
+            <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 12px;">
+              <p style="font-size: 13.5pt; margin: 0;"><strong>Why A is tempting:</strong> the number <em>looks</em> like a percentage, and small numbers feel conservative. Read the units. This is why the professional sentence quotes the multiple explicitly &mdash; "up to 1.8 times the largest pre-treatment deviation."</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- SLIDE: takeaways -->
+      <section id="takeaways" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-list-ol" style="color: var(--accent-color);"></i> Chapter 11 in a Nutshell</h2>
+        <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13.5pt;"><strong>1.</strong> DiD buys identification with <strong>structure rather than measurement</strong>: it permits arbitrary unobserved heterogeneity provided the two groups' untreated outcome <em>paths</em> would have moved in parallel.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13.5pt;"><strong>2.</strong> Parallel trends is a claim about an unobserved counterfactual and is therefore <strong>untestable</strong>. A flat pre-trend is necessary, weakly informative, and routinely over-interpreted &mdash; failing to reject often reflects low power, not an absent violation.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--danger-color);"><p style="font-size: 13.5pt;"><strong>3.</strong> Under staggered adoption, TWFE is a <strong>variance-weighted average of every available 2&times;2</strong> &mdash; and some of those use already-treated units as controls. The <strong>forbidden comparison</strong> enters with a negative weight.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--danger-color);"><p style="font-size: 13.5pt;"><strong>4.</strong> With dynamic effects that bias is <strong>structural, not statistical</strong>: 4.70 against a true 8.65 with SE 0.27 &mdash; and with no never-treated group, <strong>&minus;0.97 against +9.56</strong>.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--success-color);"><p style="font-size: 13.5pt;"><strong>5.</strong> Heterogeneity-robust estimators build only legitimate comparisons and aggregate with <strong>weights you choose</strong>; sensitivity analysis then replaces the untestable assumption with a <strong>breakdown point</strong> a domain expert can evaluate.</p></div>
+        </div>
+        <aside class="notes">Read 3 and 4 slowly. If they remember one thing, it should be that a regression can return a number outside the range of every true effect in the data.</aside>
+      </section>
+
+      <!-- DISCUSSION 3 -->
+      <section>
+        <section id="discussion-3" style="padding: 34px 55px;">
+          <h2><i class="fa-solid fa-gavel" style="color: var(--secondary-color);"></i> Closing Discussion: Which Failure?</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+            <div style="background: #f7efee; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 16px 20px;">
+              <p style="font-size: 13pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px;">TWFE</p>
+              <p style="font-size: 14pt; margin-top: 6px;">Returns <strong>&asymp; &minus;1</strong> on a panel where <em>every</em> true effect is positive. It formed the comparison anyway and gave you a number with the <strong>wrong sign</strong>.</p>
+            </div>
+            <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 20px;">
+              <p style="font-size: 13pt; color: var(--success-color); text-transform: uppercase; letter-spacing: 2px;">The clean estimator</p>
+              <p style="font-size: 14pt; margin-top: 6px;">Returns <strong>+5.05</strong> against a true mean of <strong>+6.71</strong>. With two cohorts and no never-treated units, the late cohort has <em>no valid controls at all</em> once treated, so those cells <strong>drop out of the average entirely</strong>.</p>
+            </div>
+          </div>
+          <p style="font-size: 14pt; margin-top: 16px;">The clean estimator's gap is <strong>not a bug</strong>. It refuses to form a comparison it cannot justify, and the price is that it answers a slightly <em>narrower</em> question than the one you asked.</p>
+          <p style="font-size: 17pt; font-weight: 700; margin-top: 16px; color: var(--accent-color);">Which failure would you rather have to explain to a referee?</p>
+          <aside class="notes">This is Lab 11's own question, verbatim. Ninety seconds of hands, then the debrief. Do not let anyone say "neither."</aside>
+        </section>
+        <section id="discussion-3-debrief" style="padding: 34px 55px;">
+          <h2><i class="fa-solid fa-flag-checkered" style="color: var(--accent-color);"></i> Debrief: The Chapter's Real Thesis</h2>
+          <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 18px 24px; margin-top: 16px;">
+            <p style="font-size: 16pt;">An estimator that <strong>declines a comparison it cannot justify</strong> is doing its job. One that <strong>invents a control out of already-treated units</strong> is not.</p>
+          </div>
+          <p class="fragment fade-up" style="font-size: 15pt; margin-top: 18px;">A narrower estimand and a paragraph of explanation is a defensible position. A precisely estimated number with the wrong sign is not &mdash; and nothing in the regression output tells you which one you have.</p>
+          <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px;">That is why the module you ship in Lab 11 enforces the rule <em>when the comparison is formed</em>, not as a correction applied afterwards. Design the refusal in.</p>
+          <p class="fragment fade-up" style="font-size: 18pt; font-weight: 700; margin-top: 22px; color: var(--accent-color); text-align: center;">Identification is an argument, not a function call.</p>
+        </section>
+      </section>
+
+      <!-- SLIDE: exit ticket -->
+      <section id="exit-ticket" style="padding: 36px 55px;">
+        <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket</h2>
+        <p style="font-size: 15pt; margin-top: 12px;">On one index card, before you leave:</p>
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 18px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;"><strong>1.</strong> State <strong>parallel trends</strong> in one sentence, using the word <em>change</em> and not the word <em>equal</em>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>2.</strong> Name the <strong>forbidden comparison</strong> and say why its weight is negative.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;"><strong>3.</strong> Write the single sentence you would put in a paper reporting a <strong>breakdown point</strong>.</p>
+          </div>
+        </div>
+        <p style="font-size: 13.5pt; margin-top: 18px; color: var(--muted-color);">Cards are read, not graded. Question 2 is the one that predicts how Lab 11 will go for you.</p>
+        <aside class="notes">Press 3 for a three-minute timer. Collect at the door. Scan for anyone who writes "equal" in Q1 -- that is the levels/slopes confusion surviving the whole lecture.</aside>
+      </section>
+
+      <!-- SLIDE: looking ahead -->
+      <section id="looking-ahead" style="padding: 32px 52px;">
+        <h2><i class="fa-solid fa-forward" style="color: var(--secondary-color);"></i> Looking Ahead</h2>
+        <div style="background: #f0f5ef; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 15px 22px; margin-top: 12px;">
+          <p style="font-size: 14pt;"><strong>Lab 11 &mdash; <code>lab-ch11-diagnostic.ipynb</code></strong> (45 min core + 20 min extension). Card &amp; Krueger straight from the original archive (checkpoint <strong>+2.75</strong>), then three diagnoses: the untestable assumption, the forbidden comparison, and the standard error that is too small. You ship <code>src/did_utils.py</code>, in which an already-treated unit is <em>never</em> used as a control &mdash; enforced when the comparison is formed, not patched afterwards.</p>
+        </div>
+        <p style="font-size: 13.5pt; margin-top: 12px;"><strong>Problem Set 3</strong> covers Chapters 9&ndash;11: causal thinking plus DiD/IV identification.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13pt;"><strong>Ch 12 &mdash; Instrumental Variables.</strong> A third way to buy identification: variation in treatment that affects the outcome only <em>through</em> treatment.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13pt;"><strong>Ch 13 &mdash; Regression Discontinuity.</strong> A fourth: a threshold that assigns treatment almost at random near the cutoff.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);"><p style="font-size: 13pt;"><strong>Ch 14 &mdash; OLS Diagnostics.</strong> Card &amp; Krueger returns for cluster-robust inference &mdash; Thread 7's third stop.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);"><p style="font-size: 13pt;"><strong>Ch 24 &mdash; Double Machine Learning.</strong> DiD relaxes the <em>measurement</em> requirement; DML relaxes the <em>dimensionality</em> requirement. Complements, not substitutes.</p></div>
+        </div>
+        <aside class="notes">Close by pointing back at Ch 10: four chapters, four different prices for the same thing. Identification is always bought, never free.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

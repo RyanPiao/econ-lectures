@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL for Economists</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']], processEscapes: true}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 57% 43%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 11</p>
+          <h1 style="font-size: 34pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">SQL for Economists</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">The same operations you already know, in a different grammar &mdash; and the one line that can multiply your data without telling you</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch11-sql.png" alt="Abstract cover art: one crisp table row at the top dissolving downward into hundreds of repeated, overlapping copies of itself" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">11.1</p>
+            <p style="font-size: 15pt;">Explain why every <strong>pandas</strong> operation you know has an exact <strong>SQL</strong> equivalent &mdash; and what changes when you write it declaratively</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">11.2</p>
+            <p style="font-size: 15pt;">Write SQL using <code>SELECT</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>HAVING</code>, joins, CTEs and window functions</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">11.3</p>
+            <p style="font-size: 15pt;">Diagnose a join that changed the <strong>grain</strong>, and quantify what it does to $n$, the standard error, and significance</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">11.4</p>
+            <p style="font-size: 15pt;">Assess whether a query <em>someone else</em> wrote &mdash; a colleague, a predecessor, or a language model &mdash; answers the question it claims to</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Say up front: nobody in this room is expected to have written SQL before, and the concept load today is close to zero because you already know all of it in pandas. 11.3 is the centre of gravity &mdash; it is the one that can silently break work you have already done correctly.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 8.</strong> Welch's $t$-test compares two group means. <em>Where</em> does the sample size $n$ enter the calculation?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 2.</strong> You deflated nominal wages by CPI to get real wages. Why did that change the story about the last five years?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both come back today. One of them comes back because <strong>a single line of SQL broke it.</strong></p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. Target for QC1: "inside the standard error, as sigma over root n." Write $\sigma/\sqrt{n}$ on the board and leave it there &mdash; you will point at it again in twenty minutes. Target for QC2: nominal rose every year, real did not.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook part 1 -->
+    <section id="hook-join" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Three Seconds, One Query, Every Standard Error Halved</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Ask a language model for a SQL query and you get one in three seconds. It runs. It returns a table. The numbers look entirely reasonable.</p>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Join a customer table to an orders table, where each customer has about four orders. Write it without re-aggregating and <strong>every customer comes back four times.</strong></p>
+        </div>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 18px; text-align: center;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px;">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color);">1,000 &rarr; 4,000</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 6px;">your $n$</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 14px;">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--primary-color);">$\sigma/\sqrt{n}$</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 6px;">every SE halves</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px;">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--danger-color);">$p &lt; 0.01$</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 6px;">from nowhere near</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; font-style: italic;">Your regression runs perfectly. Your diagnostic plots look fine. <strong>Nothing in any output you have learned to read</strong> will tell you that you are looking at each customer four times.</p>
+      </div>
+      <aside class="notes">2 min. Do not explain the mechanism yet &mdash; Section 2 is where it lands. Right now this is only a claim that should feel slightly unbelievable. Point back at the sigma-over-root-n you wrote on the board during retrieval practice.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook part 2 -->
+    <section id="hook-benchmark" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-flask-vial" style="color: var(--accent-color);"></i> They Audited the Benchmark Itself</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">In 2026, researchers at the University of Illinois audited the two benchmarks the entire text-to-SQL field uses to certify that language models write <em>correct</em> queries.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 20px; text-align: center;">
+            <p style="font-size: 44pt; font-weight: 700; color: var(--accent-color); line-height: 1;">52.8%</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 8px;">of BIRD's &ldquo;correct&rdquo; answers contained errors</p>
+          </div>
+          <div class="fragment fade-up" style="background: linear-gradient(135deg, #f7e3e3, #f0d3d3); border-radius: 12px; padding: 20px; text-align: center;">
+            <p style="font-size: 44pt; font-weight: 700; color: var(--danger-color); line-height: 1;">66.1%</p>
+            <p style="font-size: 13pt; color: #7a3f3f; margin-top: 8px;">in Spider 2.0-Snow</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 16px; line-height: 1.6;">Re-scoring the leading systems against corrected data moved reported accuracy by up to <strong>31%</strong> and shuffled the leaderboard by as many as <strong>nine positions</strong>. One of the four error families they catalogue is <strong>exactly the un-re-aggregated one-to-many join.</strong></p>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--primary-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 16pt; font-weight: 600;">The benchmark that proves the machines write good SQL was more than half wrong. Today you learn to read the query yourself.</p>
+        </div>
+      </div>
+      <p class="footnote">Jin, T., Choi, Y., Zhu, Y. &amp; Kang, D. (2026). &ldquo;Pervasive Annotation Errors Break Text-to-SQL Benchmarks and Leaderboards.&rdquo; <em>PVLDB</em> 19(5). arXiv:2601.08778</p>
+      <aside class="notes">2 min. Say the two percentages out loud and then pause. Anticipate the obvious objection &mdash; "so should we not use LLMs for SQL?" &mdash; and answer it now, briefly: no, use them, they are genuinely useful and refusing is a competitive disadvantage. The point is that verification is now your job. That framing carries the whole lecture and returns in the last ten minutes.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-you-know-this" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; You Already Know This</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Six operations, ten chapters of practice, and a new spelling.</p>
+    </section>
+
+    <!-- SLIDE 7: Same algebra -->
+    <section id="same-algebra" style="padding: 36px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i> Not an Analogy &mdash; a Shared Ancestor</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">You have spent ten chapters filtering rows, selecting columns, grouping, aggregating, sorting and merging. <strong>Those six operations are essentially all of SQL.</strong></p>
+        <p style="font-size: 15pt; line-height: 1.55; margin-top: 12px;">In 1970 Edgar Codd proposed organising data into <strong>relations</strong> &mdash; tables &mdash; manipulated by a small formal algebra. SQL was built directly on it. Pandas was built four decades later, by people who had spent their careers using SQL.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">pandas is <em>procedural</em></p>
+            <p style="font-size: 14.5pt; margin-top: 8px; line-height: 1.5;">You give the steps. Filter, then group, then take the mean. Each step makes an object you could inspect. <strong>A recipe.</strong></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 18px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">SQL is <em>declarative</em></p>
+            <p style="font-size: 14.5pt; margin-top: 8px; line-height: 1.5;">You describe the table you want. The engine decides how to make it &mdash; often in a different order than you wrote, chosen for speed.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; text-align: center; color: var(--primary-color);"><strong>You are learning notation, not concepts.</strong> That is why this takes days rather than months.</p>
+      </div>
+      <aside class="notes">3 min. Ask who has written SQL before &mdash; usually a third of the room from an internship &mdash; then reassure the rest explicitly: no prior SQL is assumed and every keyword today gets introduced before it is used. The Codd point matters because it tells them the translation table on the next slides is exact, not a rough correspondence.</aside>
+    </section>
+
+    <!-- SLIDE 8: Execution order -->
+    <section id="execution-order" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--accent-color);"></i> The Order You Write It Is Not the Order It Runs</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 26px; align-items: center;">
+          <img src="figures/figure_001_execution_order.png" alt="Two columns of SQL clause boxes with arrows crossing between them: written order SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY maps to execution order FROM first, then WHERE, GROUP BY, HAVING, SELECT fifth, ORDER BY last" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.55;"><code>FROM</code> runs first &mdash; you cannot filter a table you have not named.</p>
+            <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 15pt; line-height: 1.55;"><code>WHERE</code> runs <strong>before</strong> <code>GROUP BY</code>. So <code>WHERE</code> cannot reference an average &mdash; at the moment it runs, <strong>no averages exist yet.</strong></p>
+            </div>
+            <p style="font-size: 15pt; line-height: 1.55; margin-top: 14px;">That is what <code>HAVING</code> is for. &ldquo;<code>WHERE</code> vs <code>HAVING</code>&rdquo; is the most common entry-level SQL interview question there is, and the answer is <strong>not</strong> that one is better.</p>
+            <p style="font-size: 15pt; margin-top: 10px; color: var(--danger-color); font-weight: 600;">It is that they run at different times.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Draw the two ladders on the board yourself rather than only showing the figure &mdash; the crossing arrows are worth the thirty seconds. Tell them plainly this is on interviews; students remember things they know will be tested outside the room.</aside>
+    </section>
+
+    <!-- SLIDE 9: WHERE vs HAVING worked -->
+    <section id="where-having" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-filter" style="color: var(--secondary-color);"></i> Both Clauses, Doing Different Work</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt;">Which categories earned more than <strong>&#92;$10,000</strong> since December 2025?</p>
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 22px; margin-top: 12px; align-items: start;">
+<pre style="font-size: 13pt; background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin: 0;"><code>SELECT category, SUM(revenue) AS rev
+FROM sales
+WHERE  month &gt;= '2025-12'
+GROUP BY category
+HAVING SUM(revenue) &gt; 10000
+ORDER BY category</code></pre>
+<pre style="font-size: 13pt; background: #eef5ee; border-radius: 8px; padding: 14px 18px; margin: 0;"><code>category |   rev
+---------+---------
+books    | 12000.0
+coffee   | 13000.0</code></pre>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt; line-height: 1.5;"><strong><code>WHERE</code> removes November</strong> before any summing. Without it, books total &#92;$16,000 and the answer silently covers the wrong period.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt; line-height: 1.5;"><strong><code>HAVING</code> drops tools</strong> (&#92;$3,500) after grouping &mdash; which <code>WHERE</code> could not do, because at that point no total existed.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Walk the query in execution order, not reading order: FROM sales, then WHERE, then GROUP BY, then HAVING, then SELECT. Say the numbers out loud &mdash; books would have been sixteen thousand without the WHERE, and that is a wrong answer that looks completely fine.</aside>
+    </section>
+
+    <!-- SLIDE 10: BinderException -->
+    <section id="binder-exception" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Try to Collapse Them and the Database Tells You</h2>
+      <div class="content">
+<pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 16px 22px;"><code>duckdb.sql("SELECT category, SUM(revenue) FROM sales "
+           "WHERE SUM(revenue) &gt; 10000 GROUP BY category")</code></pre>
+<pre style="font-size: 15pt; background: #f7e3e3; border-radius: 8px; padding: 16px 22px; margin-top: 14px;"><code>BinderException: Binder Error:
+WHERE clause cannot contain aggregates!</code></pre>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--primary-color); border-radius: 8px; padding: 16px 24px; margin-top: 20px;">
+          <p style="font-size: 17pt; line-height: 1.55;">That error message <strong>is the execution-order table restated.</strong> It is also, almost verbatim, the answer to the most common entry-level SQL interview question there is.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Run this live if the projector is already showing a notebook &mdash; a real traceback lands harder than a screenshot. Then tell them to read database error messages rather than pasting them straight into a chatbot: this one contains its own explanation.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Why Can't <code>WHERE</code> See an Average?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+<pre style="font-size: 12.5pt; background: transparent; padding: 0; margin: 0;"><code>SELECT dept, AVG(pay) FROM staff
+WHERE AVG(pay) &gt; 50000 GROUP BY dept   -- BinderException</code></pre>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Why does this fail?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch11-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) <code>AVG</code> is misspelled &mdash; SQL wants <code>MEAN</code></div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) <code>WHERE</code> runs before <code>GROUP BY</code>, so no average exists yet</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) You can never filter on an average in SQL</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) <code>WHERE</code> needs the column listed in <code>SELECT</code> first</div>
+        </div>
+        <aside class="notes">1 min. Students click to vote on their devices; results appear on the next slide. This is the easiest poll of the day and that is deliberate &mdash; it is the first one, and you want everyone to discover the mechanics works before Poll 2, which is the one that matters.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch11-econ3916-poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; It Is a Question of Timing</h2>
+        <div class="poll-results-chart" data-poll-id="ch11-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><code>FROM</code> &rarr; <code>WHERE</code> &rarr; <code>GROUP BY</code> &rarr; <code>HAVING</code> &rarr; <code>SELECT</code> &rarr; <code>ORDER BY</code>. When <code>WHERE</code> runs, the rows have not been grouped, so there is nothing to average. Move the condition to <code>HAVING</code> and it works.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is the tempting wrong answer:</strong> you absolutely <em>can</em> filter on an average. You just have to do it after the aggregation exists &mdash; which is the entire job description of <code>HAVING</code>.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 12: Translation table -->
+    <section id="translation-table" style="padding: 20px 45px;">
+      <style>#translation-table table td, #translation-table table th { padding: 5px 10px; }</style>
+      <h2><i class="fa-solid fa-language" style="color: var(--secondary-color);"></i> The Dictionary &mdash; Every Row Is Something You Have Already Done</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 4px;">
+          <table style="font-size: 11pt;">
+            <tr><th>pandas</th><th>SQL</th></tr>
+            <tr><td><code>df[['a','b']]</code></td><td><code>SELECT a, b FROM df</code></td></tr>
+            <tr><td><code>df[df.age &gt; 25]</code></td><td><code>... WHERE age &gt; 25</code></td></tr>
+            <tr><td><code>df[(df.a&gt;1) &amp; (df.b=='A')]</code></td><td><code>... WHERE a &gt; 1 AND b = 'A'</code></td></tr>
+            <tr><td><code>df['a'].drop_duplicates()</code></td><td><code>SELECT DISTINCT a FROM df</code></td></tr>
+            <tr><td><code>df.sort_values('a', ascending=False)</code></td><td><code>... ORDER BY a DESC</code></td></tr>
+            <tr><td><code>df.head(10)</code></td><td><code>... LIMIT 10</code></td></tr>
+            <tr><td><code>df.groupby('d')['p'].mean()</code></td><td><code>SELECT d, AVG(p) ... GROUP BY d</code></td></tr>
+            <tr><td>aggregate, <em>then</em> filter</td><td><code>... HAVING AVG(p) &gt; 50000</code></td></tr>
+          </table>
+          <table style="font-size: 11pt;">
+            <tr><th>pandas</th><th>SQL</th></tr>
+            <tr><td><code>df1.merge(df2, on='id')</code></td><td><code>... FROM df1 JOIN df2 ON ...</code></td></tr>
+            <tr><td><code>df1.merge(df2, on='id', how='left')</code></td><td><code>... FROM df1 LEFT JOIN df2 ON ...</code></td></tr>
+            <tr><td><code>df['a'].fillna(0)</code></td><td><code>SELECT COALESCE(a, 0)</code></td></tr>
+            <tr><td><code>np.where(df.a&gt;18,'A','C')</code></td><td><code>CASE WHEN a &gt; 18 THEN 'A' ELSE 'C' END</code></td></tr>
+            <tr><td><code>df.groupby('id')['x'].shift(1)</code></td><td><code>LAG(x) OVER (PARTITION BY id ORDER BY t)</code></td></tr>
+            <tr><td><code>df.groupby('id')['x'].cumsum()</code></td><td><code>SUM(x) OVER (PARTITION BY id ORDER BY t)</code></td></tr>
+            <tr><td><code>df.groupby('id').cumcount()+1</code></td><td><code>ROW_NUMBER() OVER (PARTITION BY id ...)</code></td></tr>
+            <tr><td><code>df.groupby('g')['x'].transform('mean')</code></td><td><code>AVG(x) OVER (PARTITION BY g)</code></td></tr>
+          </table>
+        </div>
+        <p style="font-size: 13pt; margin-top: 6px; text-align: center; color: var(--muted-color); font-style: italic;">This is reference material, not lecture material. Screenshot it &mdash; the bottom four rows get taught properly in Section 3.</p>
+      </div>
+      <aside class="notes">2 min. Do NOT read this table. Name three rows &mdash; groupby, merge, shift &mdash; say "you already know all of it", and move on. Tell them explicitly that the bottom four rows are window functions and they are not expected to understand them yet; Section 3 teaches them. Leaving unexplained syntax on screen without saying that is how you lose a room with no SQL background.</aside>
+    </section>
+
+    <!-- SLIDE 13: Where is the database? -->
+    <section id="where-is-the-database" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-circle-question" style="color: var(--accent-color);"></i> First: Where Is the Database?</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 18px 26px; text-align: center;">
+          <p style="font-size: 26pt; font-weight: 700; color: var(--accent-color);">There isn't one.</p>
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.55; margin-top: 16px;"><code>duckdb.sql("SELECT ... FROM customers")</code> reads the name <code>customers</code> out of your <strong>Python namespace</strong> &mdash; the same variable you built one line ago with <code>pd.DataFrame(...)</code> &mdash; and runs the query against that DataFrame, in memory.</p>
+        <p style="font-size: 15.5pt; margin-top: 10px; color: var(--danger-color);"><strong>No server. No connection string. No <code>CREATE TABLE</code>. No file on disk.</strong> DuckDB is a SQL engine you <em>imported</em>, not a database you <em>connected to</em>.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt; line-height: 1.5;">The table name in the query <strong>is the Python variable name.</strong> Rename the variable and the query breaks: <code>Table with name customers does not exist</code>.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt; line-height: 1.5;"><code>.df()</code> on the end converts the answer <strong>back into a DataFrame.</strong> Without it you get a DuckDB relation &mdash; prints nicely, but has no <code>.groupby()</code> or <code>.iloc</code>.</p>
+          </div>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 14px; font-style: italic; text-align: center;">Everything you write is real, portable SQL. The same text runs against Postgres, Snowflake or BigQuery &mdash; with the table names pointing at real tables instead of your notebook's variables.</p>
+      </div>
+      <aside class="notes">2 min, and do not skip it. This is the question every student in the room is about to have and almost none will ask. If you show a query against `customers` without answering it, a reasonable person concludes there is a hidden database somewhere, or that `customers` is a magic string, and they spend the rest of the lecture quietly confused about the wrong thing. Say the sentence "the table name is the variable name" out loud twice.</aside>
+    </section>
+
+    <!-- SLIDE 14: First query -->
+    <section id="first-query" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-play" style="color: var(--success-color);"></i> Your First Query, on a DataFrame You Already Have</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: start;">
+<pre style="font-size: 12.5pt; background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin: 0;"><code>import duckdb, pandas as pd
+
+df = pd.DataFrame({
+    "year":     [2022, 2023, 2024],
+    "industry": ["mfg", "mfg", "mfg"],
+    "avg_wage": [28.40, 29.85, 31.20]})
+
+duckdb.sql("""
+    SELECT year, AVG(avg_wage) AS mean_wage
+    FROM df
+    WHERE year &gt;= 2023
+    GROUP BY year
+    ORDER BY year
+""").show()</code></pre>
+          <div>
+<pre style="font-size: 12.5pt; background: #eef5ee; border-radius: 8px; padding: 14px 18px; margin: 0;"><code> year | mean_wage
+------+----------
+ 2023 |     29.85
+ 2024 |     31.20</code></pre>
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 14pt; line-height: 1.5;">That is <strong>the entire setup cost of SQL in 2026.</strong> For most of this subject's history the barrier to teaching SQL to economists was administrative &mdash; a server, credentials, an administrator.</p>
+              <p style="font-size: 14pt; line-height: 1.5; margin-top: 10px; color: var(--accent-color);"><strong>That barrier is gone.</strong></p>
+            </div>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 12px;">Pin the version: <code>pip install "duckdb&gt;=1.5,&lt;2.0"</code> &mdash; v2.0 goes GA mid-semester.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Run this live against a DataFrame from an earlier lecture rather than this toy one &mdash; the reaction to querying a `df` they recognise, with no setup, is what sells the whole chapter. Do not introduce joins yet, however tempting.</aside>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section id="divider-joins" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; Joins, and the Cardinality Trap</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">The section this chapter exists for.</p>
+    </section>
+
+    <!-- SLIDE 16: Join anatomy -->
+    <section id="join-anatomy" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--secondary-color);"></i> Join Anatomy &mdash; Four Pieces, One Line</h2>
+      <div class="content">
+<pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin: 0;"><code>FROM customers c LEFT JOIN region_targets t ON c.region = t.region</code></pre>
+        <p style="font-size: 14pt; color: var(--muted-color); margin-top: 8px; text-align: center;">is exactly <code>customers.merge(region_targets, on="region", how="left")</code></p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><code>customers c</code> &mdash; <strong>alias.</strong> A nickname for the table, declared just by writing it. Now you say <code>c.revenue</code>. Pure convenience &mdash; until two tables share a column name, which is exactly what a join key is.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><code>LEFT JOIN region_targets t</code> &mdash; <strong>the second table</strong>, aliased <code>t</code>.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><code>ON c.region = t.region</code> &mdash; <strong>the join key.</strong> The column that must match for two rows to be glued together. Name the wrong column and you get a <em>wrong answer</em>, not an error.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 13px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><code>LEFT</code> &mdash; keep every left row even with no match, filling the right side with <code>NULL</code>. That is <code>how="left"</code>. Plain <code>JOIN</code> keeps only matched rows.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min, and take the full three. The chapter introduces this syntax inside the fanout example, which asks students with no SQL to learn alias notation and reason about cardinality in the same breath. Separate them. Point at each of the four pieces on screen as you name it. The "wrong answer, not an error" line on the join key is worth repeating.</aside>
+    </section>
+
+    <!-- SLIDE 17: A join that cannot fan out -->
+    <section id="safe-join" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-equals" style="color: var(--success-color);"></i> First, a Join That <em>Cannot</em> Multiply Anything</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+<pre style="font-size: 12.5pt; background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin: 0;"><code>SELECT c.customer_id, c.region,
+       c.revenue, t.target
+FROM customers c
+LEFT JOIN region_targets t
+       ON c.region = t.region
+WHERE c.customer_id &lt; 4
+ORDER BY c.customer_id</code></pre>
+<pre style="font-size: 12.5pt; background: #eef5ee; border-radius: 8px; padding: 14px 18px; margin: 0;"><code> id | region | revenue | target
+----+--------+---------+-------
+  0 | East   |  512.40 |    520
+  1 | West   |  488.10 |    480
+  2 | East   |  533.90 |    520
+  3 | West   |  501.20 |    480</code></pre>
+        </div>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 17pt; line-height: 1.55;"><strong>Four rows in, four rows out.</strong> <code>region_targets</code> has exactly <strong>one row per region</strong>, so nothing was duplicated.</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 16px; text-align: center; color: var(--accent-color); font-weight: 600;">Hold on to that sentence. The next slides are what happens when it is not true.</p>
+      </div>
+      <aside class="notes">2 min. This slide exists so that the students' mental model of "join" is set correctly before it is broken. Say explicitly: this is the join everyone has in their head, and it is only safe because of a property of the right-hand table, not a property of the word LEFT.</aside>
+    </section>
+
+    <!-- SLIDE 18: Join types -->
+    <section id="join-types" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-table-columns" style="color: var(--secondary-color);"></i> The Four Join Types &mdash; Read the Right-Hand Column</h2>
+      <div class="content">
+        <table style="font-size: 14.5pt;">
+          <tr><th>Type</th><th>Keeps</th><th>Row count</th></tr>
+          <tr><td><code>INNER JOIN</code></td><td>Only rows matching in both tables</td><td>Can shrink <strong>or grow</strong></td></tr>
+          <tr><td><code>LEFT JOIN</code></td><td>All left rows; <code>NULL</code> where no match</td><td><strong>&ge;</strong> left table's rows</td></tr>
+          <tr><td><code>RIGHT JOIN</code></td><td>All right rows</td><td>&ge; right table's rows</td></tr>
+          <tr><td><code>FULL OUTER JOIN</code></td><td>Everything from both</td><td>&ge; both</td></tr>
+        </table>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Almost everyone believes a <code>LEFT JOIN</code> <em>preserves</em> the left table's row count. It preserves those rows as a <strong>minimum</strong>.</p>
+          <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 10px;">A <code>LEFT JOIN</code> from a 1,000-row customer table to a 5,000-row order table returns <strong>between 1,000 and 5,000 rows</strong> &mdash; and which one depends entirely on the cardinality of the relationship. That is a fact about <em>your data</em>, not about your query.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do not dwell on RIGHT and FULL OUTER &mdash; name them and move on; they are the first thing to cut if you are running long. The greater-than-or-equal signs are the whole slide. Ask the room whether anyone has ever checked the row count after a merge in pandas. Usually silence, which is the point.</aside>
+    </section>
+
+    <!-- SLIDE 19: Grain -->
+    <section id="grain" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Key Concept: A Join Has a <em>Grain</em>, and You Must Know It</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e2ecf2); border-radius: 12px; padding: 20px 28px;">
+          <p style="font-size: 18pt; line-height: 1.55;">The <strong>grain</strong> of a table is <strong>what one row represents</strong>: one customer, one customer-month, one order, one country-year.</p>
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 16px;">Every join either preserves the grain or changes it. The habit is two sentences and one <code>COUNT(*)</code>:</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>Before you write it.</strong> State the grain of both inputs and the grain you intend the output to have.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>After you run it.</strong> Check the row count against that intention.</p>
+          </div>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; text-align: center; font-style: italic;">This single habit prevents the most consequential class of silent data error in applied work.</p>
+      </div>
+      <aside class="notes">2 min. "Grain" is the vocabulary word of the day &mdash; write it on the board and leave it. Give them a phrasing they can actually use in a meeting: "what does one row of this represent?" It is a question that makes a senior analyst take you seriously and it costs nothing to ask.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Predict the Row Count</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt;"><code>customers</code> has <strong>600 rows</strong>, one per customer. <code>orders</code> has <strong>4,033 rows</strong> &mdash; every customer placed between 1 and 12 orders.</p>
+<pre style="font-size: 12pt; background: transparent; padding: 6px 0 0 0; margin: 0;"><code>SELECT c.customer_id, c.region, c.revenue
+FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id</code></pre>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 8px;">How many rows come back?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch11-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) 600 &mdash; a <code>LEFT JOIN</code> keeps the left table's rows</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) 4,033 &mdash; one row per order</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) 4,633 &mdash; both tables stacked together</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) 2,419,800 &mdash; every customer against every order</div>
+        </div>
+        <aside class="notes">2 min. This is the most important poll of the lecture and the entire pedagogical value is in watching the room commit to A before you run it. Do not hint. Let the bars settle before advancing.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch11-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; 4,033 Rows</h2>
+        <div class="poll-results-chart" data-poll-id="ch11-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Every customer appears once <strong>per order</strong>, with their revenue repeated verbatim each time.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>A is the productive error</strong> and usually wins the room. <code>LEFT JOIN</code> guarantees the left rows <em>survive</em> &mdash; not that they stay <em>unique</em>. D is what a join with no <code>ON</code> clause would give you: a cross join.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 21: Fanout figure -->
+    <section id="fanout" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-clone" style="color: var(--danger-color);"></i> Fanout &mdash; and Nothing Warned You</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; align-items: center;">
+          <img src="figures/figure_002_fanout.png" alt="Diagram: a 600-row customers table on the left, joined to orders, becomes a 4033-row table on the right in which customer 42's identical revenue figure is repeated across seven consecutive rows" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.55;">The join <strong>did exactly what you asked.</strong> The bug is in what you do next: compute a statistic as though each row were an independent customer.</p>
+            <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 14.5pt; line-height: 1.55;">It is dangerous rather than annoying because it is <strong>invisible.</strong> The table looks like customers. The IDs are real. The revenue is real. No missing data, no error, no warning.</p>
+            </div>
+            <p style="font-size: 15pt; line-height: 1.55; margin-top: 14px;">The only symptom is that there are more rows than there should be &mdash; <strong>and nobody counts rows.</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Anticipate the objection "wouldn't you notice four thousand rows?" and answer it directly: not when the join is step three of eleven in a pipeline you inherited from someone who left, and not when you never printed the shape.</aside>
+    </section>
+
+    <!-- SLIDE 22: The two t-tests -->
+    <section id="ttest-inversion" style="padding: 22px 45px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--danger-color);"></i> The Same Chapter 8 Test, Run Twice</h2>
+      <div class="content">
+<pre style="font-size: 12pt; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; margin: 0;"><code>Correct (1 row/cust)   n =   600   diff = 11.31   SE = 9.35   t = 1.21   p = 0.2270
+Fanned out (1/order)   n = 4,033   diff = 12.30   SE = 3.57   t = 3.44   p = 0.0006</code></pre>
+        <img src="figures/figure_003_ttest_inversion.png" alt="Three paired bar panels: sample size 600 versus 4033, standard error 9.35 versus 3.57, and p-value 0.2270 versus 0.0006 with the fanned-out bar far below the 0.05 significance line" style="width: 72%; display: block; margin: 8px auto 0; border-radius: 6px;">
+      </div>
+      <aside class="notes">3 min. Reveal one line at a time. Read them side by side out loud. Then stop talking for a beat &mdash; the inversion from p = 0.23 to p = 0.0006 is the moment the lecture lands, and it needs silence around it. Say the four-word summary: same customers, one join.</aside>
+    </section>
+
+    <!-- SLIDE 23: The arithmetic -->
+    <section id="the-arithmetic" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-square-root-variable" style="color: var(--secondary-color);"></i> Nothing Went Wrong. That Is the Problem.</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 20pt; text-align: center;">$\text{SE} \propto \sigma/\sqrt{n}$</p>
+            <p style="font-size: 14pt; line-height: 1.5; margin-top: 10px;"><strong>In words:</strong> the standard error divides by the square root of the sample size. Multiply the rows by 6.72 and the SE shrinks by $\sqrt{6.72} \approx 2.6$ &mdash; exactly the factor you see.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 20pt; text-align: center;">$t = \bar{d} \,/\, \text{SE}$</p>
+            <p style="font-size: 14pt; line-height: 1.5; margin-top: 10px;"><strong>In words:</strong> the $t$-statistic is the difference divided by the standard error. The difference did not move. The denominator shrank. So $t$ inflated <em>on its own</em>.</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 16pt; line-height: 1.6;">The $t$-test did nothing wrong. The SE formula did nothing wrong. <strong>$n$ was a lie.</strong></p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; text-align: center;"><i class="fa-solid fa-rotate-left" style="color: var(--accent-color);"></i> &nbsp;And this is <strong>error family #1</strong> from the benchmark audit in the hook &mdash; the one-to-many join that is never re-aggregated.</p>
+      </div>
+      <aside class="notes">2 min. Point back at the sigma-over-root-n from retrieval practice; this is the payoff for having written it on the board forty minutes ago. Naming it as error family #1 pays the hook off in the middle of the lecture rather than only at the end &mdash; the hook then earns interest twice.</aside>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Who Gets the Weight?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-xl" style="font-weight: 600;">The standard error was the loud problem. There is a quieter one.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">After the fanout, which customers count most heavily toward the regional average &mdash; and <strong>by how much</strong>?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">Suppose frequent orderers are systematically different &mdash; bigger firms, urban, discount-driven. What does that do to your <strong>estimate</strong>?</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4 for the timer. Target for A: each customer is weighted by their order count &mdash; a twelve-order customer counts twelve times, a one-order customer once. Target for B: the fanned average is an ORDER-weighted average, not a customer-weighted one. Those answer different questions and only one was asked. Debrief line: "the standard error was the loud problem; the silent one is that you changed which population you were describing, and nothing in the output says so."</aside>
+    </section>
+
+    <!-- SLIDE 25: The CTE fix -->
+    <section id="cte-fix" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-wrench" style="color: var(--success-color);"></i> The Fix: Aggregate Before You Join</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">A <strong>common table expression</strong> is nothing more exotic than <em>naming an intermediate DataFrame</em> &mdash; which you have done in pandas since Lab 1.</p>
+        <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; margin-top: 12px; align-items: start;">
+<pre style="font-size: 12.5pt; background: #f8f6f3; border-radius: 8px; padding: 14px 18px; margin: 0;"><code>WITH order_counts AS (        -- name it
+    SELECT customer_id, COUNT(*) AS n_orders
+    FROM orders
+    GROUP BY customer_id      -- ONE row per customer
+)
+SELECT c.customer_id, c.region,
+       c.revenue, oc.n_orders
+FROM customers c
+LEFT JOIN order_counts oc
+       ON c.customer_id = oc.customer_id</code></pre>
+          <div>
+<pre style="font-size: 13pt; background: #eef5ee; border-radius: 8px; padding: 14px 18px; margin: 0;"><code>Rows after
+aggregate-then-join: 600</code></pre>
+            <div style="background: #eef5ee; border-radius: 10px; padding: 14px 18px; margin-top: 14px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 14.5pt; line-height: 1.5;">The <code>WITH</code> block collapses orders to one row per customer <em>first</em>. The join then <strong>cannot</strong> fan out, because there is exactly one matching row.</p>
+              <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 10px;">The grain is preserved <strong>by construction</strong> rather than by luck.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">4 min. Frame WITH as "assign a name to an intermediate result, then use the name" and students find it immediately intuitive &mdash; it is the same move as `tmp = df.groupby(...)`. Read the CTE bottom-up if anyone looks lost: what does the final SELECT need? One row per customer. Where does that come from? The block above.</aside>
+    </section>
+
+    <!-- SLIDE 26: DISTINCT misconception -->
+    <section id="distinct-misconception" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #f7e3e3; border-radius: 12px; padding: 20px 28px;">
+          <p class="text-xl" style="font-style: italic;">&ldquo;<code>SELECT DISTINCT</code> fixes duplicate rows.&rdquo;</p>
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 18px;">It removes them from your <em>output</em> while leaving the <em>cause</em> in place &mdash; and it silently hides information.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt; line-height: 1.5;">If two of a customer's rows differ in <strong>any</strong> column &mdash; an order date, an order ID &mdash; <code>DISTINCT</code> keeps both. <strong>You still have fanout.</strong></p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt; line-height: 1.5;">And when it <em>does</em> collapse rows, it destroys the evidence that anything went wrong.</p>
+          </div>
+        </div>
+        <p style="font-size: 16pt; margin-top: 18px; text-align: center; color: var(--accent-color); font-weight: 600;">Diagnose the cardinality. Do not paper over it.</p>
+      </div>
+      <aside class="notes">1 min. This is also the standard weak answer to a common interview question, so the habit is worth forming for reasons beyond correctness. If you are running long, this is the third thing to cut &mdash; it survives in the lab.</aside>
+    </section>
+
+    <!-- DIVIDER 3 -->
+    <section id="divider-windows" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; Aggregating Without Collapsing</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">The single highest-value piece of SQL for an economist.</p>
+    </section>
+
+    <!-- SLIDE 28: GROUP BY collapses -->
+    <section id="group-by-collapses" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-compress" style="color: var(--secondary-color);"></i> <code>GROUP BY</code> Collapses. Sometimes You Need It Not To.</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">Ten years of data for one country become one row containing the average. Usually what you want. <strong>Sometimes exactly what you do not want.</strong></p>
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 18px 26px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;">A panel of countries and years. You need each country's <strong>GDP growth</strong>: this year's GDP minus last year's, <em>within</em> country.</p>
+          <p style="font-size: 15.5pt; line-height: 1.55; margin-top: 10px;"><code>GROUP BY</code> cannot do it &mdash; you want to <strong>keep</strong> every country-year row and merely attach a new column to it.</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px;">In pandas you already know the move:</p>
+<pre style="font-size: 13.5pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 8px;"><code>df["prev_gdp"] = df.groupby("country")["gdp"].shift(1)</code></pre>
+        <p style="font-size: 15pt; margin-top: 12px; color: var(--muted-color); font-style: italic;"><code>groupby(...).shift(1)</code> does not collapse. It computes within groups and returns something <strong>the same length</strong> as the input.</p>
+      </div>
+      <aside class="notes">2 min. Lead with the pandas line they already know and write the SQL underneath it on the next slide. Panel data is what economists work with, so say plainly that this section is the highest-return five minutes of the chapter for anyone doing empirical work.</aside>
+    </section>
+
+    <!-- SLIDE 29: LAG OVER term by term -->
+    <section id="lag-over" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-arrows-left-right-to-line" style="color: var(--accent-color);"></i> The Same Idea, Term by Term</h2>
+      <div class="content">
+<pre style="font-size: 14pt; background: #f0f5f8; border-radius: 8px; padding: 13px 20px; margin: 0;"><code>df.groupby("country")["gdp"].shift(1)</code></pre>
+        <p style="text-align: center; font-size: 20pt; color: var(--muted-color); margin: 6px 0;"><i class="fa-solid fa-arrow-down"></i></p>
+<pre style="font-size: 14pt; background: #fdf0ea; border-radius: 8px; padding: 13px 20px; margin: 0;"><code>LAG(gdp) OVER (PARTITION BY country ORDER BY year)</code></pre>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><code>OVER (...)</code> is what turns an ordinary aggregate into a <strong>window function</strong>. <code>SUM</code>, <code>AVG</code>, <code>COUNT</code>, <code>MIN</code>, <code>MAX</code> all take it. <strong>Rows in, same rows out, extra columns.</strong></p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><code>PARTITION BY country</code> <strong>is</strong> <code>groupby("country")</code>. Omit it and the window is the entire table.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><code>ORDER BY year</code> <em>inside</em> the <code>OVER (...)</code> tells the database what &ldquo;previous&rdquo; <strong>means</strong>. Pandas takes this from the DataFrame's row order &mdash; a source of quiet bugs. SQL makes you say it.</p>
+          </div>
+        </div>
+        <p style="font-size: 13.5pt; margin-top: 12px; color: var(--muted-color); font-style: italic; text-align: center;">That inner <code>ORDER BY</code> is unrelated to the query's own <code>ORDER BY</code> at the bottom, which only controls how the output prints.</p>
+      </div>
+      <aside class="notes">3 min. Point at each term as you say its pandas equivalent. The ORDER-BY-inside-OVER point is worth an extra sentence: pandas silently trusts the row order of your DataFrame, and if you ever sorted it differently upstream your lags are wrong with no error. SQL forcing you to declare it is a feature, not ceremony.</aside>
+    </section>
+
+    <!-- SLIDE 30: Window function table -->
+    <section id="window-functions" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-table-list" style="color: var(--secondary-color);"></i> The Window Functions Worth Knowing</h2>
+      <div class="content">
+        <table style="font-size: 14pt;">
+          <tr><th>Function</th><th>Does</th><th>pandas analogue</th></tr>
+          <tr><td><code>LAG(x, k)</code></td><td>Value $k$ rows back within the partition</td><td><code>groupby().shift(k)</code></td></tr>
+          <tr><td><code>LEAD(x, k)</code></td><td>Value $k$ rows forward</td><td><code>groupby().shift(-k)</code></td></tr>
+          <tr><td><code>ROW_NUMBER()</code></td><td>1, 2, 3 &hellip; within partition; never ties</td><td><code>groupby().cumcount() + 1</code></td></tr>
+          <tr><td><code>RANK()</code> / <code>DENSE_RANK()</code></td><td>Rank, with / without gaps after ties</td><td><code>groupby().rank()</code></td></tr>
+          <tr><td><code>SUM(x) OVER (...)</code></td><td>Running total</td><td><code>groupby().cumsum()</code></td></tr>
+          <tr><td><code>AVG(x) OVER (...)</code></td><td>Group mean attached to every row</td><td><code>groupby().transform('mean')</code></td></tr>
+        </table>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; margin-top: 16px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 14.5pt; line-height: 1.55;"><strong>On ties:</strong> <code>RANK()</code> gives the same number then skips (1, 2, 2, 4). <code>DENSE_RANK()</code> ties without skipping (1, 2, 2, 3). <code>ROW_NUMBER()</code> never ties and breaks them arbitrarily (1, 2, 3, 4).</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Nearly every panel operation an economist performs is on this table: growth rates, lags, leads, running totals, ranks within group, "most recent observation per unit". Say that sentence &mdash; it converts this from a syntax list into a reason to care.</aside>
+    </section>
+
+    <!-- SLIDE 31: FRED query -->
+    <section id="fred-query" style="padding: 28px 45px;">
+      <h2><i class="fa-solid fa-rotate-left" style="color: var(--accent-color);"></i> Chapter 2, Recomputed in SQL</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: start;">
+<pre style="font-size: 11.5pt; background: #f8f6f3; border-radius: 8px; padding: 13px 17px; margin: 0;"><code>WITH real_wages AS (
+    SELECT year, nominal_wage,
+           nominal_wage * (255.66 / cpi)
+             AS real_wage_2019     -- the Ch 2 formula
+    FROM wages
+)
+SELECT year,
+   ROUND(nominal_wage, 2)   AS nominal,
+   ROUND(real_wage_2019, 2) AS real_2019,
+   ROUND(100.0 * (real_wage_2019
+     / LAG(real_wage_2019) OVER (ORDER BY year)
+       - 1), 2)             AS real_growth_pct
+FROM real_wages
+ORDER BY year</code></pre>
+<pre style="font-size: 11.5pt; background: #eef5ee; border-radius: 8px; padding: 13px 17px; margin: 0;"><code> year | nominal | real_2019 | growth_pct
+------+---------+-----------+-----------
+ 2019 |   23.51 |     23.51 |       NULL
+ 2020 |   24.67 |     24.37 |       3.66
+ 2021 |   25.66 |     24.21 |      -0.65
+ 2022 |   27.13 |     23.70 |      -2.10
+ 2023 |   28.66 |     24.05 |       1.46
+ 2024 |   29.87 |     24.34 |       1.24</code></pre>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px; color: var(--muted-color);">FRED <code>AHETPI</code> (nominal hourly earnings) and <code>CPIAUCSL</code> (CPI), annual averages. <strong>We did this in week three. Here is the same number, new syntax.</strong></p>
+      </div>
+      <aside class="notes">2 min. Flag the callback out loud &mdash; "we computed this in week three" &mdash; because the chapter's central claim is that the operations transfer, and the only honest way to demonstrate it is to check the numbers match. Note the NULL in the first row now; you will poll on it in two slides.</aside>
+    </section>
+
+    <!-- SLIDE 32: Real wages figure -->
+    <section id="real-wages" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--danger-color);"></i> Nominal Rose Every Year. Real Did Not.</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px; align-items: center;">
+          <img src="figures/figure_004_real_wages.png" alt="Line chart of US average hourly earnings 2019 to 2024: the nominal series climbs steadily from 23.51 to 29.87 dollars while the series deflated to 2019 dollars stays near 24 and dips below its starting level in 2021 and 2022" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.55;">Nominal wages rose every single year &mdash; &#92;$23.51 to &#92;$29.87, a gain of <strong>27%</strong>.</p>
+            <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 14.5pt; line-height: 1.55;">Real wages <strong>fell</strong> in 2021 and 2022, and by 2024 had still not recovered to the 2019 level.</p>
+            </div>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 14px;">This is the Chapter 2 <strong>money-illusion</strong> lesson, and it is one of the more consequential facts about the recent US economy.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The real-wage decline usually produces a reaction &mdash; let it. Good moment to remind them why deflating matters before Ch 12 asks them to regress on these series. Do not get drawn into a macro debate; you have sixteen minutes of content left.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Does <code>LAG</code> Give the First Row?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 15.5pt;">In the query you just saw, <code>LAG(real_wage_2019) OVER (ORDER BY year)</code> for <strong>2019</strong> &mdash; the earliest year in the table &mdash; returns what?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch11-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) <code>0</code></div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The 2020 value, wrapping around</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) <code>NULL</code> &mdash; there is no prior row, so there is no answer</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) An error, because the window is incomplete</div>
+        </div>
+        <aside class="notes">1 min. The answer is visible on the previous slide's output, so this poll is really checking whether they read the table. Most get it; the interesting share is A, which is the one worth discussing.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch11-econ3916-poll-3" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; <code>NULL</code>, and That Is a Feature</h2>
+        <div class="poll-results-chart" data-poll-id="ch11-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;">There is no earlier row in the partition, so <code>LAG</code> has nothing to return and says so. This propagates &mdash; the 2019 growth rate is <code>NULL</code> too. Pandas does the same thing when <code>shift(1)</code> produces <code>NaN</code> in the first row of each group.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is the dangerous wrong answer:</strong> if <code>LAG</code> returned 0, the 2019 growth rate would compute as an infinite jump from nothing &mdash; and it would be a <em>number</em> rather than an obvious hole. <code>NULL</code> is SQL refusing to guess. That refusal is the subject of the next section.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 34: Think like an economist -->
+    <section id="think-economist" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Think Like an Economist: Provenance</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">Lars Vilhuber, the American Economic Association's Data Editor, has written about why computational reproducibility in economics fails. A recurring cause is not fraud or carelessness but <strong>provenance</strong>.</p>
+        <div style="background: #f7e3e3; border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;">An analysis built on <code>final_data_v3_USE_THIS.csv</code> sitting on one laptop, produced by cleaning steps nobody wrote down.</p>
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 16px;">A query against a versioned, immutable source is different <em>in kind</em>: the transformation <strong>is</strong> the code, the code is in git, and anyone can re-run it against the same bytes.</p>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 16pt; line-height: 1.55; font-style: italic;">If you were hit by a bus, could a colleague reproduce your headline number from your repository alone? If the honest answer involves a file on your Desktop, you have a provenance problem.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Keep it short and let the file name do the work &mdash; every student recognises `final_data_v3_USE_THIS.csv` and several of them have one open right now. Connect it forward: this is why the capstone requires a repository, not a folder.</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-null" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; <code>NULL</code> Is Not a Value</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Defensible, standard, and responsible for more silent errors than any other feature of the language.</p>
+    </section>
+
+    <!-- SLIDE 36: Three-valued logic -->
+    <section id="three-valued-logic" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-circle-half-stroke" style="color: var(--secondary-color);"></i> Three Truth Values, Not Two</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 18px 24px;">
+            <p style="font-size: 15pt; color: var(--muted-color);">In Python</p>
+            <p style="font-size: 20pt; font-family: monospace; margin-top: 8px;">None == None</p>
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color); margin-top: 8px;">True</p>
+          </div>
+          <div style="background: #f7e3e3; border-radius: 12px; padding: 18px 24px;">
+            <p style="font-size: 15pt; color: var(--muted-color);">In SQL</p>
+            <p style="font-size: 20pt; font-family: monospace; margin-top: 8px;">NULL = NULL</p>
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color); margin-top: 8px;">NULL</p>
+          </div>
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 18px;">The reasoning is sound. <code>NULL</code> means <strong>unknown</strong>, and two unknowns are not necessarily the <em>same</em> unknown. Asking whether one unknown equals another honestly returns &ldquo;unknown&rdquo;.</p>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 16pt; line-height: 1.55;">So SQL has three truth values &mdash; <strong>true, false, unknown</strong> &mdash; and a <code>WHERE</code> clause keeps only rows where the condition is <strong>true</strong>. Rows evaluating to <em>unknown</em> are discarded exactly as if they were false.</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 14px; text-align: center; font-style: italic;">That last sentence is where the money goes missing.</p>
+      </div>
+      <aside class="notes">2 min. Draw the three-valued truth table on the board &mdash; true, false, unknown &mdash; and show that WHERE keeps only true. Then go straight to the poll; do not preview the answer.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: The Filter That Eats Your Data</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt;">An <code>orders</code> table has <strong>8 rows</strong>. Exactly <strong>2</strong> have <code>status = 'cancelled'</code>. Two others have <code>status = NULL</code> &mdash; nobody recorded it.</p>
+<pre style="font-size: 12.5pt; background: transparent; padding: 6px 0 0 0; margin: 0;"><code>SELECT COUNT(*) FROM orders WHERE status != 'cancelled'</code></pre>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 8px;">How many rows come back?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch11-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) 8 &mdash; nothing was excluded</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) 6 &mdash; the two cancelled orders were removed</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) 4 &mdash; the cancelled rows <em>and</em> the unknown-status rows</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) 2 &mdash; only the cancelled rows survive</div>
+        </div>
+        <aside class="notes">1 min. Almost everyone says 6, and 6 is exactly what the query's author believed they were getting. This is the strongest single moment in the back half of the lecture &mdash; do not spoil it by hinting.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch11-econ3916-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; 4 Rows, and &#92;$300 Gone</h2>
+        <div class="poll-results-chart" data-poll-id="ch11-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><code>NULL != 'cancelled'</code> evaluates to <strong>unknown</strong>, not true &mdash; and <code>WHERE</code> keeps only true. The two unknown-status rows were dropped silently.</p>
+          <div style="background: #f7e3e3; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;">They took <strong>&#92;$300 of revenue</strong> with them &mdash; <strong>30% of the table's total</strong> &mdash; out of a query whose author believed they were excluding cancellations. No error. No warning.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 38: IS DISTINCT FROM -->
+    <section id="is-distinct-from" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-screwdriver-wrench" style="color: var(--success-color);"></i> The Fix Is to Say What You Mean</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <p style="font-size: 14.5pt; color: var(--danger-color); font-weight: 600; margin-bottom: 6px;">What you wrote</p>
+<pre style="font-size: 12.5pt; background: #f7e3e3; border-radius: 8px; padding: 13px 18px; margin: 0;"><code>WHERE status != 'cancelled'
+
+kept |  total
+-----+--------
+   4 |  700.0</code></pre>
+          </div>
+          <div>
+            <p style="font-size: 14.5pt; color: var(--success-color); font-weight: 600; margin-bottom: 6px;">What you meant</p>
+<pre style="font-size: 12.5pt; background: #eef5ee; border-radius: 8px; padding: 13px 18px; margin: 0;"><code>WHERE status IS DISTINCT FROM 'cancelled'
+
+kept |  total
+-----+---------
+   6 | 1000.0</code></pre>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 24px; margin-top: 20px;">
+          <p style="font-size: 16.5pt; line-height: 1.55;"><code>IS DISTINCT FROM</code> is <code>!=</code> that treats <code>NULL</code> as an <strong>ordinary value</strong> rather than a contagion.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; text-align: center;">Six orders, &#92;$1,000. Which is what you were asking for the whole time.</p>
+      </div>
+      <aside class="notes">1 min. Give them the one-line rule: any time you filter on a column that could be NULL with != or &lt;&gt;, you are also silently filtering out the NULLs. If that is what you want, write it deliberately with OR status IS NULL. If it is not, use IS DISTINCT FROM.</aside>
+    </section>
+
+    <!-- SLIDE 39: The denominator -->
+    <section id="denominator" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-divide" style="color: var(--accent-color);"></i> The Denominator That Changes Without Telling You</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: start;">
+<pre style="font-size: 12.5pt; background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin: 0;"><code>SELECT
+  AVG(revenue)            AS avg_skips_nulls,
+  SUM(revenue)/COUNT(*)   AS avg_over_all_rows
+FROM orders
+
+ avg_skips_nulls | avg_over_all_rows
+-----------------+-------------------
+       160.71    |      140.63</code></pre>
+          <div>
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 13px 18px;">
+              <p style="font-size: 14pt; line-height: 1.5;"><code>COUNT(*)</code> counts <strong>rows</strong>. <code>COUNT(column)</code> counts <strong>non-null values in that column</strong>. Two different questions, one keystroke apart.</p>
+            </div>
+            <div style="background: #fdf0ea; border-radius: 10px; padding: 13px 18px; margin-top: 12px;">
+              <p style="font-size: 14pt; line-height: 1.5;"><code>AVG</code> ignores nulls, so it divides by <strong>7</strong>. The same sum over all <strong>8</strong> rows gives 140.63. A <strong>14% difference</strong> from nothing but a disagreement about the denominator.</p>
+            </div>
+          </div>
+        </div>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 15px 24px; margin-top: 16px;">
+          <p style="font-size: 16pt; line-height: 1.55;"><strong>And neither number is wrong.</strong> They answer different questions: <em>&ldquo;average revenue among orders where we know the revenue&rdquo;</em> and <em>&ldquo;average revenue per order.&rdquo;</em></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Resist calling one of these a bug. The whole point is that both are correct answers to questions that differ by one word, and the analyst's job is knowing which one they asked. Go straight into the discussion.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Which Average Do You Report?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 20px 28px; border-radius: 12px;">
+          <p class="text-xl" style="font-weight: 600;">&#92;$160.71 or &#92;$140.63 &mdash; which one goes in the report, and what do you need to know in order to choose?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 15pt; line-height: 1.55;"><i class="fa-solid fa-rotate-left" style="color: var(--accent-color);"></i> &nbsp;Chapter 1 gave you the vocabulary for this: <strong>MCAR, MAR, MNAR.</strong> Same problem, different syntax.</p>
+        </div>
+        <p style="margin-top: 20px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">3 min, press 3. Target: it depends on WHY the value is missing. If revenue is missing at random, AVG is fine. If revenue is missing precisely for the orders that were never invoiced, AVG silently drops the zero-revenue cases and OVERSTATES the average. The database cannot know which world you are in; you have to. Debrief line: "both numbers came out of the same eight rows and neither is a mistake — the mistake would be reporting one without knowing which question you answered."</aside>
+    </section>
+
+    <!-- SLIDE 41: NULL misconception -->
+    <section id="null-misconception" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #f7e3e3; border-radius: 12px; padding: 20px 28px;">
+          <p class="text-xl" style="font-style: italic;">&ldquo;Missing values show up as zeros or <code>NaN</code>, so I'll notice them.&rdquo;</p>
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 18px;"><code>NULL</code> is not zero and is not <code>NaN</code>. <strong>It is absent from arithmetic entirely.</strong> It does not shift a sum. It does not appear as an outlier. It does not raise an error.</p>
+        <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 12px;">It removes rows from filters and shrinks denominators in aggregates &mdash; and both happen <strong>without a warning</strong>.</p>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 16pt; line-height: 1.55;">Before trusting any aggregate: run <code>COUNT(*)</code> alongside <code>COUNT(column)</code> for every column you aggregate. If they differ, you have a decision to make &mdash; <strong>and making it deliberately is the whole job.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">1 min. The COUNT(*) vs COUNT(column) habit is the single most portable thing in this section &mdash; it is two seconds of typing and it turns an invisible problem into a visible one. If you are running long, cut this slide and put the habit in the exit ticket instead.</aside>
+    </section>
+
+    <!-- DIVIDER 5 -->
+    <section id="divider-scale" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; Data You Never Downloaded</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">&hellip; and queries you did not write.</p>
+    </section>
+
+    <!-- SLIDE 43: Columnar -->
+    <section id="columnar" style="padding: 20px 45px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--secondary-color);"></i> Parquet: Storing by Column, Skipping What You Don't Need</h2>
+      <div class="content">
+        <img src="figures/figure_005_columnar.png" alt="Two grids of table cells: in row storage every cell is highlighted as read, 48 of 48; in columnar storage with pushdown only the two requested columns within the surviving row-group are highlighted, 8 of 48" style="width: 62%; display: block; margin: 2px auto 0; border-radius: 6px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 6px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 13pt;"><strong>Predicate pushdown</strong> &mdash; ask for <code>WHERE year = 2024</code> and the engine skips any chunk whose metadata says it holds only 2019 data, <em>without reading it</em>.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 10px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13pt;"><strong>Projection pushdown</strong> &mdash; ask for two columns out of forty and it reads two.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Combine them and a query against a 50 GB file can touch a few hundred megabytes. If you are short on time, state that sentence and skip the mechanism &mdash; the transferable idea is on the next two slides, not this one.</aside>
+    </section>
+
+    <!-- SLIDE 44: The remote query -->
+    <section id="remote-query" style="padding: 28px 45px;">
+      <h2><i class="fa-solid fa-cloud-arrow-down" style="color: var(--accent-color);"></i> 2.87 Million Trips. Nothing Downloaded.</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; align-items: start;">
+<pre style="font-size: 11.5pt; background: #f8f6f3; border-radius: 8px; padding: 13px 17px; margin: 0;"><code>con = duckdb.connect()
+con.execute("INSTALL httpfs; LOAD httpfs;")
+
+url = ("https://d37ci6vzurychx.cloudfront.net/"
+       "trip-data/yellow_tripdata_2024-01.parquet")
+
+con.execute(f"""
+    SELECT COUNT(*)                      AS n_trips,
+           ROUND(AVG(trip_distance), 2)  AS mean_miles,
+           ROUND(AVG(fare_amount), 2)    AS mean_fare
+    FROM '{url}'
+    WHERE trip_distance &gt; 0
+      AND fare_amount BETWEEN 0 AND 500
+""").df()</code></pre>
+          <div>
+<pre style="font-size: 11.5pt; background: #eef5ee; border-radius: 8px; padding: 13px 17px; margin: 0;"><code> n_trips  mean_miles  mean_fare
+ 2870158        3.73      18.49</code></pre>
+            <div style="background: #f0f5f8; border-radius: 10px; padding: 13px 18px; margin-top: 12px;">
+              <p style="font-size: 13.5pt; line-height: 1.5;">Aggregated in about a second, over the network. <strong>Three columns read out of nineteen.</strong> The filters applied inside the scan. What lands in your Python process is a single row.</p>
+            </div>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">NYC Taxi &amp; Limousine Commission, January 2024. Public Parquet.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Run it live if the room's network cooperates &mdash; watching three million rows aggregate over HTTP is the demo of the section. Contrast explicitly with what pd.read_parquet(url) would attempt. If the network is unreliable, pre-download one month and query it locally; the pushdown story is unchanged. Tell them to time it themselves: a benchmark you generated is the only one you can defend.</aside>
+    </section>
+
+    <!-- SLIDE 45: Push down principle -->
+    <section id="push-down" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-down-long" style="color: var(--success-color);"></i> The Pattern to Internalise</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #eef5ee, #dfeadf); border-radius: 12px; padding: 22px 30px; text-align: center;">
+          <p style="font-size: 22pt; font-weight: 700; color: var(--primary-color); line-height: 1.4;">Do the heavy work where the data is.<br>Bring back only the small result.</p>
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 18px;">Filter, join and aggregate <em>in SQL</em> until the output is small enough to hold. <strong>Then</strong> call <code>.df()</code> and do your econometrics in pandas and statsmodels on a few thousand rows.</p>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 10px; padding: 16px 24px; margin-top: 16px;">
+          <p style="font-size: 16pt; line-height: 1.55;"><code>.df()</code> is <strong>the boundary between the two worlds</strong>, and putting it as late as possible is most of what &ldquo;working with large data&rdquo; means in practice.</p>
+        </div>
+        <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 24px; margin-top: 16px;">
+          <p style="font-size: 14.5pt; line-height: 1.55;"><strong>Misconception:</strong> &ldquo;you need Spark for data bigger than RAM.&rdquo; Clusters genuinely matter at some scale, but a columnar engine with pushdown streams and spills through files far larger than memory. Most economic data &mdash; including most administrative microdata you will ever touch &mdash; fits here. <strong>Reach for a cluster when you have measured that you need one.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Say the two-line principle, write it, repeat it. This is the sentence students should still have in a year, long after they have forgotten the syntax for a window function.</aside>
+    </section>
+
+    <!-- SLIDE 46: Six checks -->
+    <section id="six-checks" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--danger-color);"></i> Reading a Query You Did Not Write</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; margin-bottom: 8px;">You will read far more SQL than you write &mdash; from a colleague, a predecessor who has left, a dashboard nobody has audited in two years, or a language model. <strong>Six checks, index-card length.</strong></p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--danger-color);"><p style="font-size: 13.5pt;"><strong>1. Check the grain.</strong> <code>COUNT(*)</code> against <code>COUNT(DISTINCT key)</code>. If they differ, you have fanout.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13.5pt;"><strong>2. Check the row count against expectation.</strong> State what you expect <em>first</em>. &ldquo;About 600 customers&rdquo; is testable; &ldquo;some rows&rdquo; is not.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13.5pt;"><strong>3. Check the joins.</strong> Is the right-hand table unique on the join key? If not, the join multiplies.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--accent-color);"><p style="font-size: 13.5pt;"><strong>4. Check the filters against <code>NULL</code>.</strong> <code>!= 'cancelled'</code> drops every <code>NULL</code> row &mdash; 30% of revenue in eight rows.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--danger-color);"><p style="font-size: 13.5pt;"><strong>5. Check what it does <em>not</em> return.</strong> A customer dropped by an <code>INNER</code> that should have been <code>LEFT</code>; a month missing from a series, shifting every growth rate.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 16px; border-left: 4px solid var(--success-color);"><p style="font-size: 13.5pt;"><strong>6. Compute one number by hand.</strong> Take one customer, work out their value, confirm the query agrees.</p></div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 10px; text-align: center; color: var(--danger-color); font-style: italic;">Check 5 is the failure mode most likely to survive review &mdash; because everything the query <em>does</em> return is correct.</p>
+      </div>
+      <aside class="notes">2 min. Read checks 1 and 5 properly and let the others sit on the screen. Check 5 deserves the emphasis: a query returning plausible numbers about the WRONG POPULATION passes every sanity check anyone applies, because nothing in it is false.</aside>
+    </section>
+
+    <!-- SLIDE 47: Grain check -->
+    <section id="grain-check" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-stopwatch" style="color: var(--success-color);"></i> Check 1, in Fifteen Seconds</h2>
+      <div class="content">
+<pre style="font-size: 13pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin: 0;"><code>SELECT COUNT(*)                    AS rows,
+       COUNT(DISTINCT customer_id) AS distinct_customers,
+       COUNT(*) * 1.0 / COUNT(DISTINCT customer_id) AS rows_per_customer
+FROM fanned</code></pre>
+<pre style="font-size: 13pt; background: #f7e3e3; border-radius: 8px; padding: 14px 20px; margin-top: 12px;"><code> rows | distinct_customers | rows_per_customer
+------+--------------------+-------------------
+ 4033 |                600 |              6.72</code></pre>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 17pt; line-height: 1.55;"><code>rows_per_customer</code> is <strong>6.72, not 1.</strong> That is the whole diagnosis.</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 16px; text-align: center; color: var(--accent-color); font-weight: 600;">Run it after every join you did not write yourself.</p>
+      </div>
+      <aside class="notes">1 min. Tell them to save this as a snippet. It is three lines, it costs nothing, and it would have caught every fanout bug any of them will meet in their first two years of work.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Audit This Query</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">An LLM was given the <code>customers</code> / <code>orders</code> schema and asked for <em>&ldquo;average revenue per customer by region.&rdquo;</em> It returned:</p>
+<pre style="font-size: 12pt; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; margin: 6px 0 0 0;"><code>SELECT c.region, COUNT(DISTINCT c.customer_id) AS customers,
+       AVG(c.revenue) AS avg_revenue, SUM(o.order_value) AS total_orders
+FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.region</code></pre>
+        <div style="background: #f0f5f8; padding: 14px 24px; border-radius: 12px; margin-top: 12px;">
+          <p style="font-size: 16pt; font-weight: 600;">Exactly one of <code>avg_revenue</code> and <code>total_orders</code> is trustworthy. Which &mdash; and why is the other not?</p>
+        </div>
+        <p style="margin-top: 14px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4. Target: total_orders is FINE — it sums a column that genuinely lives at the order grain, so one row per order is correct. avg_revenue is CORRUPT — c.revenue lives at the customer grain and is repeated once per order, so the average is order-weighted. COUNT(DISTINCT c.customer_id) is also correct, and that is what makes the query dangerous: a correct customer count sitting right beside a corrupted average, so the output looks internally consistent. Debrief line: "this query would pass code review at most companies." Optional live upgrade: ask a model for this in front of the class instead. Only do that if the room and the network are cooperating — the six checks are the content, not the source of the query.</aside>
+    </section>
+
+    <!-- SLIDE 49: AI practices -->
+    <section id="ai-practices" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-robot" style="color: var(--accent-color);"></i> Three Practices That Make LLM SQL Safe</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt;"><strong>Give it the schema, not just the question.</strong> Most hallucinated joins come from a model guessing at column names and relationships. Paste the <code>DESCRIBE</code> output of every table involved.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt;"><strong>Ask it to state the grain.</strong> &ldquo;What does one row of your result represent?&rdquo; A model that cannot answer that has not thought about cardinality &mdash; and neither has its query.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15.5pt;"><strong>Verify on a subset with a known answer.</strong> Ten hand-checked customers is enough &mdash; cardinality bugs and <code>NULL</code> bugs both show up at small scale.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 4px solid var(--primary-color); border-radius: 10px; padding: 16px 24px; margin-top: 18px;">
+          <p style="font-size: 16pt; line-height: 1.55;">The tool is fast and unreliable, so your job shifts <strong>from production to verification.</strong> That is not a downgrade &mdash; deciding whether an answer is correct has always been the harder and more valuable half.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Name the forward link: this is the same posture Ch 25 develops for generative tools generally. Say the last sentence slowly — for an undergraduate worried that these tools make their skills worthless, it is the most reassuring and the most accurate thing you will say today.</aside>
+    </section>
+
+    <!-- SLIDE 50: Nutshell -->
+    <section id="nutshell" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-box-archive" style="color: var(--secondary-color);"></i> Chapter 11 in a Nutshell</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13.5pt;">SQL and pandas implement the <strong>same relational algebra</strong> (Codd 1970). SQL is <strong>declarative</strong> &mdash; which is why its clauses execute in a different order than they are written.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--accent-color);"><p style="font-size: 13.5pt;">There is <strong>no database</strong>. DuckDB resolves the table name out of your Python namespace, and <code>.df()</code> is the boundary back to pandas.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--danger-color);"><p style="font-size: 13.5pt;">A join can silently <strong>multiply rows</strong>. Because every SE depends on $n$, a fanned-out join turns a null result into a significant one <em>without changing a single underlying fact</em>. Aggregate to the grain you want <strong>before</strong> you join.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13.5pt;"><strong>Window functions</strong> aggregate without collapsing: <code>LAG</code> over a partition <em>is</em> <code>groupby().shift()</code>, and it is how you get growth rates, ranks and running totals on panels.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--danger-color);"><p style="font-size: 13.5pt;"><code>NULL</code> is <strong>unknown, not zero.</strong> It removes rows from filters and shrinks denominators in aggregates &mdash; silently, in both directions.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--success-color);"><p style="font-size: 13.5pt;">Columnar formats with pushdown let you query files far larger than memory. <strong>Do the heavy work where the data is; bring back the small result.</strong></p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--success-color);"><p style="font-size: 13.5pt;">You will read more SQL than you write, much of it machine-generated. <strong>Check the grain, the row count, the join cardinality, the <code>NULL</code> handling &mdash; and verify one number by hand.</strong></p></div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Do not read all seven. Read the third and the last, and tell them the rest is on the slide they will get in the ebook.</aside>
+    </section>
+
+    <!-- SLIDE 51: Exit ticket -->
+    <section id="exit-ticket" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt;"><strong>1.</strong> In one sentence: why can <code>WHERE</code> not reference <code>AVG(pay)</code>, but <code>HAVING</code> can?</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt;"><strong>2.</strong> You inherit a query joining a 600-row customer table to an orders table, and it returns 4,033 rows. Name the <strong>one</strong> number you compute first &mdash; and what value would reassure you.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15.5pt;"><strong>3.</strong> <code>WHERE status != 'cancelled'</code> returned fewer rows than you expected. What is the most likely cause, and what do you write instead?</p>
+          </div>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 18px; text-align: center; color: var(--muted-color); font-style: italic;">Three lines, on your way out. Q2 is the one that matters.</p>
+      </div>
+      <aside class="notes">2 min. Q1 covers LO 11.1, Q2 covers LO 11.3, Q3 covers the NULL section. Q2's expected answer: rows per distinct customer; 1.0 would reassure you. If you are out of time, take Q2 only.</aside>
+    </section>
+
+    <!-- SLIDE 52: Next -->
+    <section id="next" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-road" style="color: var(--secondary-color);"></i> Next: Lab 11, Problem Set 3, and Chapter 12</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 14.5pt;"><strong>Lab 11 &mdash; <code>lab-ch11-guided.ipynb</code>.</strong> Part 1 runs every pandas operation you know against its SQL twin and checks the numbers match. Part 2 reproduces the fanout and breaks a $t$-test with it. Part 3 is window functions. Part 4 is <code>NULL</code> and the 3-million-row Parquet file. The Extension fixes the fanout with a CTE; the take-home Challenge hands you a query you did not write.</p>
+        </div>
+        <div style="background: #fdf0ea; border-radius: 10px; padding: 12px 22px; margin-top: 12px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 14.5pt;"><strong>Problem Set 3 (Chapters 9&ndash;11)</strong> is due after this lecture &mdash; causal thinking and SQL. Part A is H5P, Part B a Jupyter notebook, weighted 50/50.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 12px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 16px; text-align: center;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Ch 12 &mdash; OLS</p>
+            <p style="font-size: 13pt; margin-top: 6px;">The estimation sample you build in SQL <em>is</em> the sample you regress on.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 16px; text-align: center;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Ch 20 &mdash; Time Series</p>
+            <p style="font-size: 13pt; margin-top: 6px;"><code>LAG()</code> is the lag operator $L$. You will meet the notation having already used the operation.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 16px; text-align: center;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">Ch 25 &mdash; AI Literacy</p>
+            <p style="font-size: 13pt; margin-top: 6px;">Today's six checks are one instance of a general discipline.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; margin-top: 12px; text-align: center; border-left: 4px solid var(--primary-color);">
+          <p style="font-size: 15.5pt;"><strong>The rule to carry out of this room:</strong> after any join you did not write, count the rows per key before you trust a single number.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Close by returning to the hook: the benchmark was 52.8% wrong, and the checks that would have caught it fit on an index card. Then point at Lab 11 &mdash; everything on that card is something they will do themselves in the next hour.</aside>
+    </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>
