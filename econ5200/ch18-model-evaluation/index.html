@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Evaluation: Metrics That Matter</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css?v=20260905a">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax 3 -- inline math is \( ... \), never $...$ -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 18</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Model Evaluation: Metrics That Matter</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Every metric encodes an assumption about what errors cost &mdash; and you are making that assumption whether or not you notice</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch18-model-evaluation.png" alt="Abstract illustration: a fan of ROC-shaped curves sharing the same ordering at different levels, with one cluster of points sitting far below where the curves promised" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">18.1</p>
+            <p style="font-size: 15pt;">Derive precision, recall, TPR and FPR from a confusion matrix &mdash; and say what each <strong>denominator</strong> implies about the question being asked</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">18.2</p>
+            <p style="font-size: 15pt;">Construct ROC and precision-recall curves, and explain <strong>algebraically</strong> why they diverge under class imbalance</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">18.3</p>
+            <p style="font-size: 15pt;">Distinguish <strong>discrimination</strong> from <strong>calibration</strong>, and explain why AUC is mathematically incapable of detecting a calibration failure</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">18.4</p>
+            <p style="font-size: 15pt;">Select a threshold from an explicit cost structure, defend it against a <strong>regulatory constraint</strong>, and articulate the fairness trade-off it forces</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 18.3 as today's centre of gravity &mdash; it is the one that overturns something they trusted last week. 18.2's word "algebraically" is doing work: the 3916 section stops at the intuition, we do the identity.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 17.</strong> You fitted a recession classifier that was right 93% of the time and useless. What made accuracy useless?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 15.</strong> Why is choosing a model <em>after</em> looking at the test set a form of overfitting?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both converge on today: <strong>choosing the metric after seeing the results is the same failure, one level up</strong> &mdash; and nobody records how many metrics you considered.</p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. QC1 target: the base rate &mdash; 93.1% is what a model that never fires scores. QC2 target: the test set stops being held out the moment a decision depends on it. You will reuse that exact sentence in Poll 1, six slides from now.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-table" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> The Model Chapter 17 Left You</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">ROC-AUC <strong>0.811</strong>. Respectable by any standard, and genuinely informative. Group its predictions by confidence and check what actually followed.</p>
+        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-top: 16px; line-height: 1.65;">  predicted band      n   mean predicted   actual rate
+     0.00-0.05      296            0.024         0.017
+     0.05-0.10      107            0.072         0.047
+     0.10-0.15       65            0.122         0.200
+     0.15-0.25       34            0.181         0.382
+     0.25-1.00       21            0.333         <strong style="color: #A85C5C;">0.000</strong></pre>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 16px;">The top four rows are unremarkable. The bottom row is not.</p>
+      </div>
+      <aside class="notes">2 min. Put the table up and stop talking. Do not point at the last row. Someone finds it inside about fifteen seconds, and the room finding it is worth far more than you saying it. Only then advance the fragment.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 -->
+    <section id="hook-21-months" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-calendar-xmark" style="color: var(--danger-color);"></i> Twenty-One Months, One Episode</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+          <img src="figures/figure_003_reliability.png" alt="Reliability diagram: five confidence bands plotted as mean predicted probability against realised recession frequency, with the 21-month top band sitting at zero far below the perfect-calibration diagonal" style="width: 100%; border-radius: 8px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">In the 21 months the model was <strong>most confident</strong> &mdash; a stated one-in-three chance, the highest readings in four decades &mdash; the number of recessions that followed was <strong style="color: var(--danger-color);">zero</strong>.</p>
+            <pre style="font-size: 12.5pt; background: #f8f6f3; border-radius: 8px; padding: 13px 16px; margin-top: 12px; line-height: 1.6;">2023: 12 months, mean 0.343, recessions 0
+2024:  9 months, mean 0.320, recessions 0</pre>
+            <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 12px;">Every one belongs to the 2022&ndash;24 inversion. The model is well behaved where it predicts calm and <strong>catastrophically wrong exactly where a decision-maker would act.</strong></p>
+            <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 18px; margin-top: 14px;">
+              <p style="font-size: 14.5pt; margin: 0;">AUC 0.811 does not know this and <em>cannot</em>. The ranking was never wrong. What failed was the <strong>level</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the whole lecture in one figure. Say "the ranking was correct" twice &mdash; students hear it as an excuse the first time and as a technical claim the second. Do not explain monotone invariance yet; that is Section 2 and it lands much harder after they have wanted an explanation for ten minutes.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 1 -->
+    <section id="divider-four-numbers" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">Four Numbers</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 1 &bull; LO 18.1 &bull; and the ratios you can build from them</p>
+    </section>
+
+    <!-- SLIDE 7: Confusion matrix + denominators -->
+    <section id="confusion-matrix" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-table-cells" style="color: var(--secondary-color);"></i> The Denominator Is the Question</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 42% 1fr; gap: 26px; align-items: start;">
+          <table class="table-standard" style="font-size: 13.5pt;">
+            <tr><th></th><th>Pred. <strong>positive</strong></th><th>Pred. <strong>negative</strong></th></tr>
+            <tr><th style="text-align:left;">Actually positive</th><td style="text-align:center;">TP</td><td style="text-align:center;">FN</td></tr>
+            <tr><th style="text-align:left;">Actually negative</th><td style="text-align:center;">FP</td><td style="text-align:center;">TN</td></tr>
+          </table>
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">Four counts. Every metric you will meet is a ratio of some of them, and <strong>the metric's meaning is fixed by its denominator.</strong></p>
+            <p style="font-size: 14pt; margin-top: 10px;">$$\text{Recall} = \text{TPR} = \frac{TP}{TP + FN} \qquad \text{Precision} = \frac{TP}{TP + FP}$$</p>
+            <p style="font-size: 14pt;">$$\text{FPR} = \frac{FP}{FP + TN}$$</p>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>Recall</strong> divides by everything that <em>actually happened</em>. "Of the 36 recessions, how many did we catch?" The denominator is fixed by the world.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>Precision</strong> divides by everything <em>we predicted</em>. "Of our alarms, how many were right?" We choose the denominator, and it moves when the threshold moves.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt;"><strong>FPR</strong> divides by everything that <em>did not happen</em>. "Of the 487 calm months, how many did we wrongly flag?"</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Derive all three from the table rather than presenting them as definitions &mdash; students who can rebuild the table can rebuild any metric. Then ask which of recall or precision a central banker cares about, then an asset manager, and let the disagreement stand. That disagreement is the chapter's thesis in miniature and you will cash it in Section 5.</aside>
+    </section>
+
+    <!-- SLIDE 8: Filled-in matrix -->
+    <section id="filled-matrix" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> Numbers in the Cells: \( t = 0.099 \)</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 47% 1fr; gap: 26px; align-items: start;">
+          <table class="table-standard" style="font-size: 13.5pt;">
+            <tr><th></th><th>Pred. recession</th><th>Pred. none</th><th></th></tr>
+            <tr><th style="text-align:left;">Recession followed</th><td style="text-align:center;">TP = 28</td><td style="text-align:center;">FN = 8</td><td style="text-align:center; color: var(--muted-color);">36</td></tr>
+            <tr><th style="text-align:left;">No recession</th><td style="text-align:center;">FP = 97</td><td style="text-align:center;">TN = 390</td><td style="text-align:center; color: var(--muted-color);">487</td></tr>
+            <tr><th></th><td style="text-align:center; color: var(--muted-color);">125</td><td style="text-align:center; color: var(--muted-color);">398</td><td style="text-align:center; color: var(--muted-color);">523</td></tr>
+          </table>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <p style="font-size: 15pt;"><strong>Recall</strong> \( = 28/36 = 0.78 \) &nbsp;&mdash;&nbsp; we caught 78% of recessions</p>
+            <p style="font-size: 15pt;"><strong>Precision</strong> \( = 28/125 = 0.22 \) &nbsp;&mdash;&nbsp; 22% of our alarms were real</p>
+            <p style="font-size: 15pt;"><strong>FPR</strong> \( = 97/487 = 0.20 \) &nbsp;&mdash;&nbsp; we flagged 20% of calm months</p>
+            <p style="font-size: 15pt;"><strong>Accuracy</strong> \( = 418/523 = 0.80 \)</p>
+            <p style="font-size: 15pt;"><strong>\( F_1 \)</strong> \( = 0.35 \)</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;">Same 97 mistakes read as <strong>"20% of calm months"</strong> or <strong>"78% of our alarms"</strong> depending on what you divide by. There are 487 negatives and 36 positives. Section 3 is that observation, formalised.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the five metrics straight off the table, slowly, pointing at the cells. This is the slide students photograph. The margins line at the bottom is the seed for the ROC-vs-PR divergence &mdash; plant it now and harvest it in eleven minutes.</aside>
+    </section>
+    <!-- SLIDE 9: The accuracy / F1 split -->
+    <section id="accuracy-f1-split" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--danger-color);"></i> Accuracy and \( F_1 \) Do Not Move Together</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>Accuracy got worse.</strong></p>
+            <p style="font-size: 26pt; font-weight: 700; color: var(--danger-color); margin: 8px 0;">0.9312 &rarr; 0.7992</p>
+            <p style="font-size: 14pt;">A team optimising accuracy <em>rejects</em> the model a central banker actually wants. The 0.9312 belongs to a model that never fires.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong>\( F_1 \) got better, and by a lot.</strong></p>
+            <p style="font-size: 26pt; font-weight: 700; color: var(--success-color); margin: 8px 0;">0.0000 &rarr; 0.3478</p>
+            <p style="font-size: 14pt;">At the default the model never fires (max predicted probability <strong>0.4231</strong>), so recall is zero. Over a fine grid \( F_1 \) peaks at <strong>0.3514 near \( t = 0.104 \)</strong>.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 16px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;">That is <em>not</em> a vindication of \( F_1 \). Its fixed \( \beta = 1 \) knows nothing about this problem's 1:9 cost ratio; here the two happen to coincide, and for Section 5's asset manager they would not. <strong>Accuracy fails here because it fixes its weighting by class size. \( F_1 \) agrees here by accident.</strong> Neither was told what a miss costs, and only one got lucky.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min, and take them. The published chapter said BOTH metrics got worse; they do not, and the corrected version is the better lesson. Executed check: f1_score at threshold 0.5 is exactly 0.0 because nothing fires above 0.4231. Ask the room why F1 lands so close to the cost optimum before you tell them it is a coincidence &mdash; someone will try to derive a relationship, which is the right instinct and the wrong conclusion.</aside>
+    </section>
+
+    <!-- SLIDE 10: F-beta -->
+    <section id="f-beta" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-sliders" style="color: var(--secondary-color);"></i> Every Metric Contains a \( \beta \)</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">$$F_\beta = (1 + \beta^2)\cdot\frac{\text{Precision} \times \text{Recall}}{\beta^2 \cdot \text{Precision} + \text{Recall}}$$</p>
+        <p style="font-size: 15pt; line-height: 1.6;"><strong>Where:</strong> \( \beta \) is how many times more you value recall than precision. \( \beta = 1 \) recovers \( F_1 \); \( \beta = 2 \) weights recall four times as heavily; \( \beta = 0.5 \) does the reverse.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt;"><strong>Accuracy</strong> fixes an implicit weighting by class size.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>\( F_1 \)</strong> fixes \( \beta = 1 \), visibly and adjustably.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>AUC</strong> integrates over a whole <em>distribution</em> of weightings. Section 6 shows that distribution is stranger than it looks.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; margin-top: 16px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 15pt; margin: 0;"><strong>The advice is not "use \( F_2 \)."</strong> If you can state \( \beta \) you can state a cost ratio; if you can state a cost ratio, skip the summary metric and optimise expected cost directly. \( F_\beta \) is most useful as a <em>diagnostic that you have an opinion</em> about the asymmetry.</p>
+      </div>
+      </div>
+      <aside class="notes">2 min. The interpretation line matters more than the formula &mdash; never leave the algebra bare. The three cards are a ladder from "assumption invisible" to "assumption averaged over", and Section 6 will knock the top rung out from under them.</aside>
+    </section>
+
+    <!-- POLL 1 stack -->
+    <section>
+      <section id="poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: Which Model Ships?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 17px 22px; margin-top: 12px;">
+          <p style="font-size: 14.5pt; line-height: 1.6;">Your lab fits three models on one test set and scores each four ways. Gradient boosting wins <strong>accuracy</strong> (0.8923) and <strong>average precision</strong> (0.7189). Random forest wins <strong>ROC AUC</strong> (0.8981). Logistic regression &mdash; <em>last on every ranking metric</em> &mdash; has the lowest <strong>expected cost</strong> (0.4347) under a 10:1 false-negative cost.</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch18-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Gradient boosting &mdash; it wins two of four metrics</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Random forest &mdash; ROC AUC is the standard summary</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Logistic &mdash; expected cost is the only metric told what an error costs</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Unanswerable &mdash; nobody stated the metric before the models were fitted</div>
+        </div>
+        <aside class="notes">2 min. Students click to vote; results on the next slide. Expect a large C share, which is the productive near-miss &mdash; C is the right engineering answer and the wrong methodological one. Do not correct anyone yet.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch18-econ5200-poll-1" style="padding: 26px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: D &mdash; The Metric Chose Itself</h2>
+        <div class="poll-results-chart" data-poll-id="ch18-econ5200-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px 20px;"></div>
+        <img src="figures/figure_008_metric_disagreement.png" alt="Three models scored four ways on one test set: gradient boosting wins accuracy and average precision, random forest wins ROC AUC, and logistic regression wins minimum expected cost" style="width: 100%; border-radius: 8px;">
+        <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 12px 18px; border-radius: 8px; margin-top: 12px;">
+          <p style="font-size: 14pt; margin: 0;"><strong>C is the best defensible choice</strong> once 10:1 is on the table &mdash; but the 10:1 arrived <em>after</em> the fits. Choosing among four metrics after seeing four results is model selection on the test set wearing a different hat: your Chapter 15 failure, one level up. The discipline is to name the metric and the operating point before fitting. The cost is that you must then live with a metric that flatters you less.</p>
+        </div>
+        <aside class="notes">2 min. These are the lab's own executed numbers, same seed. Three winners across four metrics on ONE test set. If the room voted mostly C, congratulate them and then ask when the 10:1 was decided &mdash; the silence is the teaching moment.</aside>
+      </section>
+    </section>
+
+    <!-- SECTION DIVIDER 2 -->
+    <section id="divider-roc" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">The ROC Curve</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 2 &bull; LO 18.2 &bull; and what AUC actually measures</p>
+    </section>
+
+    <!-- SLIDE 13: ROC figure -->
+    <section id="roc-curve" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Chapter 17's Table, Swept Continuously</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+          <img src="figures/figure_001_roc_curve.png" alt="ROC curve for the recession classifier with the five Chapter 17 threshold rows marked as points along it, area under the curve 0.811" style="width: 100%; border-radius: 8px;">
+          <div>
+            <pre style="font-size: 11.5pt; background: #f8f6f3; border-radius: 8px; padding: 12px 14px; line-height: 1.65;">thr 0.209  TPR 0.08  FPR 0.05
+thr 0.183  TPR 0.22  FPR 0.06
+thr 0.135  TPR 0.47  FPR 0.11
+thr 0.100  TPR 0.75  FPR 0.19
+thr 0.045  TPR 0.89  FPR 0.45</pre>
+            <p style="font-size: 14pt; line-height: 1.6; margin-top: 12px;">Each point is one threshold &mdash; one row of last week's table. The curve is the <strong>complete set of trade-offs the model makes available</strong>, and choosing a point on it is Section 5's decision.</p>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 15px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 13pt; margin: 0;"><strong>Thread 6.</strong> Identical fitted model, no refit. FRED T10Y3M joined to USREC, target shifted 12 months. <strong>523 months, 1982-01 to 2025-07, base rate 6.9% (36 positives).</strong> ROC-AUC 0.811, PR-AUC 0.188, Brier 0.0615.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Build it as a continuation, not a new object: point at each of the five rows and then at its dot. Flag that all figures today are in-sample and the calibration bins hold consecutive months of the same episodes &mdash; Chapter 20 builds the machinery for dependent data; this chapter demonstrates metrics rather than certifying a forecast.</aside>
+    </section>
+
+    <!-- SLIDE 14: AUC interpretation + two properties -->
+    <section id="auc-meaning" style="padding: 30px 60px;">
+      <h2><i class="fa-solid fa-ranking-star" style="color: var(--accent-color);"></i> The One Interpretation That Is Exactly Right</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 20px 26px;">
+          <p style="font-size: 17pt; line-height: 1.55; margin: 0;"><strong>AUC is the probability that a randomly chosen positive case receives a higher predicted score than a randomly chosen negative case.</strong></p>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 14px;">So 0.811 means: pick a month that preceded a recession and one that did not, and the model scores the right one higher about <strong>81% of the time</strong>. A measure of <strong>ranking quality</strong>, nothing more.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>Threshold-independent.</strong> It summarises the whole curve, so it is unaffected by the 0.5 default that ruined last week's accuracy figure. A genuine strength &mdash; it is why AUC survived that demolition while accuracy did not.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>Invariant to any monotone transformation.</strong> Halve every probability, square them, apply any order-preserving function &mdash; the ranking is unchanged, so AUC is unchanged. <strong>That is why AUC cannot see the hook's failure.</strong></p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 14pt; margin: 0;"><strong>Misconception:</strong> "An AUC of 0.81 means the model is 81% accurate." It says nothing about accuracy at any threshold, nothing about whether the probabilities are believable, and nothing about behaviour on the cases you act on.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Have the room repeat the boxed sentence out loud &mdash; it feels silly and it works; nearly every misuse of AUC traces to not knowing it. Flag the second property as "remember this for ninety seconds" and then deliver.</aside>
+    </section>
+
+    <!-- SLIDE 15: monotone invariance figure -->
+    <section id="monotone-proof" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-arrows-left-right" style="color: var(--danger-color);"></i> The Proof Takes Ten Seconds</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 330px; gap: 24px; align-items: center;">
+          <img src="figures/figure_006_monotone_invariance.png" alt="The same five calibration bands before and after halving every predicted probability: each point slides left to half its predicted level while its realised frequency stays put, AUC identical at 0.811 and the Brier score moving only from 0.0615 to 0.0627" style="width: 100%; border-radius: 8px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.6;">Multiply every predicted probability by <strong>0.5</strong>. The ranking is untouched, so AUC is identical. Every probability is now half what it should be, so calibration is destroyed.</p>
+            <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; margin-top: 14px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14.5pt; margin: 0;"><strong>Discrimination and calibration are independent properties</strong>, and any metric that reads only the order is blind to one of them by construction.</p>
+            </div>
+            <p style="font-size: 14pt; line-height: 1.6; margin-top: 13px;">Groups are defined <em>once</em>, on the original predictions, so each point simply slides left. The two curves describe the same months.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Groups are defined ONCE on the original predictions, so each point simply slides left &mdash; do not let anyone think the two curves compare different populations. AUC is equal to every decimal Python prints, not "approximately equal". Next slide explains the Brier row, which is the graduate half of this argument.</aside>
+    </section>
+
+    <!-- SLIDE 16: Brier floor -->
+    <section id="brier-floor" style="padding: 30px 60px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--secondary-color);"></i> Why Even a Proper Score Is Blunt Here</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">Brier is a <em>proper</em> scoring rule, so halving the probabilities must make it worse &mdash; and it does. It just barely moves. The Murphy decomposition says why: its <strong>Uncertainty</strong> term depends only on the base rate.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 18px; text-align: center; border-left: 4px solid var(--muted-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--primary-color); line-height: 1.1;">0.0641</p>
+            <p style="font-size: 13pt; margin-top: 6px;">\( \pi(1-\pi) \), the floor no classifier on this problem can move</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); line-height: 1.1;">0.0615</p>
+            <p style="font-size: 13pt; margin-top: 6px;">our model's Brier &mdash; <strong>4.0% below the floor.</strong> That is what forty years of yield-curve data buys</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 18px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--accent-color); line-height: 1.1;">0.0011 &rarr; 0.0041</p>
+            <p style="font-size: 13pt; margin-top: 6px;">the <strong>reliability</strong> component under halving (10 quantile bins) &mdash; close to fourfold</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 15px 20px; margin-top: 16px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 15pt; margin: 0;"><strong>Interpretation.</strong> At a 6.9% base rate the aggregate proper score is dominated by irreducible uncertainty, so it is a poor calibration <em>detector</em> even though it is a correct calibration <em>penalty</em>. The reliability diagram is the sharp instrument. This is Chapter 15's irreducible error, back as a floor on how well <em>any</em> classifier can score here.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This block is cut from the 3916 edition by instructor direction, so it is genuinely graduate-only. The point students take away wrongly is "Brier is bad" &mdash; it is not; it is proper and correct, and it is simply the wrong instrument for the question "is my level right?". Connect to Ch 15 explicitly and to Ch 19, where the forest's Brier is one of the three numbers it must beat.</aside>
+    </section>
+    <!-- SECTION DIVIDER 3 -->
+    <section id="divider-pr" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">Precision-Recall</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 3 &bull; LO 18.2 &bull; the honest curve, and the algebra behind it</p>
+    </section>
+
+    <!-- SLIDE 18: 0.811 vs 0.188 -->
+    <section id="two-numbers" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--danger-color);"></i> Same Model. Same Data. Same Predictions.</h2>
+      <div class="content" style="justify-content: center;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 34px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 14px; padding: 32px; text-align: center; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 52pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">0.811</p>
+            <p style="font-size: 16pt; margin-top: 12px;">ROC-AUC</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">random baseline 0.5</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 14px; padding: 32px; text-align: center; border-left: 5px solid var(--danger-color);">
+            <p style="font-size: 52pt; font-weight: 700; color: var(--danger-color); line-height: 1;">0.188</p>
+            <p style="font-size: 16pt; margin-top: 12px;">PR-AUC (average precision)</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">random baseline = base rate = 0.069</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; text-align: center; margin-top: 24px;">Both are correct. <strong>The gap between them is the single most useful thing to understand about evaluating imbalanced classifiers.</strong></p>
+      </div>
+      <aside class="notes">1 min. Put the two numbers up with nothing else and let the room react before you advance. Someone always asks which is "the real one". The answer is neither &mdash; they answer different questions, and Section 3's job is to say which question each answers.</aside>
+    </section>
+
+    <!-- SLIDE 19: PR curve figure -->
+    <section id="pr-curve" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-chart-area" style="color: var(--danger-color);"></i> The Curve, and Its Moving Baseline</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 330px; gap: 24px; align-items: start;">
+          <img src="figures/figure_002_pr_curve.png" alt="Precision-recall curve for the recession classifier, average precision 0.188, with the random baseline drawn as a dashed horizontal line at the 0.069 base rate" style="width: 100%; border-radius: 8px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.6;">A random model has AUC <strong>0.5</strong> &mdash; a fixed, familiar anchor. A random model's PR-AUC is the <strong>base rate</strong>, here 0.069.</p>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 18px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+              <p style="font-size: 14.5pt; margin: 0;">So 0.188 is <strong>2.73&times; random</strong>. A real but modest achievement, and one that 0.811 makes sound far grander.</p>
+            </div>
+            <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 14px;">Report PR-AUC <em>against its baseline</em>, always. Quoted alone it is uninterpretable in a way 0.811 is not.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The vertical spike at recall 0 is the standard PR artefact (one alarm, one hit) &mdash; name it before a student does. The baseline point is the one to insist on: ROC's constant 0.5 is convenient and is exactly what makes ROC flatter rare-event problems, because the reference point does not move as the problem gets harder.</aside>
+    </section>
+
+    <!-- SLIDE 20: why they diverge + what it costs -->
+    <section id="why-diverge" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-divide" style="color: var(--accent-color);"></i> Do This Arithmetic on the Board</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Suppose the model raises <strong>50 alarms</strong> and <strong>12 are right</strong>.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 12px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>FPR</strong> sees 38 false alarms against 487 negatives &mdash; a rate of <strong>7.8%</strong>, which looks excellent.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>Precision</strong> sees 12 correct out of 50 &mdash; <strong>24%</strong>, which looks poor.</p>
+          </div>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 14px; text-align: center;"><strong>The same 38 mistakes, a small rate or a large fraction depending on what you divide by.</strong></p>
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 24px; margin-top: 16px; align-items: center;">
+          <pre style="font-size: 12.5pt; background: #f8f6f3; border-radius: 8px; padding: 14px 16px; line-height: 1.7;">thr 0.160  recall 0.25  prec 0.20
+thr 0.130  recall 0.50  prec 0.24
+thr 0.100  recall 0.75  prec 0.22</pre>
+          <p style="font-size: 15pt; line-height: 1.6;">To catch <strong>half</strong> the recessions you must accept that roughly <strong>three-quarters of your alarms are false</strong>. To catch three-quarters, precision barely moves &mdash; it is already near the floor. <em>That sentence is what a decision-maker needs, and no summary number provides it.</em></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Do the 38-mistakes calculation on the board rather than reading it &mdash; that single arithmetic explains the whole divergence, and students who watch you write it remember it. Then ask what they would tell a policymaker who wants to catch half of all recessions. The honest answer is uncomfortable and that is the point.</aside>
+    </section>
+
+    <!-- SLIDE 21: precision is not portable -->
+    <section id="not-portable" style="padding: 30px 60px;">
+      <h2><i class="fa-solid fa-globe" style="color: var(--secondary-color);"></i> Precision Moves When the World Does</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 17px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong>Recall and FPR condition on the truth.</strong> Denominators are "all positives" and "all negatives", so they are <em>properties of the model</em> and do not change when the base rate changes.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 17px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>Precision conditions on the predictions.</strong> So it <em>does</em> change. The same model, applied where recessions are twice as common, delivers higher precision with no improvement whatsoever in the model.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 16px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 15pt; margin: 0;">A fraud model validated in a market with a 0.5% fraud rate and deployed in one with 0.1% shows the <strong>same recall, the same FPR, and much worse precision</strong> &mdash; and the analytics team reports a model that has "degraded" when nothing about it has changed. <strong>The base rate moved.</strong></p>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;">So precision figures are <strong>not portable</strong>. "Our model achieves 40% precision" without the base rate it was measured at is close to meaningless &mdash; the same sentence describes an excellent model in one market and a poor one in another.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the slide that saves a graduate a bad quarter in industry. Name the reporting rule out loud: report the base rate alongside precision, always, for exactly the reason you report it alongside accuracy. The next slide gives them the identity that makes the claim exact rather than qualitative.</aside>
+    </section>
+
+    <!-- SLIDE 22: ADVANCED TREATMENT identity -->
+    <section id="advanced-roc-pr" style="padding: 28px 60px;">
+      <h2><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> Advanced Treatment: ROC and PR Are Deterministically Related</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">Write \( \pi = P(Y=1) \) for the base rate, and let a threshold produce true positive rate TPR and false positive rate FPR. Then</p>
+        <p style="font-size: 14pt;">$$\text{Precision} = \frac{\pi \cdot \text{TPR}}{\pi \cdot \text{TPR} + (1-\pi)\cdot \text{FPR}} = \left(1 + \frac{1-\pi}{\pi}\cdot\frac{\text{FPR}}{\text{TPR}}\right)^{-1}$$</p>
+        <p style="font-size: 14.5pt; line-height: 1.6;"><strong>Interpretation.</strong> The factor \( (1-\pi)/\pi \) is the whole story. At \( \pi = 0.5 \) it equals 1 and precision responds to the FPR/TPR ratio directly. At our \( \pi = 0.0688 \) it equals <strong>13.53</strong>, so any given FPR is amplified more than thirteenfold in its effect on precision.</p>
+        <div class="fragment fade-up" style="background: linear-gradient(135deg, #f4eef2, #ece2e8); border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;">A respectable-looking ROC point &mdash; FPR 0.19, TPR 0.75 &mdash; therefore has precision \( \left(1 + 13.53 \times 0.2533\right)^{-1} = \mathbf{0.226} \). <strong>The two curves were never in conflict. They are one object, read through a base rate.</strong></p>
+        </div>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 13.5pt;"><strong>Davis &amp; Goadrich (2006), first result.</strong> A curve dominating in ROC space dominates in PR space, and conversely. The two never disagree about which of two models is <em>uniformly</em> better &mdash; only about how much, and about where the useful operating points are.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 13.5pt;"><strong>Second result.</strong> PR-AUC has no fixed baseline: a random classifier traces a horizontal line at \( \pi \). ROC's constant 0.5 is convenient, and is exactly what makes ROC flatter rare-event problems.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Graduate-only block &mdash; the 3916 edition stops at "ROC flatters, PR does not". State the identity, do the one substitution, do NOT derive it live. Saito and Rehmsmeier (2015) is the citation for the practical upshot: on rare-event biological data, ROC curves for models of visibly different quality are nearly indistinguishable while their PR curves separate cleanly.</aside>
+    </section>
+
+    <!-- SLIDE 23: amplification figure -->
+    <section id="amplification" style="padding: 20px 50px;">
+      <h2><i class="fa-solid fa-arrow-trend-down" style="color: #7C3A5F;"></i> The Amplification Factor, Drawn</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 400px 1fr; gap: 26px; align-items: center;">
+          <img src="figures/figure_005_pi_amplification.png" alt="Two panels: precision at a fixed ROC point rising with the base rate while recall and FPR stay flat, and the amplification factor one minus pi over pi falling steeply from above twenty toward one" style="width: 100%; border-radius: 8px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;"><strong>Top panel.</strong> Hold the operating point fixed. Recall and FPR are flat lines &mdash; they are properties of the model. Precision is a curve, because it is a property of the model <em>and the world</em>.</p>
+            <p style="font-size: 15pt; line-height: 1.6; margin-top: 14px;"><strong>Bottom panel.</strong> \( (1-\pi)/\pi \) is what does it. Below about \( \pi = 0.1 \) it is steep, which is why rare-event precision is so unstable across markets and so easy to misread as model drift.</p>
+            <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+              <p style="font-size: 14pt; margin: 0;">At small \( \pi \), \( (1-\pi)/\pi \approx 1/\pi \). <strong>Halve the base rate and you roughly halve precision at a fixed operating point.</strong> Hold that thought for ninety seconds.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The last box is the poll's answer, stated in advance on purpose &mdash; graduate polls should test whether they can apply a stated result under pressure, not whether they memorised it. If nobody gets it, that is diagnostic and worth knowing before Section 5.</aside>
+    </section>
+
+    <!-- POLL 2 stack -->
+    <section>
+      <section id="poll-2" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: The Market That Moved</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Your fraud model holds its operating point fixed &mdash; same score function, same cutoff &mdash; and you deploy it in a second market where the fraud rate is <strong>half</strong> what you validated on. Recall and FPR are unchanged.</p>
+          <p style="font-size: 15pt; font-weight: 600; margin-top: 10px;">What happens to precision?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch18-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Unchanged &mdash; the operating point did not move</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Roughly halves</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Roughly doubles &mdash; fewer positives means fewer false alarms</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cannot be signed without knowing the score distribution</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. D is the sophisticated-sounding trap and it will pull graduate students specifically &mdash; that is why it is here.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch18-econ5200-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Roughly Halves</h2>
+        <div class="poll-results-chart" data-poll-id="ch18-econ5200-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:12px 60px 20px;"></div>
+        <div style="padding: 0 40px;">
+          <p style="font-size: 15pt; line-height: 1.65;">At small \( \pi \), \( (1-\pi)/\pi \approx 1/\pi \), so halving the base rate roughly doubles the amplification factor, which roughly halves precision at a fixed FPR/TPR.</p>
+          <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is wrong, and why it is tempting.</strong> The Advanced Treatment identity <em>does</em> sign it: at a fixed ROC point, precision is a deterministic function of \( \pi \) alone. Nothing about the score distribution enters once TPR and FPR are held fixed. <strong>A is the one that gets shipped</strong> &mdash; a team reports "model degradation" when the only thing that moved was the world.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. If D led the vote, say so approvingly and then show why the identity closes it &mdash; being appropriately cautious and then updating on an exact result is the behaviour you want. Connect forward: this is the same reasoning Section 7 uses when a subgroup's base rate differs.</aside>
+      </section>
+    </section>
+    <!-- SECTION DIVIDER 4 -->
+    <section id="divider-calibration" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">Ranking Is Not Level</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 4 &bull; LO 18.3 &bull; the hook, developed properly</p>
+    </section>
+
+    <!-- SLIDE 26: discrimination vs calibration -->
+    <section id="disc-vs-calib" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-not-equal" style="color: var(--danger-color);"></i> Two Achievements, Not One</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">Discrimination</p>
+            <p style="font-size: 15pt; margin-top: 8px;">The ability to <strong>rank</strong>: do positives receive higher scores than negatives? AUC measures it. Our model is good at it &mdash; 0.811.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 24px; border-left: 5px solid var(--danger-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--danger-color);">Calibration</p>
+            <p style="font-size: 15pt; margin-top: 8px;">The accuracy of the <strong>level</strong>: among cases assigned probability \( p \), does the event occur a fraction \( p \) of the time? Our model fails it badly, in the worst possible place.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 18px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;"><strong>Different uses need different ones.</strong> If you only rank &mdash; triage a queue, prioritise audits, order applicants &mdash; discrimination is sufficient. If the probability enters a calculation &mdash; expected loss, expected revenue, a capital requirement, a policy trigger &mdash; you need calibration, and AUC will not tell you whether you have it.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 16px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> Report a reliability diagram alongside any AUC you publish. It costs five lines.</p>
+      </div>
+      <aside class="notes">2 min. The rank-versus-level distinction is the single most transferable idea in the chapter and it is what Discussion 1 turns on, so land it cleanly. Misconception to name out loud: "a high AUC means the probabilities can be trusted" &mdash; AUC is mathematically incapable of assessing that, and our model is the proof.</aside>
+    </section>
+
+    <!-- SLIDE 27: the calibration table read properly -->
+    <section id="reliability-read" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--accent-color);"></i> Reading the Reliability Diagram</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+          <img src="figures/figure_003_reliability.png" alt="Reliability diagram for the recession classifier: five bands sized by count, the two lowest slightly conservative, the two middle bands above the diagonal, and the top 21-month band collapsed to zero" style="width: 100%; border-radius: 8px;">
+          <div>
+            <p style="font-size: 15pt; line-height: 1.6;">The pattern is <strong>instructive rather than uniformly bad</strong>, and reading it properly is the skill.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+              <div style="background: #f0f5f8; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+                <p style="font-size: 14pt;"><strong>Bottom two bands</strong> (296 + 107 months): close to the diagonal and slightly conservative.</p>
+              </div>
+              <div style="background: #fdf0ea; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+                <p style="font-size: 14pt;"><strong>Middle two bands</strong>: <em>under</em>-predict. When the model says 18%, recessions followed <strong>38%</strong> of the time.</p>
+              </div>
+              <div style="background: #f8e5e5; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--danger-color);">
+                <p style="font-size: 14pt;"><strong>Top band</strong>: collapses entirely. Predicted 0.333, realised <strong>0.000</strong>.</p>
+              </div>
+            </div>
+            <p class="fragment fade-up" style="font-size: 14.5pt; line-height: 1.6; margin-top: 12px;"><strong>Chapter 17 diagnosed this from the feature side. Chapter 18 detects it from the evaluation side.</strong> Accuracy missed it. AUC could not see it. Only comparing predicted levels against realised frequencies surfaced it.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Both routes found the same 2022-24 episode and neither would have found it alone: the calibration table says THAT the confident predictions fail without saying why; the term-premium argument explains why without establishing how badly. Good practice runs both, because they are cheap and they corroborate each other.</aside>
+    </section>
+
+    <!-- SLIDE 28: the caveat -->
+    <section id="small-bin-caveat" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--muted-color);"></i> The Caveat, and Do Not Skip It</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.65;">Twenty-one months is a small bin, and they are <strong>not independent</strong> &mdash; consecutive months of one macroeconomic episode. A calibration table computed on autocorrelated data <strong>overstates its own sample size</strong>.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 17px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>Wrong reading.</strong> "The failure rate at high probabilities is precisely 0%."</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 17px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong>Right reading.</strong> "This model's confident predictions are dominated by a single regime in which it was wrong."</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 18px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;">The effective sample size behind that row is closer to <strong>one</strong> than to twenty-one. Any confidence interval computed as though those months were independent would be far too narrow. <strong>Evaluation metrics have sampling distributions too</strong>, and on dependent data those distributions are wider than the standard formulas assume. Chapter 20 builds the machinery.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. A chapter about honest evaluation that oversold its own evidence would be self-refuting, so this slide is not optional. It also sets up the 5200 lab, whose whole spine is putting an interval on every evaluation number &mdash; and specifically on the DIFFERENCE between two models, which is the interval almost nobody reports.</aside>
+    </section>
+
+    <!-- SLIDE 29: what you would do -->
+    <section id="what-you-would-do" style="padding: 28px 60px;">
+      <h2><i class="fa-solid fa-screwdriver-wrench" style="color: var(--secondary-color);"></i> What You Would Do About It</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Recalibrate post hoc.</strong> Fit a second, monotone map from raw scores to observed frequencies on <em>held-out</em> data &mdash; Platt scaling (a one-dimensional logistic) for small samples, isotonic regression (a non-parametric step function) above roughly a thousand calibration points. Both are monotone, so <strong>they leave AUC exactly unchanged</strong> while fixing the levels &mdash; which is itself a neat demonstration that the two properties are separable.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 10px; padding: 15px 20px; margin-top: 13px; border-left: 4px solid var(--danger-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>But recalibration will not save this model.</strong> Post-hoc methods learn a correction from historical data, and our failure is not a stable bias &mdash; it is <em>one regime</em> in which the feature stopped meaning what it meant. A monotone correction fitted on 1982&ndash;2021 has no way to know 2023's inversions were different in kind. Recalibration fixes <em>systematic overconfidence</em>; it does not fix <em>a feature whose relationship to the outcome changed.</em></p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 20px; margin-top: 13px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>So the honest response is narrower.</strong> Report the probabilities with an explicit regime caveat, widen the intervals, or &mdash; the answer the NY Fed effectively took &mdash; keep publishing the model unchanged while separately publishing the term-premium decomposition explaining why the current reading should be discounted. That preserves a thirty-year track record, which has real value, while telling users what they need. <strong>Not every model failure is repaired by changing the model.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The last sentence is the one to say slowly. Students trained to fix things reach for isotonic regression here, and it is precisely the wrong tool &mdash; ask someone to say why out loud before you advance the third fragment. Note the leakage requirement: calibration data must be held out, for the Chapter 15 reasons.</aside>
+    </section>
+
+    <!-- SLIDE 30: Discussion 1 -->
+    <section id="discussion-1" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 1: Three Readers, One Number</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 24px; border-radius: 12px;">
+          <p style="font-size: 16pt; font-weight: 600;">It is January 2024. Your model says one in three. You know the last twelve monthly readings at this level produced nothing, and you know why.</p>
+          <p style="font-size: 14.5pt; margin-top: 10px; color: var(--muted-color);">You publish to three audiences: a <strong>rates desk</strong> that uses only the ranking to order its trades; a <strong>risk committee</strong> that multiplies your probability by an exposure to get a capital number; a <strong>press office</strong>.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 15px 19px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-size: 14.5pt; font-weight: 600; color: var(--success-color);">Think about:</p>
+            <p style="font-size: 14.5pt;">Which of the three is <em>still well served</em> by an uncalibrated model with intact discrimination &mdash; and what exactly makes the difference?</p>
+          </div>
+          <div style="padding: 15px 19px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-size: 14.5pt; font-weight: 600; color: var(--accent-color);">Consider:</p>
+            <p style="font-size: 14.5pt;">The risk committee asks for one number. What do you give them, and what do you attach so "0.33" cannot be lifted out of your memo and used alone?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span></p>
+      </div>
+      <aside class="notes">5 min. Target: the rates desk is fine &mdash; it consumes order, and order is what survives. The risk committee is the one being harmed, because a probability entering an arithmetic calculation must be calibrated. The press office is a governance question, not a statistical one. Land the portable rule: if the output only orders things, discrimination suffices &mdash; but SAY that you decided that.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 5 -->
+    <section id="divider-threshold" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">The Threshold</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 5 &bull; LO 18.4 &bull; where the economics enters</p>
+    </section>
+
+    <!-- SLIDE 32: cost-optimal table -->
+    <section id="cost-table" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-coins" style="color: var(--accent-color);"></i> Three Decision-Makers, One Model</h2>
+      <div class="content">
+        <pre style="font-size: 13pt; background: #f8f6f3; border-radius: 10px; padding: 16px 20px; line-height: 1.75;">symmetric (1:1)        optimal t = 0.425   theory 0.500   caught  0/36   false alarms   0
+central banker (1:9)   optimal t = 0.099   theory 0.100   caught 28/36   false alarms  97
+asset manager (4:1)    optimal t = 0.425   theory 0.800   caught  0/36   false alarms   0</pre>
+        <p style="font-size: 15pt; margin-top: 14px; line-height: 1.6;">The central-banker row confirms the theory almost exactly: <strong>0.099 against a predicted 0.100</strong>, catching 28 of 36 recessions at the price of 97 false alarms over forty years.</p>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt; margin: 0;">The theoretical optimum is \( t^{*} = C_{FP}/(C_{FP} + C_{FN}) \). Read it backwards and every cutoff you have ever shipped is a <strong>claim about relative costs</strong>: $$\frac{C_{FP}}{C_{FN}} = \frac{t}{1-t}$$</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do not gloss the two corner rows &mdash; the next slide is entirely about them and they are the more interesting result. Note the grid is np.linspace(0.01, 0.60, 200), so 0.425 is a grid point, not a coincidence.</aside>
+    </section>
+
+    <!-- SLIDE 33: cost curve figure -->
+    <section id="cost-curve-fig" style="padding: 24px 50px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> One Interior Optimum, Two Corners</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: center;">
+          <img src="figures/figure_004_cost_curves.png" alt="Expected cost against threshold for three cost structures: the central banker's curve has an interior minimum at 0.099 while the symmetric and asset-manager curves fall monotonically and saturate at 0.425, above the model's highest predicted probability of 0.4231" style="width: 100%; border-radius: 8px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.6;">The model's highest predicted probability is <strong>0.4231</strong>. Thresholds of 0.5 and 0.8 are therefore <em>unreachable</em>; the optimum saturates at the top of the achievable range and the classifier never fires at all.</p>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 17px; margin-top: 13px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 14pt; margin: 0;"><strong>That is not the formula failing.</strong> It is the formula reporting something true and useful: for a decision-maker with symmetric costs, or one who fears false alarms more than misses, <strong>this model should never trigger action.</strong></p>
+            </div>
+            <p style="font-size: 14pt; line-height: 1.6; margin-top: 12px;">A model can be genuinely informative and still be the wrong basis for a particular decision &mdash; and discovering that <em>before</em> deployment is worth more than any metric.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min, and give them. Students expect the formula to always produce an interior answer, and the honest reading is more useful than the arithmetic. Ask: what would you have to change to give the asset manager an interior solution? Answers: a better model, a different feature, or a decision that tolerates lower confidence &mdash; and note that only one of those three is your job.</aside>
+    </section>
+    <!-- SLIDE 34: constrained thresholds -->
+    <section id="constrained-threshold" style="padding: 30px 60px;">
+      <h2><i class="fa-solid fa-lock" style="color: var(--danger-color);"></i> When the Threshold Is Not Yours to Choose</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Payment networks.</strong> Visa's Dispute Monitoring Programme placed merchants in a <em>Standard</em> tier at a 0.9% chargeback ratio and <em>Excessive</em> at 1.8%; from 2025 those consolidated into VAMP, with its own thresholds. The exact numbers move &mdash; <strong>and that is the point: the constraint is set by a network, not by your loss function.</strong></p>
+        </div>
+        <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 13px;">A fraud team therefore does not choose the profit-maximising threshold. They solve a <strong>constrained</strong> problem: maximise expected profit <em>subject to</em> the chargeback ratio staying under whatever the current programme allows &mdash; a cap on the false-negative rate. The unconstrained optimum is frequently infeasible, and <strong>the binding constraint sets the threshold instead of the cost ratio.</strong></p>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid var(--danger-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Banking supervision.</strong> Under SR 11-7 &mdash; the Fed and OCC's model risk management guidance &mdash; a threshold sits inside the model's <em>approved design</em>. Changing it without revalidation is a control failure, not a tweak. <strong>The threshold is a governed parameter</strong>, and a data scientist who nudges it to improve a dashboard has made a regulatory filing inaccurate.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Graduate students go into these jobs, and several will discover this the hard way. The general form worth naming: real threshold choices are rarely unconstrained optimisations, and the constraint usually comes from outside the firm. Section 7 adds a third master &mdash; subgroup parity &mdash; so threshold selection ends the lecture with three.</aside>
+    </section>
+
+    <!-- SLIDE 35: fraud arithmetic -->
+    <section id="fraud-arithmetic" style="padding: 26px 55px;">
+      <h2><i class="fa-solid fa-credit-card" style="color: var(--accent-color);"></i> Working the Fraud Economics</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">1,000,000 transactions, 0.3% fraudulent &rarr; 3,000 fraudulent, 997,000 legitimate. Average order $120, margin 25% ($30), a fraudulent order costs $4.61 per dollar of fraud &asymp; <strong>$553 all-in</strong>. Tighten to catch 90% of fraud at a 2% false-decline rate.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color); line-height: 1.1;">+$1.49M</p>
+            <p style="font-size: 13pt; margin-top: 6px;">fraud prevented<br>2,700 &times; $553</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 18px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color); line-height: 1.1;">&minus;$598K</p>
+            <p style="font-size: 13pt; margin-top: 6px;">margin lost immediately<br>19,940 blocked &times; $30</p>
+          </div>
+          <div style="background: #f8e5e5; border-radius: 10px; padding: 16px 18px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color); line-height: 1.1;">&minus;$2.0M</p>
+            <p style="font-size: 13pt; margin-top: 6px;">churn: a third never return, $300 lifetime margin each</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;"><strong>Roughly $2.6M destroyed against $1.49M saved.</strong> The aggressive threshold burns about a million dollars of value &mdash; and <em>every number on the fraud team's dashboard improves while it happens.</em></p>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 15px 22px; margin-top: 12px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 14.5pt; margin: 0;">The figures are illustrative; the <em>structure</em> is not. The benefit is concentrated, measured and attributed to the fraud team. The cost is diffuse, delayed and lands in another department's revenue line. <strong>The measurement asymmetry, not the cost asymmetry, is what makes this mistake persistent</strong> &mdash; Goodhart's Law (Ch 2) in a machine-learning costume.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Do the arithmetic out loud; the conclusion is not the one most teams reach. Supporting figures: Datos Insights projects global e-commerce revenue lost to FALSE DECLINES at over $231 billion for 2026, against actual fraud losses near $56 billion in 2025 &mdash; a projection and an actual from different years and methodologies, so quote the ratio loosely. Even read conservatively, merchants lose roughly four times more revenue to blocking legitimate customers than to the fraud the blocking exists to prevent. The direction is not contested, and the direction is what should move your threshold.</aside>
+    </section>
+
+    <!-- SLIDE 36: think like an economist -->
+    <section id="exchange-rate" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-right-left" style="color: var(--secondary-color);"></i> Think Like an Economist: The Implied Exchange Rate</h2>
+      <div class="content" style="justify-content: center;">
+        <p style="font-size: 16pt;">$$\frac{C_{FP}}{C_{FN}} = \frac{t}{1-t}$$</p>
+        <p style="font-size: 15.5pt; line-height: 1.65; margin-top: 8px;"><strong>Interpretation.</strong> Whatever threshold you use implies an exchange rate between false positives and false negatives. A default of <strong>0.5</strong> asserts they cost exactly the same. A threshold of <strong>0.1</strong> asserts a miss is <strong>nine times worse</strong> than a false alarm.</p>
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e3edf3); border-radius: 12px; padding: 20px 26px; margin-top: 18px; border-left: 5px solid var(--secondary-color);">
+          <p style="font-size: 15.5pt; margin: 0;">Compute the implied ratio for whatever cutoff you are about to ship. State it in one sentence. Then ask whether you would <strong>defend it out loud to the person who bears the cost.</strong> If not, you have found your real threshold by working backwards from a claim you <em>are</em> willing to defend.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 16px; color: var(--accent-color); font-weight: 600; text-align: center;">This is the single most portable habit in the course. It is also today's exit ticket.</p>
+      </div>
+      <aside class="notes">2 min. Insist on this one. It costs nothing, it is defensible in any room, and it converts an unexamined default into an argument someone can disagree with &mdash; which is the whole professional point. Tell them now that it is the exit ticket so they think about a real cutoff during the next fifteen minutes.</aside>
+    </section>
+
+    <!-- SLIDE 37: GOING DEEPER DCA equation -->
+    <section id="dca-equation" style="padding: 30px 60px;">
+      <h2><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> Going Deeper: Decision Curve Analysis</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">The problem this chapter keeps hitting: costs matter, and nobody can state them in currency. Vickers &amp; Elkin (2006) work around it by letting the threshold <em>encode</em> the cost ratio rather than requiring it as an input.</p>
+        <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 10px;">A decision-maker willing to act at threshold \( t \) is <strong>revealing</strong> that they regard a false positive as costing \( t/(1-t) \) times a false negative &mdash; the exchange rate, read backwards. Define <strong>net benefit</strong>:</p>
+        <p style="font-size: 15pt;">$$NB(t) = \frac{TP(t)}{n} - \frac{FP(t)}{n}\cdot\frac{t}{1-t}$$</p>
+        <div style="background: linear-gradient(135deg, #f4eef2, #ece2e8); border-radius: 10px; padding: 15px 22px; margin-top: 12px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;"><strong>Interpretation:</strong> true positives earned, minus false positives weighted by the exchange rate that threshold implies. Plot it across all plausible \( t \) and compare against two references &mdash; <em>treat everyone</em> (\( t = 0 \)) and <em>treat nobody</em> (\( NB = 0 \)) &mdash; and you can see over which range of <strong>preferences</strong> the model beats both.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 14.5pt; margin-top: 13px;">The strength: it requires <strong>no dollar figures</strong>, only a <em>range</em> of thresholds a reasonable decision-maker might hold. Standard in clinical prediction; transfers directly to credit, targeting and policy triage.</p>
+      </div>
+      <aside class="notes">2 min. Graduate-only block. The word to stress is PREFERENCES: a decision curve is a map over what different users care about, not a menu of thresholds you may pick from freely. This is also Diagnosis 3 of the lab, so they will implement it on Thursday.</aside>
+    </section>
+
+    <!-- SLIDE 38: DCA figure -->
+    <section id="dca-figure" style="padding: 24px 50px;">
+      <h2><i class="fa-solid fa-chart-area" style="color: #7C3A5F;"></i> Our Own Model, on a Decision Curve</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 330px; gap: 24px; align-items: center;">
+          <img src="figures/figure_007_decision_curve.png" alt="Net benefit against threshold probability for the recession model, plotted against the treat-all and treat-none reference strategies, with a shaded band showing the model beats both between t equals 0.010 and t equals 0.186" style="width: 100%; border-radius: 8px;">
+          <div>
+            <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--success-color);">
+              <p style="font-size: 14.5pt; margin: 0;">The recession classifier beats <strong>both</strong> references over $$0.010 \le t \le 0.186$$ and \( NB(0.099) = 0.0332 \).</p>
+            </div>
+            <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 13px;">Read that as the <strong>range of preferences over which this model is worth consulting</strong> &mdash; not a range of thresholds you may pick freely.</p>
+            <p style="font-size: 14.5pt; line-height: 1.6; margin-top: 12px;">Outside it, "call every month a recession" or "call none" does better than the model. <strong>That is the same corner finding as the cost curve, arrived at without anyone naming a dollar.</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The convergence with the cost curve is the payoff and worth naming: two methods, one requiring costs and one requiring only a preference range, agree that this model is useless to anyone with symmetric or false-alarm-averse preferences. Corroboration across methods is what a defensible evaluation looks like.</aside>
+    </section>
+
+    <!-- SLIDE 39: Discussion 2 -->
+    <section id="discussion-2" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 2: The Dashboard That Is Winning</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 24px; border-radius: 12px;">
+          <p style="font-size: 16pt; font-weight: 600;">You run analytics at a merchant. The fraud team's quarterly review shows fraud losses down 38%. The finance team, separately, shows revenue down 1.2% with no explanation.</p>
+          <p style="font-size: 14.5pt; margin-top: 10px; color: var(--muted-color);">You are fairly sure these are the same event.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 15px 19px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-size: 14.5pt; font-weight: 600; color: var(--success-color);">Think about:</p>
+            <p style="font-size: 14.5pt;">What single number would you have to add to the fraud team's dashboard for the incentive to change &mdash; and why has nobody added it?</p>
+          </div>
+          <div style="padding: 15px 19px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-size: 14.5pt; font-weight: 600; color: var(--accent-color);">Consider:</p>
+            <p style="font-size: 14.5pt;">You cannot get a lifetime-value estimate anyone will sign. What does decision curve analysis let you say instead &mdash; and what does it <em>not</em> let you say?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 3 min share</span></p>
+      </div>
+      <aside class="notes">5 min. Target for the first: the false-decline count valued at margin plus expected churn &mdash; missing because it is diffuse, delayed, and belongs to another department. Target for the second: DCA lets you say "over every threshold preference a reasonable person might hold, here is where the model beats blocking nobody"; it does NOT let you say which preference is correct. That remains someone's judgement, and your job is to make it legible, not to make it for them.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 6 -->
+    <section id="divider-hand" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">Hand's Critique</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 6 &bull; Formal Sketch &bull; AUC as an incoherent cost distribution</p>
+    </section>
+
+    <!-- SLIDE 41: Hand argument -->
+    <section id="hand-argument" style="padding: 30px 60px;">
+      <h2><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> AUC Does Not Eliminate the Cost Assumption</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">Section 2 sold AUC as threshold-independent, which sounds like an unambiguous virtue. Hand (2009) shows it conceals a serious problem.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt; margin: 0;"><strong>The argument.</strong> Any threshold choice is optimal under <em>some</em> ratio of misclassification costs. Integrating over all thresholds, as AUC does, is therefore equivalent to integrating over a <strong>distribution of cost ratios</strong>. AUC does not eliminate the cost assumption &mdash; <strong>it averages over an implicit one.</strong></p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; margin-top: 13px; border-left: 4px solid var(--danger-color);">
+          <p style="font-size: 15pt; margin: 0;"><strong>The difficulty is what that implicit distribution turns out to be.</strong> Hand derives it and shows it depends on the <strong>empirical score distribution of the classifier being evaluated.</strong> Two models with different score distributions are therefore evaluated under two <em>different</em> cost distributions.</p>
+        </div>
+        <div class="fragment fade-up" style="background: linear-gradient(135deg, #f4eef2, #ece2e8); border-radius: 10px; padding: 16px 22px; margin-top: 13px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;"><strong>Why that is incoherent.</strong> Comparing A and B by AUC asks: "is A better under <em>A's</em> implied costs than B is under <em>B's</em> implied costs?" That question has no decision-theoretic meaning. A coherent comparison holds the cost structure fixed and varies the model. <strong>AUC does the reverse.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Graduate-only. Do not derive the implied distribution &mdash; state the claim, name the paper, and let the reference carry the proof. The moment that lands is the rhetorical question in the last box; say it slowly and watch the room realise they have been doing this for two years. Worse still, the implied distributions are typically not ones any decision-maker would endorse if shown them explicitly.</aside>
+    </section>
+
+    <!-- SLIDE 42: H-measure -->
+    <section id="h-measure" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-wrench" style="color: #7C3A5F;"></i> The Fix, and the Honest Reading</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 17px 22px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 15pt; margin: 0;"><strong>The H-measure</strong> replaces the model-dependent implicit distribution with an <strong>explicit, standardised prior</strong> over cost ratios &mdash; Hand suggests a Beta distribution reflecting plausible asymmetries &mdash; and reports expected minimum loss under that fixed prior. Every model is then scored under identical assumptions, restoring comparability.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 17px 22px; margin-top: 15px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt; margin: 0;"><strong>Do not abandon AUC.</strong> Its pairwise interpretation is exact, and it remains a useful, widely understood summary of ranking. But when AUC is used to <em>choose between</em> models whose score distributions differ markedly &mdash; <strong>which is exactly what your lab's three models do</strong> &mdash; the comparison is on weaker ground than it appears.</p>
+        </div>
+        <div class="fragment fade-up" style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 10px; padding: 17px 22px; margin-top: 15px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 15.5pt; margin: 0;">The more defensible procedure is the one this lecture has argued for throughout: <strong>specify the costs you actually face, and evaluate at the operating point they imply.</strong></p>
+        </div>
+        <p style="font-size: 12.5pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Hand, D. J. (2009), "Measuring Classifier Performance: A Coherent Alternative to the Area Under the ROC Curve," <em>Machine Learning</em> 77(1), 103&ndash;123.</p>
+      </div>
+      <aside class="notes">2 min. Tie it to Poll 1 explicitly &mdash; a logistic regression, a random forest and a gradient booster have visibly different score distributions, so that table's ROC AUC column is exactly the comparison Hand is objecting to. The lab computes the H-measure alongside AUC for this reason.</aside>
+    </section>
+    <!-- SECTION DIVIDER 7 -->
+    <section id="divider-fairness" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">Fairness Is a Constraint</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 7 &bull; LO 18.4 &bull; and you cannot satisfy all of it</p>
+    </section>
+
+    <!-- SLIDE 44: impact ratio -->
+    <section id="impact-ratio" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-balance-scale" style="color: var(--accent-color);"></i> The Four-Fifths Rule, as Arithmetic</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; line-height: 1.6;">New York City's <strong>Local Law 144</strong> requires an annual independent bias audit of automated employment decision tools, published publicly, and it specifies the arithmetic: compute the <strong>selection rate</strong> per group, then the <strong>impact ratio</strong> &mdash; each group's rate divided by the highest group's.</p>
+        <div style="display: grid; grid-template-columns: 55% 1fr; gap: 24px; margin-top: 14px; align-items: start;">
+          <table class="table-standard" style="font-size: 13.5pt;">
+            <tr><th></th><th>Applicants</th><th>Advanced</th><th>Selection rate</th></tr>
+            <tr><th style="text-align:left;">Group A</th><td style="text-align:center;">1,000</td><td style="text-align:center;">240</td><td style="text-align:center;">0.240</td></tr>
+            <tr><th style="text-align:left;">Group B</th><td style="text-align:center;">600</td><td style="text-align:center;">108</td><td style="text-align:center;">0.180</td></tr>
+          </table>
+          <div>
+            <p style="font-size: 15pt;">$$\text{impact ratio} = \frac{0.180}{0.240} = 0.75$$</p>
+            <div style="background: #f8e5e5; border-radius: 8px; padding: 12px 16px; margin-top: 8px; border-left: 4px solid var(--danger-color);">
+              <p style="font-size: 14.5pt; margin: 0;"><strong>0.75 is below 0.80, so this flags.</strong> Evidence of potential disparate impact, and under Local Law 144 it must be published.</p>
+            </div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+          <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt;"><strong>Nothing here says the model is wrong.</strong> If group B genuinely has a lower rate of the outcome being predicted, a well-calibrated model <em>should</em> advance fewer of them &mdash; and the rule flags a model doing what a statistician would call correct.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt;"><strong>Fixing it means moving a threshold for one group.</strong> Lower B's bar until its selection rate reaches 0.192 and the ratio clears 0.80 &mdash; but now a predicted 0.30 means "advance" for one applicant and "reject" for another.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Present the arithmetic first &mdash; it is concrete, it is law, and it gives students something to compute. Threshold selection now has THREE masters: expected cost, regulatory caps like the chargeback ratio, and subgroup parity. The second fragment is the calibration break the impossibility theorem describes, arriving as a concrete operational choice rather than a theorem.</aside>
+    </section>
+
+    <!-- SLIDE 45: GOING DEEPER impossibility -->
+    <section id="impossibility" style="padding: 28px 60px;">
+      <h2><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> Going Deeper: The Impossibility Theorem, Stated</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">Let groups \( A \) and \( B \) have base rates \( \pi_A \neq \pi_B \). A risk score <strong>cannot simultaneously</strong> satisfy:</p>
+        <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 12px;">
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 14.5pt;"><strong>Calibration within groups:</strong> \( P(Y=1 \mid \hat{p}=v, G=g) = v \) for both groups</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 14.5pt;"><strong>Balance for the negative class:</strong> equal expected score among true negatives</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">3</p>
+            <p style="font-size: 14.5pt;"><strong>Balance for the positive class:</strong> equal expected score among true positives</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px;">Kleinberg, Mullainathan &amp; Raghavan (2016) show these are jointly satisfiable <strong>only if \( \pi_A = \pi_B \) or prediction is perfect.</strong> Chouldechova (2017) proves the closely related result relating positive predictive value, false positive rate and false negative rate.</p>
+        <div class="fragment fade-up" style="background: linear-gradient(135deg, #f4eef2, #ece2e8); border-radius: 10px; padding: 15px 22px; margin-top: 13px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>The intuition.</strong> Calibration ties the score to the group's actual base rate. If the base rates differ, a fixed score means a genuinely different empirical frequency in each group unless the error rates absorb the difference &mdash; and forcing the error rates equal is exactly what breaks the calibration tie. <strong>The conflict is arithmetic, not political, though the choice it forces is political.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Take the time to make this feel genuinely uncomfortable rather than presenting it as a curiosity &mdash; the point is that a technical person cannot make this problem go away with a better algorithm. Economists are unusually well placed here, because the discipline is used to explicit trade-offs between incommensurable goods, and that is worth saying out loud.</aside>
+    </section>
+
+    <!-- POLL 3 stack -->
+    <section>
+      <section id="poll-3" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: What Can You Deliver?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Two groups, different base rates. Your committee insists on <em>all three</em> of: calibration within groups, equal false positive rates, and equal false negative rates.</p>
+          <p style="font-size: 15pt; font-weight: 600; margin-top: 10px;">What can you deliver?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch18-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) All three, with a group-specific threshold for each group</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) All three, if you recalibrate each group separately with isotonic regression</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) At most two &mdash; the third is arithmetically excluded</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) All three, if the model is accurate enough</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. A and B are the two technical escapes people reach for; D is the most seductive and the most revealing.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch18-econ5200-poll-3" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; At Most Two</h2>
+        <div class="poll-results-chart" data-poll-id="ch18-econ5200-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div style="padding: 0 40px;">
+          <p style="font-size: 14.5pt; line-height: 1.65;"><strong>A and B fail for the same reason.</strong> A monotone per-group correction restores calibration and thereby <em>reintroduces</em> the error-rate gap; adjusting thresholds to equalise error rates necessarily breaks calibration for at least one group. You can move the problem. You cannot remove it.</p>
+          <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 13px 19px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>D is the one to name out loud.</strong> "A better model would not have this problem" is wrong unless prediction becomes <em>perfect</em> &mdash; not merely good. The exclusion is arithmetic. There is no technical escape, and pretending otherwise is the real failure. <strong>The professional obligation is to choose visibly, and to name who chose.</strong></p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Also name the misconception the chapter attacks here: "a fair model just needs equal accuracy across groups." Equal accuracy is one criterion among several and conflicts with the others whenever base rates differ &mdash; a model can be equally accurate for two groups while producing far more false positives for one of them.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 48: Discussion 3 -->
+    <section id="discussion-3" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion 3: Which One Do You Break?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 24px; border-radius: 12px;">
+          <p style="font-size: 16pt; font-weight: 600;">Your lender's screening model has an impact ratio of 0.75 and is well calibrated within both groups.</p>
+          <p style="font-size: 14.5pt; margin-top: 10px; color: var(--muted-color);">Legal wants 0.80. Risk wants calibration preserved, because the probability feeds the capital calculation. You must break one.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 16px;">
+          <div style="padding: 15px 19px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-size: 14.5pt; font-weight: 600; color: var(--success-color);">Think about:</p>
+            <p style="font-size: 14.5pt;">Which do you break, and what does the memo actually say? Write the sentence.</p>
+          </div>
+          <div style="padding: 15px 19px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-size: 14.5pt; font-weight: 600; color: var(--accent-color);">Consider:</p>
+            <p style="font-size: 14.5pt;">Who signs it? Name the <strong>role</strong>, not the person.</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">4 min. Both answers are defensible; an answer with no named signatory is not. Push until someone says the analyst's job is to price the trade-off rather than resolve it &mdash; and until someone notices that "keep calibration" is ALSO a choice that harms someone, not a neutral default. That realisation is the one worth the four minutes.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 8 -->
+    <section id="divider-workflow" class="section-divider" data-state="is-section-divider">
+      <h1 style="font-size: 40pt; color: var(--primary-color);">An Evaluation Workflow</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); font-style: italic; margin-top: 14px;">Section 8 &bull; what you do on Monday</p>
+    </section>
+
+    <!-- SLIDE 50: multiclass -->
+    <section id="multiclass" style="padding: 30px 60px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--danger-color);"></i> Beyond Two Classes, in One Caution</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; line-height: 1.6;">With \( J \) classes there is no single cell called "false positive". Precision and recall are defined <strong>per class</strong>, treating that class as positive and pooling the rest &mdash; \( J \) precisions and \( J \) recalls, and the question becomes how to summarise them.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>Macro</strong> &mdash; unweighted mean. Every class counts equally regardless of size, so a tiny class with poor performance drags it down hard. Use it when the rare classes matter as much as the common ones, which given <em>why</em> you are classifying is often.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>Micro</strong> &mdash; pool the counts, then take the ratio. Large classes dominate, and for single-label problems micro-averaged precision, recall and \( F_1 \) <strong>all collapse to overall accuracy</strong>, inheriting every objection above.</p>
+          </div>
+          <div style="background: #f8e5e5; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>Weighted</strong> &mdash; mean weighted by class frequency. Micro's problem in gentler form. <strong>And it is the library default.</strong></p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt; margin: 0;"><strong>The default quietly reproduces the accuracy trap on multi-class problems.</strong> If your rare classes are the ones you care about, write <code>average='macro'</code> deliberately. AUC extends too &mdash; one-versus-rest or one-versus-one &mdash; but its interpretation degrades: "the probability a random positive outranks a random negative" has no clean multi-class analogue.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. For ordered outcomes, where the categories have a natural sequence, metrics that respect the ordering and penalise being wrong BY MORE are preferable to any of these three. Then run the poll immediately &mdash; it tests exactly this slide under time pressure.</aside>
+    </section>
+
+    <!-- POLL 4 stack -->
+    <section>
+      <section id="poll-4" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: What Did You Just Report?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.65;">You ship a multi-class classifier and report <code>f1_score(y, yhat)</code> with scikit-learn's defaults, on a problem whose <strong>rarest class is the one you built the model for</strong>.</p>
+          <p style="font-size: 15pt; font-weight: 600; margin-top: 10px;">What have you actually reported?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch18-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Macro-averaged \( F_1 \) &mdash; every class counted equally</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Weighted-averaged \( F_1 \)</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Micro-averaged \( F_1 \), which equals accuracy</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 19px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The binary \( F_1 \) of the largest class</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. Fast poll &mdash; this one is about whether they were listening ninety seconds ago, and about a habit that will cost them in a co-op.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch18-econ5200-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Weighted, by Default</h2>
+        <div class="poll-results-chart" data-poll-id="ch18-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div style="padding: 0 40px;">
+          <p style="font-size: 15pt; line-height: 1.65;">The default is <code>average='weighted'</code>: micro's pathology in gentler form. The score is dominated by the classes you were <em>not</em> worried about, and the rare class you built the model for is nearly invisible in it.</p>
+          <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 13px 19px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>C is close, and is the sharper trap elsewhere.</strong> On single-label problems micro-\( F_1 \) equals accuracy <em>exactly</em> &mdash; the metric this lecture spent seventy minutes dismantling, reappearing under a new name because nobody typed an argument.</p>
+          </div>
+        </div>
+        <aside class="notes">1 min. The one-line takeaway: a default is a cost assumption someone else made for you. That sentence is the whole lecture, compressed, and it is worth being the last thing you say before the takeaways slide.</aside>
+      </section>
+    </section>
+    <!-- SLIDE 53: workflow checklist -->
+    <section id="workflow" style="padding: 26px 55px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--success-color);"></i> The Checklist</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 13.5pt;"><strong>1. Report the base rate first.</strong> Accuracy has a floor at it, PR-AUC has its baseline at it, and precision changes with it. One number, three consequences.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 13.5pt;"><strong>2. Never report accuracy alone.</strong> If you report it, put the base rate beside it so a reader can see whether it means anything.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 13.5pt;"><strong>3. Choose the curve by class balance.</strong> ROC when roughly balanced, precision-recall when positives are rare.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 13.5pt;"><strong>4. Check calibration if the probability is used as a number.</strong> Five lines, and it catches failures no rank-based metric can. If the output only orders things you may skip it &mdash; <em>but say that you did.</em></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 13.5pt;"><strong>5. Derive the threshold from costs and state the implied exchange rate.</strong> Then check feasibility &mdash; caps and the model's own probability range may make the optimum unreachable, which is itself a finding.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13.5pt;"><strong>6. Disaggregate.</strong> An aggregate that looks fine can conceal a group for whom the model fails &mdash; and in a growing number of jurisdictions checking is a legal obligation.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13.5pt;"><strong>7. Report the operating point, not just the area.</strong> You deploy at one threshold. State recall and precision <em>there</em>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid #7C3A5F;">
+            <p style="font-size: 13.5pt;"><strong>8. Re-evaluate on a schedule.</strong> Today's failure did not appear in any metric until two years of data had accumulated.</p>
+          </div>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 18px; margin-top: 12px; text-align: center; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Misconception:</strong> "Pick the metric that makes the model look best." Choosing the metric <em>after</em> seeing the results means choosing the cost assumption that flatters you. <strong>Fix the metric before you fit</strong>, for the same reason you fix a hypothesis before you collect data.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Present as a checklist; insist on step 5. If time is short, steps 1, 4 and 5 are the irreducible core. Step 8 connects back to the hook and forward to Ch 20 &mdash; a model evaluated once is evaluated at the moment it was least likely to be wrong.</aside>
+    </section>
+
+    <!-- SLIDE 54: key takeaways -->
+    <section id="key-takeaways" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px;">
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-divide" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>The denominator is the question.</strong> Precision, recall and FPR share a numerator; what they divide by tells you whose problem the metric addresses.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-ranking-star" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>AUC is exactly a ranking probability.</strong> Threshold-independent and invariant to every monotone transformation &mdash; which is precisely why it cannot detect miscalibration.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-arrows-left-right-to-line" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>0.811 and 0.188 are the same model.</strong> ROC flatters under imbalance because \( (1-\pi)/\pi = 13.5 \) amplifies any FPR into precision.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: start; background: #f8e5e5; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-scale-unbalanced-flip" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>Every metric encodes a cost assumption.</strong> Hand's critique shows even AUC's is there, is implicit, and depends on the model being scored.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 13px; text-align: center; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15pt;"><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> <strong>Fairness criteria are mutually incompatible when base rates differ.</strong> The analyst's obligation is not to resolve the trade-off silently by picking a default, but to make it legible and name who chose.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the capstone card last and slowly. If you say only one sentence today that a student repeats in an interview, make it "a default is a cost assumption someone else made for you."</aside>
+    </section>
+
+    <!-- SLIDE 55: exit ticket -->
+    <section id="exit-ticket" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket</h2>
+      <div class="content" style="justify-content: center;">
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e3edf3); border-radius: 14px; padding: 26px 32px; border-left: 5px solid var(--secondary-color);">
+          <p style="font-size: 16.5pt; line-height: 1.65;">Name one classification cutoff you have personally shipped, inherited, or read in a paper. Compute \( t/(1-t) \). Then write the sentence:</p>
+          <p style="font-size: 17pt; font-style: italic; margin-top: 16px; color: var(--primary-color);">"This threshold asserts that a false positive costs ______ times a false negative."</p>
+          <p style="font-size: 16.5pt; line-height: 1.65; margin-top: 16px;">Finally: would you defend that sentence <strong>to the person who bears the cost?</strong></p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; text-align: center; margin-top: 20px; color: var(--muted-color); font-style: italic;">Hand it in on the way out. If the answer to the last question is no, you have just found your real threshold.</p>
+      </div>
+      <aside class="notes">1 min. Collect on the way out; they take ninety seconds each to read and they tell you exactly who has internalised the chapter. Common failure to watch for: computing t/(1-t) correctly and then writing a sentence with the ratio inverted.</aside>
+    </section>
+
+    <!-- SLIDE 56: looking ahead + lab -->
+    <section id="looking-ahead" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--accent-color);"></i> Thursday's Lab, and Chapter 19</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Lab 18 &mdash; diagnostic, 45 min core + 20 min extension.</strong> Diagnose the three models that produced three different winners. Bootstrap every metric <em>and the paired difference between the top two</em> &mdash; the interval that decides whether a ranking is supported, and the number almost no evaluation reports. Apply decision curve analysis. Ship <code>src/evaluation.py</code>, which returns an interval with every metric by default.</p>
+        </div>
+        <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Chapter 19 &mdash; Trees and Forests.</strong> A Random Forest is benchmarked against <em>this exact classifier</em>, and the comparison must use today's metrics rather than accuracy. The numbers to beat are <strong>AUC 0.811, PR-AUC 0.188, Brier 0.0615</strong> &mdash; and check the forest for calibration too, since tree ensembles are characteristically overconfident near 0 and 1.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 14.5pt; margin: 0;">Expect it closer than the machinery suggests. 523 monthly observations, one strong feature and a high noise floor is not the regime where added flexibility pays. <strong>A forest that wins on AUC while losing on Brier would be the most instructive outcome</strong> &mdash; better ranking, worse probabilities &mdash; and you now have the vocabulary to say exactly that instead of declaring a winner on one number.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Close on the forecast, not the summary. Note for yourself: the 5200 lab is NOT the 3916 lab &mdash; different DGP (n = 10,000, eight features plus an interaction region a linear model cannot represent) and it never computes a cost-optimal threshold. If a student cross-references a friend in 3916 and quotes t = 0.068, that number belongs to the other notebook.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

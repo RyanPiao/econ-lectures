@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regularization: LASSO & Ridge</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax 3 (tex-svg). NOT included by create-presentation.js — added manually.
+       Inline delimiters are \\( \\) deliberately: with $...$ any text node holding two
+       currency figures gets everything between them typeset as mathematics. -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 16</p>
+          <h1 style="font-size: 34pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Regularization: LASSO &amp; Ridge</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Deliberately making an estimator biased &mdash; and the geometry that decides whether you get a shorter list or a smaller number</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch16-regularization.png" alt="An abstract regularization path: many faint grey coefficient lines collapse to zero as the penalty strengthens while five coloured lines survive much longer" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">16.1</p>
+            <p style="font-size: 15pt;">Explain how the \(L_1\) and \(L_2\) penalties differ <strong>geometrically</strong>, and why only one produces coefficients of exactly zero</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">16.2</p>
+            <p style="font-size: 15pt;">Fit Ridge, LASSO and Elastic Net with <strong>standardised</strong> features inside a pipeline, and tune \(\lambda\) by cross-validation</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">16.3</p>
+            <p style="font-size: 15pt;">Decide which penalty suits a problem by reasoning about whether the truth is <strong>sparse or dense</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">16.4</p>
+            <p style="font-size: 15pt;">Explain why classical standard errors are <strong>invalid</strong> after LASSO-based variable selection</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 16.3 as today's centre of gravity &mdash; it overturns the thing almost everyone concludes halfway through, that LASSO is simply the better method.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 14.</strong> Multicollinearity did something specific to your regression output, and something else <em>not at all</em>. Which was which?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 15.</strong> You chose among seven polynomial degrees by cross-validation. What made that work &mdash; and what would have broken it?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both land on today: <strong>Ch 14's disease returns in new clothing, and Ch 15's dial gets infinitely many settings.</strong></p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. QC1 target: it inflated standard errors while leaving fitted values and predictions essentially untouched. QC2 target: the model was chosen on data the final score never saw; scaling or imputing before the split leaks and breaks it. You will re-use QC1's sentence verbatim in Section 5.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-1" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> A Regression That Cannot Be Run</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">One hundred observations. Five hundred candidate predictors.</p>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 10px; color: var(--muted-color);">Not exotic. A country with 100 quarters and 500 indicators. A firm with 100 stores and 500 tracked attributes. A study with 100 patients and 500 measured genes. Economics generates it constantly.</p>
+        <p class="text-lg" style="margin-top: 18px;">Ask OLS for the answer. It will give you one &mdash; in fact a <em>perfect</em> one.</p>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 330px 1fr; gap: 28px; align-items: center; margin-top: 20px;">
+          <div style="background: linear-gradient(135deg, #eef3f6, #dce6ed); border-radius: 12px; padding: 22px; text-align: center;">
+            <p style="font-size: 44pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">0.0000</p>
+            <p style="font-size: 13pt; color: #3f5a6b; margin-top: 8px;">OLS <strong>training</strong> MSE</p>
+          </div>
+          <div>
+            <p style="font-size: 16pt; line-height: 1.6;">Zero. Not small &mdash; <strong>zero</strong>. With more parameters than observations the model passes exactly through every training point.</p>
+            <p style="font-size: 15pt; line-height: 1.6; margin-top: 10px; color: var(--muted-color);">By the standards of Chapter 12, a flawless fit.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Reveal the 0.0000 and let the room enjoy it for a beat. Do NOT advance until someone looks suspicious. Ask: "is anyone worried?" Then next slide.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 -->
+    <section id="hook-2" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-arrow-trend-down" style="color: var(--danger-color);"></i> Now Give It Data It Has Not Seen</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 26px; align-items: center;">
+          <img src="figures/figure_001_ols_collapse.png" alt="OLS predictions against actual values: the 100 training points sit exactly on the 45-degree line while the 500 test points form a wide uninformative cloud around it" style="width: 100%; border-radius: 8px;">
+          <div>
+            <div style="background: #f9f0ee; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 18px 20px;">
+              <p style="font-size: 34pt; font-weight: 700; color: var(--danger-color); line-height: 1;">43.99</p>
+              <p style="font-size: 13pt; color: #7a4a4a; margin-top: 6px;">OLS <strong>test</strong> MSE</p>
+            </div>
+            <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">It learned <strong>nothing</strong>. It memorised 100 points and has no idea what happens anywhere else.</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; font-style: italic;">\(n=100\), \(p=500\), 10 truly informative features.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. The picture does the work: every blue training point is exactly on the line, and the terracotta cloud is the same model on new data. Say "same model, same process, 500 fresh rows."</aside>
+    </section>
+
+    <!-- SLIDE 6: Hook 3 -->
+    <section id="hook-3" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--accent-color);"></i> The Same Data, With a Fee on Coefficient Size</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 6px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">0.5984</p>
+            <p style="font-size: 14pt; margin-top: 8px;">LASSO <strong>training</strong> MSE</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;">strictly worse in-sample than OLS</p>
+          </div>
+          <div class="fragment fade-up" style="background: #eef5ee; border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--success-color); line-height: 1;">1.54</p>
+            <p style="font-size: 14pt; margin-top: 8px;">LASSO <strong>test</strong> MSE</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 6px;"><strong>28&times;</strong> better out of sample</p>
+          </div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 20px; line-height: 1.6;">And it did something OLS cannot do at all: of 500 candidate predictors it <strong>kept 44</strong> &mdash; and all 10 genuinely informative ones are among them.</p>
+        <div class="fragment fade-up key-result" style="margin-top: 14px;">
+          <p>Today you will deliberately make an estimator <strong>biased</strong> &mdash; abandoning the property Gauss and Markov guaranteed &mdash; because Chapter 15 told you what bias buys, and in high dimensions it buys a great deal.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Reveal training MSE first: it is WORSE. Let that sit before the 1.54. This is the whole course's thesis in one slide &mdash; the in-sample number and the out-of-sample number can move in opposite directions.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-1" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; The Penalty Replaces the Search</h1>
+      <p class="subtitle" style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">You cannot try every model. So stop trying.</p>
+    </section>
+
+    <!-- SLIDE 7: 2^500 -->
+    <section id="two-to-the-p" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--secondary-color);"></i> Why You Cannot Simply Try Every Model</h2>
+      <div class="content">
+        <p class="text-lg">Chapter 15's recipe: enumerate candidate models, cross-validate each, take the winner. Seven polynomial degrees is seven fits.</p>
+        <p class="text-lg" style="margin-top: 12px;">With \(p\) candidate variables the number of subsets is \(2^p\).</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">\(p = 20\)</p>
+            <p style="font-size: 15pt; margin-top: 6px;">about a million models. Tedious &mdash; but possible.</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f9f0ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">\(p = 500\)</p>
+            <p style="font-size: 15pt; margin-top: 6px;">\(2^{500}\) &mdash; <strong>a number with 151 digits</strong>.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 20px; text-align: center; color: var(--primary-color);"><strong>Enumeration is not slow. It is impossible</strong>, and no faster computer changes that.</p>
+      </div>
+      <aside class="notes">2 min. Write 2^500 on the board and let it sit. Students accept "we can't try everything" abstractly; the number makes it visceral. There are roughly 10^80 atoms in the observable universe, and 2^500 is about 10^150.</aside>
+    </section>
+
+    <!-- SLIDE 8: stepwise -->
+    <section id="stepwise" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-shoe-prints" style="color: var(--muted-color);"></i> The Classical Answers, and Their Three Problems</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;"><strong>Forward stepwise</strong> starts empty and repeatedly adds whichever variable most improves fit. <strong>Backward elimination</strong> starts full and drops the least significant. <strong>Best subset</strong> genuinely enumerates &mdash; feasible to about \(p = 30\).</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+          <div style="background: #f9f0ee; border-left: 3px solid var(--danger-color); border-radius: 6px; padding: 12px 18px;">
+            <p style="font-size: 14.5pt;"><strong>1. Unstable.</strong> Change a few observations and a different variable wins round one; the whole path then diverges. Two analysts with 99% overlapping data report different models &mdash; the specification becomes a property of the sample rather than of the world.</p>
+          </div>
+          <div style="background: #f9f0ee; border-left: 3px solid var(--danger-color); border-radius: 6px; padding: 12px 18px;">
+            <p style="font-size: 14.5pt;"><strong>2. Greedy in a way that misses joint effects.</strong> A variable useless alone but valuable alongside another is never added &mdash; forward selection only ever evaluates one addition at a time.</p>
+          </div>
+          <div style="background: #f9f0ee; border-left: 3px solid var(--danger-color); border-radius: 6px; padding: 12px 18px;">
+            <p style="font-size: 14.5pt;"><strong>3. Every step tests a hypothesis suggested by the data.</strong> Chapter 8's multiple-comparisons problem, industrialised.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Regularization fixes <strong>1 and 2</strong> &mdash; one convex problem, unique minimum, all coefficients determined at once. It does <strong>not</strong> fix 3. Hold that thought until Section 6.</p>
+      </div>
+      <aside class="notes">2 min. Problem 3 is the one you will spend the last section on. Say explicitly that you are leaving it open on purpose &mdash; opening a loop you close at minute 68.</aside>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Design the Experiment</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 24px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">I claim forward stepwise selection is <em>unstable</em>. You do not have to take my word for it.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div class="discussion-prompt" style="margin: 0;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt A &mdash; 2 min, pairs</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">You have one dataset and Python. Design the smallest experiment that would <strong>demonstrate</strong> the instability. What do you perturb, what do you re-run, and what exactly do you record?</p>
+          </div>
+          <div class="discussion-prompt" style="margin: 0;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B &mdash; 1 min</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Your experiment returns "the selected set changed 60% of the time." Is that a criticism of stepwise, or of the data? How would you tell the difference?</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; color: var(--muted-color); margin-top: 14px;"><i class="fa-solid fa-lightbulb"></i> The shape of the answer: bootstrap or leave-out-k the rows, re-run selection on each resample, record the <em>selection frequency</em> of every variable. That is exactly the stability-selection procedure the lab's AI-expansion cell asks you to build.</p>
+      </div>
+      <aside class="notes">3 min &mdash; press 3 for the timer. Take two shares. Best answers name a specific perturbation (bootstrap rows) and a specific record (selection frequency per variable), not "run it again and see". For B: a stable procedure on unstable data would still return a stable ANSWER SET; instability of the procedure and non-identification of the truth are different things, and comparing stepwise against LASSO on the same resamples separates them.</aside>
+    </section>
+    <!-- SLIDE 9: the reframing -->
+    <section id="the-penalty" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-money-bill-wave" style="color: var(--accent-color);"></i> Charge the Model for Complexity</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Rather than searching over subsets, change the objective so the optimiser is <em>charged</em> for complexity &mdash; then solve <strong>one</strong> convex problem.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 20px; margin: 14px 0;">
+          <p style="font-size: 17pt; text-align: center;">$$\hat{\boldsymbol{\beta}} = \arg\min_{\boldsymbol{\beta}} \left\{ \underbrace{\tfrac{1}{2n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2}_{\text{fit — as in Ch 12}} + \underbrace{\lambda \, P(\boldsymbol{\beta})}_{\text{fee for complexity}} \right\}$$</p>
+        </div>
+        <div class="key-result">
+          <p><strong>In words.</strong> Keep OLS's objective and add a fee proportional to how big the coefficients are. \(\lambda \geq 0\) is the <em>price per unit</em> of coefficient size; \(P(\boldsymbol{\beta})\) is how you measure "size" &mdash; and choosing \(P\) <em>is</em> choosing the method.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 18px;"><p style="font-size: 14.5pt;">\(\lambda = 0\): the fee vanishes &mdash; you recover <strong>OLS</strong>.</p></div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px 18px;"><p style="font-size: 14.5pt;">\(\lambda \to \infty\): every coefficient driven to zero &mdash; the model predicts <strong>the mean</strong>.</p></div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 12px; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Choosing \(\lambda\) is choosing a point on Chapter 15's bias-variance curve &mdash; <strong>continuously</strong>, rather than by trying a handful of discrete models.</p>
+      </div>
+      <aside class="notes">2 min. Present this as a REFRAMING, not an algorithm. The question changes from "which variables should I include?" to "how much total coefficient magnitude am I willing to pay for?" Nothing here is yet Ridge or LASSO &mdash; P is still unspecified.</aside>
+    </section>
+
+    <!-- SLIDE 10: standardisation -->
+    <section id="standardise" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ruler-combined" style="color: var(--danger-color);"></i> Standardisation Is Mandatory, Not Stylistic</h2>
+      <div class="content">
+        <p class="text-lg">OLS is <strong>scale-invariant</strong>: measure income in dollars or in thousands of dollars and the fitted values are identical.</p>
+        <div class="misconception" style="margin-top: 14px;">
+          <p><strong>Penalised regression is not.</strong> The penalty charges by <em>coefficient magnitude</em>. A variable measured in dollars has a coefficient a thousand times smaller than the same variable in thousands &mdash; so it is charged a <strong>thousandth</strong> as much.</p>
+          <p style="margin-top: 8px;">Without standardisation the penalty silently prefers whichever variables happen to be measured in large units.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px;">Always standardise &mdash; and always <strong>inside a pipeline</strong>, so the scaler is refitted on each training fold, for exactly Chapter 15's leakage reasons.</p>
+        <div style="background: #2D2D2D; border-radius: 8px; padding: 14px 20px; margin-top: 10px;">
+          <p style="font-family: monospace; font-size: 15pt; color: #e8e2da;">make_pipeline(StandardScaler(), LassoCV(cv=5))</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. This gets one minute here and gets repeated in the lab, because forgetting it produces results that look plausible and are wrong. The take-home Challenge in Lab 16 is exactly this failure, staged. The next poll is the whole reason it earns a slide.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 32px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: The Scaler You Forgot</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">You fit LASSO on a wage regression. <code>experience</code> is in <strong>years</strong> (0&ndash;40). <code>income_last_year</code> is in <strong>dollars</strong> (0&ndash;200,000). You skip <code>StandardScaler</code>.</p>
+          <p class="text-lg" style="margin-top: 8px;"><strong>What happens?</strong></p>
+          <div class="poll-grid" data-poll-id="ch16-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Nothing &mdash; LASSO is scale-invariant like OLS</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) <code>income_last_year</code> is much more likely to be zeroed</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) <code>experience</code> is much more likely to be zeroed</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Both get zeroed; the intercept absorbs everything</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students click to vote on their devices; results appear on the next slide. Expect B to lead comfortably &mdash; that is the productive error and the reason this poll exists.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch16-econ3916-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; <code>experience</code> Is the One That Dies</h2>
+        <div class="poll-results-chart" data-poll-id="ch16-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Because <code>income_last_year</code> is measured in <em>large</em> units, its coefficient is <em>tiny</em> &mdash; pennies of wage per dollar of income &mdash; so the penalty barely charges for it and it survives. <code>experience</code>, in small units, carries a large coefficient, is charged heavily, and is shrunk away.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why B is tempting but wrong:</strong> "big variable, big penalty" reverses the mechanism. The penalty charges the <strong>coefficient</strong>, not the variable &mdash; and a variable in large units has a <em>small</em> coefficient. Get this backwards and you will misread every unstandardised LASSO you ever see.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. If B led, name it out loud &mdash; it is the intuitive-but-wrong model, and correcting it here is cheaper than correcting it in their capstone.</aside>
+      </section>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section id="divider-2" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; Ridge: Shrink Everything</h1>
+      <p class="subtitle" style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">One term added to a matrix, and \(p &gt; n\) stops being fatal.</p>
+    </section>
+
+    <!-- SLIDE: Ridge objective -->
+    <section id="ridge-objective" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-circle-notch" style="color: var(--secondary-color);"></i> Ridge &mdash; the \(L_2\) Penalty</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 20px;">
+          <p style="font-size: 17pt; text-align: center;">$$\hat{\boldsymbol{\beta}}^{\text{ridge}} = \arg\min_{\boldsymbol{\beta}} \left\{ \tfrac{1}{2n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 + \lambda \sum_{j=1}^{p} \beta_j^2 \right\}$$</p>
+        </div>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>In words.</strong> Charge the sum of <em>squared</em> coefficients &mdash; the squared length of the coefficient vector. Squaring means a coefficient twice as large costs <strong>four</strong> times as much, so the fee leans hard on the largest coefficients and leaves small ones nearly alone.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px; line-height: 1.55;">The <strong>intercept is never penalised</strong>. Penalising it would make the model sensitive to where you put the origin of \(y\) &mdash; which is arbitrary.</p>
+      </div>
+      <aside class="notes">1.5 min. The "four times as much" point is what makes Ridge shrink smoothly: near zero, the marginal fee for a squared penalty is itself near zero, so there is no incentive to take the last step to exactly zero. Plant that now &mdash; it is the contrast that makes the L1 slide land.</aside>
+    </section>
+
+    <!-- SLIDE: closed form -->
+    <section id="ridge-closed-form" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> One Term, and an Impossible Problem Becomes Solvable</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 4px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px; text-align: center;">
+            <p style="font-size: 13pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">OLS</p>
+            <p style="font-size: 16pt; margin-top: 8px;">$$(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y}$$</p>
+          </div>
+          <div style="background: #eef3f6; border-radius: 10px; padding: 16px; text-align: center; border: 2px solid var(--secondary-color);">
+            <p style="font-size: 13pt; color: var(--secondary-color); text-transform: uppercase; letter-spacing: 2px;">Ridge</p>
+            <p style="font-size: 16pt; margin-top: 8px;">$$(\mathbf{X}'\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}'\mathbf{y}$$</p>
+          </div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 16px; line-height: 1.55;">Chapter 13 required \((\mathbf{X}'\mathbf{X})\) to be invertible &mdash; which fails under perfect collinearity, and whenever \(p &gt; n\).</p>
+        <div class="fragment fade-up key-result" style="margin-top: 12px;">
+          <p>Adding \(\lambda\mathbf{I}\) puts \(\lambda\) on every diagonal entry, which shifts <strong>every eigenvalue up by \(\lambda\)</strong> &mdash; so none of them can be zero, and the matrix is invertible <strong>for any \(\lambda &gt; 0\), always</strong>.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 14px; text-align: center; color: var(--accent-color);"><strong>Ridge does not merely help with multicollinearity. It dissolves the condition that made it fatal.</strong></p>
+      </div>
+      <aside class="notes">2 min. Put the two forms side by side and circle the lambda-I. This is the most satisfying thirty seconds in the chapter. A problem OLS cannot express an answer to, Ridge answers. Do not derive the eigenvalue claim &mdash; state it; it is one line and they can check it.</aside>
+    </section>
+
+    <!-- SLIDE: ridge geometry (text) -->
+    <section id="ridge-geometry" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-draw-polygon" style="color: var(--secondary-color);"></i> The Geometry: a Budget You Cannot Exceed</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">The penalised problem has an equivalent <strong>constrained</strong> form: minimise the ordinary sum of squared residuals subject to a budget on coefficient size.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 20px; margin: 12px 0;">
+          <p style="font-size: 17pt; text-align: center;">$$\min_{\boldsymbol{\beta}}\ \|\mathbf{y}-\mathbf{X}\boldsymbol{\beta}\|_2^2 \quad \text{subject to} \quad \sum_j \beta_j^2 \le s$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 10px;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 18px;">
+            <p style="font-size: 14.5pt;">The unpenalised objective's contours are <strong>ellipses</strong> centred on the OLS solution.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 18px;">
+            <p style="font-size: 14.5pt;">The \(L_2\) budget \(\sum\beta_j^2 \le s\) is a <strong>circle</strong> &mdash; a sphere in three dimensions, a hypersphere beyond.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 16px;">The Ridge estimate sits where the expanding ellipses <em>first touch</em> the circle.</p>
+        <div class="fragment fade-up misconception" style="margin-top: 10px;">
+          <p><strong>A circle has no corners.</strong> The point of first contact is almost never on an axis &mdash; so Ridge shrinks every coefficient toward zero and sets <strong>none</strong> exactly to zero. You get all 500 variables, each with a small coefficient.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Draw it on the board now, roughly. Say out loud: "hold this picture &mdash; in about ten minutes I am going to redraw it with one shape changed, and that single change is everything LASSO does." The contrast is what teaches sparsity; showing both at once wastes it.</aside>
+    </section>
+
+    <!-- SLIDE: what shrinkage buys -->
+    <section id="shrinkage-buys" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-compress" style="color: var(--accent-color);"></i> Why Shrinking Toward a Wrong Value Helps</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 335px; gap: 22px; align-items: center;">
+          <img src="figures/figure_003_shrinkage.png" alt="Two sampling distributions for a coefficient whose true value is 2.0: the unbiased estimator is wide and centred on 2.0 with expected squared error 9.00, and the halved estimator is narrow and centred on 1.0 with expected squared error 3.25" style="width: 100%; border-radius: 8px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.55;">True coefficient <strong>2.0</strong>. Your estimator is unbiased with s.e. <strong>3.0</strong>. Unbiased means right <em>on average</em> &mdash; and that a typical draw returns 5.1, or &minus;0.4, or 4.3.</p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 10px;">Now shrink every estimate by half. It is now <strong>biased</strong> &mdash; it averages 1.0 against a truth of 2.0 &mdash; but its s.e. is <strong>1.5</strong>.</p>
+            <div class="key-result" style="margin-top: 10px;">
+              <p style="font-size: 14pt;">Squared error punishes the occasional wild estimate far more than the systematic small one. Bias&sup2; rose a little; variance fell a lot; <strong>their sum fell</strong>.</p>
+            </div>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 12px; text-align: center; color: var(--accent-color);"><strong>Shrinkage is worthwhile exactly when your estimates are noisy</strong> &mdash; which in high dimensions they always are.</p>
+      </div>
+      <aside class="notes">2 min. This is Chapter 15's decomposition doing the work, with numbers. It also explains why lambda should rise as the problem gets harder: more predictors relative to observations means noisier individual estimates, so more shrinkage is optimal. CV discovers that automatically &mdash; which is why the SELECTED lambda is a rough diagnostic of how much signal the data contains.</aside>
+    </section>
+    <!-- SLIDE: ridge fails -->
+    <section id="ridge-limits" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-circle-half-stroke" style="color: var(--muted-color);"></i> Where Ridge Shines, and Where It Cannot Help</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 18px;">
+            <p style="font-size: 14.5pt;"><strong>Right tool</strong> when many predictors each contribute a little and they are correlated &mdash; it shrinks correlated groups <em>together</em> rather than picking arbitrarily between them.</p>
+          </div>
+          <div style="background: #f9f0ee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 18px;">
+            <p style="font-size: 14.5pt;"><strong>Wrong tool</strong> when most predictors are genuinely irrelevant &mdash; and the reason is structural, not about tuning.</p>
+          </div>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; text-align: center;"><strong>Uniform shrinkage cannot manufacture sparsity.</strong> No \(\lambda\) makes 490 useless coefficients disappear while leaving 10 useful ones intact.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px; text-align: center;">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--muted-color); line-height: 1;">43.99</p>
+            <p style="font-size: 13.5pt; margin-top: 6px;">OLS test MSE</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px; text-align: center;">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">43.28</p>
+            <p style="font-size: 13.5pt; margin-top: 6px;">Ridge test MSE, best \(\lambda\) over ten orders of magnitude</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 14px; text-align: center; color: var(--danger-color);"><strong>A 2% improvement on a catastrophe.</strong></p>
+      </div>
+      <aside class="notes">1.5 min. Do not soften this. Ridge is not a weaker LASSO here &mdash; it is the wrong instrument, and the next slide shows how cross-validation TOLD you so.</aside>
+    </section>
+
+    <!-- SLIDE: edge of grid -->
+    <section id="edge-of-grid" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-border-all" style="color: var(--secondary-color);"></i> A Hyperparameter at the Edge of Its Grid Is Information</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">Offered penalties from \(10^{-2}\) to \(10^{6}\), cross-validation selected the <strong>smallest one</strong> &mdash; \(\lambda = 0.01\), the floor of the grid.</p>
+        <p style="font-size: 15pt; margin-top: 12px; line-height: 1.55;">That is not a bug. Faced with a problem Ridge cannot solve, CV correctly reported that more shrinkage does not help: every large \(\lambda\) was worse, so it chose the least-bad option available.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>Rule of thumb.</strong> When cross-validation selects a value at the <strong>edge</strong> of your grid, either the grid is too narrow or the method is wrong for the problem. Widening it to \(10^{8}\) changed nothing here &mdash; which rules out the first and leaves the second.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 14px; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> A selected hyperparameter sitting at a boundary is <strong>information</strong>, not a result to report and move past.</p>
+      </div>
+      <aside class="notes">1.5 min. This is a transferable habit worth more than the Ridge result itself. Your lab's cell 5 makes the same point in reverse: RidgeCV's default leave-one-out mode slides to whatever alpha floor you typed, which is why the lab passes cv=5 explicitly and then says "neither is at the edge of its grid, so both were actually chosen."</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 32px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Counting Zeros</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">You fit <strong>Ridge</strong> with a large \(\lambda\) on 500 standardised predictors, 490 of which are pure noise.</p>
+          <p class="text-lg" style="margin-top: 8px;"><strong>How many coefficients come back exactly zero?</strong></p>
+          <div class="poll-grid" data-poll-id="ch16-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) About 490 &mdash; that is what the penalty is for</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Exactly 10 &mdash; the true ones survive</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Zero, or essentially zero, no matter how large \(\lambda\) gets</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) It depends on \(\lambda\) &mdash; large enough \(\lambda\) zeroes them</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Click to vote. Expect D to draw votes from students who half-heard the "lambda to infinity drives everything to zero" line &mdash; which is true in the limit and useless in practice.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch16-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; None of Them</h2>
+        <div class="poll-results-chart" data-poll-id="ch16-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The constraint region is a <strong>circle</strong>. It has no corners, so the point where the expanding loss contours first touch it is almost never on an axis &mdash; and a coefficient is exactly zero only <em>on</em> an axis. All 490 noise variables stay in the model at reduced weight.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting but wrong:</strong> \(\lambda\to\infty\) does drive every coefficient <em>toward</em> zero &mdash; including the ten real ones. There is no \(\lambda\) that zeroes the 490 while sparing the 10. That is structural, not a tuning problem.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. This is the cleanest possible setup for the next section. Say: "so if you want a shorter list, you need a constraint region with corners" and advance to the divider.</aside>
+      </section>
+    </section>
+
+    <!-- DIVIDER 3 -->
+    <section id="divider-3" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; LASSO: Shrink <em>and</em> Select</h1>
+      <p class="subtitle" style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">One exponent changed. The consequence is qualitative.</p>
+    </section>
+
+    <!-- SLIDE: LASSO objective -->
+    <section id="lasso-objective" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-diamond" style="color: var(--accent-color);"></i> LASSO &mdash; the \(L_1\) Penalty</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; color: var(--muted-color);">Least Absolute Shrinkage and Selection Operator (Tibshirani, 1996)</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 20px; margin-top: 10px;">
+          <p style="font-size: 17pt; text-align: center;">$$\hat{\boldsymbol{\beta}}^{\text{lasso}} = \arg\min_{\boldsymbol{\beta}} \left\{ \tfrac{1}{2n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 + \lambda \sum_{j=1}^{p} |\beta_j| \right\}$$</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px; text-align: center;">One exponent changed, from \(\beta_j^2\) to \(|\beta_j|\).</p>
+        <div class="key-result" style="margin-top: 12px;">
+          <p><strong>In words.</strong> Charge the sum of <em>absolute</em> coefficients instead of squared ones. Unlike squaring, the absolute value keeps charging at <strong>full rate all the way down to zero</strong> &mdash; so there is a real incentive to take the last step and set a coefficient exactly to zero.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 14px; text-align: center; color: var(--accent-color);"><strong>The consequence is qualitative rather than quantitative.</strong></p>
+      </div>
+      <aside class="notes">1.5 min. Contrast explicitly with the Ridge slide: for a squared penalty the marginal fee near zero is itself near zero, so nothing pushes a small coefficient the last step. For an absolute-value penalty the marginal fee is constant. That is the intuition; the picture on the next slide is the proof.</aside>
+    </section>
+
+    <!-- SLIDE: geometry figure -->
+    <section id="geometry" style="padding: 26px 40px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-shapes" style="color: var(--secondary-color);"></i> The Same Picture, One Shape Changed</h2>
+      <div class="content" style="padding-top: 4px;">
+        <img src="figures/figure_002_geometry.png" alt="Loss contours meeting a circular L2 constraint on the left and a diamond-shaped L1 constraint on the right; the Ridge solution sits off-axis with both coefficients nonzero while the LASSO solution lands exactly on the diamond's corner where beta-2 is zero" style="width: 84%; display: block; margin: 0 auto; border-radius: 6px;">
+        <p style="font-size: 14.5pt; margin-top: 8px; text-align: center; line-height: 1.5;">Expanding elliptical contours meeting a diamond are very likely to touch at a <strong>corner</strong>, because corners stick out. And <strong>a corner of the diamond is a point where one coordinate is exactly zero.</strong></p>
+      </div>
+      <aside class="notes">2.5 min. Ask, before you explain: "where does the growing ellipse hit each shape?" Students see the corner argument immediately, and it is genuinely the reason for everything LASSO does. In p dimensions the region has corners, edges and faces of every dimension, so solutions with ANY number of exact zeros are available. Note LASSO produces sparsity NOT by testing coefficients and dropping insignificant ones &mdash; there is no test anywhere in this picture.</aside>
+    </section>
+
+    <!-- SLIDE: results -->
+    <section id="lasso-results" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-table-list" style="color: var(--secondary-color);"></i> Watching It Work &mdash; and What to Notice</h2>
+      <div class="content">
+        <div style="background: #2D2D2D; border-radius: 8px; padding: 14px 24px; font-family: monospace; font-size: 14.5pt; color: #e8e2da; line-height: 1.75;">
+          <div style="display: grid; grid-template-columns: 90px 1fr 1fr;">
+            <span></span><span style="color: #9fb8c8;">train MSE</span><span style="color: #9fb8c8;">test MSE</span>
+            <span>OLS</span><span>0.0000</span><span>43.99</span>
+            <span>Ridge</span><span>0.0000</span><span>43.28</span>
+            <span style="color: #d9a184;">LASSO</span><span style="color: #d9a184;">0.5984</span><span style="color: #d9a184;">1.54</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px; text-align: center;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">44 / 500</p>
+            <p style="font-size: 13pt; margin-top: 5px;">features kept</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px; text-align: center;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--success-color); line-height: 1;">10 / 10</p>
+            <p style="font-size: 13pt; margin-top: 5px;">true features recovered</p>
+          </div>
+          <div class="fragment fade-up" style="background: #f9f0ee; border-radius: 10px; padding: 14px; text-align: center;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--danger-color); line-height: 1;">34</p>
+            <p style="font-size: 13pt; margin-top: 5px;">false positives</p>
+          </div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 16px;">LASSO kept <strong>44 variables to catch 10</strong>. Roughly three-quarters of what it selected is noise that happened to correlate with the outcome in this sample.</p>
+      </div>
+      <aside class="notes">2 min. Reveal 44/500 and 10/10 first &mdash; the room will start to celebrate. THEN the 34. Hold there. The instinct is to treat selection as truth, and this is the cheapest possible correction they will ever get.</aside>
+    </section>
+
+    <!-- SLIDE: why FPs -->
+    <section id="why-fps" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-dice" style="color: var(--danger-color);"></i> Why the False Positives Appear &mdash; and Why They Must</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Among 490 irrelevant predictors, each independent of the outcome, <strong>some will correlate with \(y\) in this sample by chance alone.</strong> With 490 draws, a few will correlate quite strongly. LASSO cannot distinguish "correlates because it causes" from "correlates because we got unlucky" &mdash; it sees only the sample.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p>To exclude every lucky noise variable, the penalty would have to exclude anything with a modest sample correlation. But some genuinely relevant variables also have modest sample correlations &mdash; particularly those with smaller true coefficients. <strong>A penalty aggressive enough to remove all the noise removes real signal along with it.</strong></p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px; line-height: 1.55;">So the choice is not between a clean list and a dirty one. It is between a <strong>short list that misses true variables</strong> and a <strong>longer one that admits false ones</strong>.</p>
+        <div class="fragment fade-up misconception" style="margin-top: 12px;">
+          <p>And note the design: those 34 false positives occur on <strong>independent</strong> Gaussian columns &mdash; the friendliest possible case. Real economic data, where everything correlates with everything, is <strong>worse</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. It is not a tuning failure. LASSO is a SCREENING device &mdash; it reliably retains the signal while admitting a controlled amount of noise. If a student asks whether a different lambda fixes it: yes, and the next section shows you exactly what that costs.</aside>
+    </section>
+
+    <!-- SLIDE: misconception -->
+    <section id="misconception-1" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div class="misconception">
+          <p class="text-xl" style="font-style: italic;">"LASSO tells me which variables matter."</p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.6;">It tells you which variables it <strong>kept</strong>, which is a different thing. Here it kept <strong>44</strong> to find <strong>10</strong>.</p>
+        <p style="font-size: 15pt; margin-top: 14px; line-height: 1.55;">And the selection carries a formal caveat: LASSO is only guaranteed to recover the true set of variables when the irrelevant ones are not strongly correlated with the relevant ones &mdash; a condition routinely violated by macroeconomic series, asset-pricing factors, and anything with a factor structure.</p>
+        <div class="key-result" style="margin-top: 16px;">
+          <p style="font-size: 16pt;"><strong>Treat a LASSO selection as a hypothesis worth investigating &mdash; never as a finding.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. The formal name for that condition is the irrepresentable condition; you do not need it, but say it once so they recognise it in a paper. The operational instruction is the boxed sentence, and it will be tested again in Poll 4.</aside>
+    </section>
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Is Your Question Sparse or Dense?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 16px 24px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">A penalty is not a neutral technical device. It encodes a <em>belief</em> about the world.</p>
+          <p style="font-size: 14.5pt; margin-top: 6px; color: var(--muted-color);">\(L_1\) believes most coefficients are exactly zero. \(L_2\) believes many are small but nonzero. Neither is a safe default.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px;">
+          <div class="discussion-prompt" style="margin: 0;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt A &mdash; 2 min, pairs</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Take a question you actually care about &mdash; portfolio project, capstone. Write the outcome and roughly how many candidate predictors you could assemble. Then answer, <strong>with a reason from the subject matter</strong>: do a handful do essentially all the work, or do many matter a little?</p>
+          </div>
+          <div class="discussion-prompt" style="margin: 0;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B &mdash; 1 min</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Now argue <em>against</em> yourself. If you said sparse, what would a dense truth look like here? If you said dense, which three variables would a sparsist claim are doing everything?</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; color: var(--muted-color); margin-top: 12px;"><i class="fa-solid fa-lightbulb"></i> The point: this is <strong>not a statistical question</strong>. It is a question about your subject matter, and you are the one qualified to answer it.</p>
+      </div>
+      <aside class="notes">4 min &mdash; press 4 for the timer. Take three shares. Name the pattern out loud: problems built from ADMINISTRATIVE data (many weak overlapping measures of the same few things) tend to be dense; problems built from DESIGNED measurement (a few binding constraints, a few dominant sectors) tend to be sparse. Close on the honest position: if you genuinely do not know, say so, use Elastic Net, and report the mixing parameter the data chose &mdash; that number is itself a finding.</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-4" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; Choosing \(\lambda\)</h1>
+      <p class="subtitle" style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Where the right variables and the right predictions part company.</p>
+    </section>
+
+    <!-- SLIDE: hyperparameter -->
+    <section id="hyperparameter" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-sliders" style="color: var(--secondary-color);"></i> \(\lambda\) Is a Hyperparameter</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">\(\lambda\) cannot be estimated by minimising the objective &mdash; that would return \(\lambda = 0\), since the unpenalised fit always has the lowest <em>training</em> error.</p>
+        <p style="font-size: 15pt; margin-top: 12px;">It is a <strong>hyperparameter</strong>, and Chapter 15 already gave you the machinery: <strong>cross-validation</strong>.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p>The standard approach computes a <strong>regularization path</strong> &mdash; the whole sequence of solutions across a logarithmic grid of \(\lambda\), from large enough to zero every coefficient down to nearly zero &mdash; and cross-validates along it. <code>LassoCV</code> and <code>RidgeCV</code> do this in one call, and modern solvers compute the entire path for barely more than the cost of a single fit.</p>
+        </div>
+        <div style="background: #2D2D2D; border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-family: monospace; font-size: 15pt; color: #d9a184;">lambda selected by cross-validation: 0.138</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. "Barely more than the cost of a single fit" is worth saying because students assume a path is expensive and therefore skip it. It is not, and looking at the path is where the next three slides come from.</aside>
+    </section>
+
+    <!-- SLIDE: path table -->
+    <section id="path-table" style="padding: 28px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i> The Path, Written Out</h2>
+      <div class="content">
+        <div style="background: #2D2D2D; border-radius: 8px; padding: 14px 24px; font-family: monospace; font-size: 14pt; color: #e8e2da; line-height: 1.72;">
+          <div style="display: grid; grid-template-columns: 1.1fr 1fr 1fr 0.8fr 0.9fr;">
+            <span style="color: #9fb8c8;">lambda</span><span style="color: #9fb8c8;">train MSE</span><span style="color: #9fb8c8;">test MSE</span><span style="color: #9fb8c8;">kept</span><span style="color: #9fb8c8;">true found</span>
+            <span>2.000</span><span>32.191</span><span>25.53</span><span>10</span><span>10/10</span>
+            <span style="color: #a8c4a8;">1.000</span><span style="color: #a8c4a8;">8.686</span><span style="color: #a8c4a8;">6.92</span><span style="color: #a8c4a8;">10</span><span style="color: #a8c4a8;">10/10</span>
+            <span>0.500</span><span>2.780</span><span>2.52</span><span>11</span><span>10/10</span>
+            <span>0.300</span><span>1.482</span><span>1.71</span><span>14</span><span>10/10</span>
+            <span style="color: #d9a184;">0.138</span><span style="color: #d9a184;">0.600</span><span style="color: #d9a184;">1.54</span><span style="color: #d9a184;">44</span><span style="color: #d9a184;">10/10</span>
+            <span>0.050</span><span>0.117</span><span>1.66</span><span>77</span><span>10/10</span>
+            <span>0.010</span><span>0.005</span><span>1.86</span><span>95</span><span>10/10</span>
+          </div>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 12px; color: var(--muted-color);">Three things happen at once in this table. They are worth separating, and the next slide separates them.</p>
+      </div>
+      <aside class="notes">1 min. Do NOT explain yet. Give them ten seconds to look. Ask "what is the most surprising row?" &mdash; someone will find the green one. That is your cue to advance.</aside>
+    </section>
+
+    <!-- SLIDE: three readings -->
+    <section id="three-readings" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--accent-color);"></i> Three Readings of One Table</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 355px 1fr; gap: 20px; align-items: center;">
+          <img src="figures/figure_004_lambda_ucurve.png" alt="Top panel: training MSE falls monotonically as lambda weakens while test MSE flattens and turns up. Bottom panel: the test MSE curve zoomed on a linear scale, tracing a clear U with its minimum at lambda equals 0.138 where 44 variables are kept" style="width: 100%; border-radius: 6px;">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: #f0f5f8; border-left: 3px solid var(--secondary-color); border-radius: 6px; padding: 11px 16px;">
+              <p style="font-size: 14pt;"><strong>1. It is Chapter 15's U-curve, now in \(\lambda\).</strong> Training error falls forever (32.191 &rarr; 0.005); test error bottoms at \(\lambda = 0.138\) and rises again. And CV chose exactly that value <em>without seeing the test set</em>.</p>
+            </div>
+            <div class="fragment fade-up" style="background: #eef5ee; border-left: 3px solid var(--success-color); border-radius: 6px; padding: 11px 16px;">
+              <p style="font-size: 14pt;"><strong>2. Look at the top two rows.</strong> At \(\lambda = 2.0\) and \(\lambda = 1.0\), LASSO keeps exactly 10 features and every one is true. <strong>Perfect recovery &mdash; no misses, no false positives.</strong></p>
+            </div>
+            <div class="fragment fade-up" style="background: #f9f0ee; border-left: 3px solid var(--danger-color); border-radius: 6px; padding: 11px 16px;">
+              <p style="font-size: 14pt;"><strong>3. Those perfect rows are terrible predictors.</strong> Test MSE 6.92 at \(\lambda = 1.0\) against 1.54 at the optimum. The model that finds exactly the right variables predicts <strong>4.5&times; worse</strong> than the one keeping 44.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2.5 min. Reveal in order and pause after 3. The resolution: at lambda = 1.0 the ten survivors have been shrunk HEAVILY toward zero &mdash; that is what a large penalty does &mdash; so the variables are right and the magnitudes are badly attenuated. Loosening the penalty restores the magnitudes and admits noise along with them, and for squared-error prediction that trade is worth making.</aside>
+    </section>
+
+    <!-- SLIDE: selection vs prediction -->
+    <section id="selection-vs-prediction" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--accent-color);"></i> Two Objectives, Two Different \(\lambda\)</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 8px;">
+          <div style="background: #eef5ee; border-radius: 12px; padding: 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13pt; text-transform: uppercase; letter-spacing: 2px; color: var(--success-color);">If you want the right variables</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--success-color); margin-top: 8px;">\(\lambda = 1.0\)</p>
+            <p style="font-size: 14pt; margin-top: 8px;">10 kept, 10 true, 0 false &mdash; and test MSE 6.92</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 13pt; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-color);">If you want the best predictions</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color); margin-top: 8px;">\(\lambda = 0.138\)</p>
+            <p style="font-size: 14pt; margin-top: 8px;">44 kept, 34 of them noise &mdash; and test MSE 1.54</p>
+          </div>
+        </div>
+        <div class="key-result" style="margin-top: 20px;">
+          <p style="font-size: 16pt;"><strong>Selecting the right variables and predicting well are different objectives, optimised at different \(\lambda\)</strong> &mdash; and here they are in direct conflict. Cross-validation targets prediction, because that is what you asked it for.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--muted-color); text-align: center;">If you want the variable list, you are asking a question this procedure was not tuned to answer.</p>
+      </div>
+      <aside class="notes">1.5 min. This is the single most important slide in the deck for their capstones. Say it twice. It is also the setup for Section 6 &mdash; the reason "LASSO chose my controls" is a category error and not just a technicality.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 30px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: The Paradox in the Table</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">At \(\lambda = 1.0\), LASSO recovers <strong>exactly</strong> the 10 true variables and nothing else &mdash; yet its test MSE (6.92) is 4.5&times; worse than \(\lambda = 0.138\), which keeps 44.</p>
+          <p class="text-lg" style="margin-top: 8px;"><strong>Why?</strong></p>
+          <div class="poll-grid" data-poll-id="ch16-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The test set is too small to rank them reliably</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) At \(\lambda = 1.0\) the ten survivors are heavily shrunk, so the magnitudes are badly attenuated</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The 34 extra variables carry real signal the 10 miss</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cross-validation picked the wrong \(\lambda\)</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Click to vote. D is the attractive wrong answer for anyone who thinks "correct variables" must mean "correct model".</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch16-econ3916-poll-3" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Right Variables, Wrong Magnitudes</h2>
+        <div class="poll-results-chart" data-poll-id="ch16-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">A large penalty does <strong>two</strong> things at once &mdash; it zeroes some coefficients <em>and</em> it shrinks the survivors. At \(\lambda = 1.0\) the right variables are in the model with magnitudes far too small, so predictions come out systematically flat.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting but wrong:</strong> CV chose \(\lambda = 0.138\), and the test set &mdash; which CV never saw &mdash; puts its minimum at exactly \(\lambda = 0.138\). CV did its job <em>perfectly</em>. It optimised prediction, because that is what you asked for. Nothing is broken.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. If anyone voted C, that is worth a sentence: the 34 extras are noise BY CONSTRUCTION &mdash; we generated the data, so we know. They help prediction only because loosening lambda also un-shrinks the ten real ones.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE: naming trap -->
+    <section id="naming-trap" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> The Naming Trap That Catches Almost Everyone</h2>
+      <div class="content">
+        <div class="misconception">
+          <p class="text-lg" style="font-style: italic;">"<code>alpha</code> in scikit-learn is the \(\alpha\) from the Elastic Net formula."</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 0; margin-top: 16px; border-radius: 8px; overflow: hidden;">
+          <div style="background: #2D2D2D; color: #9fb8c8; padding: 11px 16px; font-size: 13.5pt;"></div>
+          <div style="background: #2D2D2D; color: #9fb8c8; padding: 11px 16px; font-size: 13.5pt;">penalty strength</div>
+          <div style="background: #2D2D2D; color: #9fb8c8; padding: 11px 16px; font-size: 13.5pt;">Elastic Net mix</div>
+          <div style="background: #f8f6f3; padding: 11px 16px; font-size: 14.5pt;">This book / econometrics</div>
+          <div style="background: #f8f6f3; padding: 11px 16px; font-size: 14.5pt;">\(\lambda\)</div>
+          <div style="background: #f8f6f3; padding: 11px 16px; font-size: 14.5pt;">\(\alpha_{EN}\)</div>
+          <div style="background: #eef3f6; padding: 11px 16px; font-size: 14.5pt;">scikit-learn</div>
+          <div style="background: #eef3f6; padding: 11px 16px; font-size: 14.5pt;"><code style="color: var(--danger-color);">alpha</code></div>
+          <div style="background: #eef3f6; padding: 11px 16px; font-size: 14.5pt;"><code>l1_ratio</code></div>
+          <div style="background: #f8f6f3; padding: 11px 16px; font-size: 14.5pt;">R's <code>glmnet</code></div>
+          <div style="background: #f8f6f3; padding: 11px 16px; font-size: 14.5pt;"><code>lambda</code></div>
+          <div style="background: #f8f6f3; padding: 11px 16px; font-size: 14.5pt;"><code style="color: var(--danger-color);">alpha</code></div>
+        </div>
+        <p class="fragment fade-up text-lg" style="margin-top: 16px; text-align: center;">The word "alpha" means the <strong>opposite thing</strong> in the two most common tools for this job.</p>
+      </div>
+      <aside class="notes">1.5 min. Students will hit glmnet in an econometrics paper and scikit-learn in this week's lab. Also mention, briefly, the one-standard-error rule &mdash; pick the largest lambda within one s.e. of the minimum, a deliberately more parsimonious model &mdash; but do not belabour it. The habit that matters is LOOKING at the CV curve: if it is flat across two orders of magnitude, reporting lambda to three decimals implies precision you do not have.</aside>
+    </section>
+    <!-- DIVIDER 5 -->
+    <section id="divider-5" class="section-divider" data-state="is-section-divider">
+      <h1>5 &nbsp;&bull;&nbsp; The Penalty Is a Belief</h1>
+      <p class="subtitle" style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Change nothing but the truth, and the ranking reverses.</p>
+    </section>
+
+    <!-- SLIDE: dense truth -->
+    <section id="dense-truth" style="padding: 26px 45px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-arrows-left-right" style="color: var(--accent-color);"></i> Same \(X\), Same Estimators, Same Grid &mdash; Only the Truth Changed</h2>
+      <div class="content" style="padding-top: 4px;">
+        <img src="figures/figure_005_sparse_vs_dense.png" alt="Two grouped bar panels of test MSE by method: on the sparse truth LASSO's bar is a sliver at 1.54 next to OLS at 43.99 and Ridge at 43.28, and on the dense truth LASSO's bar at 37.36 is the tallest of the three, above OLS at 27.84 and Ridge at 28.42" style="width: 66%; display: block; margin: 0 auto; border-radius: 6px;">
+        <p style="font-size: 15pt; margin-top: 8px; text-align: center; line-height: 1.5;">Dense truth: all 500 features matter, each a little. <strong>LASSO is now the worst of the three</strong> &mdash; a third worse than OLS, on data where OLS is already poor.</p>
+      </div>
+      <aside class="notes">2 min. Let the room absorb that LASSO came last. Most of them concluded twenty minutes ago that LASSO is simply the better method &mdash; textbooks often present it as Ridge plus a bonus feature. That framing is wrong and this is the demolition. Note LASSO kept 114 of 500 on the dense truth: it forced 386 zeros onto parameters that are not zero.</aside>
+    </section>
+
+    <!-- SLIDE: the two beliefs -->
+    <section id="two-beliefs" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> A Penalty Encodes a Belief</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 6px;">
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 18px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">The \(L_1\) penalty believes</p>
+            <p style="font-size: 15.5pt; margin-top: 8px;"><strong>most coefficients are exactly zero.</strong></p>
+            <p style="font-size: 14pt; margin-top: 8px; color: var(--muted-color);">When true, enormously powerful. When false, it is forcing zeros onto parameters that are not zero &mdash; paying in bias for nothing.</p>
+          </div>
+          <div style="background: #eef3f6; border-radius: 12px; padding: 18px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">The \(L_2\) penalty believes</p>
+            <p style="font-size: 15.5pt; margin-top: 8px;"><strong>many coefficients are small but nonzero.</strong></p>
+            <p style="font-size: 14pt; margin-top: 8px; color: var(--muted-color);">Right whenever effects are diffuse &mdash; which describes a great deal of economics, where outcomes are shaped by many weakly-acting factors.</p>
+          </div>
+        </div>
+        <div class="key-result" style="margin-top: 18px;">
+          <p style="font-size: 16pt;">So the choice is <strong>not statistical</strong>. It is a question about your subject matter: <em>do I believe a small number of these variables do essentially all the work?</em> Sometimes yes &mdash; a few genes, a few binding constraints. Often no.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. This is the payoff of Discussion 2 &mdash; refer back to the answers you heard. If you genuinely do not know, that is a legitimate position, and Elastic Net with a tuned mixing parameter is how you say it honestly.</aside>
+    </section>
+
+    <!-- SLIDE: correlated predictions -->
+    <section id="correlated-predictions" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-clone" style="color: var(--muted-color);"></i> Correlated Predictors: What Actually Goes Wrong</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">The standard claim is that Ridge handles correlated predictors better than LASSO. The truth is more specific &mdash; and more useful.</p>
+        <p style="font-size: 15pt; margin-top: 10px;">Five blocks of eight near-duplicate predictors; all eight in block 1 have <strong>identical</strong> true coefficients of 0.5.</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px; text-align: center;"><p style="font-size: 22pt; font-weight: 700; color: var(--muted-color);">1.272</p><p style="font-size: 13pt; margin-top: 4px;">OLS</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px; text-align: center;"><p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">1.116</p><p style="font-size: 13pt; margin-top: 4px;">Ridge</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px; text-align: center;"><p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">1.090</p><p style="font-size: 13pt; margin-top: 4px;">LASSO</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px; text-align: center;"><p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">1.090</p><p style="font-size: 13pt; margin-top: 4px;">Elastic Net</p></div>
+        </div>
+        <p style="font-size: 13pt; color: var(--muted-color); text-align: center; margin-top: 6px;">test MSE</p>
+        <p class="fragment fade-up text-lg" style="margin-top: 14px; text-align: center;"><strong>Prediction is essentially identical</strong> &mdash; and LASSO is fractionally <em>best</em>, not worst. The standard claim does not appear in test error at all.</p>
+      </div>
+      <aside class="notes">1.5 min. Resist the temptation to rank these four numbers; they are indistinguishable and saying so is the honest move. The failure is real, but it is not here &mdash; next slide.</aside>
+    </section>
+
+    <!-- SLIDE: correlated coefficients -->
+    <section id="correlated-coefs" style="padding: 26px 45px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-shuffle" style="color: var(--danger-color);"></i> It Shows Up in the Coefficients</h2>
+      <div class="content" style="padding-top: 4px;">
+        <img src="figures/figure_006_correlated_blocks.png" alt="Eight pairs of bars for eight equally important predictors whose true coefficient is 0.5: LASSO drops two of them to zero and overshoots one to 1.127, while Elastic Net keeps seven and spreads them much more evenly around the true value" style="width: 64%; display: block; margin: 0 auto; border-radius: 6px;">
+        <div class="key-result" style="margin-top: 8px;">
+          <p style="font-size: 15pt;">Eight variables of <strong>identical</strong> true importance. LASSO drops two entirely, hands one <strong>1.127</strong> &mdash; more than double the truth &mdash; and scatters the rest. Refit on a slightly different sample and a different two would be dropped.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the eight LASSO numbers aloud and remind them all eight true values are 0.5. Then the Chapter 14 callback: this is multicollinearity in new clothing. There the mechanism was inflated standard errors; here it is the penalty picking a representative from each correlated group. Same lesson twice: if you need the COEFFICIENTS, correlation is fatal; if you need the PREDICTIONS, it barely matters.</aside>
+    </section>
+
+    <!-- SLIDE: elastic net -->
+    <section id="elastic-net" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-code-merge" style="color: var(--success-color);"></i> Elastic Net &mdash; Let the Data Choose the Mix</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 20px;">
+          <p style="font-size: 17pt; text-align: center;">$$\lambda \left( \alpha_{EN} \sum_j |\beta_j| + \tfrac{1 - \alpha_{EN}}{2}\sum_j \beta_j^2 \right)$$</p>
+        </div>
+        <div class="key-result" style="margin-top: 12px;">
+          <p><strong>In words.</strong> Pay a blend of the two fees. \(\alpha_{EN} = 1\) is pure LASSO, \(\alpha_{EN} = 0\) is pure Ridge. The \(L_1\) part preserves sparsity; the \(L_2\) part supplies a <strong>grouping effect</strong>, pulling correlated predictors toward each other rather than letting one win arbitrarily.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 12px;">On the correlated data above it kept <strong>7 of the 8</strong> and spread them far more evenly &mdash; the blue bars on the previous slide.</p>
+        <div style="background: #2D2D2D; border-radius: 8px; padding: 12px 20px; margin-top: 12px;">
+          <p style="font-family: monospace; font-size: 13.5pt; color: #e8e2da;">ElasticNetCV(cv=5, l1_ratio=[0.1, 0.5, 0.7, 0.9, 0.95, 1.0])</p>
+          <p style="font-family: monospace; font-size: 13.5pt; color: #d9a184; margin-top: 6px;">mixing parameter chosen on the sparse design: 1.0</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 12px; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> <strong>The chosen mixing parameter is itself a result worth reporting.</strong> Near 1 says the data looks sparse; near 0, that effects are diffuse.</p>
+      </div>
+      <aside class="notes">1.5 min. Passing a LIST of l1_ratio values makes the mix a tuned hyperparameter rather than an assumption. On the sparse design it picks 1.0 &mdash; pure LASSO, the correct answer there, and a small reassurance the procedure works. Elastic Net also escapes a hard limit: pure LASSO can select at most n variables before saturating.</aside>
+    </section>
+
+    <!-- SLIDE: IMF -->
+    <section id="imf" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-building-columns" style="color: var(--secondary-color);"></i> Economist at Work &mdash; the IMF, 2024</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">Post-pandemic structural breaks had made the reliable data <strong>short</strong> while the number of available high-frequency indicators had grown past a hundred. With \(p\) approaching \(n\), the design matrix was rank-deficient: OLS was not merely inaccurate but <strong>incomputable</strong>.</p>
+        <p style="font-size: 15pt; margin-top: 12px; line-height: 1.55;">The team deployed LASSO, Ridge and Elastic Net. The first result was disappointing &mdash; on highly collinear macro series, LASSO selected variables that made <strong>no economic sense</strong>.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>What fixed it was not a better algorithm.</strong> The economists imposed <strong>sign restrictions</strong> &mdash; consumer sentiment must enter positively, unemployment claims negatively, and so on wherever theory dictates a direction. With those constraints the model outperformed both MIDAS and dynamic-factor benchmarks.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 14px; text-align: center; color: var(--accent-color);"><strong>An algorithm turned loose on collinear data finds patterns. An economist decides which patterns are permitted.</strong></p>
+      </div>
+      <aside class="notes">1.5 min. The penalty encodes a belief about SPARSITY; sign restrictions encode a belief about DIRECTION. Both are economics entering the estimator, and here the economics is what made the machine learning work. This is the chapter's thesis in operational form &mdash; say so.</aside>
+    </section>
+
+    <!-- DIVIDER 6 -->
+    <section id="divider-6" class="section-divider" data-state="is-section-divider">
+      <h1>6 &nbsp;&bull;&nbsp; What You May Not Do Afterwards</h1>
+      <p class="subtitle" style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">For economists, the most consequential thing in the chapter.</p>
+    </section>
+
+    <!-- SLIDE: the plausible workflow -->
+    <section id="the-trap" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-user-secret" style="color: var(--muted-color);"></i> A Workflow That Sounds Completely Reasonable</h2>
+      <div class="content">
+        <blockquote style="font-size: 16pt; line-height: 1.6; margin-top: 6px;">
+          You have 500 candidate controls. You run LASSO; it keeps 12. You fit ordinary OLS on those 12, report the coefficients with their standard errors and \(p\)-values, and describe the result as a regression with well-chosen controls.
+        </blockquote>
+        <p class="fragment fade-up text-2xl" style="margin-top: 22px; text-align: center; color: var(--danger-color); font-weight: 700;">This is invalid, and the invalidity is not subtle.</p>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 18px; text-align: center; color: var(--muted-color);">Take thirty seconds. What is wrong with it?</p>
+      </div>
+      <aside class="notes">1.5 min. Present the workflow FIRST and let it sit before you condemn it. Ask the room what is wrong. The failure is not obvious and the discovery is worth the wait &mdash; many of them have done exactly this, or will.</aside>
+    </section>
+
+    <!-- SLIDE: why invalid -->
+    <section id="why-invalid" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> You Used the Data Twice</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">Classical inference assumes the specification was fixed <strong>before</strong> seeing the data. Chapter 8 built every \(p\)-value on that assumption.</p>
+        <div class="misconception" style="margin-top: 14px;">
+          <p>But those 12 variables were chosen <em>because</em> they correlated strongly with the outcome <strong>in this sample</strong> &mdash; that is what LASSO does. Reporting classical standard errors treats a data-driven choice as if theory had made it, and the intervals come out <strong>too narrow</strong>. Their true coverage is well below nominal.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px; line-height: 1.55;">It is the same error as running 500 hypothesis tests and reporting only the significant ones &mdash; which Chapter 8 named. <strong>LASSO simply automates the selection and makes it feel principled.</strong></p>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 14px; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Worse than the manual version in one respect: a researcher running 500 tests by hand <em>knows</em> they did it. LASSO performs the same search silently and returns a tidy list &mdash; there is no artefact to audit.</p>
+      </div>
+      <aside class="notes">2 min. Regularization is a variance-reduction tool for PREDICTION. It is not a method for choosing controls in a causal study, and treating it as one delivers invalid inference. This is problem 3 from the stepwise slide, still unfixed &mdash; close that loop explicitly.</aside>
+    </section>
+    <!-- SLIDE: what to do instead -->
+    <section id="what-to-do" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-signs-post" style="color: var(--success-color);"></i> What to Do Instead Depends on What You Want</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #eef5ee; border-radius: 12px; padding: 16px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">For prediction</p>
+            <p style="font-size: 14.5pt; margin-top: 8px;">Nothing is wrong. Report cross-validated error and make <strong>no claims about individual coefficients</strong>.</p>
+          </div>
+          <div style="background: #eef3f6; border-radius: 12px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">For a treatment effect</p>
+            <p style="font-size: 14.5pt; margin-top: 8px;">You need <strong>post-double selection</strong>: run LASSO twice &mdash; once predicting the <em>outcome</em> from the controls, once predicting the <em>treatment</em> &mdash; and use the <strong>union</strong> of both sets in an unpenalised regression.</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 12px; color: var(--muted-color);">Belloni, Chernozhukov &amp; Hansen (2014). The machinery is ECON 5200's and Chapter 24's &mdash; recognising that you <em>need</em> it is today's.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p><strong>And it buys less than you would expect.</strong> A 2024 World Bank audit re-estimated <strong>780 treatment effects</strong> from published randomised trials using post-double selection. Against plain ANCOVA with pre-specified controls it improved standard errors by <strong>under 1%</strong> &mdash; and in <strong>over half</strong> the cases the treatment equation selected <strong>no controls at all</strong>.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 12px;">That second finding is the explanation, not an embarrassment: in a randomised trial assignment is random <em>by construction</em>, so nothing should predict it. The second LASSO has nothing to find.</p>
+      </div>
+      <aside class="notes">2 min. Do not derive PDS. Name it, say what it does in one sentence, and flag it as the bridge to Ch 24. The 780-effects number converts an abstract objection into a demonstration &mdash; the method is worth LEAST exactly where you can already trust your design, and worth most exactly where you cannot check whether it worked.</aside>
+    </section>
+
+    <!-- SLIDE: what reg does not fix -->
+    <section id="not-fixed" style="padding: 30px 52px;">
+      <h2><i class="fa-solid fa-screwdriver-wrench" style="color: var(--muted-color);"></i> What Regularization Does <em>Not</em> Fix</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 4px;">
+          <div style="background: #f9f0ee; border-left: 3px solid var(--danger-color); border-radius: 6px; padding: 11px 18px;">
+            <p style="font-size: 14pt;"><strong>1. A confounded design.</strong> Shrinkage reduces variance. It says nothing about bias from an omitted confounder &mdash; and it makes it <em>harder to see</em>, because a coefficient shrunk toward zero looks modest and well-behaved whether it is correctly estimated or badly confounded.</p>
+          </div>
+          <div style="background: #f9f0ee; border-left: 3px solid var(--danger-color); border-radius: 6px; padding: 11px 18px;">
+            <p style="font-size: 14pt;"><strong>2. Causal identification.</strong> LASSO selects variables that <em>predict</em>. A variable can predict because it causes the outcome, because it shares a cause, or because it is a <em>consequence</em> of the outcome &mdash; Chapter 10's three structures, indistinguishable to any penalty. Hand it a collider and it will keep it.</p>
+          </div>
+          <div style="background: #f9f0ee; border-left: 3px solid var(--danger-color); border-radius: 6px; padding: 11px 18px;">
+            <p style="font-size: 14pt;"><strong>3. A badly measured target.</strong> Chapter 15's noise floor is unmoved by any penalty. If \(y\) is measured with substantial error, the way past that limit is better data, not a better estimator.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up key-result" style="margin-top: 12px;">
+          <p style="font-size: 14.5pt;"><strong>And one for reading papers.</strong> Regularized coefficients are <strong>not comparable across specifications</strong> the way OLS coefficients are. Change \(\lambda\), the candidate set, or the scaling, and every coefficient moves &mdash; each is the solution to a <em>different</em> constrained problem. Reporting a LASSO coefficient without its \(\lambda\), its standardisation and its candidate set is reporting an uninterpretable number.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Short and deliberately deflationary. Students finish a regularization chapter feeling that high-dimensional problems are now solved; these three reset that. The non-comparability point is the one they will need when reading papers, and it is rarely taught.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 30px 52px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The 44-Variable List</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 15px 22px; border-radius: 12px;">
+          <p style="font-size: 15pt; color: var(--muted-color); margin-bottom: 6px;">A colleague sends you this and asks you to sign off before it goes to the policy team.</p>
+          <p class="text-lg" style="font-style: italic;">"We screened 500 candidate indicators with LASSO. It identified the 44 that matter. We then re-ran OLS on those 44; twelve are significant at the 5% level, and we recommend targeting those twelve."</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div class="discussion-prompt" style="margin: 0;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt A &mdash; 2 min, pairs</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">There are <strong>three</strong> distinct things wrong with that paragraph. Find all three. One is a <em>word</em>, one is a <em>procedure</em>, one is a <em>missing number</em>.</p>
+          </div>
+          <div class="discussion-prompt" style="margin: 0;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B &mdash; 1 min</p>
+            <p style="font-size: 14.5pt; margin-top: 6px;">Rewrite it so it says only what the analysis supports. You are allowed to keep the LASSO.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min &mdash; press 3 for the timer. Take two shares, then debrief. The three: (i) "the 44 that matter" &mdash; it KEPT 44; on our own data 44 kept meant 10 real and 34 noise. (ii) re-running OLS on the selected set and reporting classical p-values is post-selection inference &mdash; invalid, intervals too narrow. (iii) no lambda, no standardisation statement, no candidate set, so those 44 coefficients are uninterpretable and the list would change if any of the three changed. An honest rewrite: "LASSO retained 44 of 500 indicators at lambda = 0.138 on standardised features. We report cross-validated predictive error. The retained list is a set of hypotheses for follow-up, not a finding, and we make no claim about individual coefficients."</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 30px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What May You Report?</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;"><strong>Which of these is a legitimate thing to report after a cross-validated LASSO?</strong></p>
+          <div class="poll-grid" data-poll-id="ch16-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr; gap: 11px; margin-top: 16px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 13px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) "These 44 variables are the drivers of the outcome"</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 13px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) "LASSO retained 44 of 500 predictors at \(\lambda = 0.138\); cross-validated test MSE was 1.54"</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 13px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) "Of the 44 selected, twelve are significant at the 5% level"</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 13px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) "Because LASSO is a principled algorithm, our controls are well chosen and inference is valid"</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Click to vote. This is the assessment moment for objective 16.4.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch16-econ3916-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Say What the Procedure Did</h2>
+        <div class="poll-results-chart" data-poll-id="ch16-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 45px;">
+          <p style="font-size: 15pt; line-height: 1.6;">B reports what the procedure did, the value of the hyperparameter that produced it, and a predictive score &mdash; and claims nothing about individual coefficients or about which variables matter.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is tempting but wrong:</strong> it is the single most common thing people actually do. Those \(p\)-values were computed on a specification the <em>data</em> chose, so their coverage is well below nominal. The fix is post-double selection &mdash; but recognising that you need a fix is today's job.</p>
+          </div>
+        </div>
+        <aside class="notes">1.5 min. If A drew votes, that is the misconception slide coming back &mdash; worth naming, because it means the "kept, not matters" distinction has not landed yet.</aside>
+      </section>
+    </section>
+
+    <!-- DIVIDER 7 -->
+    <section id="divider-7" class="section-divider" data-state="is-section-divider">
+      <h1>7 &nbsp;&bull;&nbsp; The Workflow, and Your Lab</h1>
+      <p class="subtitle" style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Six sections of theory. Here is what to actually do.</p>
+    </section>
+
+    <!-- SLIDE: workflow -->
+    <section id="workflow" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--accent-color);"></i> A Regularization Workflow</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 2px;">
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #fdf0ea; border-radius: 6px; padding: 9px 16px; border-left: 3px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">1</p>
+            <p style="font-size: 14pt;"><strong>Decide what you want before you fit.</strong> Prediction, or a coefficient you intend to interpret? Most confusion comes from wanting both and admitting to neither.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; border-radius: 6px; padding: 9px 16px; border-left: 3px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">2</p>
+            <p style="font-size: 14pt;"><strong>Standardise, inside a pipeline.</strong> One line handles the scale-dependence and the leakage together.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; border-radius: 6px; padding: 9px 16px; border-left: 3px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">3</p>
+            <p style="font-size: 14pt;"><strong>Fit Ridge and LASSO both</strong>, and let cross-validation compare them. The comparison is itself informative about sparsity.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f8f6f3; border-radius: 6px; padding: 9px 16px; border-left: 3px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">4</p>
+            <p style="font-size: 14pt;"><strong>Look at the CV curve, not just its minimum.</strong> Flat across an order of magnitude means \(\lambda\) is not identified &mdash; say so.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #eef5ee; border-radius: 6px; padding: 9px 16px; border-left: 3px solid var(--success-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">5</p>
+            <p style="font-size: 14pt;"><strong>Report the number selected, and treat the list as a hypothesis.</strong> "Retained 44 of 500" is a finding. "Identified the 44 that matter" is not.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 40px 1fr; align-items: center; background: #f4f1ed; border-radius: 6px; padding: 9px 16px; border-left: 3px dashed var(--muted-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--muted-color);">6</p>
+            <p style="font-size: 14pt; color: var(--muted-color);">If a causal parameter is involved, use post-double selection &mdash; <em>where the graduate track picks this up.</em> For 3916: stop at step 5, and know step 6 exists.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say step 1 is the one that matters. Students reach for LASSO because it produces a satisfying short list of variables, then interpret that list &mdash; which is precisely the trap. Steps 5 and 6 are the corrective, and are worth stating twice.</aside>
+    </section>
+
+    <!-- SLIDE: lab preview -->
+    <section id="lab-preview" style="padding: 24px 45px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> Lab 16 &mdash; Numbers You Will Reproduce</h2>
+      <div class="content" style="padding-top: 4px;">
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 22px; align-items: center;">
+          <img src="figures/figure_007_lab_preview.png" alt="Lab 16 results: a bar chart of test MSE with OLS at 12.9587, Ridge at 10.1128 and LASSO at 1.4219, and a second panel showing LASSO assigning 4.462 to one of two near-duplicate predictors and zero to the other while Ridge splits the weight 1.618 to 1.609" style="width: 100%; border-radius: 6px;">
+          <div>
+            <p style="font-size: 14.5pt; line-height: 1.5;">A smaller version of today's design: \(n = 150\), \(p = 200\), \(k = 5\) true predictors, split 70/30 &mdash; <strong>105 training rows against 200 predictors</strong>.</p>
+            <div class="key-result" style="margin-top: 10px;">
+              <p style="font-size: 14pt;">LASSO selects <strong>16</strong> variables at \(\lambda = 0.1978\): <strong>5/5</strong> true positives, <strong>11</strong> false positives. Note the ordering &mdash; LASSO has the <em>worst</em> training error of the three and by far the best test error.</p>
+            </div>
+            <p style="font-size: 14pt; margin-top: 10px; line-height: 1.5;"><strong>Part 4</strong> builds two near-duplicates (corr \(= 0.9985\)) that <em>both</em> genuinely matter. LASSO picks one and piles both effects on it; Ridge splits the weight almost exactly in half.</p>
+            <p style="font-size: 13.5pt; margin-top: 10px; color: var(--muted-color);"><strong>Take-home challenge:</strong> multiply one true predictor by 1,000, fit LASSO <em>without</em> <code>StandardScaler</code>, and watch Poll 1 happen to you in real data.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Every number on this slide was executed from the lab notebook before the slide was written &mdash; they will match what students see. Part 4 is a YOUR TASK cell: the coefficients shown are the answer, so do not project this slide while they are working on it.</aside>
+    </section>
+
+    <!-- SLIDE: exit ticket -->
+    <section id="exit-ticket" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color); margin-bottom: 16px;">One index card. One minute. Hand it in on your way out.</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--secondary-color);">
+            <p class="text-lg"><strong>1.</strong> In one sentence: why does LASSO produce exact zeros and Ridge does not?</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--accent-color);">
+            <p class="text-lg"><strong>2.</strong> Give one situation where you would choose Ridge <em>over</em> LASSO, and say why.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; border-left: 4px solid var(--danger-color);">
+            <p class="text-lg"><strong>3.</strong> What is the one thing you must <strong>not</strong> do with a LASSO-selected variable list?</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Q1 assesses objective 16.1, Q2 assesses 16.3, Q3 assesses 16.4. Scan for Q3 answers that say "interpret the coefficients" &mdash; correct but incomplete; the sharper answer is "attach classical p-values to a specification the data selected."</aside>
+    </section>
+
+    <!-- SLIDE: takeaways -->
+    <section id="takeaways" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Three Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;"><strong>The penalty replaces the search.</strong> \(2^{500}\) subsets is impossible; one convex problem with a fee on coefficient size is not. Ridge's \(\lambda\mathbf{I}\) even dissolves the invertibility requirement that made \(p &gt; n\) fatal.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 15pt;"><strong>The penalty is an assumption, not an upgrade.</strong> \(L_1\) asserts the truth is sparse, \(L_2\) that it is dense. On a sparse truth LASSO beat OLS 28&times;; change only the truth and it came <em>last</em> of three.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">3</p>
+            <p style="font-size: 15pt;"><strong>Selection is not the same objective as prediction.</strong> The \(\lambda\) that found exactly the right 10 predicted 4.5&times; worse than the \(\lambda\) that kept 44. Report the list as a hypothesis, and never attach classical \(p\)-values to it.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Have the room say takeaway 2 back to you. It is the one that survives the semester &mdash; and the one most likely to be got wrong in a capstone.</aside>
+    </section>
+
+    <!-- SLIDE: next -->
+    <section id="next-time" class="section-divider" data-state="is-section-divider" style="padding: 50px 90px;">
+      <h1 style="font-size: 30pt;">Next &mdash; Chapter 17: Classification</h1>
+      <div style="max-width: 900px; margin: 26px auto 0;">
+        <p style="font-size: 16pt; line-height: 1.6; color: var(--text-color);">The same penalties transfer to logistic regression almost for free: swap squared-error loss for logistic loss and keep the penalty untouched.</p>
+        <div style="background: #f9f0ee; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 20px; text-align: left;">
+          <p style="font-size: 15pt;">Two warnings you now have the context for: <code>LogisticRegression</code> in scikit-learn is <strong>penalised by default</strong> &mdash; which surprises economists expecting maximum likelihood &mdash; and its <code>C</code> is the <strong>inverse</strong> of the penalty strength, so <em>small</em> <code>C</code> means <em>heavy</em> regularization.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; color: var(--muted-color); font-style: italic;">That is the fourth conflicting naming convention in this chapter's catalogue. Read the documentation before interpreting a number.</p>
+      </div>
+      <aside class="notes">30 seconds. End on the naming warning &mdash; it is concrete, it is actionable, and it will save someone a wasted afternoon next week. Then: Lab 16 is due before Chapter 18.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

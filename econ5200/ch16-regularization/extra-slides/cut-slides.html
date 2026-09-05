@@ -1,0 +1,165 @@
+<!-- Slides cut from presentation.html to fit the 75-minute budget.
+     Their content survives in lecture-notes.md; re-insert with slide-manager if a
+     session runs ahead. coef-paths and beliefs are the two worth restoring first. -->
+    <!-- SLIDE: stepwise failures -->
+    <section id="stepwise" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-shoe-prints" style="color: var(--secondary-color);"></i> Why the Classical Repairs Do Not Work</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; color: var(--muted-color);">Forward stepwise adds the best remaining variable; backward elimination drops the least significant. Fast, and in every software menu you will ever open.</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 13px 20px;">
+            <p style="font-size: 14.5pt;"><strong>Unstable.</strong> Change a few observations, a different variable wins round one, the whole path diverges. Two analysts with 99% overlapping data report different models &mdash; the specification is a property of the <em>sample</em>, not the world.</p>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 13px 20px;">
+            <p style="font-size: 14.5pt;"><strong>Greedy.</strong> A variable useless alone but valuable <em>alongside</em> another is never added &mdash; forward selection only ever evaluates one addition at a time. Interactions and suppression effects are systematically invisible.</p>
+          </div>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 13px 20px;">
+            <p style="font-size: 14.5pt;"><strong>Every step tests a hypothesis suggested by the data.</strong> Chapter 8's multiple-comparisons problem, industrialised.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="margin-top: 16px; font-size: 15pt; color: var(--success-color); font-weight: 600;"><i class="fa-solid fa-check"></i> Regularization fixes the first two &mdash; one convex objective, one unique minimum, all coefficients determined simultaneously. It does <strong>not</strong> fix the third. That is Section 16.6, and it is where we finish.</p>
+      </div>
+      <aside class="notes">2 min. Flag the third failure now and promise to return &mdash; it makes the last section land as a payoff rather than an appendix. Graduate students in particular assume LASSO solved this; it did not.</aside>
+    </section>
+
+
+    <!-- SLIDE: misconception -->
+    <section id="misconception-selection" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-circle-xmark" style="color: var(--danger-color);"></i> Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 26px; border-left: 5px solid var(--danger-color);">
+          <p style="font-size: 17pt; font-style: italic; color: #7a4a2f;">&ldquo;LASSO tells me which variables matter.&rdquo;</p>
+        </div>
+        <div style="background: #eef5ee; border-radius: 12px; padding: 18px 26px; border-left: 5px solid var(--success-color); margin-top: 16px;">
+          <p style="font-size: 15pt; line-height: 1.65;">It tells you which variables it <strong>kept</strong>, which is different. Here it kept 44 to find 10.</p>
+          <p style="font-size: 15pt; line-height: 1.65; margin-top: 10px;">And its selections carry a formal caveat: LASSO recovers the true support only under the <strong>irrepresentable condition</strong> &mdash; irrelevant variables must not be strongly correlated with relevant ones. Macroeconomic series, asset-pricing factors, and anything with a factor structure violate it routinely.</p>
+          <p style="font-size: 15pt; line-height: 1.65; margin-top: 10px; font-weight: 600; color: var(--success-color);">Treat a LASSO selection as a hypothesis worth investigating. Never as a finding.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Name the irrepresentable condition here and promise the formal statement &mdash; we prove what it says in the Formal Sketch block. Graduate students will want the citation now: Zhao and Yu, JMLR 2006.</aside>
+    </section>
+
+
+    <!-- SLIDE: coefficient paths -->
+    <section id="coef-paths" style="padding: 26px 40px;">
+      <h2 style="font-size: 25pt;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> The Regularization Path</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_003_coef_paths.png" alt="LASSO coefficient paths against penalty strength: the ten truly nonzero coefficients rise away from zero while the penalty is still strong and stay large, while the 490 irrelevant ones stay clustered at zero until the penalty is nearly gone" style="max-height: 470px; width: auto;">
+        <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 6px;">Modern solvers compute the <em>entire</em> path for barely more than the cost of a single fit. Reading left to right, the penalty weakens and variables enter one at a time.</p>
+      </div>
+      <aside class="notes">1.5 min. Point out that the ten true paths separate early and cleanly, and that at CV's \(\lambda\) the grey band has already begun to lift off zero &mdash; those are the 34. This is the picture behind the table on the next slide.</aside>
+    </section>
+
+
+    <!-- SLIDE: why false positives -->
+    <section id="why-false-positives" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-dice" style="color: var(--danger-color);"></i> The False Positives Are Not a Tuning Failure</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; line-height: 1.6;">Among 490 irrelevant predictors, each independent of the outcome, some will correlate with \(y\) in <em>this</em> sample by chance alone. With 490 draws, a few correlate quite strongly. LASSO sees only the sample &mdash; it cannot distinguish <em>&ldquo;correlates because it causes&rdquo;</em> from <em>&ldquo;correlates because we got unlucky.&rdquo;</em></p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 22px; margin-top: 12px;">
+          <p style="font-size: 14.5pt; line-height: 1.6; margin: 0;">To exclude every lucky noise variable, the penalty would have to exclude <em>anything</em> with a modest sample correlation. But some genuinely relevant variables have modest sample correlations too &mdash; particularly those with smaller true coefficients. A penalty aggressive enough to remove all the noise removes real signal along with it.</p>
+        </div>
+        <p style="margin-top: 12px; font-size: 15pt; color: var(--accent-color); font-weight: 600; line-height: 1.55;">So the choice is not between a clean list and a dirty one. It is between a <em>short</em> list that misses true variables and a <em>longer</em> one that admits false ones.</p>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 12px 20px; margin-top: 12px;">
+          <p style="font-size: 14pt; margin: 0;">And these 34 occur on <strong>independent Gaussian columns</strong> &mdash; the friendliest possible design. This is a <strong>lower bound</strong> on the difficulty. Real economic data is worse.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. LASSO is a screening device, not an oracle. Say the words "screening device" and write them down &mdash; it is the framing that stops students over-reading their own output for the rest of the course.</aside>
+    </section>
+
+
+    <!-- SLIDE: L1 vs L2 beliefs -->
+    <section id="beliefs" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--accent-color);"></i> A Penalty Is Not a Neutral Technical Device</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 6px;">
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 18px 22px; border-left: 5px solid var(--accent-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">\(L_1\) believes</p>
+            <p style="font-size: 15pt; margin-top: 8px; line-height: 1.55;">most coefficients are <strong>exactly zero</strong>.</p>
+            <p style="font-size: 14pt; margin-top: 10px; line-height: 1.55; color: var(--text-color);">When true, enormously powerful. When false, it is forcing zeros onto parameters that are not zero &mdash; paying in bias for nothing.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 18px 22px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">\(L_2\) believes</p>
+            <p style="font-size: 15pt; margin-top: 8px; line-height: 1.55;">many coefficients are <strong>small but nonzero</strong>.</p>
+            <p style="font-size: 14pt; margin-top: 10px; line-height: 1.55; color: var(--text-color);">Right whenever effects are diffuse &mdash; which describes a great deal of economics, where outcomes are shaped by many weakly-acting factors.</p>
+          </div>
+        </div>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt; margin: 0; line-height: 1.6;">So the choice is <strong>not statistical.</strong> It is a question about your subject matter: <em>do I believe a small number of these variables do essentially all the work?</em> Sometimes yes &mdash; a few genes, a few binding constraints. Often no.</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Say "neither is a safe default" out loud. Students want a rule; the honest answer is that the rule is a claim about the economics of their problem.</aside>
+    </section>
+
+
+    <!-- SLIDE: correlated prediction -->
+    <section id="correlated-prediction" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-link" style="color: var(--secondary-color);"></i> Correlated Predictors: The Standard Claim Is Wrong</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">The textbook claim is that Ridge handles correlated predictors better than LASSO. The truth is more specific, and more useful. Five blocks of eight near-duplicates; all eight in block 1 have <strong>identical</strong> true coefficients of 0.5.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; margin-top: 12px; font-family: 'SF Mono', Menlo, monospace; font-size: 14pt; line-height: 1.7;">
+          &nbsp;&nbsp;&nbsp;OLS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;test MSE 1.272<br>
+          &nbsp;&nbsp;&nbsp;Ridge&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;test MSE 1.116<br>
+          &nbsp;&nbsp;&nbsp;<span style="color: var(--accent-color); font-weight: 700;">LASSO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;test MSE 1.090</span><br>
+          &nbsp;&nbsp;&nbsp;ElasticNet&nbsp;&nbsp;test MSE 1.090
+        </div>
+        <p class="fragment fade-up" style="margin-top: 14px; font-size: 15.5pt; color: var(--accent-color); font-weight: 600;">Prediction is essentially identical &mdash; and LASSO is fractionally <em>best</em>, not worst. The standard claim does not appear in test error at all.</p>
+        <p class="fragment fade-up" style="margin-top: 8px; font-size: 15pt;">It appears in the coefficients.</p>
+      </div>
+      <aside class="notes">1.5 min. Set the trap deliberately: ask the room to predict the ranking before you reveal it. Most will put Ridge first because that is what they were taught.</aside>
+    </section>
+
+
+    <!-- SLIDE: orthonormal ridge -->
+    <section id="orthonormal-ridge" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-divide" style="color: var(--secondary-color);"></i> In an Orthonormal Design, Ridge Is a Single Division</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">Set \(\mathbf{X}'\mathbf{X} = \mathbf{I}\). The solution becomes transparent:</p>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 8px 20px; margin: 10px 0; text-align: center;">
+          $$\hat{\beta}_j^{\text{ridge}} = \frac{\hat{\beta}_j^{\text{OLS}}}{1 + \lambda}$$
+        </div>
+        <p style="font-size: 14.5pt; line-height: 1.6;"><strong>Reading it:</strong> every coefficient is scaled by the <em>same</em> factor, regardless of its size. Ridge does not decide which variables to keep &mdash; it applies one uniform discount to the whole vector.</p>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt; margin: 0; line-height: 1.6;"><strong>Proportional shrinkage never reaches zero for finite \(\lambda\).</strong> Divide any nonzero number by \(1 + \lambda\) as many times as you like; you approach zero and never arrive. That is why Ridge does not select &mdash; and it is the algebraic restatement of &ldquo;a circle has no corners.&rdquo;</p>
+        </div>
+      </div>
+      <aside class="notes">1.5 min. Connect explicitly back to the geometry slide: the two statements are the same fact, one drawn and one computed. Students who did not believe the picture will believe the division.</aside>
+    </section>
+
+
+    <!-- SLIDE: ridge objective -->
+    <section id="ridge-objective" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-circle-notch" style="color: var(--secondary-color);"></i> The \(L_2\) Penalty</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; text-align: center;">
+          $$\hat{\boldsymbol{\beta}}^{\text{ridge}} = \arg\min_{\boldsymbol{\beta}} \left\{ \tfrac{1}{2n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 + \lambda \sum_{j=1}^{p} \beta_j^2 \right\}$$
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 14px; line-height: 1.6;"><strong>Reading it:</strong> \(\sum \beta_j^2\) is the squared length of the coefficient vector. You are charged for how far the whole vector sits from the origin, and you are charged <em>quadratically</em>, so a coefficient of 4 costs sixteen times what a coefficient of 1 costs.</p>
+        <div style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 13px 20px; margin-top: 14px;">
+          <p style="font-size: 14pt; margin: 0;"><strong>The intercept is never penalised.</strong> Penalising it would make the model sensitive to where you happen to put the origin of \(y\) &mdash; and that is arbitrary. Shifting every wage in your sample up by ten thousand dollars should not change the slopes.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. The quadratic charge is worth one sentence: it means Ridge fights hardest against the largest coefficients, which is exactly what you want when the largest ones are the noisiest.</aside>
+    </section>
+
+
+    <!-- SLIDE: fails in economics -->
+    <section id="fails-economics" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--danger-color);"></i> Economics Fails It Routinely</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.65;">Macroeconomic indicators, asset-pricing factors, and anything with a <strong>factor structure</strong> have exactly the property the condition forbids: everything is well explained by everything else.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14.5pt; line-height: 1.6; margin: 0;">The <strong>34 false positives</strong> of Section 16.3 are a <em>mild</em> instance &mdash; on independent Gaussian columns, where the condition holds comfortably.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14.5pt; line-height: 1.6; margin: 0;">The <strong>IMF's nonsensical selections</strong> are what failure looks like on real macro data. Not a bug in their code. The condition, failing.</p>
+          </div>
+        </div>
+        <div style="background: #eef5ee; border-left: 5px solid var(--success-color); border-radius: 8px; padding: 15px 24px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; margin: 0; line-height: 1.6;">Which is why sign restrictions worked and a better algorithm would not have. The design was the problem, and the repair had to come from outside the data.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. 1 min. Ties the case study to the theorem, which is the payoff of teaching them in the same lecture. Ask: could they have known in advance? Yes &mdash; the condition is checkable on the design matrix, at least approximately, and almost nobody checks it. <strong>CUT IF BEHIND</strong> — self-contained, and it survives in lecture-notes.md.</aside>
+    </section>
+

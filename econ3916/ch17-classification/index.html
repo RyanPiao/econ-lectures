@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classification: Logistic Regression</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax 3 (tex-svg). NOT included by create-presentation.js — added manually.
+       Inline delimiters are \\( \\) deliberately: with $...$ any text node holding two
+       currency figures gets everything between them typeset as mathematics. -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']],
+                     displayMath: [['$$','$$'], ['\\[','\\]']]},
+               svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 54% 46%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 45px 50px 60px; text-align: left;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Chapter 17</p>
+          <h1 style="font-size: 33pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Classification:<br>Logistic Regression</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">A model that is right 93.1% of the time and worth nothing at all</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 28px;">
+          <img src="figures/cover-ch17-classification.png" alt="Fitted logistic curve for the probability of a US recession against the term spread, with the 36 recession months plotted at the top, a dashed line at the 0.5 threshold catching none of them and a dashed line at 0.10 catching 26" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">17.1</p>
+            <p style="font-size: 15pt;">Explain why <strong>OLS is unsuitable</strong> for a binary outcome, and how the logit link fixes both of its failures</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">17.2</p>
+            <p style="font-size: 15pt;">Fit a logistic regression and interpret a coefficient as a change in <strong>log-odds</strong> and as an <strong>odds ratio</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">17.3</p>
+            <p style="font-size: 15pt;">Explain why <strong>accuracy is misleading</strong> under class imbalance, and score a classifier with a proper rule instead</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">17.4</p>
+            <p style="font-size: 15pt;">Choose a <strong>decision threshold</strong> from the relative cost of the two errors, rather than accepting 0.5</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Frame the shift: the outcome is now a category, and the machinery barely changes &mdash; you still fit a linear combination of features. What changes completely is what counts as a good answer. Say that LO 17.3 and 17.4 are the ones they will be examined on hardest, and that both are about judgement rather than technique.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 14.</strong> A variable whose variance depends on its own mean. What is that called, and what does it break?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 15.</strong> You add a genuinely relevant variable and out-of-sample error does not improve. Has something gone wrong?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both land on today &mdash; and the second one has a clean example waiting in Section 3.</p>
+      </div>
+      <aside class="notes">2 min, cold call. Answer 1: heteroscedasticity. It breaks the standard errors, not the coefficients &mdash; and today you will meet a model where it is not an accident of the data but structural, built into the outcome variable itself. Answer 2: no. Related to the outcome and adds information beyond what you already have are different properties. Today's example is unemployment added to the yield curve: a real predictor of recessions that contributes nothing.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-tie" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--secondary-color);"></i> A Model Worth Nothing at All</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">It predicts U.S. recessions. One input: the <strong>yield curve</strong> &mdash; the 10-year Treasury minus the 3-month bill &mdash; which has preceded every American recession since the 1960s. The output is the probability of a recession beginning within twelve months.</p>
+        <p class="text-lg" style="line-height: 1.55; margin-top: 10px;">The best-known forecasting model in macroeconomics, fitted on <strong>523 months of real Federal Reserve data</strong>. Score it the way most people score a classifier &mdash; count how often its yes-or-no call is right:</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 20px;">
+          <div class="stat-highlight"><div class="number" style="color: var(--muted-color);">93.1%</div><div class="label">a model with no inputs at all that says &ldquo;no recession&rdquo; every month</div></div>
+          <div class="stat-highlight"><div class="number" style="color: var(--secondary-color);">93.1%</div><div class="label">the logistic model on the term spread</div></div>
+        </div>
+        <p style="margin-top: 20px; font-size: 17pt; color: var(--primary-color); text-align: center;"><strong>Identical.</strong> And it is worse than it looks.</p>
+      </div>
+      <aside class="notes">2 min. Read the two numbers out loud and then stop. Do not click. Let the room notice that the do-nothing rule ties the Federal Reserve's own indicator. The data is FRED T10Y3M averaged monthly, joined to USREC and shifted back twelve months so the target is a forecast rather than a description &mdash; say that, because someone always asks whether this is cheating.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 — the payload -->
+    <section id="hook-payload" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Zero</h2>
+      <div class="content">
+        <p class="text-lg">Over the 523 months, <strong>36</strong> preceded a recession. The model flagged:</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p style="font-size: 26pt; text-align: center;">recessions caught: <strong style="color: var(--danger-color);">0 of 36</strong></p>
+        </div>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.55;">A model built to predict recessions, using the best predictor economics has, catching <strong>none of them</strong> &mdash; while scoring 93.1%.</p>
+        <p class="text-lg" style="margin-top: 12px; line-height: 1.55;"><strong>And nothing is broken.</strong> The model ranks risky months above safe ones about 81% of the time, and on a proper probability score it beats the do-nothing baseline. Every bit of that information is real, and it is thrown away by two decisions nobody thinks about:</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);"><p style="font-size: 15.5pt;">using <strong>accuracy</strong> as the score</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);"><p style="font-size: 15.5pt;">using <strong>0.5</strong> as the cutoff</p></div>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the chapter in one slide. The critical instruction for the whole hour: students must NOT leave believing that yield-curve models do not work. Say now, out loud, that the model is good and the metric is bad, and promise them the evidence in about forty minutes. If you skip that promise, half the room writes down the wrong lesson here and never revises it.</aside>
+    </section>
+
+    <!-- SLIDE 6: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Why Not Just Run OLS?</h1>
+      <p class="subtitle">Section 17.1 &bull; Two defects, one cosmetic and one structural</p>
+    </section>
+
+    <!-- SLIDE 7: The LPM and its two defects -->
+    <section id="lpm-defects" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-ruler-horizontal" style="color: var(--accent-color);"></i> The Linear Probability Model</h2>
+      <div class="content">
+        <p class="text-lg">Code the outcome <strong>1</strong> for recession and <strong>0</strong> otherwise, regress it on the spread, and read the fitted values as probabilities. This is still used, and it has two defects.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--muted-color);">
+            <p style="font-size: 14pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Cosmetic</p>
+            <p style="font-size: 15.5pt; line-height: 1.5;">A straight line does not stop at 0 or 1. Extend it far enough and it predicts <strong>negative probabilities</strong>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt; color: var(--danger-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Structural</p>
+            <p style="font-size: 15.5pt; line-height: 1.5;">The variance of a binary variable is \(p(1-p)\) &mdash; it depends on its own mean, so the errors are <strong>heteroscedastic by construction</strong>.</p>
+          </div>
+        </div>
+        <div class="key-result" style="margin-top: 18px;">
+          <p style="font-size: 16pt;">You can patch the second with HC3, exactly as Chapter 14 taught. <strong>You cannot patch a negative probability.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The heteroscedasticity point is a one-line callback and should be presented as &ldquo;you already know this one&rdquo; &mdash; the novelty is only that here it is not a property of the data but a property of the outcome variable, unavoidable in every binary regression ever run. Do not linger; the figure on the next slide is the argument.</aside>
+    </section>
+
+    <!-- SLIDE 8: Figure 1 -->
+    <section id="fig-lpm" style="padding: 24px 45px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Not a Hypothetical &mdash; 84 Negative Probabilities</h2>
+      <div class="content" style="display: grid; grid-template-columns: 58% 42%; gap: 22px; align-items: center;">
+        <img class="figure" src="figures/figure_001_lpm_vs_logit.png" alt="The linear probability model fitted to the recession data runs below zero for wide spreads, shading a region of negative predicted probabilities, while the logistic sigmoid stays inside zero and one" style="max-height: 520px; width: auto; display: block; margin: 0 auto;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">Fitted on the real Federal Reserve series, the linear probability model predicts values from <strong>&minus;0.067 to 0.242</strong>.</p>
+          <div class="stat-highlight" style="margin: 14px 0;"><div class="number" style="color: var(--danger-color);">84</div><div class="label">months assigned a NEGATIVE probability of recession</div></div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">Not a contrived example. The ordinary result of fitting a line to a variable that takes only two values.</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 10px; color: var(--secondary-color);"><strong>The sigmoid cannot do this.</strong> Not because it is better tuned &mdash; because it is impossible by construction.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Run this live if you have the notebook open; the objection is usually taught as a hypothetical and it is not one. The pale grey band along the bottom is the 487 quiet months and the terracotta points at the top are the 36 recession months &mdash; point at that imbalance now, because it is the fact that drives the entire second half of the hour.</aside>
+    </section>
+
+    <!-- SLIDE 9: The sigmoid -->
+    <section id="sigmoid" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-wave-square" style="color: var(--success-color);"></i> The Fix: Keep the Line, Bend the Output</h2>
+      <div class="content">
+        <p class="text-lg">Keep the linear combination of features. Pass it through a function that maps the whole real line into \((0, 1)\).</p>
+        <div class="equation-box" style="margin: 16px 0;">
+          $$\hat{P}(Y = 1 \mid x) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 x_1 + \cdots + \beta_p x_p)}}$$
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;"><strong>In words.</strong> The expression inside the exponential is the <strong>linear predictor</strong> &mdash; exactly the \(\mathbf{x}'\boldsymbol{\beta}\) of Chapter 13. The <strong>sigmoid</strong> wrapped around it is S-shaped: very negative linear predictors map near 0, very positive ones near 1, and zero maps to exactly 0.5.</p>
+        </div>
+        <p style="margin-top: 16px; font-size: 16pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Nothing about the features changed. Only what we do with their weighted sum.</p>
+      </div>
+      <aside class="notes">4 min. Draw the sigmoid by hand and mark where the linear predictor is minus three, zero and plus three &mdash; students remember the drawing, not the formula. Emphasise that the coefficients enter exactly as they always have: this is not a new model of the world, it is the same linear predictor with a wrapper that makes its output legal.</aside>
+    </section>
+
+    <!-- SLIDE 10: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Linear in Log-Odds</h1>
+      <p class="subtitle">Section 17.2 &bull; Three scales, three interpretations, one very common error</p>
+    </section>
+
+    <!-- SLIDE 11: The rearrangement -->
+    <section id="logit-algebra" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-right-left" style="color: var(--secondary-color);"></i> The Rearrangement That Explains Everything</h2>
+      <div class="content">
+        <p class="text-lg">Take the sigmoid and solve for the linear predictor:</p>
+        <div class="equation-box" style="margin: 14px 0;">
+          $$\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 x_1 + \cdots + \beta_p x_p$$
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px;"><p style="font-size: 15pt; line-height: 1.5;"><strong>Odds</strong> \(= p/(1-p)\). A probability of 0.2 is odds of 0.25 &mdash; &ldquo;one to four.&rdquo;</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px;"><p style="font-size: 15pt; line-height: 1.5;">The <strong>logit</strong> is the log of the odds. It is the scale on which this model is linear.</p></div>
+        </div>
+        <div class="key-result" style="margin-top: 16px;">
+          <p style="font-size: 16.5pt;">Logistic regression <em>is</em> a linear model. It is linear in the <strong>log-odds</strong>, not in the probability &mdash; and that one fact governs every interpretation you will ever make of it.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Do the algebra on the board &mdash; it is three lines and it turns &ldquo;linear in log-odds&rdquo; from an assertion into a derived fact. Students accept the sentence much more readily once they have watched the sigmoid invert. Then say: a coefficient is therefore a change in log-odds, which nobody on earth thinks in, so we need a second scale.</aside>
+    </section>
+
+    <!-- SLIDE 12: Odds ratio on the real model -->
+    <section id="odds-ratio" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-percent" style="color: var(--accent-color);"></i> Exponentiate, and It Becomes Sayable</h2>
+      <div class="content">
+        <div class="equation-box" style="margin-bottom: 14px;">
+          $$e^{\beta_j} = \text{the factor by which the odds multiply, per one-unit increase in } x_j$$
+        </div>
+        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin: 0;"><code>coefficient on spread: -0.8354   (p = 4.88e-08)
+odds ratio: exp(-0.8354) = 0.434</code></pre>
+        <div class="key-result" style="margin-top: 16px;">
+          <p style="font-size: 16.5pt;">A curve one percentage point steeper multiplies the odds of a recession within twelve months by <strong>0.434</strong> &mdash; it <strong>reduces the odds by 57%</strong>.</p>
+        </div>
+        <p style="margin-top: 14px; font-size: 15.5pt; line-height: 1.5;">Note what that is <em>not</em>. It is not a 57% reduction in <strong>probability</strong>, and it is not 84 percentage points of anything. Odds and probabilities coincide only when both are small.</p>
+      </div>
+      <aside class="notes">3 min. Work it out loud: minus 0.8354, exponentiate, 0.434, &ldquo;a 57% reduction in odds.&rdquo; Then have the class say the sentence back before you move on &mdash; the poll on the next slide tests exactly this and it is worth their having attempted the words first. This is the sentence you would actually say to a risk committee, so treat it as a performance, not a calculation.</aside>
+    </section>
+    <!-- SLIDE 13-14: POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 32px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll &mdash; What Does &minus;0.8354 Mean?</h2>
+        <div class="content">
+          <p class="text-lg">The fitted coefficient on the term spread is <strong>&minus;0.8354</strong>. Which statement is correct?</p>
+          <div class="poll-grid" data-poll-id="ch17-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) A one-point wider spread lowers the <strong>probability</strong> of recession by 84%</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) A one-point wider spread lowers the <strong>probability</strong> of recession by 57%</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) A one-point wider spread multiplies the <strong>odds</strong> by 0.434 &mdash; a 57% fall in odds</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) A one-point wider spread lowers the <strong>log-odds</strong> by 0.434</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students click to vote; results appear on the next slide. Expect a real split between A and C, and expect some of the room to pick B because they heard &ldquo;57%&rdquo; thirty seconds ago and did not hear which scale it was on. That is the point of asking.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch17-econ3916-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; the Odds, Not the Probability</h2>
+        <div class="poll-results-chart" data-poll-id="ch17-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.5;"><strong>A</strong> reads a log-odds coefficient as a percentage of probability &mdash; the single most common error in applied classification work. <strong>B</strong> has the right arithmetic on the wrong scale. <strong>D</strong> swaps the coefficient and its exponential: the log-odds fall by 0.8354, and it is the <em>odds</em> that multiply by 0.434.</p>
+          <p style="margin-top: 12px; color: var(--accent-color); font-weight: 600; font-size: 15.5pt;"><i class="fa-solid fa-arrow-right"></i> This exact confusion is a standard screening question in data-science interviews. Interviewers use it because the wrong answer gets stated confidently.</p>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch17-econ3916-poll-1')" style="position:absolute; bottom:14px; right:20px; font-size:11pt; padding:4px 10px;">Reset</button>
+        <aside class="notes">2 min. If the A share is large, say so out loud and do not soften it &mdash; a confident wrong answer in an interview is worse than an admitted uncertainty, and this is the cheapest possible place to learn that. Then set up the next slide: if a coefficient is not a change in probability, what IS the change in probability?</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 15: Marginal effect -->
+    <section id="marginal-effect" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-arrows-up-down" style="color: var(--danger-color);"></i> The Effect on the Probability Is Not Constant</h2>
+      <div class="content">
+        <p class="text-lg">In OLS a coefficient is a constant marginal effect &mdash; one more room adds the same amount to predicted value everywhere. Here it is not:</p>
+        <div class="equation-box" style="margin: 14px 0;">
+          $$\frac{\partial p}{\partial x_j} = \beta_j \, p(1-p)$$
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.55;"><strong>In words.</strong> The multiplier \(p(1-p)\) is largest at \(p = 0.5\) and vanishes as \(p\) approaches 0 or 1. A given change in the spread moves the probability <strong>a great deal for a month that is genuinely uncertain, and hardly at all for one that is already safe.</strong></p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p style="font-size: 16pt;">That is economically sensible, not a mathematical inconvenience. If a recession is already near-certain, more bad news barely changes the forecast. The model's diminishing sensitivity at the extremes matches how information actually works.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Students find non-constant marginal effects unsettling until they hear the economic reading, which lands immediately &mdash; so give the economics before the algebra if the room looks lost. The practical consequence, and the one that matters for their careers: when you report to a non-technical audience, compute the marginal effect AT A STATED POINT. &ldquo;At the current spread, a further half-point inversion raises the probability by six points&rdquo; is usable. A coefficient nobody can convert in their head is not.</aside>
+    </section>
+
+    <!-- SLIDE 16: The three scales table -->
+    <section id="three-scales-table" style="padding: 28px 55px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-table-columns" style="color: var(--secondary-color);"></i> Three Scales, One Table</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; margin-bottom: 8px;">Intercept &minus;1.7592, slope &minus;0.8354. Read across and the whole section is here.</p>
+        <table style="width: 100%; font-size: 14.5pt; border-collapse: collapse;">
+          <thead><tr style="border-bottom: 2px solid var(--secondary-color);">
+            <th style="text-align: right; padding: 7px 12px;">spread</th>
+            <th style="text-align: right; padding: 7px 12px;">logit</th>
+            <th style="text-align: right; padding: 7px 12px;">odds</th>
+            <th style="text-align: right; padding: 7px 12px;">probability</th>
+            <th style="text-align: right; padding: 7px 12px;">marginal effect</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="text-align: right; padding: 6px 12px;">2.0</td><td style="text-align: right; padding: 6px 12px;">&minus;3.4301</td><td style="text-align: right; padding: 6px 12px;">0.032</td><td style="text-align: right; padding: 6px 12px;">3.1%</td><td style="text-align: right; padding: 6px 12px;">&minus;0.0254</td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="text-align: right; padding: 6px 12px;">1.0</td><td style="text-align: right; padding: 6px 12px;">&minus;2.5947</td><td style="text-align: right; padding: 6px 12px;">0.075</td><td style="text-align: right; padding: 6px 12px;">6.9%</td><td style="text-align: right; padding: 6px 12px;">&minus;0.0540</td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd; background: #f8f6f3;"><td style="text-align: right; padding: 6px 12px;">0.0</td><td style="text-align: right; padding: 6px 12px;">&minus;1.7592</td><td style="text-align: right; padding: 6px 12px;">0.172</td><td style="text-align: right; padding: 6px 12px;"><strong>14.7%</strong></td><td style="text-align: right; padding: 6px 12px;">&minus;0.1047</td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="text-align: right; padding: 6px 12px;">&minus;1.0</td><td style="text-align: right; padding: 6px 12px;">&minus;0.9238</td><td style="text-align: right; padding: 6px 12px;">0.397</td><td style="text-align: right; padding: 6px 12px;">28.4%</td><td style="text-align: right; padding: 6px 12px;">&minus;0.1699</td></tr>
+            <tr><td style="text-align: right; padding: 6px 12px;">&minus;2.0</td><td style="text-align: right; padding: 6px 12px;">&minus;0.0884</td><td style="text-align: right; padding: 6px 12px;">0.915</td><td style="text-align: right; padding: 6px 12px;">47.8%</td><td style="text-align: right; padding: 6px 12px;">&minus;0.2084</td></tr>
+          </tbody>
+        </table>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 13.5pt;"><strong>logit</strong> moves in equal steps of &minus;0.8354 &mdash; the only column that is linear</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--accent-color);"><p style="font-size: 13.5pt;"><strong>odds</strong> multiply &mdash; each step divides by roughly 2.3</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 16px; border-left: 4px solid var(--primary-color);"><p style="font-size: 13.5pt;"><strong>probability</strong> does neither &mdash; 3.8 points at the top, 19.4 at the bottom</p></div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Read down the marginal-effect column: it grows from &minus;0.025 to &minus;0.208, a factor of eight, as the model moves from confident-no-recession toward genuine uncertainty. The highlighted row is the quotable one: at a perfectly flat curve the model puts recession within a year at 14.7%, roughly double the 6.9% unconditional base rate. That is the kind of statement worth extracting from a model &mdash; a defensible number a journalist could print.</aside>
+    </section>
+
+    <!-- SLIDE 17: Figure 2 -->
+    <section id="fig-scales" style="padding: 20px 45px;">
+      <h2 style="margin-bottom: 2px;"><i class="fa-solid fa-chart-area" style="color: var(--accent-color);"></i> Linear Here &mdash; and Only Here</h2>
+      <div class="content" style="display: grid; grid-template-columns: 46% 54%; gap: 24px; align-items: center;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">The <strong>top panel</strong> is the log-odds. Equal steps in the spread produce equal steps in the logit. That is the whole content of &ldquo;linear in log-odds.&rdquo;</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;">The <strong>bottom panel</strong> is the same model on the probability scale. The two slope triangles are \(\beta p(1-p)\) at spreads of &minus;2 and &#43;2.</p>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 14pt;">Same coefficient. Same one-point change. <strong>Eight times the movement in probability</strong> on the left as on the right.</p>
+          </div>
+        </div>
+        <img class="figure" src="figures/figure_002_three_scales.png" alt="Two stacked panels: the log-odds falling in equal steps as the term spread widens, and the fitted probability tracing an S-curve whose slope is eight times steeper at a spread of minus two than at plus two" style="max-height: 555px; width: auto; display: block; margin: 0 auto;">
+      </div>
+      <aside class="notes">2 min. Trace the top panel with a finger, point by point, saying &ldquo;minus 0.84, minus 0.84, minus 0.84.&rdquo; Then drop to the bottom panel and do the same trace, saying the probabilities: 3.1, 6.9, 14.7, 28.4, 47.8. The contrast between two identical horizontal walks is the entire teaching point and it needs no words beyond the numbers.</aside>
+    </section>
+
+    <!-- SLIDE 18: Discussion 1 -->
+    <section id="discussion-1" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion 1 &mdash; Say It to the Risk Committee</h2>
+      <div class="content">
+        <div class="discussion-prompt">
+          <p class="bloom-level">Bloom L3/L4 &bull; Apply and Analyze &bull; 4 minutes &bull; pairs</p>
+          <p style="font-size: 16pt;">You are briefing a bank's risk committee on the recession model. In <strong>one sentence each</strong>:</p>
+          <p style="font-size: 16pt; margin-top: 8px;"><strong>1.</strong> State what &minus;0.8354 means, using the word &ldquo;odds&rdquo; and no jargon beyond it.</p>
+          <p style="font-size: 16pt; margin-top: 6px;"><strong>2.</strong> The chair asks: &ldquo;so how much does the <em>probability</em> move?&rdquo; Give a number &mdash; and say what you had to assume in order to give it.</p>
+        </div>
+        <p style="margin-top: 16px; font-size: 15pt;">Be ready to say <em>which number you would put in the memo</em> and why.</p>
+      </div>
+      <aside class="notes">4 min including debrief. Press 4 for the timer. Question 2 is the one that matters: it cannot be answered without naming a starting point. At a spread of zero the answer is about ten points per unit; at a spread of two it is two and a half. Both come off the marginal-effect column. The lesson to say out loud at the end: report the marginal effect at a stated point, not a coefficient nobody can convert in their head. Pairs who say &ldquo;it depends&rdquo; and then supply the point have got it exactly right.</aside>
+    </section>
+
+    <!-- SLIDE 19: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Fitting, and Reading the Output</h1>
+      <p class="subtitle">Section 17.3 &bull; No closed form, two libraries, and a variable that adds nothing</p>
+    </section>
+
+    <!-- SLIDE 20: Maximum likelihood -->
+    <section id="mle" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--secondary-color);"></i> There Is No Formula &mdash; and It Barely Matters</h2>
+      <div class="content">
+        <p class="text-lg">OLS has a closed form. Logistic regression does not: the estimate is found numerically, by <strong>maximum likelihood</strong>.</p>
+        <div class="equation-box" style="margin: 12px 0;">
+          $$L(\boldsymbol{\beta}) = \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i}$$
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.5;"><strong>In words.</strong> Each month contributes \(p_i\) if a recession followed and \(1 - p_i\) if none did. Maximising this picks the coefficients under which <strong>the data we actually saw is most probable</strong>.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);"><p style="font-size: 14.5pt; line-height: 1.5;"><strong>One optimum, always.</strong> The log-likelihood is globally concave, so there are no local maxima to get trapped in and two analysts get the same answer to many decimals.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14.5pt; line-height: 1.5;"><strong>But it can fail to converge</strong> &mdash; and failure is diagnostic: a feature that separates the classes perfectly, wildly different scales, or near-collinearity. Chapter 14's problem, inherited.</p></div>
+        </div>
+        <p style="margin-top: 14px; font-size: 15.5pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> A convergence warning is information about your design matrix, not a nuisance to suppress.</p>
+      </div>
+      <aside class="notes">3 min. Keep this at the level of &ldquo;which coefficients make what we saw most probable.&rdquo; Do not derive anything. Students sometimes over-read &ldquo;no closed form&rdquo; as fragility; the correction is the left box &mdash; convex problem, one answer, milliseconds. If someone asks about standard errors, say they come from the curvature of the log-likelihood and that we take them from statsmodels rather than deriving them here.</aside>
+    </section>
+
+    <!-- SLIDE 21: Two libraries -->
+    <section id="two-libraries" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--danger-color);"></i> Two Libraries, Two Purposes &mdash; and a Trap</h2>
+      <div class="content">
+        <pre style="font-size: 13.5pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin: 0;"><code># Inference — standard errors, z-statistics, p-values
+logit = sm.Logit(y, X).fit()
+
+# Prediction — the scikit-learn pipeline ecosystem
+clf = LogisticRegression(penalty=None, solver='lbfgs').fit(X, y)</code></pre>
+        <div class="key-result" style="margin-top: 16px;">
+          <p style="font-size: 16.5pt;"><code>penalty=None</code> is <strong>not optional</strong> if you want to match <code>statsmodels</code>. scikit-learn applies \(L_2\) regularization <em>by default</em>.</p>
+        </div>
+        <p style="margin-top: 14px; font-size: 15.5pt; line-height: 1.55;">Sensible for prediction. Surprising for an economist who expects maximum likelihood and gets a penalised estimate without being told. And worse: the strength parameter is <code>C</code>, which is the <strong>inverse</strong> of the penalty &mdash; small <code>C</code> means heavy regularization. Chapter 16 catalogued three conflicting uses of &ldquo;alpha&rdquo;; <code>C</code> is a fourth, running the opposite way to all of them.</p>
+      </div>
+      <aside class="notes">2 min. Say &ldquo;penalty equals None&rdquo; out loud twice &mdash; the chapter asks for it explicitly and the reason is that students will produce different coefficients in the lab and assume they have made a mistake. Tell them now: if statsmodels and scikit-learn disagree on a logistic fit, the first thing to check is not your data, it is the penalty argument.</aside>
+    </section>
+
+    <!-- SLIDE 22: The null result -->
+    <section id="null-result" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-circle-minus" style="color: var(--muted-color);"></i> Adding Unemployment: It Adds Nothing</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Unemployment tends to turn before a downturn. Add its twelve-month change and refit.</p>
+        <pre style="font-size: 13.5pt; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; margin: 10px 0;"><code>                   Brier     AUC   pseudo-R2
+spread only       0.0615   0.811       0.131
+spread + unrate   0.0616   0.810       0.132
+
+  spread      coef -0.8324   odds ratio 0.435   p 5.54e-08
+  unrate_chg  coef +0.0409   odds ratio 1.042   p 0.736</code></pre>
+        <p style="font-size: 15.5pt; line-height: 1.5;">The Brier score is fractionally <em>worse</em>, AUC a shade lower, and the new coefficient is nowhere near significant.</p>
+        <div class="key-result" style="margin-top: 12px;">
+          <p style="font-size: 16pt;">The yield curve already embodies the market's aggregate forecast &mdash; including whatever traders believe about the labour market. <strong>Related to the outcome</strong> and <strong>adds information beyond what you have</strong> are different properties.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is Quick Check 2 from the retrieval slide, paid off. It is also why the New York Fed's model has remained a one-variable model for thirty years &mdash; not simplicity for its own sake, but the result of the additions not paying. Resist the urge to dwell; the point is that a null result is a finding and gets reported, not buried.</aside>
+    </section>
+    <!-- SLIDE 23: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Why Accuracy Is the Wrong Score</h1>
+      <p class="subtitle">Section 17.4 &bull; The chapter. The floor is the base rate.</p>
+    </section>
+
+    <!-- SLIDE 24: The three lines -->
+    <section id="the-arithmetic" style="padding: 32px 58px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> The Reason Is Arithmetic</h2>
+      <div class="content">
+        <pre style="font-size: 15pt; background: #f8f6f3; border-radius: 8px; padding: 16px 22px; margin: 0;"><code>'always no recession':  accuracy 93.1%
+logistic at p >= 0.5:   accuracy 93.1%
+recessions caught:      0 of 36</code></pre>
+        <p class="text-lg" style="margin-top: 16px; line-height: 1.55;">Only <strong>6.9%</strong> of months precede a recession, so a model that says &ldquo;no&rdquo; every time is right 93.1% of the time <em>for free</em>.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p style="font-size: 17pt;"><strong>Accuracy's floor is set by the base rate</strong> &mdash; and with imbalanced classes that floor is high enough to disguise total uselessness.</p>
+        </div>
+        <p style="margin-top: 14px; font-size: 15.5pt; line-height: 1.55;">And <strong>0.5 is a threshold nobody chose.</strong> It is a library default, inherited from a two-class problem with a 50% base rate. With a 6.9% base rate the predicted probability rarely climbs above 0.5, so the rule almost never fires.</p>
+      </div>
+      <aside class="notes">3 min. Two separate failures are stacked here and students conflate them, so separate them explicitly: the SCORE is wrong (accuracy) and the CUTOFF is wrong (0.5). Fixing either one alone helps; the chapter fixes both, and the next twenty minutes are one each. Write &ldquo;base rate 6.9%&rdquo; somewhere visible and leave it up.</aside>
+    </section>
+
+    <!-- SLIDE 25: It happens everywhere -->
+    <section id="everywhere" style="padding: 30px 58px;">
+      <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--danger-color);"></i> And the Rarer the Event, the Worse It Gets</h2>
+      <div class="content">
+        <table style="width: 100%; font-size: 15.5pt; border-collapse: collapse;">
+          <thead><tr style="border-bottom: 2px solid var(--secondary-color);">
+            <th style="text-align: left; padding: 9px 14px;">Application</th>
+            <th style="text-align: right; padding: 9px 14px;">Typical base rate</th>
+            <th style="text-align: right; padding: 9px 14px;">Accuracy of &ldquo;always no&rdquo;</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="padding: 8px 14px;">Recession within 12 months</td><td style="text-align: right; padding: 8px 14px;">~7%</td><td style="text-align: right; padding: 8px 14px;">93%</td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="padding: 8px 14px;">Consumer loan default</td><td style="text-align: right; padding: 8px 14px;">2&ndash;5%</td><td style="text-align: right; padding: 8px 14px;">95&ndash;98%</td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd; background: #f8f6f3;"><td style="padding: 8px 14px;">Card fraud</td><td style="text-align: right; padding: 8px 14px;">~0.2%</td><td style="text-align: right; padding: 8px 14px;"><strong>99.8%</strong></td></tr>
+            <tr><td style="padding: 8px 14px;">Rare disease screening</td><td style="text-align: right; padding: 8px 14px;">&lt;1%</td><td style="text-align: right; padding: 8px 14px;">&gt;99%</td></tr>
+          </tbody>
+        </table>
+        <div class="key-result" style="margin-top: 18px;">
+          <p style="font-size: 17pt;">Prediction is valuable precisely when an event is <strong>rare and consequential</strong> &mdash; which is precisely when accuracy stops working. <strong>Accuracy is least informative exactly where classification matters most.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The fraud row is the one quoted in interviews: a model that flags nothing achieves 99.8% accuracy, and a great many production systems have been signed off on figures like it. Nobody needs a model to predict a coin flip &mdash; that is the sentence that makes the last line land, so say it before you say the last line.</aside>
+    </section>
+
+    <!-- SLIDE 26: Figure 3 -->
+    <section id="fig-accuracy" style="padding: 18px 45px;">
+      <h2 style="margin-bottom: 2px;"><i class="fa-solid fa-chart-simple" style="color: var(--success-color);"></i> Scored Two Ways</h2>
+      <div class="content" style="display: grid; grid-template-columns: 44% 56%; gap: 24px; align-items: center;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">By <strong>accuracy</strong>, a tie: a rule with no inputs at all matches the Federal Reserve's own indicator.</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;">By the <strong>Brier score</strong>, the logistic model beats both the do-nothing rule and a model that just reports the base rate every month.</p>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 14pt;">The information was there the whole time. <strong>Accuracy destroyed it</strong>, by collapsing a well-ordered set of probabilities into a yes/no call at an arbitrary cutoff.</p>
+          </div>
+          <p style="font-size: 14pt; margin-top: 10px; color: var(--secondary-color);">ROC-AUC 0.811: given one month that preceded a recession and one that did not, the model ranks them correctly about 81% of the time.</p>
+        </div>
+        <img class="figure" src="figures/figure_003_accuracy_trap.png" alt="Two stacked bar panels: the naive always-no rule and the logistic model both scoring 93.1 per cent accuracy with the model catching none of the 36 recessions, and below it Brier scores of 0.0688, 0.0641 and 0.0615 in which the logistic model is lowest and therefore best" style="max-height: 560px; width: auto; display: block; margin: 0 auto;">
+      </div>
+      <aside class="notes">3 min. This is the turn of the whole hour and it must not be rushed. Say it in this order: the model is good, the metric was bad. NOT &ldquo;the model is bad.&rdquo; The middle Brier bar, 0.0641, is a model that reports 6.9% every single month and never looks at the spread &mdash; that is the floor the data imposes, and the logistic model at 0.0615 is genuinely below it. AUC 0.811 is developed properly in Chapter 18; take it here as a discrimination number and do not derive it.</aside>
+    </section>
+
+    <!-- SLIDE 27: The confusion matrix -->
+    <section id="confusion-matrix" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-table-cells-large" style="color: var(--secondary-color);"></i> Underneath Every Accuracy Figure: Four Counts</h2>
+      <div class="content">
+        <table style="width: 100%; font-size: 15pt; border-collapse: collapse;">
+          <thead><tr style="border-bottom: 2px solid var(--secondary-color);">
+            <th style="padding: 9px 14px;"></th>
+            <th style="text-align: left; padding: 9px 14px;">Model says <strong>yes</strong></th>
+            <th style="text-align: left; padding: 9px 14px;">Model says <strong>no</strong></th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="padding: 10px 14px;"><strong>Recession followed</strong></td><td style="padding: 10px 14px;">True positive &mdash; caught it<br><span style="color: var(--danger-color); font-weight: 700;">TP = 0</span></td><td style="padding: 10px 14px;">False negative &mdash; <strong>missed it</strong><br><span style="color: var(--danger-color); font-weight: 700;">FN = 36</span></td></tr>
+            <tr><td style="padding: 10px 14px;"><strong>No recession</strong></td><td style="padding: 10px 14px;">False positive &mdash; false alarm<br><span style="color: var(--muted-color); font-weight: 700;">FP = 0</span></td><td style="padding: 10px 14px;">True negative<br><span style="color: var(--success-color); font-weight: 700;">TN = 487</span></td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top: 16px; font-size: 15.5pt; line-height: 1.55;">Accuracy is \((TP + TN)/n\) &mdash; it adds the two diagonal cells and divides. With a 6.9% base rate the true negatives dominate that sum, so <strong>accuracy is almost entirely a measure of how well you identify quiet months.</strong> 487 out of 523 is 93.1%.</p>
+        <div class="key-result" style="margin-top: 12px;">
+          <p style="font-size: 16pt;">Any single number computed from this table discards information. <strong>Accuracy discards the part you care about.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Once they look at four cells rather than one summary, the natural questions change: of the recessions that happened, how many did we catch? Of our alarms, how many were real? Those are two different ratios, they trade against each other, and Chapter 18 develops them as recall and precision. Name them now so the handoff is not a surprise, but do not define them formally today.</aside>
+    </section>
+
+    <!-- SLIDE 28: Proper scoring rules -->
+    <section id="proper-scoring" style="padding: 30px 58px;">
+      <h2><i class="fa-solid fa-scale-unbalanced-flip" style="color: var(--accent-color);"></i> Accuracy Is an <em>Improper</em> Score</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.55;">A scoring rule is <strong>strictly proper</strong> if it is uniquely optimised by reporting your true beliefs. Brier and log-loss are strictly proper. Accuracy is not &mdash; it can be improved by <em>misreporting</em>: shading a genuine 0.45 up to a confident 1 pays off whenever the outcome occurs, and accuracy cannot tell a well-calibrated 0.45 from an overconfident 0.95.</p>
+        <div class="equation-box" style="margin: 14px 0;">
+          $$\text{Brier} = \frac{1}{n}\sum_{i=1}^{n}\left(\hat{p}_i - y_i\right)^2$$
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.5;"><strong>In words.</strong> Squared error, applied to probabilities. It rewards being both <strong>discriminating</strong> (separating the classes) and <strong>calibrated</strong> (when you say 30%, it happens 30% of the time). Accuracy rewards only being on the right side of a cutoff.</p>
+        <div class="key-result" style="margin-top: 12px;">
+          <p style="font-size: 16pt;">Score classifiers with <strong>Brier or log-loss</strong>. Report accuracy as a summary for stakeholders, never as an objective to optimise &mdash; and never without the base rate beside it.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Keep &ldquo;strictly proper&rdquo; informal &mdash; the definition they need is the one on the slide: you cannot game it by lying about your confidence. If a student asks why we do not just optimise accuracy directly, the answer is on this slide and it is worth repeating: because the thing that maximises accuracy on this data is a model that never fires.</aside>
+    </section>
+
+    <!-- SLIDE 29: Ch 15 footnote -->
+    <section id="ch15-footnote" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-link" style="color: var(--muted-color);"></i> A Precise Footnote to Chapter 15</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.55;">Chapter 15 gave you a floor: \(\sigma^2\), the irreducible error, which no model could beat. Classification has a floor too.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;">With a base rate of 6.9%, a model that only ever reports <strong>6.9%</strong> and never looks at the spread scores \(\bar{p}(1-\bar{p}) = \mathbf{0.0641}\) on the Brier score. That floor is set by the data, not by the model &mdash; and our logistic fit at <strong>0.0615</strong> is genuinely below it.</p>
+        </div>
+        <div class="key-result" style="margin-top: 16px; border-left-color: var(--danger-color);">
+          <p style="font-size: 16pt;"><strong>Be careful with this.</strong> That is a statement about <em>squared error applied to probabilities</em>, which is where the argument is legitimate. It is <strong>not</strong> a bias&ndash;variance decomposition of classification loss: the clean decomposition is squared-error only, and there is no tidy analogue for 0/1 loss.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Chapter 15's own closing slide said exactly this &mdash; that the decomposition assumed squared error and there is no clean analogue for categorical outcomes &mdash; so this is a promise being kept, not a new caveat. If a student asks &ldquo;so what IS the bias-variance tradeoff for a classifier?&rdquo;, the honest answer is that the intuition transfers (more flexibility, more variance) and the identity does not. Do not invent one at the board.</aside>
+    </section>
+
+    <!-- SLIDE 30-31: POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 32px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll &mdash; Lower the Threshold, and Then?</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">At the default threshold of 0.5 the model catches <strong>0 of 36</strong> recessions and scores 93.1% accuracy. Lower the threshold to <strong>0.10</strong> and it catches <strong>26 of 36</strong>.</p>
+          <p class="text-lg" style="margin-top: 12px;"><strong>What happens to accuracy?</strong></p>
+          <div class="poll-grid" data-poll-id="ch17-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) It rises &mdash; the model is finally doing its job</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) It stays about the same; accuracy is not sensitive to the cutoff</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) It falls to 80.1% &mdash; the worst accuracy in the whole table</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) It cannot be computed until we know the costs of each error</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students click to vote. A is the intuitive answer and it is worth letting the room commit to it &mdash; the surprise is the teaching. If several pick D, that is a sophisticated wrong answer and the reveal should credit it before correcting it.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch17-econ3916-poll-2" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; 80.1%, the Worst in the Table</h2>
+        <div class="poll-results-chart" data-poll-id="ch17-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px 16px;"></div>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.5;">Across the five rows of the threshold table, accuracy falls at every step as the model catches more recessions. Catching 26 of 36 costs <strong>94 false alarms</strong> over forty years, and every one of them is an accuracy point lost.</p>
+          <p class="text-lg" style="line-height: 1.5; margin-top: 10px;"><strong>D deserves credit and is still wrong:</strong> accuracy is perfectly computable without knowing any costs. It is simply the wrong objective &mdash; which is a different complaint, and the one the next section is about.</p>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 16pt;">Any procedure that tunes a threshold to <strong>maximise accuracy</strong> on imbalanced data will drive you back to the top row and a model that never fires.</p>
+          </div>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch17-econ3916-poll-2')" style="position:absolute; bottom:14px; right:20px; font-size:11pt; padding:4px 10px;">Reset</button>
+        <aside class="notes">2 min. One honest caveat you should know even though it is not on the slide: on a fine grid of thresholds accuracy has a few small reversals between about 0.08 and 0.23, so it is not literally monotone across the continuum. Across the five printed rows it falls at every step, and the direction is the point. If a sharp student notices the wiggle in the figure on the next slide, say exactly that &mdash; do not claim a monotonicity the picture contradicts.</aside>
+      </section>
+    </section>
+    <!-- SLIDE 32: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The Threshold Is a Business Decision</h1>
+      <p class="subtitle">Section 17.5 &bull; There is no statistical answer, because the question is not statistical</p>
+    </section>
+
+    <!-- SLIDE 33: The threshold table -->
+    <section id="threshold-table" style="padding: 28px 55px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-sliders" style="color: var(--accent-color);"></i> One Model, Five Thresholds</h2>
+      <div class="content">
+        <table style="width: 100%; font-size: 15pt; border-collapse: collapse;">
+          <thead><tr style="border-bottom: 2px solid var(--secondary-color);">
+            <th style="text-align: right; padding: 8px 14px;">threshold</th>
+            <th style="text-align: right; padding: 8px 14px;">caught</th>
+            <th style="text-align: right; padding: 8px 14px;">missed</th>
+            <th style="text-align: right; padding: 8px 14px;">false alarms</th>
+            <th style="text-align: right; padding: 8px 14px;">accuracy</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #eae4dd; background: #f8f6f3;"><td style="text-align: right; padding: 8px 14px;"><strong>0.50</strong></td><td style="text-align: right; padding: 8px 14px;">0 / 36</td><td style="text-align: right; padding: 8px 14px;">36</td><td style="text-align: right; padding: 8px 14px;">0</td><td style="text-align: right; padding: 8px 14px;"><strong>93.1%</strong></td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="text-align: right; padding: 8px 14px;">0.30</td><td style="text-align: right; padding: 8px 14px;">0 / 36</td><td style="text-align: right; padding: 8px 14px;">36</td><td style="text-align: right; padding: 8px 14px;">16</td><td style="text-align: right; padding: 8px 14px;">90.1%</td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="text-align: right; padding: 8px 14px;">0.20</td><td style="text-align: right; padding: 8px 14px;">4 / 36</td><td style="text-align: right; padding: 8px 14px;">32</td><td style="text-align: right; padding: 8px 14px;">25</td><td style="text-align: right; padding: 8px 14px;">89.1%</td></tr>
+            <tr style="border-bottom: 1px solid #eae4dd;"><td style="text-align: right; padding: 8px 14px;">0.15</td><td style="text-align: right; padding: 8px 14px;">13 / 36</td><td style="text-align: right; padding: 8px 14px;">23</td><td style="text-align: right; padding: 8px 14px;">42</td><td style="text-align: right; padding: 8px 14px;">87.6%</td></tr>
+            <tr style="background: #f8f6f3;"><td style="text-align: right; padding: 8px 14px;"><strong>0.10</strong></td><td style="text-align: right; padding: 8px 14px;"><strong>26 / 36</strong></td><td style="text-align: right; padding: 8px 14px;">10</td><td style="text-align: right; padding: 8px 14px;">94</td><td style="text-align: right; padding: 8px 14px;"><strong>80.1%</strong></td></tr>
+          </tbody>
+        </table>
+        <div class="key-result" style="margin-top: 16px;">
+          <p style="font-size: 16.5pt;">Read the first and last rows together. At the default the model catches <strong>nothing</strong> and posts the <strong>best</strong> accuracy in the table. At 0.10 it catches 26 of 36 and posts the <strong>worst</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Build this live if you can and let the class watch the accuracy column fall as the caught column rises &mdash; the inversion is the point and it is visible in one column. Every threshold trades two errors against each other: a false positive here means forecasting a recession that does not arrive; a false negative means missing one. Those cost different amounts to different people, and that ratio &mdash; not any statistic &mdash; determines the row.</aside>
+    </section>
+
+    <!-- SLIDE 34: Figure 4 -->
+    <section id="fig-threshold" style="padding: 22px 45px;">
+      <h2 style="margin-bottom: 2px;"><i class="fa-solid fa-arrow-trend-down" style="color: var(--danger-color);"></i> The Same Trade-Off, Continuously</h2>
+      <div class="content" style="display: grid; grid-template-columns: 60% 40%; gap: 22px; align-items: center;">
+        <img class="figure" src="figures/figure_004_threshold.png" alt="Recessions caught falling from 36 to zero and accuracy climbing from about 61 to 93 per cent as the decision threshold rises from 0.02 to 0.6, with markers at the 0.10 and 0.50 cutoffs" style="max-height: 520px; width: auto; display: block; margin: 0 auto;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">Every point on the green line is one row of the table. Every point on the terracotta line is that row's accuracy.</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;">They run in <strong>opposite directions</strong> across the whole range that matters.</p>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 14pt;">Chapter 18 plots this properly. The <strong>ROC curve</strong> is this table read continuously, and <strong>AUC</strong> summarises the whole thing without reference to any threshold at all.</p>
+          </div>
+          <p style="font-size: 14pt; margin-top: 10px; color: var(--muted-color);">That threshold-independence is exactly why AUC survived today's demonstration and accuracy did not.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Note the small wiggles in the accuracy curve between roughly 0.08 and 0.23 &mdash; accuracy is not literally monotone in the threshold on a fine grid, only across the five rows we printed. Say so if anyone spots it; claiming a monotonicity the picture contradicts is exactly the kind of small dishonesty this course is trying to train out of them. The direction is unambiguous and the direction is the argument.</aside>
+    </section>
+
+    <!-- SLIDE 35: Discussion 2 -->
+    <section id="discussion-2" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion 2 &mdash; Two Clients, One Model</h2>
+      <div class="content">
+        <div class="discussion-prompt">
+          <p class="bloom-level">Bloom L5 &bull; Evaluate &bull; 5 minutes &bull; pairs</p>
+          <p style="font-size: 16pt;">Same model, same probabilities, two clients:</p>
+          <p style="font-size: 16pt; margin-top: 8px;"><strong>A central banker</strong> deciding whether to prepare contingency policy. &nbsp;&bull;&nbsp; <strong>An asset manager</strong> deciding whether to liquidate equity positions on the signal.</p>
+          <p style="font-size: 16pt; margin-top: 10px;">Pick a <strong>row of the table</strong> for each and defend it in one sentence. Then: are you disagreeing with each other, or with the model?</p>
+        </div>
+        <p style="margin-top: 16px; font-size: 15pt;">Come back with the row number and the error you are refusing to make.</p>
+      </div>
+      <aside class="notes">5 min including debrief. Press 5 for the timer. Take a show of hands on the central banker's row BEFORE revealing anything &mdash; the &ldquo;both are right&rdquo; only lands once the room has committed. Central banker: cheap false positive (some wasted planning) against an expensive false negative (unprepared for a contraction). Bottom row; 94 false alarms over forty years is a price worth paying. Asset manager: a false alarm means missing a bull market, which is very expensive, so a much higher bar. Neither is disagreeing with the model. The model's job is a well-calibrated probability; what to DO at each probability belongs to the decision-maker.</aside>
+    </section>
+
+    <!-- SLIDE 36: The formula -->
+    <section id="cost-threshold" style="padding: 30px 58px;">
+      <h2><i class="fa-solid fa-coins" style="color: var(--success-color);"></i> And It Is Just Arithmetic, Once You Name the Costs</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt;">If a false negative costs \(C_{FN}\) and a false positive costs \(C_{FP}\), expected cost is minimised at</p>
+        <div class="equation-box" style="margin: 14px 0;">
+          $$t^* = \frac{C_{FP}}{C_{FP} + C_{FN}}$$
+        </div>
+        <p style="font-size: 15.5pt; line-height: 1.5;"><strong>In words.</strong> The optimal threshold depends only on the <em>ratio</em> of the costs &mdash; not on their level, not on the sample size, not on the model. If missing a recession is nine times worse than a false alarm, \(t^* = 0.1\): the bottom row of the table, <strong>derived rather than guessed</strong>.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 14.5pt; line-height: 1.5;"><strong>Lending.</strong> A default costs the outstanding principal &mdash; thousands. A declined good applicant costs one loan's margin &mdash; tens. Ratios of 50:1 are ordinary, implying thresholds near 0.02.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14.5pt; line-height: 1.5;"><strong>Criminal justice.</strong> A false positive means detaining someone who would not have reoffended. The ratio is <em>contested</em>, not obvious &mdash; a political question wearing a technical costume.</p></div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Derive it if you have the board: expected cost equals the false-negative count times its cost plus the false-positive count times its cost, and setting the marginal trade to zero gives the ratio. Two lines, and it converts an apparently arbitrary choice into an economic one. The criminal-justice box is where a value judgement gets made without anyone taking responsibility for it &mdash; accepting a default IS taking a position, it is just an unexamined one.</aside>
+    </section>
+
+    <!-- SLIDE 37: Think like an economist -->
+    <section id="think-economist" style="padding: 34px 62px;">
+      <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Think Like an Economist</h2>
+      <div class="content">
+        <div class="key-result" style="margin-top: 6px;">
+          <p style="font-size: 18pt; line-height: 1.5;">Before choosing a threshold, <strong>write down what each error costs</strong> &mdash; in dollars, or in whatever the decision actually trades.</p>
+        </div>
+        <p class="text-lg" style="margin-top: 18px; line-height: 1.55;">Most classification work skips this and inherits 0.5 from a library, which silently asserts that false positives and false negatives cost exactly the same. That assertion is almost never true, and it is one an economist is unusually well equipped to interrogate.</p>
+        <p class="text-lg" style="margin-top: 14px; line-height: 1.55;">The cost ratio is the <strong>modelling assumption</strong>. The threshold is just its arithmetic consequence.</p>
+        <p style="margin-top: 18px; font-size: 16pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Someone chooses the threshold. If the analyst does not do it explicitly, the library has already done it for them.</p>
+      </div>
+      <aside class="notes">1 min. Deliver this as the section's closing line, slowly. This is the single most transferable thing in the chapter and the thing that distinguishes an economist from a technician on a modelling team: naming the costs is not a statistical task and the statistics cannot do it for you.</aside>
+    </section>
+
+    <!-- SLIDE 38: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>When the Feature Stops Meaning What It Meant</h1>
+      <p class="subtitle">Section 17.6 &bull; The failure no metric detects</p>
+    </section>
+
+    <!-- SLIDE 39: The inversion -->
+    <section id="the-inversion" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-clock-rotate-left" style="color: var(--danger-color);"></i> 784 Days, and No Recession</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.5;">The yield-curve model preceded every U.S. recession for half a century with very few false alarms. Then, from July 2022 to late 2024, the curve inverted for roughly <strong>784 days &mdash; the longest inversion in modern history</strong> &mdash; and nothing arrived. Real GDP growth held at 2.9% in 2023 and 2.8% in 2024.</p>
+        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; margin: 12px 0;"><code>2023-01   spread -1.16   P(recession within 12m) 31.1%   actual: no recession
+2023-05   spread -1.73   P(recession within 12m) 42.3%   actual: no recession
+2023-12   spread -1.42   P(recession within 12m) 36.1%   actual: no recession
+2024-06   spread -1.20   P(recession within 12m) 32.0%   actual: no recession</code></pre>
+        <div class="key-result">
+          <p style="font-size: 16.5pt;">Above 42% at the peak, sustained for two years, and wrong. <strong>Every diagnostic in Chapter 14 would pass.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Let students sit with a model that was confidently, sustainedly wrong for two years &mdash; this is uncomfortable and it should be. The likelihood was correctly maximised, the coefficient correctly estimated, the probabilities correctly computed from the coefficient. Do NOT offer the explanation yet; the poll is coming and it only works if the room has to guess first.</aside>
+    </section>
+
+    <!-- SLIDE 40: Figure 5 -->
+    <section id="fig-inversion" style="padding: 18px 45px;">
+      <h2 style="margin-bottom: 2px;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> The Signal, and What Followed It</h2>
+      <div class="content" style="display: grid; grid-template-columns: 56% 44%; gap: 22px; align-items: center;">
+        <img class="figure" src="figures/figure_005_inversion.png" alt="Two stacked time series from 2015 to 2025: the term spread going deeply negative through the shaded 2022 to 2024 inversion, and below it the fitted recession probability climbing to over 40 per cent and staying there for two years with no NBER recession following" style="max-height: 545px; width: auto; display: block; margin: 0 auto;">
+        <div>
+          <p style="font-size: 14.5pt; line-height: 1.5;">The grey band is the 2020 NBER recession. The terracotta band is the record inversion.</p>
+          <p style="font-size: 14.5pt; line-height: 1.5; margin-top: 12px;">The lower panel is the same fitted model you have been reading all hour, evaluated month by month. The dashed line is the unconditional base rate of 6.9%.</p>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 14pt;">For two full years the model sat at <strong>four to six times the base rate</strong> and nothing followed. The curve is not noisy here. It is confidently, persistently wrong.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Point out that the model does eventually come down &mdash; the last part of the lower panel &mdash; but only because the spread normalised, not because the model learned anything. Note also that everything you are looking at was fitted in-sample on all 523 months at once, so this picture is a description, not a forecast record. Chapter 20 fixes that, and you will say so again at the end.</aside>
+    </section>
+
+    <!-- SLIDE 41-42: POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 34px 55px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll &mdash; What Went Wrong?</h2>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.55;">Sustained 31&ndash;42% recession probabilities for two years, and no recession. What went wrong?</p>
+          <div class="poll-grid" data-poll-id="ch17-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) It overfitted the 1980s and 1990s</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Temporal leakage &mdash; it was fitted on data including its own future</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The threshold was set too low</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Nothing in the model. The <strong>feature</strong> stopped meaning what it had meant</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students will propose overfitting, leakage and threshold &mdash; every tool from the last three chapters &mdash; and none is right, which is exactly the realisation to engineer. Do not hint. Let the votes spread across A, B and C.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch17-econ3916-poll-3" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: D &mdash; the Model Was Not Broken</h2>
+        <div class="poll-results-chart" data-poll-id="ch17-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px 16px;"></div>
+        <div class="content">
+          <p class="text-lg" style="line-height: 1.5;"><strong>A, B and C are the three tools of the last three chapters</strong> &mdash; and none of them is the answer. That is the point of asking. Every diagnostic passes. The likelihood was correctly maximised, the coefficient correctly estimated, the probabilities correctly computed.</p>
+          <div class="key-result" style="margin-top: 12px;">
+            <p style="font-size: 16pt;">This is a <strong>structural break in the relationship between a feature and the outcome</strong>. No amount of better classification technique detects it, and finding it requires knowing what a term premium is.</p>
+          </div>
+        </div>
+        <button class="reset-btn" onclick="clearPoll('ch17-econ3916-poll-3')" style="position:absolute; bottom:14px; right:20px; font-size:11pt; padding:4px 10px;">Reset</button>
+        <aside class="notes">2 min. If B got a large share, credit it hard: the in-sample fitting IS a real methodological flaw in this demonstration and you will name it at the end of the hour. It is just not what made 2022 to 2024 go wrong &mdash; a perfectly clean expanding-window fit would have made the same call for the same reason.</aside>
+      </section>
+    </section>
+    <!-- SLIDE 43: The term premium -->
+    <section id="term-premium" style="padding: 30px 58px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--accent-color);"></i> What Actually Happened</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.55;">A ten-year yield decomposes into <strong>expected future short rates</strong> plus a <strong>term premium</strong> &mdash; the extra compensation investors demand for holding duration risk.</p>
+        <p style="font-size: 15.5pt; line-height: 1.55; margin-top: 10px;">Years of quantitative easing compressed that premium dramatically; New York Fed estimates put it under <strong>0.8 percentage points</strong> of a 4.77% ten-year yield.</p>
+        <div class="key-result" style="margin-top: 14px;">
+          <p style="font-size: 16.5pt;">The curve inverted partly because the <strong>term premium had been squeezed toward zero</strong>, not because markets expected a contraction. The spread was numerically the same. What it <em>indicated</em> was not.</p>
+        </div>
+        <p style="margin-top: 16px; font-size: 15.5pt; line-height: 1.55;">It is not overfitting, leakage, miscalibration or a bad threshold &mdash; the four failures this chapter and the last two have taught you to look for.</p>
+        <p style="margin-top: 12px; font-size: 16.5pt; color: var(--primary-color);"><strong>A model is a claim that a historical relationship will continue. Deciding whether it will is a question about the economy, not about the model.</strong></p>
+      </div>
+      <aside class="notes">3 min. Keep the decomposition qualitative for this course &mdash; the ACM estimates exist and are published, and the fact that matters is that the tool existed long before the inversion and using it required someone to ask what the spread was made of. This is the argument for economists in this work, stated as plainly as the book can state it. Deliver the last line slowly and let it be the thesis of the hour.</aside>
+    </section>
+
+    <!-- SLIDE 44: Three habits -->
+    <section id="three-habits" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--success-color);"></i> How You Would Actually Catch It</h2>
+      <div class="content">
+        <p style="font-size: 15pt; margin-bottom: 12px;">Undetectable from performance metrics &mdash; but not undetectable. Three habits, and all three are economics rather than statistics.</p>
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 14.5pt; line-height: 1.5;"><strong>Decompose the feature.</strong> The spread is expected short rates plus a term premium, and they move independently. Any composite indicator has this property, and watching the components reveals when the composite is being driven by an unusual part.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 14.5pt; line-height: 1.5;"><strong>Ask what mechanism the model encodes.</strong> &ldquo;Inverted curve predicts recession&rdquo; is a correlation. The mechanism is that markets expecting a downturn bid up long bonds in anticipation of rate cuts. Written that way, the question becomes testable.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">3</p>
+            <p style="font-size: 14.5pt; line-height: 1.5;"><strong>Track the regime, not just the residuals.</strong> A model's errors look fine until suddenly they do not, and by then you have been wrong for two years. Ask whether the conditions that made the feature work still hold &mdash; you can check that continuously.</p>
+          </div>
+        </div>
+        <p style="margin-top: 14px; font-size: 15pt; color: var(--muted-color);">None of these is a metric you can compute from the fitted object. They require knowing <em>why</em> the model works.</p>
+      </div>
+      <aside class="notes">2 min. Habit 3 is the one to press: the relevant monitoring question can be answered long before any outcome data arrives to prove you wrong. In 2022 you could have asked whether the term premium was in its historical range and got an answer immediately &mdash; you did not have to wait two years for the recession that never came.</aside>
+    </section>
+
+    <!-- SLIDE 45: Economist at work -->
+    <section id="ny-fed" style="padding: 30px 58px;">
+      <h2><i class="fa-solid fa-building-columns" style="color: var(--secondary-color);"></i> Economist at Work &mdash; The NY Fed's Model</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.55;">The Federal Reserve Bank of New York has published a term-spread recession probability for decades. It is deliberately <strong>parsimonious</strong> &mdash; one variable, a logistic link &mdash; descending from Estrella and Mishkin (1998).</p>
+        <div class="key-result" style="margin: 14px 0;">
+          <p style="font-size: 16pt;">Parsimony is the point. A model with one interpretable input, published monthly for thirty years, is <strong>auditable</strong> in a way a hundred-feature ensemble never is.</p>
+        </div>
+        <p style="font-size: 15pt; line-height: 1.55;">From mid-2022 it began flashing, and forecasters who took it at face value called for a downturn through 2023 and into 2024. It did not come. <strong>The Fed has not discarded the model, and neither should you.</strong></p>
+        <p style="margin-top: 14px; font-size: 15.5pt; line-height: 1.55; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> The lesson: a feature's predictive content is a property of the <strong>monetary regime that produced it</strong>, and regimes change. Asking periodically whether an input still means what it meant is the maintenance task that separates a model in production from a model in a paper.</p>
+      </div>
+      <aside class="notes">2 min. Estrella and Mishkin 1998 in the Review of Economics and Statistics is the citation, with Campbell Harvey's dissertation before it. The phrase to leave them with is &ldquo;continuous feature validation&rdquo; &mdash; it is a job description as much as a technique, and it is one economists are hired to do on modelling teams.</aside>
+    </section>
+
+    <!-- SLIDE 46: Beyond binary -->
+    <section id="beyond-binary" style="padding: 30px 58px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--muted-color);"></i> Beyond Two Categories</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.5;">Many economic questions are not binary: which of four transport modes a commuter chooses, which of five ratings a bond receives, whether a firm expands, contracts or holds steady.</p>
+        <div class="equation-box" style="margin: 12px 0;">
+          $$P(Y = j \mid \mathbf{x}) = \frac{e^{\mathbf{x}'\boldsymbol{\beta}_j}}{\sum_{m=1}^{J} e^{\mathbf{x}'\boldsymbol{\beta}_m}}$$
+        </div>
+        <p style="font-size: 14.5pt; line-height: 1.5;"><strong>In words.</strong> <strong>Multinomial logistic regression</strong> fits one linear predictor per category and normalises them into probabilities. One category is fixed as the baseline and the rest are read relative to it &mdash; Chapter 13's reference-category logic, moved from a predictor to the outcome. This is McFadden's conditional logit, and it won a Nobel Prize.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);"><p style="font-size: 13.5pt; line-height: 1.45;"><strong>Its famous weakness.</strong> The <em>red bus / blue bus</em> problem: introduce an identical second bus and the model says people start driving more, because it cannot know the two buses are near-substitutes.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--success-color);"><p style="font-size: 13.5pt; line-height: 1.45;"><strong>For ordered outcomes</strong> &mdash; bond ratings, survey scales &mdash; <em>ordered logit</em> exploits the ordering with one coefficient vector and a set of cutpoints. Usually the right choice.</p></div>
+        </div>
+      </div>
+      <aside class="notes">2 min, awareness only. Nothing here is examinable today. The one sentence that matters: do not assume the world is binary because the textbook chapter was. If a student asks about the red-bus problem, the fix is nested or mixed logit, at a cost in complexity, and that is as far as this course goes.</aside>
+    </section>
+
+    <!-- SLIDE 47: Divider -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>A Workflow, and What Comes Next</h1>
+      <p class="subtitle">Section 17.7 &bull; Six steps, in this order</p>
+    </section>
+
+    <!-- SLIDE 48: The workflow -->
+    <section id="workflow" style="padding: 26px 55px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-diagram-project" style="color: var(--success-color);"></i> A Classification Workflow</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: grid; grid-template-columns: 38px 1fr; gap: 12px; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">1</p><p style="font-size: 14pt; line-height: 1.45;"><strong>Check the base rate before anything else.</strong> One line, and it determines how you must evaluate everything downstream.</p></div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; gap: 12px; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--danger-color);"><p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">2</p><p style="font-size: 14pt; line-height: 1.45;"><strong>Fit on the true distribution.</strong> Do not resample to balance the classes &mdash; it changes the base rate the model estimates and inflates every predicted probability. Use <code>class_weight='balanced'</code> if the loss needs reweighting.</p></div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; gap: 12px; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--accent-color);"><p style="font-size: 16pt; font-weight: 700; color: var(--accent-color);">3</p><p style="font-size: 14pt; line-height: 1.45;"><strong>Score with a proper rule.</strong> Brier or log-loss, beside a discrimination measure. Report accuracy only next to the base rate.</p></div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; gap: 12px; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--success-color);"><p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">4</p><p style="font-size: 14pt; line-height: 1.45;"><strong>Choose the threshold from costs.</strong> \(t^* = C_{FP}/(C_{FP}+C_{FN})\). The arithmetic is trivial; naming the costs is the hard part and it is not a statistical task.</p></div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; gap: 12px; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">5</p><p style="font-size: 14pt; line-height: 1.45;"><strong>Check calibration if the probability is used as a number</strong> &mdash; if it feeds an expected-loss or capital formula, being well-ordered is not enough.</p></div>
+          <div style="display: grid; grid-template-columns: 38px 1fr; gap: 12px; background: #f8f6f3; border-radius: 8px; padding: 10px 18px; border-left: 4px solid var(--muted-color);"><p style="font-size: 16pt; font-weight: 700; color: var(--muted-color);">6</p><p style="font-size: 14pt; line-height: 1.45;"><strong>Ask whether the features still mean what they meant.</strong> Schedule the question rather than waiting for the model to embarrass you.</p></div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Lead with step 1: it is a habit rather than a technique and it costs nothing. Analysts who skip it discover it three weeks later when a stakeholder asks why the model never flags anything. Step 2 will meet resistance because many students have been taught SMOTE as best practice &mdash; that is the next slide, so do not fight it here.</aside>
+    </section>
+
+    <!-- SLIDE 49: Discussion 3 -->
+    <section id="discussion-3" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion 3 &mdash; &ldquo;Just Balance the Classes&rdquo;</h2>
+      <div class="content">
+        <div class="discussion-prompt">
+          <p class="bloom-level">Bloom L6 &bull; Critique &bull; 4 minutes &bull; tables</p>
+          <p style="font-size: 16pt;">A teammate says: <em>&ldquo;Our default rate is only 3%. Let's resample the training set up to 50/50 before we fit &mdash; otherwise the model will never learn the minority class.&rdquo;</em></p>
+          <p style="font-size: 16pt; margin-top: 10px;">Give the <strong>strongest version</strong> of their argument. Then the strongest rebuttal. <strong>Where does the disagreement actually live?</strong></p>
+        </div>
+        <p style="margin-top: 16px; font-size: 15pt;">One table reports the argument, another reports the rebuttal, and a third names the real disagreement.</p>
+      </div>
+      <aside class="notes">4 min including debrief. Press 4 for the timer. Imbalance is a property of the world, not a defect in the data &mdash; rare events are rare. Resampling does not create information; it changes the prior the model learns and corrupts its probabilities, in exchange for a metric that looked better because it was the wrong metric. The genuine responses are steps 3 and 4: score properly and set the threshold from costs. The answer to the third question is the one to reward: the disagreement lives in step 3. Their argument is only compelling if you have already accepted accuracy as the objective. And inflated probabilities are not cosmetic when a regulator multiplies them by a loan book.</aside>
+    </section>
+
+    <!-- SLIDE 50: Lab preview -->
+    <section id="lab-preview" style="padding: 20px 42px;">
+      <h2 style="margin-bottom: 2px;"><i class="fa-solid fa-flask-vial" style="color: var(--secondary-color);"></i> Lab 17 &mdash; A Different World, the Same Shape</h2>
+      <div class="content" style="display: grid; grid-template-columns: 46% 54%; gap: 20px; align-items: center;">
+        <div>
+          <p style="font-size: 13.5pt; line-height: 1.45;">The lab uses a <strong>different</strong> world from today's, deliberately: 6,000 simulated consumer loan applications with a measured <strong>9.6%</strong> default rate, so a model that approves everyone is <strong>90.4% accurate</strong>. Executed, it prints your hook back at you:</p>
+          <pre style="font-size: 11.5pt; background: #f8f6f3; border-radius: 6px; padding: 9px 13px; margin: 9px 0;"><code>model accuracy    : 90.4%
+baseline accuracy : 90.4%
+predicted defaults: 0 of 1800</code></pre>
+          <p style="font-size: 13.5pt; line-height: 1.45;"><strong>Part 4 is yours.</strong> Price a false negative at 60% of a $20,000 principal and a false positive at the 8% margin, then find the cost-minimising threshold.</p>
+          <div class="key-result" style="margin-top: 9px;">
+            <p style="font-size: 13pt;">It lands at <strong>t = 0.103</strong>, costing <strong>$926</strong> per applicant against <strong>$1,147</strong> at the default &mdash; the library's cutoff costs <strong>24% more</strong>. The closed form says 0.118; explaining the small gap is part of the task.</p>
+          </div>
+        </div>
+        <img class="figure" src="figures/figure_006_lab_preview.png" alt="Two stacked panels from Lab 17: expected cost per applicant across thresholds with a minimum at 0.103 and the default 0.5 sitting 24 per cent higher, and below it accuracy, recall and precision curves showing accuracy highest where the model declines nobody" style="max-height: 545px; width: auto; display: block; margin: 0 auto;">
+      </div>
+      <aside class="notes">2 min. The gap between the numerical optimum of 0.103 and the closed form of 0.118 is real and it is a discussion point, not an error: the closed form assumes you are trading one marginal case at a time, while the empirical optimum is computed on a finite test set of 1,800 applicants where the probability distribution is lumpy. Students who notice and explain it should be rewarded. Parts 1 to 3 are guided; the AI-expansion cell asks for a reusable threshold_report function.</aside>
+    </section>
+
+    <!-- SLIDE 51: Key takeaways -->
+    <section id="takeaways" style="padding: 26px 55px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--secondary-color);"><p style="font-size: 14.5pt; line-height: 1.45;"><strong>1.</strong> The linear probability model produces impossible predictions &mdash; <strong>84 negative probabilities</strong> on real Federal Reserve data &mdash; and heteroscedastic errors by construction. The logit link fixes both by modelling log-odds linearly.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--accent-color);"><p style="font-size: 14.5pt; line-height: 1.45;"><strong>2.</strong> A logistic coefficient is a change in <strong>log-odds</strong>: &minus;0.8354 means the odds multiply by <strong>0.434</strong>, a 57% reduction <em>in odds</em>, and the effect on the probability depends on where you start.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14.5pt; line-height: 1.45;"><strong>3.</strong> <strong>Accuracy is an improper score bounded below by the base rate.</strong> 93.1%, matching a model that never predicts anything, while catching 0 of 36 &mdash; yet Brier 0.0615 and AUC 0.811 show the information is genuinely there.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--success-color);"><p style="font-size: 14.5pt; line-height: 1.45;"><strong>4.</strong> <strong>0.5 is a library default, not a decision.</strong> At 0.10 the model catches 26 of 36 at the worst accuracy in the table, and the right cutoff is \(C_{FP}/(C_{FP}+C_{FN})\) &mdash; a question about costs.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 11px 20px; border-left: 4px solid var(--muted-color);"><p style="font-size: 14.5pt; line-height: 1.45;"><strong>5.</strong> A model can be mathematically sound and still fail if a <strong>feature stops meaning what it meant</strong> &mdash; the record 784-day inversion, sustained 31&ndash;42% probabilities, no recession, because QE had compressed the term premium.</p></div>
+        </div>
+      </div>
+      <aside class="notes">1 min. If you are short on time, cut 1 and 5 from the reading-aloud and keep 2, 3 and 4 &mdash; those three are the assessed learning objectives. Point out that takeaway 3 contains both halves of the argument in one sentence, which is how they should write it in the exit ticket.</aside>
+    </section>
+
+    <!-- SLIDE 52: Exit ticket -->
+    <section id="exit-ticket" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--success-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px;">
+            <p style="font-size: 15.5pt;"><strong>1.</strong> The coefficient on the spread is &minus;0.8354. Write the one sentence you would say to a risk committee &mdash; then say what you would need in order to quote a change in <em>probability</em>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px;">
+            <p style="font-size: 15.5pt;"><strong>2.</strong> A colleague reports <strong>99.8% accuracy</strong> on a fraud model. What single number do you ask for first, and what two scores do you ask them to report instead?</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 15px 22px;">
+            <p style="font-size: 15.5pt;"><strong>3.</strong> In one sentence: what went wrong in 2022&ndash;24, and why would no evaluation metric in this course have caught it?</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px; font-size: 15pt; color: var(--accent-color);"><i class="fa-solid fa-arrow-right"></i> Submit on Canvas before the next session. <strong>Lab 17 is due as a GitHub repo link</strong>, as usual.</p>
+      </div>
+      <aside class="notes">1 min. Q1 covers LO 17.2 (odds multiply by 0.434, a 57% fall in odds; to quote a probability change you need a starting point, then use beta times p times one minus p). Q2 covers LO 17.3 (ask for the base rate; report Brier or log-loss plus a discrimination measure). Q3 covers Section 17.6 (the term premium collapsed, so the feature stopped meaning what it meant &mdash; and every metric is computed against the historical relationship, which is precisely what changed).</aside>
+    </section>
+
+    <!-- SLIDE 53: Looking ahead -->
+    <section id="looking-ahead" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--secondary-color);"></i> Looking Ahead</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: grid; grid-template-columns: 82px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color);">Ch 18</p>
+            <p style="font-size: 13.5pt; line-height: 1.45;"><strong>Model evaluation.</strong> Today's threshold table read <em>continuously</em> is the ROC curve, and AUC summarises it without reference to any threshold &mdash; which is exactly why AUC survived today and accuracy did not. Precision and recall answer the two questions the confusion matrix raised and left hanging. Same classifier, same data.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 82px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">Ch 19</p>
+            <p style="font-size: 13.5pt; line-height: 1.45;"><strong>Trees and forests.</strong> A Random Forest attacks this model on this data. It may discriminate better &mdash; and it cannot be published monthly as one interpretable number, nor converted into the point-based scorecard regulated lending requires.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 82px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 12px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">Ch 20</p>
+            <p style="font-size: 13.5pt; line-height: 1.45;"><strong>Time series.</strong> Everything today was computed <strong>in-sample</strong>, on all 523 months at once &mdash; the classifier saw its own future while being fitted. Fine for mechanics, indefensible as a forecast claim. Treat AUC 0.811 as a description. Chapter 20 builds the expanding-window machinery that fixes it, and today's structural break is that chapter's central subject.</p>
+          </div>
+        </div>
+        <p style="margin-top: 14px; font-size: 14.5pt; color: var(--muted-color);">Read Chapter 18 before the next session. Lab 17 is due on Canvas &mdash; GitHub repo link.</p>
+      </div>
+      <aside class="notes">1 min. The Chapter 20 box is the honest one and you should say it plainly rather than burying it: this chapter demonstrated mechanics on an in-sample fit, and the book says so. Students who quote AUC 0.811 as a forecast performance in their capstone have misread it. Close on the thesis: a model is a claim that a relationship will continue, and deciding whether it will is economics.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>
