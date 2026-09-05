@@ -189,7 +189,7 @@
 
 <div class="footer">
   Backend: <code>dpntbrsorgbivmntwmod.supabase.co</code> · table <code>poll_votes</code><br>
-  Naming convention: <code>{course}-ch{NN}-poll-{N}</code> (e.g. <code>econ2316-ch03-poll-1</code>). Polls without a <code>{course}-</code> prefix are grouped under <strong>ECON 1116 (legacy)</strong>.
+  Naming convention: <code>ch{NN}-{course}-poll-{N}</code> (e.g. <code>ch03-econ2316-poll-1</code>). The <code>poll_votes</code> table is global &mdash; poll IDs must be unique across ALL decks, not just within one presentation. Polls with no course segment are pre-namespacing rows, grouped under <strong>legacy</strong>.
 </div>
 
 <div class="toast" id="toast"></div>
@@ -233,16 +233,26 @@
   }
 
   function parsePollId(pid) {
-    // Examples:
-    //   econ1116-ch03-poll-1   → course="econ1116", chapter="03", num="1"
-    //   ch03-poll-1            → course="_legacy",  chapter="03", num="1"
-    //   custom-poll-id         → course="_legacy",  chapter="??", num=pid
+    // Canonical (current) — chapter first, then course:
+    //   ch03-econ1116-poll-1      → course="econ1116", chapter="03",   num="1"
+    //   ch13p1-econ2316-poll-2    → course="econ2316", chapter="13p1", num="2"
+    //   ch10-econ1116-ads-per-day → course="econ1116", chapter="10",   num="ads-per-day"
+    // Legacy rows still sitting in poll_votes from before the namespacing sweep:
+    //   econ1116-ch03-poll-1      → course="econ1116", chapter="03", num="1"
+    //   ch03-poll-1               → course="_legacy",  chapter="03", num="1"
+    //   custom-poll-id            → course="_legacy",  chapter="??", num=pid
+    const c1 = pid.match(/^ch(\d+(?:p\d+)?)-(econ\d+)-poll-?(\d+)$/i);
+    if (c1) return { course: c1[2].toLowerCase(), chapter: c1[1], num: c1[3] };
+    const c2 = pid.match(/^ch(\d+(?:p\d+)?)-(econ\d+)-(.+)$/i);
+    if (c2) return { course: c2[2].toLowerCase(), chapter: c2[1], num: c2[3] };
     const m1 = pid.match(/^(econ\d+)-ch(\d+)-poll-(\d+)$/i);
     if (m1) return { course: m1[1].toLowerCase(), chapter: m1[2], num: m1[3] };
-    const m2 = pid.match(/^ch(\d+)-poll-(\d+)$/i);
+    const m2 = pid.match(/^ch(\d+(?:p\d+)?)-poll-?(\d+)$/i);
     if (m2) return { course: "_legacy", chapter: m2[1], num: m2[2] };
     const m3 = pid.match(/^(econ\d+)-ch(\d+)-(.+)$/i);
     if (m3) return { course: m3[1].toLowerCase(), chapter: m3[2], num: m3[3] };
+    const m4 = pid.match(/^ch(\d+(?:p\d+)?)-(.+)$/i);
+    if (m4) return { course: "_legacy", chapter: m4[1], num: m4[2] };
     return { course: "_legacy", chapter: "??", num: pid };
   }
 
@@ -324,8 +334,9 @@
       const chapters = byCourse[courseCode];
       const chOrder = Object.keys(chapters).sort();
       const courseTotal = chOrder.reduce((sum, ch) => sum + chapters[ch].reduce((s, p) => s + p.total, 0), 0);
+      const coursePids = chOrder.flatMap(ch => chapters[ch].map(p => p.id));
       const courseDelta = courseCode === "_legacy" ? "" :
-        `<button class="danger" data-action="clear-course" data-course="${courseCode}">Clear all ${courseCode} polls</button>`;
+        `<button class="danger" data-action="clear-course" data-course="${courseCode}" data-pids="${coursePids.join(",")}">Clear all ${courseCode} polls</button>`;
       return `
         <section class="course">
           <div class="course-head">
@@ -350,12 +361,12 @@
   function renderChapter(courseCode, ch, polls) {
     const chTotal = polls.reduce((s, p) => s + p.total, 0);
     const pollOrder = polls.sort((a, b) => parseInt(a.num) - parseInt(b.num));
-    const chPrefix = courseCode === "_legacy" ? `${ch}-` : `${courseCode}-${ch}-`;
+    const chPids = polls.map(p => p.id);
     return `
       <div class="chapter">
         <div class="chapter-head">
           <h3>Chapter ${ch.replace("ch", "")} <span class="meta">(${chTotal} votes)</span></h3>
-          <button class="danger" data-action="clear-chapter" data-prefix="${chPrefix}">Clear chapter</button>
+          <button class="danger" data-action="clear-chapter" data-pids="${chPids.join(",")}" data-label="${courseCode === "_legacy" ? ch : ch + "-" + courseCode}">Clear chapter</button>
         </div>
         <div class="polls">
           ${pollOrder.map(p => renderPoll(p)).join("")}
@@ -389,14 +400,25 @@
       if (!confirm(`Delete ALL votes for poll "${pid}"?\n\nThis cannot be undone.`)) return;
       await deleteWhere(`poll_id=eq.${encodeURIComponent(pid)}`, `Cleared votes for ${pid}`);
     } else if (a === "clear-chapter") {
-      const prefix = e.target.dataset.prefix;
-      if (!confirm(`Delete ALL votes for polls starting with "${prefix}"?\n\nThis cannot be undone.`)) return;
-      await deleteWhere(`poll_id=like.${encodeURIComponent(prefix)}*`, `Cleared chapter polls (${prefix}…)`);
+      const pids = (e.target.dataset.pids || "").split(",").filter(Boolean);
+      const label = e.target.dataset.label;
+      if (!pids.length) return;
+      if (!confirm(`Delete ALL votes for these ${pids.length} poll(s)?\n\n${pids.join("\n")}\n\nThis cannot be undone.`)) return;
+      await deleteWhere(idListFilter(pids), `Cleared chapter polls (${label})`);
     } else if (a === "clear-course") {
       const course = e.target.dataset.course;
-      if (!confirm(`Delete ALL votes for course "${course}" (every chapter, every poll)?\n\nThis cannot be undone.`)) return;
-      await deleteWhere(`poll_id=like.${encodeURIComponent(course + "-")}*`, `Cleared all ${course} polls`);
+      const pids = (e.target.dataset.pids || "").split(",").filter(Boolean);
+      if (!pids.length) return;
+      if (!confirm(`Delete ALL votes for course "${course}" (${pids.length} poll(s), every chapter)?\n\nThis cannot be undone.`)) return;
+      await deleteWhere(idListFilter(pids), `Cleared all ${course} polls`);
     }
+  }
+
+  // Bulk deletes address the exact poll_ids rendered in the group rather than a
+  // prefix wildcard: the table holds both the current ch{NN}-{course}-poll-{N}
+  // scheme and pre-namespacing rows, and no single LIKE prefix covers both.
+  function idListFilter(ids) {
+    return "poll_id=in.(" + ids.map(i => encodeURIComponent('"' + i + '"')).join(",") + ")";
   }
 
   async function deleteWhere(filter, successMsg) {
