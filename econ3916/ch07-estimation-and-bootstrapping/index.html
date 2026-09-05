@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estimation & Bootstrapping</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Chapter 7</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Estimation &amp; Bootstrapping</h1>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">The method for statistics that have no formula &mdash; and what it does not fix</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch07-bootstrap.png" alt="Abstract illustration: a single row of observations resampled downward many times, from which a bell-shaped sampling distribution emerges at the bottom" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">7.1</p>
+            <p style="font-size: 15pt;">Tell a <strong>standard deviation</strong> from a <strong>standard error</strong> &mdash; and say which one shrinks when you collect more data</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">7.2</p>
+            <p style="font-size: 15pt;">Build a <strong>parametric confidence interval</strong> from the CLT, and state correctly what the 95% refers to</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">7.3</p>
+            <p style="font-size: 15pt;">Run the <strong>bootstrap</strong> &mdash; by hand and with <code>scipy</code> &mdash; for a statistic that has no formula</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">7.4</p>
+            <p style="font-size: 15pt;">Judge whether an interval is trustworthy: read <strong>coverage</strong>, and check a gap against its own <strong>Monte Carlo error</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 7.4 as today's centre of gravity. It is the one that overturns the thing most people half-remember about the bootstrap, and it is the habit that will keep showing up for the rest of the course.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-bottom: 12px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 4.</strong> Why do we report the <em>median</em> household income rather than the mean?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-bottom: 12px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 5.</strong> Monte Carlo estimated $\pi$ by sampling from a <em>known</em> distribution. What would you sample from if you did not know it?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p class="text-lg"><strong>Quick Check 3 &mdash; Ch 6.</strong> Meng's 2.3 million biased respondents carried the information of 400 random ones. What does that say a bigger sample cannot fix?</p>
+        </div>
+        <p style="margin-top: 18px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Chapter 6 said a big sample can still be <strong>aimed</strong> wrong. Today is the other half: even a perfectly aimed sample <strong>wobbles</strong>.</p>
+      </div>
+      <aside class="notes">2 min, cold-call three students. QC1 target: the mean is dragged by a long right tail; the median has breakdown point 0.5. QC2 target: your own data &mdash; that single sentence is the bootstrap, and you can tell them they have just invented it. QC3 target: bias. Say the bridge sentence out loud; the whole lecture hangs off it.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook -->
+    <section id="hook-fed" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> April 2025: the Fed's Fan Charts Stopped Working</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 290px 1fr; gap: 26px; align-items: center;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 20px; text-align: center;">
+            <p style="font-size: 46pt; font-weight: 700; color: var(--accent-color); line-height: 1;">8.3</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 6px;">standard deviations above its historical mean &mdash; US Economic Policy Uncertainty</p>
+            <p style="font-size: 12pt; color: #7a4a2f; margin-top: 10px; font-style: italic;">trade-policy uncertainty: 16</p>
+          </div>
+          <div>
+            <p style="font-size: 15.5pt; line-height: 1.6;">The Fed's <strong>fan charts</strong> &mdash; the shaded bands around GDP, unemployment and inflation projections &mdash; are built from about twenty years of past forecast errors. Roughly <strong>80 quarterly observations</strong>.</p>
+            <p style="font-size: 15.5pt; line-height: 1.6; margin-top: 12px;">They assume future errors resemble past errors. When they stop resembling them, a band labelled 70% can capture the truth far less often than 70% of the time.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 16px 22px; margin-top: 20px;">
+          <p style="font-size: 16pt;">Nothing was wrong with the Fed's <em>data</em>. What failed was the <strong>uncertainty formula</strong>. That is today's subject.</p>
+        </div>
+        <p class="footnote" style="margin-top: 10px;">Federal Reserve Board (2025), &ldquo;Costs of Rising Uncertainty,&rdquo; <em>FEDS Notes</em>, 24 April 2025.</p>
+      </div>
+      <aside class="notes">3 min. Say "eight point three standard deviations" and pause. Then the pivot sentence: the data was fine, the formula was not. Warn them the hook is macro and the rest of the hour is micro &mdash; the bridge is that both are the same failure, an interval built on an assumption that stopped holding.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-one-number" class="section-divider" data-state="is-section-divider">
+      <h1>From One Number to a Distribution</h1>
+      <p class="subtitle">Standard deviation describes people. Standard error describes your estimate.</p>
+    </section>
+
+    <!-- SLIDE 6: Point estimate vs sampling distribution -->
+    <section id="point-vs-sampling" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-crosshairs" style="color: var(--secondary-color);"></i> A Point Estimate Hides a Question</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 6px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">Point estimate</p>
+            <p style="font-size: 15pt; margin-top: 8px;">One number, from one sample. A mean, a median, a ratio.</p>
+            <p style="font-size: 15pt; margin-top: 10px; font-style: italic; color: var(--muted-color);">Tells you <strong>where you landed</strong>.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">Sampling distribution</p>
+            <p style="font-size: 15pt; margin-top: 8px;">The distribution of that number across every possible sample of the same size.</p>
+            <p style="font-size: 15pt; margin-top: 10px; font-style: italic; color: var(--muted-color);">Tells you <strong>how much you could have missed by</strong>.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 20px;">
+          <p style="font-size: 16pt; line-height: 1.6;">The ACS puts median Massachusetts household income near <strong><span class="tex2jax_ignore">$</span>96,500</strong>. That comes from about 100,000 households out of 2.9 million. A different 100,000 would have given a different number. <em>How different</em> is the entire subject of this lecture.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Ask the room: "if I told you the average age in this room is 21, what have I not told you?" Push until someone says "how sure are you." That is the sampling distribution, and you can name it once they have said it.</aside>
+    </section>
+
+    <!-- SLIDE 7: SD vs SE equation -->
+    <section id="sd-vs-se" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ruler-horizontal" style="color: var(--accent-color);"></i> Standard Deviation Is Not Standard Error</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; text-align: center; margin-top: 4px;">
+          <p style="font-size: 22pt;">$$\text{SE}(\bar{x}) = \frac{s}{\sqrt{n}}$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;"><strong>$s$</strong> &mdash; the sample standard deviation. How spread out the <em>observations</em> are.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;"><strong>$n$</strong> &mdash; the sample size. The only thing here you control.</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 17pt; line-height: 1.6;"><strong>In plain language:</strong> the standard deviation describes <strong>people</strong>. The standard error describes <strong>our estimate of the average person</strong>. They answer different questions, and only one of them shrinks when you collect more data.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Write both words on the board and keep them there all hour. Every time a number appears later, ask which of the two it is. The lecture's most common student error is reading a bootstrap histogram as if it described people.</aside>
+    </section>
+
+    <!-- SLIDE 8: Lab numbers -->
+    <section id="sd-se-measured" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> Measured, on the Lab's Own Data</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color); margin-bottom: 12px;">UCI Adult ages, $n = 100$, 1,000 repeated samples &mdash; Lab Step 3.</p>
+        <table class="table-standard" style="width: 100%;">
+          <tr style="background: #f8f6f3;"><th style="text-align: left;">Quantity</th><th style="text-align: right;">Value</th></tr>
+          <tr><td>Population SD of age &mdash; how much <em>people</em> differ</td><td style="text-align: right; font-weight: 700; color: var(--accent-color);">13.640 years</td></tr>
+          <tr><td>SE of the mean, <em>empirical</em> (SD of 1,000 sample means)</td><td style="text-align: right; font-weight: 700; color: var(--secondary-color);">1.361 years</td></tr>
+          <tr><td>SE of the mean, <em>formula</em> $s/\sqrt{n}$</td><td style="text-align: right; font-weight: 700; color: var(--secondary-color);">1.364 years</td></tr>
+        </table>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;">The simulation and the formula agree to three decimals &mdash; and they are <strong>ten times smaller</strong> than the SD. That agreement is the Central Limit Theorem showing up before we have even stated it.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Emphasise the factor of ten. Students who confuse SD with SE are not making a subtle error; they are off by an order of magnitude. Note that we never had to know the population &mdash; the formula got there from one sample.</aside>
+    </section>
+
+    <!-- SLIDE 9: Figure 1 -->
+    <section id="fig-sqrt-n" style="padding: 28px 60px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i> The $\sqrt{n}$ Payoff &mdash; and Its Price</h2>
+      <div class="content" style="align-items: center;">
+        <img src="figures/figure_001_se_sqrt_n.png" alt="Standard error of the mean falling from 2.583 at n=25 to 0.337 at n=1600, with the empirical values sitting on the formula curve and an annotation showing that quadrupling the data halves the standard error" style="max-height: 460px; width: auto;">
+        <p style="font-size: 16pt; margin-top: 8px;">Every <strong>4&times;</strong> in sample size buys a <strong>2&times;</strong> cut in the standard error. Not a defect of the method &mdash; the arithmetic of a square root.</p>
+      </div>
+      <aside class="notes">2 min. The practical sting: doubling a survey budget does not halve its uncertainty. Ask what that implies for someone deciding whether to fund a bigger sample &mdash; at some point the money is better spent on reducing bias, which is Chapter 6, and which no amount of n fixes.</aside>
+    </section>
+
+    <!-- SLIDE 10: Misconception -->
+    <section id="misconception-se" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 22px 28px;">
+          <p class="text-xl" style="font-style: italic;">&ldquo;Standard error is just standard deviation divided by root $n$.&rdquo;</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">True for</p>
+            <p style="font-size: 15pt; margin-top: 8px;">The <strong>mean</strong> of independent observations. That is one statistic.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">False for</p>
+            <p style="font-size: 15pt; margin-top: 8px;">The <strong>median</strong>, a <strong>ratio</strong>, a <strong>Gini coefficient</strong>, a <strong>90th percentile</strong>. Different formula &mdash; often none at all.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-arrow-right" style="color: var(--accent-color);"></i> Hold on to this. The gap between &ldquo;statistics with a formula&rdquo; and &ldquo;statistics without one&rdquo; is where the rest of the lecture lives.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do not rush this slide &mdash; it is the hinge. If students leave believing the bootstrap is a better version of s/sqrt(n), the coverage section at the end will land as a contradiction instead of as the point.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: SD or SE?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">A colleague reports: <em>&ldquo;Average age in our sample of 100 is 38.6, standard deviation 13.6 &mdash; so our estimate is pretty imprecise.&rdquo;</em></p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Are they right?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Yes &mdash; 13.6 years is a wide margin</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) No &mdash; that is the SD; the precision number is the SE, about 1.4 years</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) No &mdash; they should have quoted the variance</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Cannot say without knowing the population size</div>
+        </div>
+        <aside class="notes">1 min. Students click to vote; results appear on the next slide. Deliberately the easy one &mdash; get the room voting on something they can win before the hard poll later.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch07-econ3916-poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; They Quoted the Wrong Number</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15.5pt; line-height: 1.65;">13.6 describes how much <em>people</em> differ in age. The precision of the <em>average</em> is $13.64/\sqrt{100} \approx 1.36$ years &mdash; ten times tighter. The estimate is not imprecise at all.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting:</strong> 13.6 is the only spread number on the page, so it gets used as if it were a margin of error. This exact substitution appears in published work.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section id="divider-clt" class="section-divider" data-state="is-section-divider">
+      <h1>The CLT, and How Slowly It Arrives</h1>
+      <p class="subtitle">&ldquo;n &ge; 30&rdquo; is folklore, not a theorem.</p>
+    </section>
+
+    <!-- SLIDE 13: CLT -->
+    <section id="clt-theorem" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-bell" style="color: var(--secondary-color);"></i> The Central Limit Theorem</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; text-align: center;">
+          <p style="font-size: 21pt;">$$\sqrt{n}\,(\bar{X} - \mu) \xrightarrow{\;d\;} N(0, \sigma^2) \qquad \text{as } n \to \infty$$</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 18px 24px; margin-top: 16px;">
+          <p style="font-size: 17pt; line-height: 1.6;"><strong>In plain language:</strong> whatever shape the population has &mdash; skewed, lumpy, bimodal &mdash; the <strong>average</strong> of a large enough sample behaves like a draw from a normal distribution.</p>
+        </div>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;">The normal curve is everywhere in statistics <strong>not because data is normal</strong>, but because <strong>averages</strong> tend to normality.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;">Two things it does <strong>not</strong> say: nothing about individual observations, and it needs <strong>finite variance</strong>.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The arrow with the d is "converges in distribution" &mdash; say it in words, do not assume they read notation. The two caveats on the right are the ones that come back: the first at the bootstrap histogram, the second at the heavy-tails slide.</aside>
+    </section>
+
+    <!-- SLIDE 14: Figure 2 -->
+    <section id="fig-clt" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--accent-color);"></i> Same Theorem, Same $n$, Different Verdict</h2>
+      <div class="content" style="align-items: center;">
+        <img src="figures/figure_002_clt_convergence.png" alt="Six histograms of the sampling distribution of the mean: the top row for age at n equals 5, 30 and 500 becomes bell-shaped by n equals 30, while the bottom row for positive capital gains is still visibly right-skewed at n equals 30" style="max-height: 450px; width: auto;">
+        <p style="font-size: 15.5pt; margin-top: 6px;">Top: <strong>age</strong>, skew 0.56 &mdash; bell-shaped by $n = 30$. Bottom: <strong>capital gains above zero</strong>, skew 3.41 &mdash; still visibly skewed at $n = 30$.</p>
+      </div>
+      <aside class="notes">3 min. Cover the bottom row and ask the room to predict it before revealing. Almost everyone assumes n=30 is enough because that is what they were taught. This single figure is the argument against the rule.</aside>
+    </section>
+
+    <!-- SLIDE 15: n>=30 table -->
+    <section id="how-large" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-table" style="color: var(--secondary-color);"></i> How Large Is &ldquo;Large Enough&rdquo;?</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%;">
+          <tr style="background: #f8f6f3;"><th style="text-align: left;">Population shape</th><th style="text-align: right;">$n$ for approximate normality</th></tr>
+          <tr><td>Symmetric, light tails (uniform, normal)</td><td style="text-align: right;">10</td></tr>
+          <tr><td>Moderately skewed (exponential)</td><td style="text-align: right;">30&ndash;50</td></tr>
+          <tr style="background: #fdf0ea;"><td><strong>Heavily skewed</strong> &mdash; income, wealth, firm size</td><td style="text-align: right; font-weight: 700; color: var(--accent-color);">100&ndash;500</td></tr>
+          <tr style="background: #fdf0ea;"><td><strong>Very heavy tails</strong></td><td style="text-align: right; font-weight: 700; color: var(--accent-color);">1,000+</td></tr>
+          <tr><td>Infinite variance (Cauchy)</td><td style="text-align: right; font-weight: 700; color: var(--danger-color);">never</td></tr>
+        </table>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;">The &ldquo;$n \ge 30$&rdquo; rule was calibrated on <strong>symmetric textbook populations</strong>. Economists work almost entirely in the shaded rows.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is where the Fed hook pays off: 80 quarterly observations against forecast errors that may have gone heavy-tailed under structural change. Point back at the number on slide 4.</aside>
+    </section>
+
+    <!-- SLIDE 16: Spotify -->
+    <section id="spotify" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-briefcase" style="color: var(--accent-color);"></i> What It Costs in Practice</h2>
+      <div class="content">
+        <p style="font-size: 16pt; line-height: 1.6;">Spotify's experimentation platform ran <strong>520 experiments</strong> on a single mobile surface in one year, across 58 teams.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 22px; text-align: center; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 40pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">12%</p>
+            <p style="font-size: 14pt; margin-top: 8px;">showed a statistically significant positive lift &mdash; the traditional &ldquo;win rate&rdquo;</p>
+          </div>
+          <div class="fragment fade-up" style="background: #eef5ee; border-radius: 12px; padding: 22px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 40pt; font-weight: 700; color: var(--success-color); line-height: 1;">64%</p>
+            <p style="font-size: 14pt; margin-top: 8px;">produced intervals <strong>narrow enough to decide on</strong></p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;">Spotify stopped scoring point estimates and started scoring the <strong>quality of the interval</strong>. That is the same move this lecture is asking you to make.</p>
+        </div>
+        <p class="footnote" style="margin-top: 8px;">Spotify Engineering Blog (2024).</p>
+      </div>
+      <aside class="notes">2 min. The 12-versus-64 contrast is the memorable part: five times as many experiments were informative as were "significant". If a student is heading for a tech job, this is the slide they will use in an interview.</aside>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Where Would You Refuse the Formula?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 16px 24px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">Four analyses are on your desk. For which would you refuse to report $\bar{x} \pm 1.96\,\text{SE}$ &mdash; and what would you ask for instead?</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px;">
+          <div style="padding: 14px 18px; border: 2px solid var(--secondary-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>1.</strong> Mean age of 5,000 survey respondents</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>2.</strong> Mean revenue per user, $n = 400$, most users pay <span class="tex2jax_ignore">$</span>0</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>3.</strong> Median household income for one county, $n = 180$</p>
+          </div>
+          <div style="padding: 14px 18px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-size: 15pt;"><strong>4.</strong> The 95th percentile of page load time, $n = 50{,}000$</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 3 min in pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">5 min. Debrief: (1) fine. (2) refuse &mdash; heavy skew at moderate n, the CLT has not converged. (3) refuse, but for a different reason: there is no formula for a median to begin with. (4) refuse &mdash; extreme quantile, and note a large n does not rescue it. Land the distinction hard: 2 fails because the formula is inaccurate; 3 and 4 fail because there is no formula. Only 3 and 4 are what the bootstrap was invented for. Case 2 is the one it cannot fix, and we come back to it at the end.</aside>
+    </section>
+
+    <!-- DIVIDER 3 -->
+    <section id="divider-parametric" class="section-divider" data-state="is-section-divider">
+      <h1>The Parametric Interval</h1>
+      <p class="subtitle">And the statistic it cannot reach.</p>
+    </section>
+
+    <!-- SLIDE 19: CI formula -->
+    <section id="ci-formula" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-arrows-left-right" style="color: var(--secondary-color);"></i> Building a Confidence Interval</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; text-align: center;">
+          <p style="font-size: 22pt;">$$\text{CI}_{95\%} = \bar{x} \pm 1.96 \cdot \frac{s}{\sqrt{n}}$$</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 17pt; line-height: 1.6;"><strong>In plain language:</strong> take the estimate and walk out about <strong>two standard errors</strong> in each direction. The 1.96 is the width that captures the middle 95% of a normal curve.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-key" style="color: var(--secondary-color);"></i> Notice what this needs: a <strong>standard error</strong>, and a claim that the sampling distribution is <strong>normal</strong>. Both come from the CLT, and both are about the <em>mean</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say the last line slowly &mdash; it is the setup for the wall two slides from now. Everything in this formula is a fact about the mean; nothing in it transfers to another statistic for free.</aside>
+    </section>
+
+    <!-- SLIDE 20: lab output -->
+    <section id="ci-measured" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> One Interval, Measured</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color); margin-bottom: 10px;">Lab Step 5 &mdash; a sample of 200 ages, with the full file held back as the &ldquo;population&rdquo;.</p>
+        <pre style="background: #f8f6f3; border-radius: 8px; padding: 18px 24px; font-size: 15pt; line-height: 1.75; border-left: 4px solid var(--secondary-color);">Sample mean:      38.34 years
+Standard error:   0.941
+95% CI:           [36.49, 40.18]
+True population mean: 38.58   <span style="color: var(--success-color);">&larr; inside the interval</span></pre>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16.5pt;">This time it worked. The honest question is not <em>&ldquo;did it work?&rdquo;</em> but <strong>&ldquo;how often does it work?&rdquo;</strong> &mdash; and we will count, at the end of the hour.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Plant the flag here. One interval containing the truth is not evidence about a method; it is one draw. Tell them explicitly that you are deferring the real test, and that they should hold you to it.</aside>
+    </section>
+
+    <!-- SLIDE 21: what 95% means -->
+    <section id="what-95-means" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-circle-question" style="color: var(--secondary-color);"></i> What the 95% Is a Statement About</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt;"><i class="fa-solid fa-xmark" style="color: var(--danger-color);"></i> &ldquo;There is a 95% probability the true mean lies in this interval.&rdquo;</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt;"><i class="fa-solid fa-xmark" style="color: var(--danger-color);"></i> &ldquo;95% of the data falls inside this interval.&rdquo;</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 14px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt;"><i class="fa-solid fa-check" style="color: var(--success-color);"></i> &ldquo;If I repeated this whole procedure many times, about 95% of the intervals I built would contain the true value.&rdquo;</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;">The true mean is a <strong>fixed number</strong>. Your interval either contains it or it does not. The 95% is a property of the <strong>procedure</strong> &mdash; which is exactly why you can go and <em>count</em> it.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Concede that everyone, including you, speaks the wrong way in practice and it is usually harmless. But the counting exercise at the end only makes sense under the correct reading, so it has to be said once, properly.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Is the 95% a Property Of?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">You report a 95% confidence interval of $[36.49, 40.18]$ for mean age.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">The &ldquo;95%&rdquo; is a property of what?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) This interval &mdash; it has a 95% chance of being right</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The data &mdash; 95% of observations fall inside it</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The procedure &mdash; 95% of intervals built this way contain the truth</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The population &mdash; 95% of possible populations fit it</div>
+        </div>
+        <aside class="notes">1 min. Expect a solid A share even right after the previous slide; that is normal and worth naming rather than treating as a failure to listen.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch07-econ3916-poll-2" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; The Procedure</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15.5pt; line-height: 1.65;">The truth is fixed; your interval is the random thing. The confidence level describes how the <em>interval-building recipe</em> behaves over many runs.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting:</strong> it is how everyone talks, and the intuition it gives is usually fine. But it makes the last section of this lecture unintelligible &mdash; you cannot <em>count</em> how often a fixed statement is true.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 25: the wall -->
+    <section id="median-wall" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ban" style="color: var(--danger-color);"></i> The Wall: What Is the SE of a Median?</h2>
+      <div class="content">
+        <p style="font-size: 16pt; line-height: 1.6;">Chapter 4 said the median is the better summary for skewed data. The Fed reports median household net worth (<strong><span class="tex2jax_ignore">$</span>192,700</strong>) beside the mean (<strong><span class="tex2jax_ignore">$</span>1.06 million</strong>) for exactly that reason. So: how precise is a median?</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 24px; text-align: center; margin-top: 14px;">
+          <p style="font-size: 20pt;">$$\text{SE}(\text{median}) = \frac{1}{2\, f(\text{median})} \cdot \frac{1}{\sqrt{n}}$$</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 22px; margin-top: 14px;">
+          <p style="font-size: 16pt; line-height: 1.6;"><strong>In plain language:</strong> the median's precision depends on how densely observations pile up <em>right at the median</em>. A tall narrow peak there means nudging the data barely moves it. A flat region there means it swings.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 16px 22px; margin-top: 14px;">
+          <p style="font-size: 16.5pt;">To use it you need $f(\text{median})$ &mdash; the <strong>population density</strong> at the median. If you knew the population, you would not be estimating anything. <strong>This formula exists and is unusable.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the slide the whole first half was building toward. Do not soften it: the formula is real, it is in textbooks, and it requires the one thing you can never have. That is the vacuum the bootstrap fills.</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-bootstrap" class="section-divider" data-state="is-section-divider">
+      <h1>The Bootstrap</h1>
+      <p class="subtitle">If you cannot derive the sampling distribution, simulate it.</p>
+    </section>
+
+    <!-- SLIDE 27: algorithm -->
+    <section id="bootstrap-algorithm" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i> The Algorithm, in English Before Any Code</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;">Start with your sample of $n$ observations.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">2</p>
+            <p style="font-size: 15pt;">Draw $n$ observations from it <strong>with replacement</strong> &mdash; that is one <em>bootstrap sample</em>.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">3</p>
+            <p style="font-size: 15pt;">Compute your statistic on it. <em>Any</em> statistic.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">4</p>
+            <p style="font-size: 15pt;">Repeat $B$ times &mdash; 200 for a standard error, 2,000&ndash;10,000 for an interval.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #eef5ee; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">5</p>
+            <p style="font-size: 15pt;">The spread of those $B$ values <strong>is</strong> your estimate of the sampling distribution.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 14px 20px; margin-top: 14px;">
+          <p style="font-size: 15.5pt;"><strong>Why with replacement?</strong> Without it you would draw the same $n$ observations every time, just shuffled &mdash; zero variability. With replacement, each resample holds about <strong>63.2%</strong> unique observations. That is the engine.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Do this with five index cards before showing the slide if you have them. Draw one, write it down, put it BACK, draw again. The physical act of putting the card back is what makes "with replacement" stick.</aside>
+    </section>
+
+    <!-- SLIDE 28: misconception -->
+    <section id="misconception-newdata" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 22px 28px;">
+          <p class="text-xl" style="font-style: italic;">&ldquo;The bootstrap creates new data.&rdquo;</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">What it does</p>
+            <p style="font-size: 15pt; margin-top: 8px;">Reuses your observations in different <strong>multiplicities</strong>, to estimate how much your statistic would move across real repeated samples.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">What it cannot do</p>
+            <p style="font-size: 15pt; margin-top: 8px;">Add information. If your sample is <strong>biased</strong> (Ch 6), every resample is biased identically &mdash; and the interval will be confidently centred on the wrong number.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-color);"></i> A tight bootstrap interval around a biased estimate is <strong>worse than a wide one</strong>. It is wrong, and it looks certain.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Tie it explicitly back to Meng from the retrieval check. The bootstrap measures variance, never bias. Students who remember only one caveat should remember this one.</aside>
+    </section>
+
+    <!-- SLIDE 29: hand walkthrough -->
+    <section id="hand-walkthrough" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-hand" style="color: var(--accent-color);"></i> Six Resamples, By Hand</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; margin-bottom: 8px;">Five workers report commute times, in minutes: <strong>15, 22, 22, 35, 86</strong>. Sample median = <strong>22</strong>.</p>
+        <table class="table-standard" style="width: 100%; font-size: 14pt;">
+          <tr style="background: #f8f6f3;"><th style="text-align: left;">#</th><th style="text-align: left;">Drawn with replacement</th><th style="text-align: left;">Sorted</th><th style="text-align: right;">Median</th></tr>
+          <tr><td>1</td><td>22, 86, 15, 22, 22</td><td>15, 22, <strong>22</strong>, 22, 86</td><td style="text-align: right;">22</td></tr>
+          <tr><td>2</td><td>35, 15, 86, 15, 22</td><td>15, 15, <strong>22</strong>, 35, 86</td><td style="text-align: right;">22</td></tr>
+          <tr style="background: #fdf0ea;"><td>3</td><td>86, <strong>86</strong>, 35, 22, 15</td><td>15, 22, <strong>35</strong>, 86, 86</td><td style="text-align: right;">35</td></tr>
+          <tr style="background: #fdf0ea;"><td>4</td><td>15, 22, 15, 15, 35 <em>(no 86)</em></td><td>15, 15, <strong>15</strong>, 22, 35</td><td style="text-align: right;">15</td></tr>
+          <tr><td>5</td><td>22, 35, 22, 86, 35</td><td>22, 22, <strong>35</strong>, 35, 86</td><td style="text-align: right;">35</td></tr>
+          <tr><td>6</td><td>22, 22, 22, 35, 22</td><td>22, 22, <strong>22</strong>, 22, 35</td><td style="text-align: right;">22</td></tr>
+        </table>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 20px; margin-top: 14px;">
+          <p style="font-size: 16pt;">SD of {22, 22, 35, 15, 35, 22} $\approx$ <strong>7.6 minutes</strong>. That is a standard error for a median, computed with <strong>no formula whatsoever</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Point at the shaded rows: the 86 appears twice in row 3 and not at all in row 4. That is the entire engine, visible in two rows. Note the bootstrap median can only take values that already exist in the data &mdash; which is the seed for the degeneracy slide next.</aside>
+    </section>
+
+    <!-- SLIDE 30: watch it collapse -->
+    <section id="collapse" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-compress" style="color: var(--danger-color);"></i> Now Watch It Collapse &mdash; On Purpose</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color); margin-bottom: 8px;">Lab Step 7: bootstrap the median <strong>age</strong> of all 32,561 respondents, $B = 2{,}000$.</p>
+        <pre style="background: #f8f6f3; border-radius: 8px; padding: 18px 24px; font-size: 15pt; line-height: 1.75; border-left: 4px solid var(--danger-color);">Sample median age: 37.0
+Bootstrap SE:      <span style="color: var(--danger-color); font-weight: 700;">0.0000</span>
+Bootstrap 95% CI:  [37.0, 37.0]
+Distinct bootstrap medians: <span style="color: var(--danger-color); font-weight: 700;">1</span></pre>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 16.5pt; line-height: 1.6;"><strong>This is not a bug.</strong> Ages are integers, $n$ is 32,561, and an enormous number of people are exactly 37. The median is <em>pinned</em>. The bootstrap is correctly reporting that there is no variation to find &mdash; and it cannot manufacture what is not there.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Say "this is not a bug" BEFORE anyone has time to worry, exactly as the lab does. Then ask what would have to change for it to move: fewer observations, or a genuinely continuous variable. Both answers are correct and both are useful.</aside>
+    </section>
+
+    <!-- SLIDE 31: figure 4 -->
+    <section id="fig-degenerate" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-chart-simple" style="color: var(--accent-color);"></i> Pinned, and Not Pinned</h2>
+      <div class="content" style="align-items: center;">
+        <img src="figures/figure_004_degenerate_bootstrap.png" alt="Two panels: on the left the bootstrap distribution of median age is a single spike at 37 with one distinct value and standard error 0.0000; on the right the bootstrap distribution of the mean capital gain is a smooth bell with 2,000 distinct values and standard error $424" style="max-height: 430px; width: auto;">
+        <p style="font-size: 15.5pt; margin-top: 8px;">Same method, same dataset, same $B$. The difference is entirely in the <strong>statistic</strong> and how much room it has to move.</p>
+      </div>
+      <aside class="notes">2 min. The visual contrast does the teaching. Ask: which of these two would you rather be handed by a colleague? The answer is neither &mdash; you would want to know which situation you were in, which is exactly what the bootstrap just told you.</aside>
+    </section>
+
+    <!-- SLIDE 32: BCa nan -->
+    <section id="bca-nan" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-shield-halved" style="color: var(--success-color);"></i> Ask <code>scipy</code> for BCa on That, and It Refuses</h2>
+      <div class="content">
+        <pre style="background: #f8f6f3; border-radius: 8px; padding: 16px 24px; font-size: 14pt; line-height: 1.7; border-left: 4px solid var(--secondary-color);">result = bootstrap((ages,), np.median, method='BCa', ...)
+
+DegenerateDataWarning: The BCa confidence interval cannot be calculated ...
+BCa 95% CI: [nan, nan]</pre>
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 16pt; line-height: 1.6;"><strong>Why.</strong> BCa estimates its correction by <em>leaving out one observation at a time</em> and watching the statistic move. Here it never moves &mdash; so the correction is $0/0$.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 10px; padding: 18px 24px; margin-top: 16px;">
+          <p style="font-size: 17pt;">A method that <strong>refuses to answer</strong> is behaving well. The failure mode to fear is the one that returns a plausible number.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Worth dwelling on for a professional habit: read the warning, not the number. Most students' instinct on seeing nan is to change a setting until the nan goes away. That instinct is exactly backwards here.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Does a Bootstrap SE of 0.0000 Mean?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">2,000 resamples of 32,561 integer ages returned <strong>one distinct median</strong>, and a bootstrap standard error of exactly zero.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What is that telling you?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The bootstrap failed &mdash; use more resamples</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The median age is known with certainty</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) At this $n$ the median is pinned &mdash; the estimator genuinely does not move</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The data must be corrupted</div>
+        </div>
+        <aside class="notes">1 min. Expect A and B to split most of the room. Both are instructive wrong answers and both get addressed on the reveal.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch07-econ3916-poll-3" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; The Estimator Does Not Move</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 18px;"></div>
+        <div style="padding: 0 50px;">
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is wrong:</strong> $B$ is not the problem. Run a million resamples and you get the same single number.</p>
+          </div>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why B is tempting:</strong> the interval really is a single point, so &ldquo;no uncertainty&rdquo; sounds fair. But it is a statement about <em>this estimator on this sample</em>, not about the world. We remain genuinely uncertain about the median age of the US workforce; what vanished is the <em>sample median's</em> variability under resampling.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 35: earns its keep -->
+    <section id="earns-keep" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-coins" style="color: var(--success-color);"></i> And Now Where It Earns Its Keep</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color); margin-bottom: 8px;">Lab Step 8 &mdash; capital gains, restricted to those who report any.</p>
+        <table class="table-standard" style="width: 100%;">
+          <tr><td>$n$</td><td style="text-align: right; font-weight: 700;">2,712</td></tr>
+          <tr><td>Mean</td><td style="text-align: right; font-weight: 700;"><span class="tex2jax_ignore">$</span>12,939</td></tr>
+          <tr><td>Median</td><td style="text-align: right; font-weight: 700;"><span class="tex2jax_ignore">$</span>7,298</td></tr>
+          <tr><td>SD of the <em>data</em> &mdash; how much people differ</td><td style="text-align: right; font-weight: 700; color: var(--accent-color);"><span class="tex2jax_ignore">$</span>22,395</td></tr>
+          <tr style="background: #f0f5f8;"><td><strong>Bootstrap SE of the mean</strong> &mdash; how precise the estimate is</td><td style="text-align: right; font-weight: 700; color: var(--secondary-color);"><span class="tex2jax_ignore">$</span>424</td></tr>
+          <tr style="background: #f0f5f8;"><td>Bootstrap 95% CI (percentile)</td><td style="text-align: right; font-weight: 700; color: var(--secondary-color);">[<span class="tex2jax_ignore">$</span>12,114, <span class="tex2jax_ignore">$</span>13,780]</td></tr>
+        </table>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 14px;">
+          <p style="font-size: 16pt;">The mean sits nearly <strong><span class="tex2jax_ignore">$</span>5,600 above</strong> the median. That gap is the skew &mdash; and it is the reason the next section is about the median, not the mean.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Contrast the <span class="tex2jax_ignore">$</span>22,395 row against the <span class="tex2jax_ignore">$</span>424 row explicitly. Fifty-fold. Then ask which of those two numbers you would put in a report about "how much people got" and which about "how well we know the average".</aside>
+    </section>
+
+    <!-- SLIDE 36: figure 3 -->
+    <section id="fig-data-estimate" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-images" style="color: var(--accent-color);"></i> The Two Distributions Students Most Often Confuse</h2>
+      <div class="content" style="align-items: center;">
+        <img src="figures/figure_003_data_vs_estimate.png" alt="Two histograms: on the left the wide right-skewed distribution of capital gains data with standard deviation $22,395; on the right the narrow bell of 2,000 bootstrap means with a bootstrap standard error of $424" style="max-height: 420px; width: auto;">
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 12px 20px; margin-top: 10px;">
+          <p style="font-size: 15.5pt;">If someone glances at the right panel and says <em>&ldquo;so most people's capital gains are around <span class="tex2jax_ignore">$</span>13,000&rdquo;</em> &mdash; they have read a picture of an <strong>estimate</strong> as a picture of <strong>people</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the visual version of the SD-versus-SE slide from the start of the hour. Put them side by side verbally: the left panel is the standard deviation, the right panel is the standard error, and they are pictures of different things.</aside>
+    </section>
+
+    <!-- SLIDE 37: when the bootstrap fails -->
+    <section id="bootstrap-fails" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> When the Bootstrap Fails</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>1. Very small samples ($n < 15$).</strong> The sample cannot represent the population's shape.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>2. Extreme quantiles.</strong> The 99.9th percentile needs observations out there to resample.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>3. Infinite variance.</strong> The bootstrap SE does not converge &mdash; use <em>subsampling</em>.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>4. Dependent data treated as independent.</strong> Time series or clusters need the <em>block</em> or <em>cluster</em> bootstrap.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color); grid-column: span 2;">
+            <p style="font-size: 15pt;"><strong>5. Non-smooth statistics.</strong> Max, min, range &mdash; each depends on a single observation, so resampling behaves badly.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 20px; margin-top: 14px;">
+          <p style="font-size: 16pt;">Notice what is <strong>not</strong> on this list: <strong>bias</strong>. The bootstrap has no defence against it at all.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Ask students to name the chapter each failure connects to &mdash; 1 and the bias line to Ch 6, 4 forward to the time-series chapters. The fragment is the one to leave on screen while you move on.</aside>
+    </section>
+
+    <!-- DIVIDER 5 -->
+    <section id="divider-which-interval" class="section-divider" data-state="is-section-divider">
+      <h1>Which Interval?</h1>
+      <p class="subtitle">Percentile, basic, BCa &mdash; and why <code>scipy</code>'s default is right.</p>
+    </section>
+
+    <!-- SLIDE 39: three methods -->
+    <section id="three-methods" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i> Three Ways to Slice the Bootstrap Distribution</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%; font-size: 14.5pt;">
+          <tr style="background: #f8f6f3;"><th style="text-align: left;">Method</th><th style="text-align: left;">How it slices</th><th style="text-align: left;">Use it when</th></tr>
+          <tr><td><strong>Percentile</strong></td><td>Take the 2.5th and 97.5th percentiles of the bootstrap values</td><td>Quick exploration</td></tr>
+          <tr><td><strong>Basic</strong></td><td>Reflect the bootstrap distribution around the sample estimate</td><td>Rarely, by hand</td></tr>
+          <tr style="background: #eef5ee;"><td><strong>BCa</strong></td><td>Percentile, then shifted to correct for bias and skew</td><td><strong>Anything consequential</strong></td></tr>
+        </table>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 10px 24px; text-align: center; margin-top: 14px;">
+          <p style="font-size: 19pt;">$$\text{CI}^{\text{pct}}_{95\%} = \left[\hat{\theta}^*_{0.025},\; \hat{\theta}^*_{0.975}\right]$$</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 20px; margin-top: 12px;">
+          <p style="font-size: 16pt;"><strong>In plain language:</strong> sort your 2,000 bootstrap values and chop off the outer 2.5% at each end. What is left is the interval. BCa's advantage, without the asymptotics: <strong>its coverage error shrinks faster as the sample grows.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do not do the O(n^-1) versus O(n^-1/2) notation with this audience; the plain sentence carries it. The operational takeaway is one line: BCa is scipy's default, and that default is right.</aside>
+    </section>
+
+    <!-- SLIDE 40: measured -->
+    <section id="pct-vs-bca" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--accent-color);"></i> Measured on the Capital-Gains Mean</h2>
+      <div class="content">
+        <p style="font-size: 15pt; color: var(--muted-color); margin-bottom: 8px;">Lab Step 10, $B = 2{,}000$.</p>
+        <pre style="background: #f8f6f3; border-radius: 8px; padding: 18px 24px; font-size: 15pt; line-height: 1.8; border-left: 4px solid var(--secondary-color);">percentile: [$   12,173, $   13,796]   width = $   1,623
+       BCa: [$   12,180, $   13,809]   width = $   1,629</pre>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16.5pt; line-height: 1.6;">Here they nearly coincide &mdash; the bootstrap distribution of a mean at $n = 2{,}712$ is close to symmetric, so there is little skew to correct. <strong>Do not read this near-tie as &ldquo;the method choice never matters.&rdquo;</strong> The more skewed the statistic, the further apart they move.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This slide is a small rehearsal for the big one coming: a difference that turns out to be tiny, and the discipline not to over-read it in either direction. Name that parallel out loud now, so the coverage section has somewhere to land.</aside>
+    </section>
+
+    <!-- DIVIDER 6 -->
+    <section id="divider-coverage" class="section-divider" data-state="is-section-divider">
+      <h1>Coverage: the Honest Comparison</h1>
+      <p class="subtitle">An interval's confidence level is a claim you can check.</p>
+    </section>
+
+    <!-- SLIDE 42: coverage setup -->
+    <section id="coverage-setup" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--secondary-color);"></i> The Only Test That Matters</h2>
+      <div class="content">
+        <p style="font-size: 16pt; line-height: 1.6;">Simulate many experiments where the truth is <em>known</em>, and count how often each interval contains it. The lab's Extension does exactly this.</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid var(--secondary-color);"><p style="font-size: 14pt;"><strong>400</strong><br>experiments</p></div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid var(--accent-color);"><p style="font-size: 14pt;"><strong>$n = 50$</strong><br>per sample</p></div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid var(--success-color);"><p style="font-size: 14pt;"><strong>lognormal</strong><br>right-skewed</p></div>
+          <div style="background: #f0f5f8; padding: 12px 16px; border-radius: 6px; border-left: 3px solid var(--danger-color);"><p style="font-size: 14pt;"><strong>95%</strong><br>nominal level</p></div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Four intervals get counted. For the <strong>mean</strong>: the CLT formula and the percentile bootstrap. For the <strong>median</strong>: the percentile bootstrap, and <em>the same mean-centred CLT interval</em> &mdash; because that is the only formula an analyst actually has.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 12px; color: var(--accent-color); font-weight: 600;">True mean 37.52 &nbsp;&bull;&nbsp; true median 33.12</p>
+      </div>
+      <aside class="notes">2 min. Make sure the fourth interval is understood before the poll. It is not a straw man: reaching for the mean's interval when you need the median's is the single most common thing people actually do, because it is the only one their software hands them.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Predict It &mdash; for the MEAN, Which Covers Better?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Right-skewed data, $n = 50$, nominal 95%. Target: <strong>the mean</strong>.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Which method actually delivers better coverage?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch07-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The bootstrap, clearly &mdash; it assumes no normality</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The parametric CLT interval, clearly</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Neither &mdash; they land within Monte Carlo noise of each other</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Both hit 95% exactly</div>
+        </div>
+        <aside class="notes">2 min. Run this BEFORE any numbers are on screen. Expect A to win the room by a distance &mdash; that is the productive error, and the whole section is built on letting them commit to it first. Do not hint.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch07-econ3916-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Neither, and the Gap Is Noise</h2>
+        <div class="poll-results-chart" data-poll-id="ch07-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:155px; margin:10px 60px 16px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Measured: parametric <strong>92.5%</strong>, bootstrap <strong>91.5%</strong>. The parametric interval is nominally <em>ahead</em>, and the gap is smaller than the noise on either number.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); padding: 13px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting:</strong> &ldquo;the bootstrap handles skewness&rdquo; is a very common thing to half-remember. It is not a repair for a statistic whose formula you already have.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 46: figure 5 -->
+    <section id="fig-coverage" style="padding: 24px 50px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--accent-color);"></i> The Measured Result</h2>
+      <div class="content" style="align-items: center;">
+        <img src="figures/figure_005_coverage.png" alt="Bar chart of measured coverage against a nominal 95% level: for the mean, parametric 92.5% and bootstrap 91.5% with overlapping Monte Carlo error bars; for the median, parametric 66.8% and bootstrap 93.2% with no overlap" style="max-height: 470px; width: auto;">
+        <p style="font-size: 15pt; margin-top: 4px; color: var(--muted-color);">400 experiments, $n = 50$, lognormal. Error bars are the Monte Carlo SE of each coverage estimate.</p>
+      </div>
+      <aside class="notes">2 min. Let them look before you talk. Then give one instruction: read the left half first. Everyone's eye goes to the short bar, and the left half is the part that corrects a belief they walked in with.</aside>
+    </section>
+
+    <!-- SLIDE 47: read top rows -->
+    <section id="read-mean-rows" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--secondary-color);"></i> For the Mean: the Bootstrap Buys Nothing</h2>
+      <div class="content">
+        <pre style="background: #f8f6f3; border-radius: 8px; padding: 16px 24px; font-size: 15pt; line-height: 1.8; border-left: 4px solid var(--secondary-color);">   mean  parametric:  92.5%   (Monte Carlo SE 1.3%)
+   mean   bootstrap:  91.5%   (Monte Carlo SE 1.4%)</pre>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 16pt; line-height: 1.6;">It is nominally <strong>behind</strong>, by 1.0 point, against a Monte Carlo SE of about 1.3 on each estimate. <strong>The gap is smaller than its own error bar.</strong> Change the seed and the ordering can flip.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 16px 22px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Both under-cover slightly, for the same reason: the percentile bootstrap and the CLT interval are both <strong>first-order accurate</strong> &mdash; their coverage errors shrink at the same rate, and at $n = 50$ on skewed data neither has got there.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 20px; margin-top: 14px;">
+          <p style="font-size: 16.5pt;"><strong>The bootstrap is not a repair for a statistic whose formula you already have.</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Say the sentence "that gap is smaller than its own error bar" out loud, in those words. This is the correction the course made after an audit &mdash; an earlier version of this material claimed the bootstrap won here, and it does not. Being visibly willing to say so is part of the lesson.</aside>
+    </section>
+
+    <!-- SLIDE 48: bottom rows -->
+    <section id="read-median-rows" style="padding: 32px 60px;">
+      <h2><i class="fa-solid fa-fire" style="color: var(--danger-color);"></i> For the Median: 28 Points, and It Is Not Noise</h2>
+      <div class="content">
+        <pre style="background: #f8f6f3; border-radius: 8px; padding: 16px 24px; font-size: 15pt; line-height: 1.8; border-left: 4px solid var(--danger-color);"> median  parametric:  66.8%   (Monte Carlo SE 2.4%)
+ median   bootstrap:  93.2%   (Monte Carlo SE 1.3%)</pre>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;"><strong>The mechanism.</strong> On right-skewed data the mean sits well above the median, so an interval centred on the sample mean is <strong>aimed at the wrong place</strong> &mdash; and more data does not re-aim it. The bootstrap interval is built around the statistic actually being asked about.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 16pt; line-height: 1.6;"><strong>At scale.</strong> A firm running 1,000 experiments a year on a right-skewed metric &mdash; revenue per user, session length, time to first purchase &mdash; reporting medians against a 95% standard would expect about <strong>50 misses</strong>. It would get roughly <strong>330</strong>.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Ask: "would you launch on an interval that is wrong a third of the time?" Then land the real claim of the lecture &mdash; the bootstrap did not beat the formula, it went where there was no formula. That distinction is what you want them to be able to say back to you.</aside>
+    </section>
+
+    <!-- SLIDE 49: the habit -->
+    <section id="the-habit" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-graduation-cap" style="color: #7C3A5F;"></i> The Habit This Is Really Teaching</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 22px 28px; border-left: 4px solid #7C3A5F;">
+          <p class="text-xl" style="line-height: 1.55;">A simulation is an <strong>experiment</strong>. Its output is an estimate with noise, like any other.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt;">Quoting <strong>&ldquo;92.5% versus 91.5%&rdquo;</strong> as if it established an ordering, when the SE on each is 1.3, would be exactly the overclaiming this chapter is about.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15.5pt;">Every coverage number today came printed <strong>next to its Monte Carlo SE</strong>. That is not decoration. It is what makes the comparison honest.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 10px; padding: 18px 24px; margin-top: 18px; text-align: center;">
+          <p style="font-size: 19pt; font-weight: 600; color: var(--secondary-color);">Before you call a gap a finding, compare it to its own error.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is a recurring lesson in this course and it generalises far past the bootstrap &mdash; it is the same discipline you will need for cross-validation scores in Ch 15 and for A/B test readouts in Ch 9. Say that it will come back.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: What Would Settle It?</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">The mean rows differ by 1.0 point, with a Monte Carlo SE of about 1.3.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Think about:</p>
+            <p style="font-size: 15pt; margin-top: 6px;">What would you change about the simulation to find out whether that ordering is real?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Consider:</p>
+            <p style="font-size: 15pt; margin-top: 6px;">If you reran it with a different seed and the bootstrap came out ahead &mdash; what would you have learned?</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 3 min in pairs &rarr; 2 min share</span></p>
+      </div>
+      <aside class="notes">5 min. Debrief: to halve the MC SE you need 4x the experiments &mdash; the same sqrt(n) arithmetic from the start of the hour, now applied to the simulation itself. Point back at figure 1. And a seed flip teaches nothing except that the gap was noise, which is the point. The deeper answer: "which is better for the mean" is not an interesting question, because theory already says both are first-order accurate. The interesting question is the one the median rows answer.</aside>
+    </section>
+
+    <!-- SLIDE 51: Netflix -->
+    <section id="netflix" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-briefcase" style="color: var(--accent-color);"></i> Economist at Work: Netflix's Quantile Bootstrap</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">Netflix passed <strong>300 million</strong> paid memberships at the end of 2024. For quality metrics like <strong>play delay</strong> &mdash; the wait between pressing play and video starting &mdash; the distribution is aggressively right-skewed: most users start instantly, a tail suffers. Averages hide exactly the users you most need to see.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;">So they evaluate <strong>quantile treatment effects</strong> &mdash; the 50th, 75th and 95th percentiles. Quantiles have <strong>no closed-form standard error</strong>, so they bootstrap.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;">To make it affordable they compress each metric into <strong>(value, count)</strong> pairs and bootstrap the counts &mdash; cost becomes independent of sample size.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 16pt;">Across 123 historical A/B tests, bootstrap-informed decision rules would have raised cumulative returns on the north-star metric by an estimated <strong>33%</strong>. Note <em>why</em> they bootstrap: not because it beats a formula, but because for a quantile <strong>there is no formula to beat</strong>.</p>
+        </div>
+        <p class="footnote" style="margin-top: 8px;">Netflix Tech Blog, &ldquo;Reimagining Experimentation Analysis&rdquo;; Chou et al. (2025), KDD Best Paper, arXiv:2502.08763.</p>
+      </div>
+      <aside class="notes">2 min. The last sentence is the one that matters and it is the whole lecture in a line. If you are short on time, cut the compression detail and keep it.</aside>
+    </section>
+
+    <!-- DIVIDER 7 -->
+    <section id="divider-two-samples" class="section-divider" data-state="is-section-divider">
+      <h1>Two Samples, and the Family</h1>
+      <p class="subtitle">Where today connects to the next two chapters.</p>
+    </section>
+
+    <!-- SLIDE 53: two-sample -->
+    <section id="two-sample" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-code-compare" style="color: var(--secondary-color);"></i> Comparing Two Groups, Assumption-Free</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt;">Resample each group separately, at its own size, and take the difference each time. Lab Part 4 &mdash; mean weekly hours by sex, 1994 CPS extract:</p>
+        <pre style="background: #f8f6f3; border-radius: 8px; padding: 16px 24px; font-size: 14.5pt; line-height: 1.75; border-left: 4px solid var(--secondary-color); margin-top: 10px;">Men:   n = 21,790  mean = 42.43 hours
+Women: n = 10,771  mean = 36.41 hours
+Observed difference: 6.02 hours
+95% BCa CI for the difference: [5.73, 6.28]   contains zero? False</pre>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 16.5pt;">The interval excludes zero, so the gap is not sampling noise. <strong>It says nothing about cause.</strong> That machinery is Chapters 9 and 10.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Students reliably slide from "excludes zero" to a causal sentence. Catch it here, out loud, so that Ch 9 has something to build on. Also note the data is from 1994 &mdash; resampling cannot fix a thirty-year-old sample.</aside>
+    </section>
+
+    <!-- SLIDE 54: three flavours -->
+    <section id="three-flavours" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-shuffle" style="color: var(--accent-color);"></i> Three Flavours of Resampling</h2>
+      <div class="content">
+        <table class="table-standard" style="width: 100%; font-size: 14.5pt;">
+          <tr style="background: #f8f6f3;"><th style="text-align: left;">Method</th><th style="text-align: left;">Ch</th><th style="text-align: left;">Resamples</th><th style="text-align: left;">Answers</th></tr>
+          <tr><td><strong>Monte Carlo</strong></td><td>5</td><td>from a <em>known distribution</em></td><td>&ldquo;what would this quantity be?&rdquo;</td></tr>
+          <tr style="background: #f0f5f8;"><td><strong>Bootstrap</strong></td><td><strong>7</strong></td><td>from <em>your data</em>, with replacement</td><td>&ldquo;how uncertain is my estimate?&rdquo;</td></tr>
+          <tr><td><strong>Permutation</strong></td><td>8&ndash;9</td><td><em>shuffled labels</em>, without replacement</td><td>&ldquo;could this difference be chance?&rdquo;</td></tr>
+        </table>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt;">Same computational move &mdash; repeated random sampling &mdash; three different questions. Getting the question right is the whole skill; the code is nearly identical.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Write this as a three-column table on the board and leave it up. It is the single most useful conceptual summary in this part of the course, and it is what students should carry into Ch 8.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Break This Interval</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">You rerun the hours comparison on <strong>40 workers at a single firm</strong>.</p>
+          <p style="font-size: 15pt; margin-top: 8px; color: var(--muted-color);">Which of the five bootstrap failure modes bites hardest &mdash; and would a bigger $B$ help?</p>
+        </div>
+        <p style="margin-top: 18px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min, whole room</span></p>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 16pt; line-height: 1.6;"><strong>Two bite.</strong> $n = 40$ split across two groups is near the small-sample limit &mdash; and, bigger, workers at one firm are <strong>clustered</strong>, not independent, so the plain bootstrap returns an interval that is <em>too narrow</em>. You would need the cluster bootstrap. And no: a bigger $B$ reduces simulation noise, never the consequences of a violated assumption.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Reveal the answer box only after two or three students have offered something. The "too narrow" direction is worth stressing &mdash; a violated independence assumption does not make you visibly uncertain, it makes you invisibly overconfident.</aside>
+    </section>
+
+    <!-- SLIDE 56: takeaways -->
+    <section id="key-takeaways" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-ruler-horizontal" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>SD describes people; SE describes your estimate.</strong> Only the SE shrinks with $n$, and only at rate $\sqrt{n}$.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-bell" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>The CLT's arrival time depends on skew, not on 30.</strong> For economists' data, &ldquo;large enough&rdquo; can mean hundreds.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #eef5ee; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-key" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>The bootstrap is for statistics with no formula</strong> &mdash; medians, quantiles, ratios. Not a repair for one that has a formula: 92.5% vs 91.5%, inside the noise.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f8f6f3; border-radius: 8px; padding: 13px 17px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 18pt;"><i class="fa-solid fa-shield-halved" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 14.5pt;"><strong>A zero bootstrap SE is an answer, not a failure.</strong> So is <code>nan</code> from BCa. Read the warning, not the number.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 12px; text-align: center; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15.5pt;"><i class="fa-solid fa-scale-balanced" style="color: #7C3A5F;"></i> <strong>Check a gap against its own error before calling it a finding.</strong> Every coverage number today came with a Monte Carlo SE for exactly that reason.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 14px 20px; margin-top: 10px; text-align: center;">
+          <p style="font-size: 16.5pt; color: var(--secondary-color); font-weight: 600;">The bootstrap did not make the mean interval <em>better</em>. It made the median interval <em>possible</em> &mdash; 93.2% against 66.8%.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The closing fragment is the sentence to end on. It is worth more than the version that is not true, and saying so models the thing the course is actually trying to teach.</aside>
+    </section>
+
+    <!-- SLIDE 57: exit ticket + lab -->
+    <section id="exit-and-lab" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket &amp; Today's Lab</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 26px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 16.5pt; line-height: 1.6;"><strong>Exit ticket.</strong> Name one statistic you want a confidence interval for in your own project. Say whether a formula exists for it. If you would bootstrap it &mdash; name the one failure mode you would worry about most.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 18px 26px; margin-top: 16px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 15.5pt; line-height: 1.6;"><strong><code>lab-ch07-guided.ipynb</code></strong> &mdash; Parts 1&ndash;3 are guided. Part 4 has you write the two-sample bootstrap yourself. The Extension reproduces today's coverage table in about 20 seconds.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-radius: 12px; padding: 18px 26px; margin-top: 16px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 15.5pt; line-height: 1.6;"><strong>Take-home Challenge.</strong> Bootstrap the <strong>90/10 income ratio</strong> &mdash; a standard inequality measure with no formula at all. On the lab's data it comes out at <strong>6.45</strong>, with a 95% BCa interval of <strong>[6.24, 8.37]</strong>. Notice how <em>asymmetric</em> that is, and ask yourself which end you trust less.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The asymmetry of the 90/10 interval is the hook into the take-home: it is exactly the situation BCa exists for, and it also touches failure mode 2, extreme quantiles. Tell them to read their own printed output rather than quoting these numbers &mdash; the lab says so too.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Measurement & Indexes</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']], processEscapes: true}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 57% 43%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 46px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 2</p>
+          <h1 style="font-size: 31pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 22px;">Measurement &amp; Indexes:<br>KPIs That Actually Matter</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Every index answers exactly one question. The trouble starts when it is asked another.</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch02-compression.png" alt="Abstract illustration: dozens of faint wandering price paths converging into a single bold index line, labelled thirty thousand prices at the top and one number at the bottom" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">2.1</p>
+            <p style="font-size: 15pt;">Explain CPI construction &mdash; basket, base period, weights, quality adjustment &mdash; and say what each choice <strong>buys</strong> and what it <strong>costs</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">2.2</p>
+            <p style="font-size: 15pt;">Deflate a nominal series from FRED &mdash; and <strong>defend the deflator you chose</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">2.3</p>
+            <p style="font-size: 15pt;">Compare index construction across <strong>CPI, the Dow, and tech KPIs</strong>, and name the failure mode all three share</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">2.4</p>
+            <p style="font-size: 15pt;">Use Goodhart's Law as a diagnostic, and <strong>design a metric system that anticipates its own gaming</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. You already know how to divide by the CPI &mdash; say so explicitly, it buys goodwill. Flag 2.3 as today's centre of gravity: which index answers which question is the part that is genuinely hard, and it is the part the 3916 version of this chapter does not contain.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; margin-bottom: 16px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 1.</strong> Data is a <em>product of measurement decisions</em>. Name one decision inside the Big Mac Index that changes the answer before any analysis begins.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 1.</strong> Stevens' scales. Why can you not average a set of zip codes?</p>
+        </div>
+        <p style="margin-top: 20px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Chapter 1 was <strong>one</strong> measurement. Today: what happens when you compress <strong>thirty thousand</strong> of them into one number &mdash; and hand it to someone with an incentive.</p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. QC1 targets: which cities are sampled, what counts as "the same" burger, and that Russia's disappearance is MNAR so the bias direction is unknowable. QC2 targets: nominal scale, the numbers are labels, arithmetic is undefined on them. Keep QC2 &mdash; it returns in Section 4 when NPS turns out to be ordinal.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-vibecession" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> December 2023: Two Correct Answers</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 10px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">The statistic</p>
+            <p style="font-size: 15pt; line-height: 1.55;">CPI inflation had fallen from its mid&#8209;2022 peak to roughly <strong>3%</strong>. Economists declared the crisis over.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">The households</p>
+            <p style="font-size: 15pt; line-height: 1.55;">Michigan consumer sentiment stayed near <strong>recession levels</strong>. Commentators called it a &ldquo;vibecession&rdquo; and blamed innumeracy.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; margin-top: 22px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 17pt; line-height: 1.5;">Nobody was confused. The CPI measures the <strong>rate of change</strong>. Households were comparing to <strong>2019</strong> &mdash; a <em>level</em>.</p>
+          <p style="font-size: 15pt; color: var(--muted-color); margin-top: 8px;">Speed and altitude are different measurements. People live at altitudes.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do NOT reveal the fragment until you have let the contradiction sit. Ask the room: "who was wrong?" Someone will say the consumers. Then the fragment. The whole lecture is contained in this slide &mdash; a correct index asked the wrong question.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 — Figure 1 -->
+    <section id="hook-figure" style="padding: 20px 44px;">
+      <h2 style="margin-bottom: 6px;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> The Vibecession in One Picture</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: center;">
+        <div>
+          <img src="figures/figure_001_cpi_level_vs_rate.png" alt="Two-panel chart: the CPI level rising continuously from 1947 to 333 today, still 32 percent above its January 2019 value, above a year-over-year rate panel showing the 2022 peak of 9.0 percent collapsing back to 3.3 percent by December 2023" style="width: 100%; max-height: 570px; object-fit: contain; border-radius: 6px;">
+        </div>
+        <div>
+          <p style="font-size: 15pt; line-height: 1.55;">The bottom panel <strong>came all the way home</strong>.</p>
+          <p style="font-size: 15pt; line-height: 1.55; margin-top: 12px;">The top panel <strong>never does</strong> &mdash; the level is near-monotone.</p>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; margin-top: 18px;">
+            <p style="font-size: 14pt; margin: 0;">A central banker reads the bottom. A household reads the top. Both are reading correctly.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Read the SHAPE, not the numbers. Then the honesty beat: this is CPIAUCSL, seasonally adjusted, so it prints 9.0% and 3.3%. The headline numbers you remember &mdash; 9.1% and 3.1% &mdash; are the not-seasonally-adjusted series. Say this out loud. It is a free early example of the thesis: two correct indexes, two questions, one number apart. Students will hit exactly this in the lab.</aside>
+    </section>
+
+    <!-- SLIDE 6: Thesis -->
+    <section id="thesis" style="padding: 40px 60px;">
+      <h2><i class="fa-solid fa-compress" style="color: var(--accent-color);"></i> The Thesis</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e6eef4); border-radius: 14px; padding: 32px 40px; margin-top: 14px;">
+          <p style="font-size: 22pt; line-height: 1.45; color: var(--primary-color); font-family: var(--heading-font);">An index is a <strong>compression algorithm</strong> for reality.</p>
+          <p style="font-size: 19pt; line-height: 1.45; margin-top: 14px;">Compression <em>always</em> discards.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 18pt; text-align: center; margin-top: 26px; color: var(--accent-color); font-weight: 600;">The only question worth asking about any number:<br><span style="color: var(--primary-color);">what did it discard, and does that matter for the question <em>I</em> am asking?</span></p>
+      </div>
+      <aside class="notes">1 min. This sentence is the spine. You will return to it four times &mdash; at the Dow, at the substitution wedge, at the free-good problem, and at MSI. Tell them that now so they hear the callbacks.</aside>
+    </section>
+
+    <!-- DIVIDER 1 -->
+    <section id="divider-what-is-an-index" class="section-divider" data-state="is-section-divider">
+      <h1>1 &nbsp;&bull;&nbsp; What an Index Is</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">The weighting scheme <em>is</em> the measurement.</p>
+    </section>
+
+    <!-- SLIDE 8: Laspeyres -->
+    <section id="laspeyres" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--secondary-color);"></i> The Laspeyres Price Index</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px;">
+          <p style="font-size: 17pt; text-align: center;">$$CPI_t = \frac{\sum_{i=1}^{k} P_{t,i} \, Q_{0,i}}{\sum_{i=1}^{k} P_{0,i} \, Q_{0,i}} \times 100$$</p>
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;"><strong>Interpretation.</strong> It answers exactly one question: <em>what would it cost today to buy what a typical consumer bought in the base year?</em></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #eef5ee; border-radius: 8px; padding: 14px 20px;">
+            <p style="font-size: 14pt;"><strong style="color: var(--success-color);">What freezing $Q_{0,i}$ buys</strong><br>Comparability over time. Simplicity. One basket, one story.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 20px;">
+            <p style="font-size: 14pt;"><strong style="color: var(--danger-color);">What it costs</strong><br>People substitute away from what got expensive. The index assumes they did not. <strong>Substitution bias</strong>, and it is upward.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do not derive anything &mdash; they can read a summation. Spend the time on the two-column trade-off, because the entire next section is the attempt to buy back the right-hand column without giving up the left.</aside>
+    </section>
+
+    <!-- SLIDE 9: Three-good example -->
+    <section id="three-good" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-basket-shopping" style="color: var(--accent-color);"></i> A Basket of Three</h2>
+      <div class="content">
+        <table style="width: 100%; font-size: 14.5pt; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--line-color);">
+              <th style="text-align: left; padding: 8px 10px;">Good</th>
+              <th style="text-align: right; padding: 8px 10px;">2020 price</th>
+              <th style="text-align: right; padding: 8px 10px;">2020 qty</th>
+              <th style="text-align: right; padding: 8px 10px;">2024 price</th>
+              <th style="text-align: right; padding: 8px 10px;">Cost in 2020</th>
+              <th style="text-align: right; padding: 8px 10px;">At 2024 prices</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 10px;">Bread</td><td style="text-align: right; padding: 7px 10px;">\$3.00</td><td style="text-align: right; padding: 7px 10px;">200 loaves</td><td style="text-align: right; padding: 7px 10px;">\$4.20</td><td style="text-align: right; padding: 7px 10px;">\$600</td><td style="text-align: right; padding: 7px 10px;">\$840</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 10px;">Gasoline</td><td style="text-align: right; padding: 7px 10px;">\$2.50</td><td style="text-align: right; padding: 7px 10px;">600 gallons</td><td style="text-align: right; padding: 7px 10px;">\$3.60</td><td style="text-align: right; padding: 7px 10px;">\$1,500</td><td style="text-align: right; padding: 7px 10px;">\$2,160</td></tr>
+            <tr style="border-bottom: 2px solid var(--line-color);"><td style="padding: 7px 10px;">Rent</td><td style="text-align: right; padding: 7px 10px;">\$1,200</td><td style="text-align: right; padding: 7px 10px;">12 months</td><td style="text-align: right; padding: 7px 10px;">\$1,560</td><td style="text-align: right; padding: 7px 10px;">\$14,400</td><td style="text-align: right; padding: 7px 10px;">\$18,720</td></tr>
+            <tr style="font-weight: 700;"><td style="padding: 8px 10px;">Total</td><td colspan="3"></td><td style="text-align: right; padding: 8px 10px;">\$16,500</td><td style="text-align: right; padding: 8px 10px;">\$21,720</td></tr>
+          </tbody>
+        </table>
+        <div style="display: grid; grid-template-columns: 260px 1fr; gap: 24px; align-items: center; margin-top: 18px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 16px; text-align: center;">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color); line-height: 1;">131.6</p>
+            <p style="font-size: 12.5pt; color: #7a4a2f; margin-top: 6px;">$CPI_{2024}$, base 2020 = 100</p>
+          </div>
+          <p style="font-size: 15pt; line-height: 1.55;">Rent is <strong>87%</strong> of this basket by expenditure, so the answer is very nearly &ldquo;what happened to rent.&rdquo; Change the weights and you change the finding &mdash; without touching a single price.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Give them 60 seconds to compute 21720/16500 before you reveal 131.6. The payoff line is the right-hand text: the number is 87% a rent statistic. Ask a delivery driver spending 40% on gas whether 131.6 describes their year.</aside>
+    </section>
+
+    <!-- SLIDE 10: What it costs to build -->
+    <section id="bls-operation" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-person-walking" style="color: var(--secondary-color);"></i> What It Costs to Actually Build One</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 8px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">80,000</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 6px;">price quotes<br>per month</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">23,000</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 6px;">retail<br>establishments</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--accent-color); line-height: 1;">400</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 6px;">field economists,<br>in person</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">2 yrs</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 6px;">between weight<br>updates</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 20px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">This is not a web scrape. When a sampled store closes, <strong>a human being chooses the replacement outlet</strong> &mdash; same geography, similar demographics. When a laptop model is discontinued, that person decides whether the price gap is a price change or a quality change.</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 16px; color: var(--accent-color); font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> The formula is undergraduate. <strong>The judgement is inside the index.</strong></p>
+      </div>
+      <aside class="notes">2 min. Weights come from the Consumer Expenditure Survey, about 24,000 households. The two-year update lag is the seed for the obsolescence mechanism in Section 4 &mdash; plant it here and call back to it. Ch 1's UK ONS hook was exactly this infrastructure degrading.</aside>
+    </section>
+
+    <!-- SLIDE 11: Who does it represent -->
+    <section id="representative" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-house" style="color: var(--danger-color);"></i> Who Does the &ldquo;Representative Consumer&rdquo; Represent?</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: center;">
+          <div style="background: linear-gradient(135deg, #f0f5f8, #dfeaf1); border-radius: 12px; padding: 20px; text-align: center;">
+            <p style="font-size: 34pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">36%</p>
+            <p style="font-size: 13pt; color: var(--muted-color); margin-top: 8px;">housing share<br>of the CPI-U</p>
+          </div>
+          <p style="font-size: 15.5pt; line-height: 1.6;">Not house prices &mdash; <strong>owners' equivalent rent</strong>, because the CPI measures <em>consumption</em>, not investment. OER lags market rents by <strong>12&ndash;18 months</strong>: the index understates the shock going in and overstates the relief coming out.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>Boston, 2019&ndash;24.</strong> Metro shelter rose ~30% against ~25% nationally. A one-bed in Cambridge passed \$2,800/month.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>The MBTA, 2012&ndash;24.</strong> Base fare \$1.70 &rarr; \$2.40 (+41%) while national CPI rose ~33% &mdash; an <strong>8-point real increase</strong>.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">CPI-W and the experimental CPI-E exist as admissions that no single compression serves every user.</p>
+      </div>
+      <aside class="notes">2 min. Make it personal &mdash; most of this room rents in this metro. The MBTA line is the one they feel. Note that the CPI tracks the what and never the why: it cannot tell you whether the fare rose from deferred maintenance or from a budget gap, and that decomposition is not a flaw in the data, it is outside the index's definition.</aside>
+    </section>
+
+    <!-- SLIDE 12: Dow divisor -->
+    <section id="dow" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i> The Dow: Same Companies, Different Answer</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.55;">The CPI is <strong>expenditure-weighted</strong>. The Dow is <strong>price-weighted</strong> &mdash; a \$200 stock carries four times the weight of a \$50 stock <em>regardless of company size</em>.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Two stocks: A at \$200, B at \$100. Sum \$300, divisor 0.152 &rarr; index <strong>1,974</strong>.<br>
+          A splits 2-for-1. Nothing economic changes. Sum drops to \$200 &rarr; <strong style="color: var(--danger-color);">1,316</strong>. A 33% crash caused by arithmetic.</p>
+          <p class="fragment fade-up" style="font-size: 15pt; margin-top: 10px; color: var(--success-color);"><i class="fa-solid fa-wrench"></i> So the committee resets the divisor to 0.101, and the index reads 1,974 again. It has been adjusted <strong>hundreds of times</strong> since starting at 30 in 1928.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; text-align: center;">
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px;"><p style="font-size: 14pt;"><strong>Price-weighted</strong><br><span style="color: var(--muted-color);">the Dow</span></p></div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px;"><p style="font-size: 14pt;"><strong>Cap-weighted</strong><br><span style="color: var(--muted-color);">the S&amp;P 500</span></p></div>
+          <div style="background: #f0f5f8; border-radius: 8px; padding: 12px;"><p style="font-size: 14pt;"><strong>Equal-weighted</strong><br><span style="color: var(--muted-color);">a different story again</span></p></div>
+        </div>
+        <p style="font-size: 16.5pt; margin-top: 14px; text-align: center; color: var(--accent-color); font-weight: 600;">Same 30 companies. Three indexes. Three conclusions.</p>
+      </div>
+      <aside class="notes">2 min. The divisor is the best available proof that an index is a DESIGNED ARTIFACT, not a discovered truth &mdash; there is a committee, and it meets. A \$1 move in any component now moves the Dow about 6.6 points, which no one who quotes the Dow on television has ever mentioned.</aside>
+    </section>
+
+    <!-- SLIDE 13: Four questions -->
+    <section id="four-questions" style="padding: 34px 60px;">
+      <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--secondary-color);"></i> Your Index BS Detector</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt;"><strong>1. What is in the basket?</strong></p>
+            <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 5px;">CPI: 80,000 items. Dow: 30 stocks.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt;"><strong>2. How are components weighted?</strong></p>
+            <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 5px;">CPI: spending shares. Dow: share price.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt;"><strong>3. When was it last updated?</strong></p>
+            <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 5px;">CPI: every two years. Dow: at committee discretion.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt;"><strong>4. Who benefits from it being high or low?</strong></p>
+            <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 5px;">Recipients want high. Employers want low.</p>
+          </div>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 18px; text-align: center;">Not a CPI trick. You will apply these to <strong>$R^2$ in Ch 12</strong> and to <strong>feature importance in Ch 19</strong>.</p>
+      </div>
+      <aside class="notes">1 min. Write these four on the board and leave them up for the rest of the class. Question 4 is the one that separates a statistician from an economist &mdash; it is the only one that is about incentives rather than construction, and it is the bridge to Section 4.</aside>
+    </section>
+
+    <!-- POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: The Base-Period Trap</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">A colleague rebases the CPI to <strong>2019 = 100</strong> before deflating a wage series, instead of leaving it at 1982-84 = 100.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 8px;">What happens to the <strong>real wage growth rate</strong> between 2019 and 2024?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch02-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) It rises &mdash; a later base raises measured real growth</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) It falls &mdash; a later base lowers measured real growth</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Nothing &mdash; rebasing is a constant rescaling</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Undefined &mdash; you cannot deflate with a rebased index</div>
+        </div>
+        <aside class="notes">1 min. Students vote on their devices; results on the next slide. Expect a real A/B split &mdash; base periods feel consequential because they are prominent.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch02-econ5200-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Nothing Happens</h2>
+        <div class="poll-results-chart" data-poll-id="ch02-econ5200-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 46px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Rebasing multiplies the whole index by a constant, and a constant <strong>cancels in any ratio of two deflated values</strong>. The base period sets the <em>units</em> your real series is quoted in &mdash; &ldquo;2020 dollars&rdquo; &mdash; and nothing else.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A and B are tempting:</strong> in the <em>Laspeyres formula</em> the base period also fixes the quantity weights &mdash; and that genuinely does change the number. Two different jobs, one name. Separating <em>base period as unit of account</em> from <em>base period as basket vintage</em> is the whole question.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Choose the Deflator</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">Compare Boston graduate-student rent, 2019&ndash;2024, against a <em>national</em> wage series.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Which price index do you deflate with &mdash; and why <em>that</em> one?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">Name the bias your choice introduces &mdash; and give its <strong>sign</strong>.</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4 for the timer. Expect: national CPI-U (comparable to the wage series but understates Boston shelter, so real rent burden is understated); Boston metro CPI (right numerator, now mismatched with a national denominator); a shelter-only sub-index (matches the concept, abandons "cost of living"). Debrief line: there is no unbiased choice here. There is only a choice whose bias you can SIGN and STATE. That is the deliverable, and it is what a referee will ask for.</aside>
+    </section>
+
+    <!-- DIVIDER 2 -->
+    <section id="divider-which-index" class="section-divider" data-state="is-section-divider">
+      <h1>2 &nbsp;&bull;&nbsp; Which Index Answers Which Question</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Four formulas. Four questions. One theorem that says when the choice stops mattering.</p>
+    </section>
+
+    <!-- SLIDE 17: Paasche -->
+    <section id="paasche" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--accent-color);"></i> The Obvious Repair: Use Today's Basket</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p style="font-size: 17pt; text-align: center;">$$P_t^{\text{Paasche}} = \frac{\sum_i P_{t,i} \, Q_{t,i}}{\sum_i P_{0,i} \, Q_{t,i}} \times 100$$</p>
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 16px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;"><strong>Interpretation.</strong> <em>How much less would it have cost in the base year to buy what people buy today?</em> A different question, not a better answer to the same one.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 15px 20px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>Laspeyres</strong><br><span style="color: var(--danger-color); font-weight: 600;">overstates</span><br><span style="font-size: 13.5pt; color: var(--muted-color);">frozen basket ignores substitution</span></p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 8px; padding: 15px 20px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong>Paasche</strong><br><span style="color: var(--success-color); font-weight: 600;">understates</span><br><span style="font-size: 13.5pt; color: var(--muted-color);">today's quantities already embody the switching</span></p>
+          </div>
+        </div>
+        <p style="font-size: 16pt; margin-top: 16px; text-align: center; color: var(--accent-color); font-weight: 600;">Two indexes. Known, <em>opposite</em> biases. That is an opportunity.</p>
+      </div>
+      <aside class="notes">2 min. The key framing, and it is the one they will get wrong on the exam: Paasche is not "the correct version of Laspeyres." It answers a different counterfactual. Both are right; they are right about different things. Hold the "opportunity" line &mdash; it sets up Fisher.</aside>
+    </section>
+
+    <!-- SLIDE 18: Fisher + Tornqvist -->
+    <section id="fisher-tornqvist" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--secondary-color);"></i> Two Ways to Split the Difference</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px;">
+          <p style="font-size: 16pt; text-align: center; margin: 0;">$$P_t^{\text{Fisher}} = \sqrt{P_t^{\text{Laspeyres}} \times P_t^{\text{Paasche}}}$$</p>
+          <p style="font-size: 13.5pt; color: var(--accent-color); text-align: center; margin-top: 4px;"><strong>Interpretation:</strong> the <em>geometric</em> mean of the upper and lower bound.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; margin-top: 14px;">
+          <p style="font-size: 15pt; text-align: center; margin: 0;">$$\ln P_t^{\text{T}} = \sum_{i} \tfrac{1}{2}\left(s_{0,i} + s_{t,i}\right) \ln\frac{P_{t,i}}{P_{0,i}}$$</p>
+          <p style="font-size: 13.5pt; color: var(--accent-color); text-align: center; margin-top: 4px;"><strong>Interpretation:</strong> each good's <em>log price change</em>, weighted by its <em>average budget share</em> across the two periods. The geometric analogue of Fisher.</p>
+        </div>
+        <div style="background: #f0f5f8; border-radius: 8px; padding: 14px 22px; margin-top: 16px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 15pt;">$s_{0,i}$ and $s_{t,i}$ are good $i$'s share of total spending in the base and current periods. Where Fisher averages two <em>indexes</em>, T&ouml;rnqvist averages two <em>weighting schemes</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Read every symbol out loud &mdash; s is a share, the sum of s over i is one in each period. The half is a simple average of the two share vectors. Do not prove anything. The punchline is on the next slide and it is empirical, not algebraic.</aside>
+    </section>
+
+    <!-- SLIDE 19: Figure 3 -->
+    <section id="index-family" style="padding: 24px 44px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-ruler-horizontal" style="color: var(--accent-color);"></i> Beef and Chicken: All Four at Once</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: center;">
+        <img src="figures/figure_003_index_family.png" alt="Number line showing Paasche at 136.0 and Laspeyres at 145.0 as the two bounds of a nine-point substitution wedge, with Fisher at 140.43 and Tornqvist at 140.48 falling on a single indistinguishable point between them" style="width: 100%; border-radius: 6px;">
+        <div>
+          <p style="font-size: 13.5pt; color: var(--muted-color); line-height: 1.5;">Base: beef \$5.00&times;100, chicken \$3.00&times;100.<br>Now: beef \$8.00 (+60%), chicken \$3.60 (+20%).<br>Consumers move to beef 60, chicken 150.</p>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 16px; margin-top: 14px;">
+            <p style="font-size: 14pt; line-height: 1.7; margin: 0;">Laspeyres <strong>145.0</strong><br>Paasche <strong>136.0</strong><br><span style="color: var(--muted-color);">wedge = 9.0 points</span></p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 8px; padding: 12px 16px; margin-top: 12px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14pt; line-height: 1.6; margin: 0;">Fisher <strong>140.43</strong><br>T&ouml;rnqvist <strong>140.48</strong><br><span style="color: var(--success-color); font-weight: 600;">0.05 apart</span></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the slide of the lecture. Two formulas that look nothing alike land five hundredths of a point apart inside a nine-point wedge. Ask them to guess the gap before you show it &mdash; nobody guesses 0.05. That is Diewert, and it is next.</aside>
+    </section>
+
+    <!-- SLIDE 20: Superlative caution -->
+    <section id="superlative" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-award" style="color: var(--secondary-color);"></i> Diewert (1976): Superlative Indexes</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e6eef4); border-radius: 12px; padding: 20px 28px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Fisher and T&ouml;rnqvist are both <strong>superlative</strong>: each is <em>exact</em> for a flexible cost function, so they agree <strong>to second order</strong> whatever the true preferences turn out to be.</p>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 18px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong style="color: var(--danger-color);">Do not over-claim this.</strong> Superlative is a statement about <strong>approximation order</strong>, not about being right. The precise claim: a superlative index approximates any twice-differentiable homothetic cost function <em>to second order</em>.</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 18px; line-height: 1.55;">It does <em>not</em> say the index equals the true cost-of-living index. It says the <strong>choice among superlative indexes stops mattering</strong> before the measurement error in the underlying price quotes does.</p>
+      </div>
+      <aside class="notes">2 min. If a student pushes on this, the sentence in the red box is your answer verbatim &mdash; twice-differentiable, homothetic, second order. The last line is the practically useful one: once you are inside the superlative family, stop arguing about the formula and go worry about the 80,000 price quotes instead.</aside>
+    </section>
+
+    <!-- POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Why the <em>Geometric</em> Mean?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Fisher is the <strong>geometric</strong> mean of Laspeyres and Paasche, not the arithmetic mean. <strong>Why?</strong></p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch02-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The arithmetic mean of two biased indexes stays biased; the geometric mean does not</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Diewert's exactness result &mdash; Fisher is superlative for a flexible cost function; the arithmetic mean has no such property</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Computational convenience with log-differenced data</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Only the geometric mean is guaranteed to lie between the two</div>
+        </div>
+        <aside class="notes">1 min. D will collect real votes. That is the productive error and the reveal is built around it.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch02-econ5200-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; It Is a Theorem, Not an Intuition</h2>
+        <div class="poll-results-chart" data-poll-id="ch02-econ5200-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 46px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The justification is a result about which functional forms an index is <strong>exact</strong> for &mdash; not an averaging intuition.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is the good wrong answer:</strong> it is a <em>true statement about Fisher</em> &mdash; but the arithmetic mean also lies between the two bounds, so &ldquo;lies between&rdquo; cannot be the reason for preferring one. Distinguishing <em>true of X</em> from <em>the reason for X</em> is the entire question.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 24: Chained CPI + Figure 4 -->
+    <section id="chained-cpi" style="padding: 24px 44px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-link" style="color: var(--secondary-color);"></i> The Theory, Shipped: the Chained CPI</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1fr 310px; gap: 20px; align-items: center;">
+        <img src="figures/figure_004_cpiu_vs_chained.png" alt="CPI-U and Chained CPI both indexed to 100 in 2000, diverging steadily to a 12.0 index-point gap by 2026, annotated as a measured substitution bias of 0.45 percentage points per year against the Boskin Commission estimate of 0.3 to 0.4" style="width: 100%; border-radius: 6px;">
+        <div>
+          <p style="font-size: 14pt; line-height: 1.55;">C-CPI-U (published since 2002) links short-period Laspeyres indexes with weights updated <em>at each link</em> &mdash; which approximates a <strong>T&ouml;rnqvist</strong>.</p>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 16px; margin-top: 14px;">
+            <p style="font-size: 14pt; line-height: 1.6; margin: 0;">Measured on live FRED in <strong>Lab 2, Part 2</strong>:<br><strong style="color: var(--accent-color); font-size: 17pt;">0.45 pp / year</strong><br><span style="color: var(--muted-color);">12.0 index points over 26 years</span></p>
+          </div>
+          <p style="font-size: 13pt; color: var(--muted-color); margin-top: 12px; line-height: 1.5;">Boskin (1996) put <em>substitution</em> bias at 0.3&ndash;0.4 pp/yr &mdash; and <em>total</em> CPI overstatement at 0.8&ndash;1.6.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Stress that this is the number their own notebook prints against live FRED, not a textbook constant &mdash; it will drift slightly as vintages update, and that is itself the lesson. Be precise about Boskin: 0.3-0.4 is the SUBSTITUTION component; 0.8-1.6 is the total, which also includes quality and new-goods bias.</aside>
+    </section>
+
+    <!-- SLIDE 25: political object -->
+    <section id="political" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-landmark" style="color: var(--danger-color);"></i> 0.45 Percentage Points Is a Political Object</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px; text-align: center;">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">Social Security</p>
+            <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 6px;">COLAs are indexed to the CPI</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px; text-align: center;">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">TIPS</p>
+            <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 6px;">Treasury principal accretes with it</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 18px; text-align: center;">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">Tax brackets</p>
+            <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 6px;">Thresholds are indexed annually</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 18px 24px; margin-top: 20px;">
+          <p style="font-size: 16pt; line-height: 1.6;">The Boskin finding was not merely academic. It was, in effect, <strong>an argument for smaller benefit increases</strong>. Over thirty years the CPI-U / C-CPI-U choice is worth <strong>tens of billions annually</strong>.</p>
+        </div>
+        <p style="font-size: 16pt; margin-top: 18px; text-align: center; color: var(--accent-color); font-weight: 600;">The index-number literature is technical.<br><span style="color: var(--primary-color);">The choice among its answers is not.</span></p>
+      </div>
+      <aside class="notes">2 min. Be careful and fair here: this is NOT an accusation of dishonesty. The point is Mechanism 1 from Section 4 &mdash; when an index has fiscal consequences, even entirely well-intentioned methodological choices are made under pressure. Say that explicitly; a graduate audience will otherwise hear a conspiracy claim and stop listening.</aside>
+    </section>
+
+    <!-- SLIDE 26: Hedonics -->
+    <section id="hedonics" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-microchip" style="color: var(--secondary-color);"></i> Quality Adjustment: Hedonic Regression</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 26px;">
+          <p style="font-size: 16pt; text-align: center; margin: 0;">$$\ln P_i = \alpha + \sum_{j=1}^{J} \beta_j z_{ij} + \epsilon_i$$</p>
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.55;"><strong>Interpretation.</strong> Regress log price on product characteristics. $\beta_j$ is the <em>implicit price</em> of one more unit of characteristic $j$ &mdash; screen size, processor speed, RAM. Rosen (1974).</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; margin-top: 14px;">
+          <p style="font-size: 14.5pt; text-align: center; margin: 0;">$$\Delta P^{\text{adj}} = \left(P^{\text{new}} - P^{\text{old}}\right) - \sum_j \hat\beta_j \left(z^{\text{new}}_j - z^{\text{old}}_j\right)$$</p>
+        </div>
+        <div class="fragment fade-up" style="background: #eef5ee; border-left: 4px solid var(--success-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt;">A laptop costs <strong>\$50 more</strong> but carries <strong>\$120</strong> of estimated quality improvement &rarr; the CPI records a <strong>\$70 price cut</strong> while the sticker price rose.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the one place a graduate audience relaxes, because it is just a regression they already know &mdash; use that. The unfamiliar part is not the estimator, it is that the fitted coefficients are then used to SUBTRACT a counterfactual quality gain from an observed price change. Hold the fragment until they have read the second equation.</aside>
+    </section>
+
+    <!-- SLIDE 27: Hedonic limits -->
+    <section id="hedonic-limits" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--danger-color);"></i> Where Quality Adjustment Breaks</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 22px; align-items: center;">
+          <div style="background: linear-gradient(135deg, #f0f5f8, #dfeaf1); border-radius: 12px; padding: 18px; text-align: center;">
+            <p style="font-size: 32pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">~30%</p>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 8px;">of CPI items by weight use hedonic methods</p>
+          </div>
+          <p style="font-size: 15pt; line-height: 1.55;">Overwhelmingly technology and vehicles &mdash; where characteristics are <strong>measurable</strong> and markets are competitive. Outside that, it gets contentious fast.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 18px;">
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt;"><strong>Medical care</strong><br><span style="color: var(--muted-color);">A drug costs 5&times; more and adds two years of life. Price increase, or quality gain? No agreed method.</span></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt;"><strong>Housing</strong><br><span style="color: var(--muted-color);">Improvements are ubiquitous and heterogeneous. OER sidesteps it &mdash; and buys the 12&ndash;18 month lag instead.</span></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 8px; padding: 14px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14pt;"><strong>Free digital goods</strong><br><span style="color: var(--muted-color);">Zero price. The index is <em>defined on prices</em>, so it cannot see them at all.</span></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. Land hard on the third box, because it is the discussion you are about to run. The free-good case is not "hard to measure" &mdash; it is OUTSIDE THE DEFINITION. An index built on prices has no representation for a good whose price is zero.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: The Free-Good Problem</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">A free app replaces a \$50 software product.</p>
+          <p style="font-size: 14.5pt; margin-top: 6px; color: var(--muted-color);">Aghion, Bergeaud, Boppart, Klenow &amp; Li (2019) estimate unmeasured improvement of this kind may understate GDP growth by <strong>0.5&ndash;1.0 pp per year</strong>.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A</p>
+            <p style="font-size: 15pt;">Is that a <strong>price decrease</strong> or a <strong>quality improvement</strong> &mdash; and does the CPI treat those differently?</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--accent-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--accent-color); font-size: 15pt;">Prompt B</p>
+            <p style="font-size: 15pt;">What would you have to <strong>measure</strong> to fix it? Name the survey you would field.</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 1 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">4 min, press 4. The answer to A is "neither" &mdash; it is invisible, because the index has no slot for a zero price. The right concept is consumer surplus, and consumer surplus is not a price. For B, push them to willingness-to-accept: what would you have to be paid to give up web search for a year? That is a stated-preference survey, with every problem stated preference has. Debrief: the gap is not laziness, it is that the concept has no market price.</aside>
+    </section>
+
+    <!-- DIVIDER 3 -->
+    <section id="divider-deflation" class="section-divider" data-state="is-section-divider">
+      <h1>3 &nbsp;&bull;&nbsp; Deflation in Practice</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Choosing a deflator is choosing a question. The ruler is part of the finding.</p>
+    </section>
+
+    <!-- SLIDE 30: Deflation formula -->
+    <section id="deflation" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-divide" style="color: var(--accent-color);"></i> The Operation You Already Know</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px;">
+          <p style="font-size: 18pt; text-align: center; margin: 0;">$$\text{Real Value}_t = \frac{\text{Nominal Value}_t}{CPI_t} \times 100$$</p>
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;"><strong>Interpretation.</strong> Divide by the price level to express purchasing power in constant units. Multiplying by 100 rescales into base-period dollars.</p>
+        </div>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 15pt;"><strong>\$5,000 in 1970</strong><br>CPI 38.8 &rarr; roughly <strong>\$40,464</strong> in 2024 dollars.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 15pt;">Against <strong>\$55,000</strong> today that is a <strong>36% real gain</strong> &mdash; not the 1,000% the nominal comparison suggests.</p>
+          </div>
+        </div>
+        <p style="font-size: 16pt; margin-top: 16px; text-align: center; color: var(--accent-color); font-weight: 600;">The gap between 1,000% and 36% is <em>money illusion</em>.</p>
+      </div>
+      <aside class="notes">2 min, and no longer &mdash; this audience has done this since undergrad. Move fast, use the fragment to fix units, then get to the wage chart. If anyone looks bored here, good: tell them the next slide is where the deflator choice starts doing real work.</aside>
+    </section>
+
+    <!-- SLIDE 31: Figure 2 -->
+    <section id="wage-divergence" style="padding: 24px 44px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i> Fifty Years of Divergence</h2>
+      <div class="content" style="display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: center;">
+        <img src="figures/figure_002_real_vs_nominal_wages.png" alt="Nominal and real average hourly earnings from 1964, with nominal rising from about two dollars fifty to thirty-two dollars fifty while the real series in 2020 dollars sits at twenty-four dollars forty-three in January 1973 and twenty-five dollars twenty-two today, a real gain of three point two percent in fifty-three years" style="width: 100%; border-radius: 6px;">
+        <div>
+          <table style="width: 100%; font-size: 13.5pt; border-collapse: collapse;">
+            <tr style="border-bottom: 2px solid var(--line-color);"><th style="text-align: left; padding: 6px 4px;"></th><th style="text-align: right; padding: 6px 4px;">Jan 1973</th><th style="text-align: right; padding: 6px 4px;">Today</th></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 7px 4px;">Nominal</td><td style="text-align: right; padding: 7px 4px;">\$4.03</td><td style="text-align: right; padding: 7px 4px;">\$32.53</td></tr>
+            <tr><td style="padding: 7px 4px;"><strong>Real (2020 \$)</strong></td><td style="text-align: right; padding: 7px 4px;"><strong>\$24.43</strong></td><td style="text-align: right; padding: 7px 4px;"><strong>\$25.22</strong></td></tr>
+          </table>
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 10px; padding: 14px; text-align: center; margin-top: 14px;">
+            <p style="font-size: 26pt; font-weight: 700; color: var(--accent-color); line-height: 1;">+3.2%</p>
+            <p style="font-size: 12.5pt; color: #7a4a2f; margin-top: 5px;">real, in 53 years</p>
+          </div>
+          <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 12px;">Eight-fold nominal growth. Essentially nothing real.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. These are the numbers the lab prints against live FRED, using the lab's own fixed deflate_series. VINTAGE NOTE, say it out loud: the chapter quotes \$23.60 to \$23.70 for 1973-2019 &mdash; a different window on an older vintage. Students will see the deck's numbers when they run Lab 2, so tell them why the two differ before they email you about it.</aside>
+    </section>
+
+    <!-- SLIDE 32: structural breaks -->
+    <section id="breaks" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--danger-color);"></i> Two Breaks, Both Invisible in the Nominal Series</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 18px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1973</p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">Oil shocks, the end of Bretton Woods, and the productivity&ndash;wage decoupling. Real wages then fell for two decades.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 18px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">2020</p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">The series <em>maximum</em> is <strong>April 2020, \$25.42</strong> &mdash; and it is largely <strong>composition</strong>. Low-wage workers left the labour force, mechanically lifting the average.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 20px; border-left: 4px solid var(--danger-color);">
+          <p style="font-size: 16.5pt; line-height: 1.6;"><strong>Nobody got that raise.</strong> The index moved for a reason that has nothing to do with the concept it names &mdash; the cleanest example you will see all term.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; color: var(--muted-color);"><i class="fa-solid fa-forward"></i> Ch 20 tests both breaks formally with changepoint detection.</p>
+      </div>
+      <aside class="notes">2 min. The 2020 composition effect is the single most useful thing on this slide &mdash; it is Simpson's paradox wearing a macro hat, and it will come back in Ch 4 and again in Ch 20. Ask: "if every individual worker's wage was flat, can the average wage rise?" Let them work out that it can.</aside>
+    </section>
+
+    <!-- POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Does &ldquo;Wage Stagnation&rdquo; Claim?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px; margin-top: 8px;">
+          <p style="font-size: 15pt; line-height: 1.55;">Real AHE was <strong>\$24.43</strong> in Jan 1973 and <strong>\$25.22</strong> today, in 2020 dollars. A colleague concludes: <em>&ldquo;real wages have been flat for fifty years.&rdquo;</em></p>
+          <p style="font-size: 15.5pt; font-weight: 600; margin-top: 8px;">What is the <strong>strongest</strong> objection?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch02-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; font-size: 14pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 13px 17px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The series is nominal, not real</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 13px 17px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) It is a joint claim about wages <em>and</em> the deflator &mdash; at 0.45 pp/yr of substitution bias the ruler overstates inflation</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 13px 17px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) 2020 dollars are the wrong base period for a 1973 comparison</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 13px 17px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) It cherry-picks 1973, which is the local peak</div>
+        </div>
+        <aside class="notes">1 min. D is a genuinely good objection and will split the room against B. That is the intended fight.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch02-econ5200-poll-3" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; The Ruler Is Part of the Claim</h2>
+        <div class="poll-results-chart" data-poll-id="ch02-econ5200-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:140px; margin:8px 60px 18px;"></div>
+        <div style="padding: 0 46px;">
+          <p style="font-size: 14.5pt; line-height: 1.6;">Deflating by an index that overstates inflation <strong>understates real growth</strong> &mdash; and Figure 4 measured the size of that correction on live data. Compounded over 53 years, 0.45 pp/year is not a rounding error.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 12px 20px; border-radius: 8px; margin-top: 12px;">
+            <p style="font-size: 13.5pt; margin: 0;"><strong>Why D is the good wrong answer:</strong> it is a real objection &mdash; 1973 <em>is</em> the 1970s peak, so the window flatters the stagnation thesis. But D is a claim about the <em>window</em>; B is a claim about the <em>ruler</em>. A wrong ruler survives every choice of window. <strong>C is disposed of by Poll 1.</strong></p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 35: Big Mac bridge -->
+    <section id="bigmac" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-burger" style="color: var(--accent-color);"></i> The Big Mac, Turned Ninety Degrees</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <table style="width: 100%; font-size: 13.5pt; border-collapse: collapse;">
+            <tr style="border-bottom: 2px solid var(--line-color);"><th style="text-align: left; padding: 6px 6px;"></th><th style="text-align: left; padding: 6px 6px;">PPP (Ch 1)</th><th style="text-align: left; padding: 6px 6px;">Deflation (Ch 2)</th></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 6px;">Axis</td><td style="padding: 6px;">across space</td><td style="padding: 6px;">across time</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 6px;">Denominator</td><td style="padding: 6px;">reference price</td><td style="padding: 6px;">price index</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 6px;">Reveals</td><td style="padding: 6px;">currency misalignment</td><td style="padding: 6px;">purchasing power</td></tr>
+            <tr><td style="padding: 6px;">Assumes</td><td style="padding: 6px;">one good = a basket</td><td style="padding: 6px;">fixed basket = consumption</td></tr>
+          </table>
+          <div>
+            <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 18px;">
+              <p style="font-size: 14.5pt; line-height: 1.6; margin: 0;">Nominal \$2.51 (2000) &rarr; \$5.69 (2024): <strong style="color: var(--danger-color);">+127%</strong><br>Real, 2020 \$: \$3.77 &rarr; \$4.68: <strong style="color: var(--success-color);">+24%</strong></p>
+            </div>
+            <p style="font-size: 14pt; margin-top: 12px; line-height: 1.55;">Three-quarters of the increase was <strong>the dollar</strong>, not the burger.</p>
+          </div>
+        </div>
+        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 14px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt; line-height: 1.55;"><strong>And look at 2020&rarr;2024.</strong> Nominal \$5.71 &rarr; \$5.69, essentially flat &mdash; while the <em>real</em> price <strong>fell</strong>. A frozen nominal price during inflation is a real price cut, and it is invisible without deflating.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Close the section with the residual: the real price still rose ~24%, and that is not noise. A Big Mac needs tradeable inputs (beef, wheat, priced globally) and non-tradeable ones (rent, labour, utilities, priced locally). Non-tradeables inflate faster &mdash; Balassa-Samuelson, visible at the scale of a hamburger.</aside>
+    </section>
+
+    <!-- DIVIDER 4 -->
+    <section id="divider-goodhart" class="section-divider" data-state="is-section-divider">
+      <h1>4 &nbsp;&bull;&nbsp; Goodhart as Measurement Design</h1>
+      <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Not a cautionary tale. A design constraint.</p>
+    </section>
+
+    <!-- SLIDE 37: Goodhart -->
+    <section id="goodhart" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--danger-color);"></i> Goodhart's Law</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e6eef4); border-radius: 14px; padding: 30px 38px; margin-top: 10px;">
+          <p style="font-size: 23pt; line-height: 1.4; color: var(--primary-color); font-family: var(--heading-font); font-style: italic;">&ldquo;When a measure becomes a target, it ceases to be a good measure.&rdquo;</p>
+          <p style="font-size: 14pt; color: var(--muted-color); margin-top: 12px;">Charles Goodhart, 1975 &mdash; from watching UK monetary aggregates stop being informative the moment the Bank of England targeted them.</p>
+        </div>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 18px 24px; margin-top: 22px;">
+          <p style="font-size: 16.5pt; line-height: 1.6;">This is <strong>not</strong> about dishonesty. It is about <strong>optimisation</strong>. Agents optimise the measured <em>proxy</em>, not the concept &mdash; and the two come apart.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Ask the room for numbers that stopped being useful once people maximised them &mdash; GPA, standardised test scores, follower counts, citation counts, h-index. Take three or four. Do not rush this; their own examples are what makes the Meta case land later.</aside>
+    </section>
+
+    <!-- SLIDE 38: KPIs are indexes -->
+    <section id="kpis-are-indexes" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-mobile-screen" style="color: var(--secondary-color);"></i> Every KPI Is an Index</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;"><strong>DAU / MAU</strong> &mdash; the &ldquo;stickiness ratio.&rdquo; Facebook's ran around <strong>0.65</strong>, best in class. But &ldquo;active&rdquo; counts a one-second notification dismissal <em>identically</em> to a thirty-minute session.</p>
+          <p style="font-size: 15pt; color: var(--accent-color); margin-top: 8px;"><i class="fa-solid fa-arrow-right"></i> It measures <strong>frequency</strong>. Never <strong>quality</strong>.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 24px; margin-top: 16px;">
+          <p style="font-size: 16pt; text-align: center; margin: 0;">$$LTV = \frac{ARPU}{\text{monthly churn rate}}$$</p>
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 15px 22px; margin-top: 14px;">
+          <p style="font-size: 15pt; line-height: 1.55;"><strong>Interpretation.</strong> \$12.99/month at 5% monthly churn implies \$259.80 of expected lifetime revenue. It assumes churn and ARPU are <em>constant</em> &mdash; and both are false. Churn is front-loaded.</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 14px; color: var(--danger-color); font-weight: 600;">The trap: teams improve &ldquo;LTV&rdquo; by <strong>redefining churn</strong> &mdash; a paused subscription counted as active &mdash; rather than by retaining anyone.</p>
+      </div>
+      <aside class="notes">2 min. Run the four questions from Section 1 against DAU/MAU out loud. What is in the basket? Every session, weighted equally. How is it weighted? It is not &mdash; it is a count. When was it updated? Never. Who benefits? The growth team whose bonus depends on it. Same detector, entirely different domain.</aside>
+    </section>
+
+    <!-- SLIDE 39: three mechanisms -->
+    <section id="mechanisms" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-diagram-project" style="color: var(--accent-color);"></i> Three Mechanisms &mdash; the Fix Depends on Which You Have</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+          <div style="display: grid; grid-template-columns: 260px 1fr 260px; gap: 16px; align-items: center; background: #f0f5f8; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">1 &middot; Optimisation<br><span style="font-size: 12.5pt; font-weight: 400; color: var(--muted-color);">against the measure</span></p>
+            <p style="font-size: 14pt;">The index has fiscal consequences, so its <em>construction</em> comes under pressure. CPI &harr; COLAs, TIPS, tax brackets.</p>
+            <p style="font-size: 14pt; color: var(--success-color);"><strong>Fix:</strong> institutional independence; publish the method</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 260px 1fr 260px; gap: 16px; align-items: center; background: #fdf0ea; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--danger-color);">2 &middot; Gaming<br><span style="font-size: 12.5pt; font-weight: 400; color: var(--muted-color);">the measure</span></p>
+            <p style="font-size: 14pt;">Agents inflate the number without improving the thing. Meta's notification tuning; UK REF star-researcher poaching before assessment.</p>
+            <p style="font-size: 14pt; color: var(--success-color);"><strong>Fix:</strong> counter-metrics</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 260px 1fr 260px; gap: 16px; align-items: center; background: #eef5ee; border-radius: 8px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--success-color);">3 &middot; Obsolescence<br><span style="font-size: 12.5pt; font-weight: 400; color: var(--muted-color);">of the measure</span></p>
+            <p style="font-size: 14pt;">The basket stops matching the world. Gym memberships still weighted during lockdown; home office equipment underweighted.</p>
+            <p style="font-size: 14pt; color: var(--success-color);"><strong>Fix:</strong> reweight more often; population-specific indexes</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The diagnostic discipline is the whole point &mdash; naming "Goodhart" is useless, naming the mechanism tells you what to do. Mechanism 3 is the callback to the two-year CEX weight lag from Section 1.</aside>
+    </section>
+
+    <!-- SLIDE 40: Meta MSI -->
+    <section id="meta-msi" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-shield-halved" style="color: var(--danger-color);"></i> Meta's MSI: the Counter-Metric That Was Goodharted</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 6px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 13pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">January 2018 &mdash; the repair</p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">Meta re-ranks News Feed around <strong>Meaningful Social Interactions</strong>, explicitly to move off passive consumption toward real interaction between people.</p>
+            <p style="font-size: 14pt; color: var(--success-color); margin-top: 8px;">Exactly what the theory prescribes: <strong>a counter-metric</strong>.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 13pt; color: var(--muted-color); text-transform: uppercase; letter-spacing: 2px;">2021 &mdash; the second failure</p>
+            <p style="font-size: 14.5pt; line-height: 1.55; margin-top: 8px;">MSI weighted reshares and comment threads heavily. The ranking system learned the reliable route to &ldquo;meaningful interaction&rdquo; is <strong>content that provokes argument</strong>.</p>
+            <p style="font-size: 14pt; color: var(--danger-color); margin-top: 8px;">Internal research found it amplifying divisive material. Meta's own data scientists had flagged it.</p>
+          </div>
+        </div>
+        <div style="background: linear-gradient(135deg, #f0f5f8, #e6eef4); border-radius: 12px; padding: 18px 26px; margin-top: 18px;">
+          <p style="font-size: 17pt; line-height: 1.5;"><strong>A counter-metric is still a metric.</strong> It compresses, it becomes a target, and it can be optimised into a failure of its own.</p>
+          <p style="font-size: 15.5pt; color: var(--accent-color); margin-top: 8px;">Index repair is not a state you reach. It is <strong>maintenance you keep doing</strong>.</p>
+        </div>
+        <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">Meta News Feed announcement, January 2018; Wall Street Journal, &ldquo;The Facebook Files,&rdquo; September 2021.</p>
+      </div>
+      <aside class="notes">3 min. This is the hardest idea in the lecture and the reason the chapter is worth teaching at graduate level. The naive version of Goodhart says "add a counter-metric." MSI is the case where they DID, three years early, in good faith &mdash; and it failed the same way. Do not let them leave with the naive version.</aside>
+    </section>
+
+    <!-- SLIDE 41: Wells Fargo -->
+    <section id="wells-fargo" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-building-columns" style="color: var(--danger-color);"></i> For Contrast: Wells Fargo, 2002&ndash;2016</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 24px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;">Cross-sell ratio &mdash; products per household. Internal target of <strong>eight</strong>, sloganised as &ldquo;Going for Gr-eight.&rdquo; Branch managers hired, promoted and fired on it.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 10px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color); line-height: 1;">3.5M</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 5px;">unauthorised accounts</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 10px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color); line-height: 1;">\$3B</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 5px;">fines and penalties</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 10px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color); line-height: 1;">5,300+</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 5px;">employees fired</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 14px 10px; text-align: center;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--danger-color); line-height: 1.15;">Asset cap</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 5px;">Fed action, unprecedented</p>
+          </div>
+        </div>
+        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 15px 22px; margin-top: 18px;">
+          <p style="font-size: 15.5pt; line-height: 1.55;">The metric was <strong>reasonable</strong> &mdash; multi-product customers really are more loyal and more profitable. The failure was promoting it from <strong>diagnostic indicator</strong> to <strong>compensation target</strong>.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px; text-align: center; color: var(--accent-color); font-weight: 600;">Meta inflated a digital number. Wells Fargo opened real accounts in real people's names.<br>Same mechanism. Different blast radius.</p>
+      </div>
+      <aside class="notes">2 min. Fast &mdash; they know this story. The one line that is not in the popular retelling is the "reasonable metric" point: financial theory genuinely does predict that multi-product households are stickier. Nothing was wrong with the measure. Everything was wrong with attaching pay to it.</aside>
+    </section>
+
+    <!-- POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Does MSI Prove?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 10px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;">Meta built MSI <em>as</em> the counter-metric to passive consumption &mdash; and MSI was Goodharted in turn.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 8px;">What follows for measurement design?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch02-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) Counter-metrics do not work; rely on qualitative judgement instead</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) A counter-metric is itself a metric &mdash; it needs its own guardrail; repair is maintenance, not a terminal state</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The failure was the wrong primary metric; a better North Star avoids this</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Deploy many counter-metrics at once so no single one can be gamed</div>
+        </div>
+        <aside class="notes">1 min. Expect D to poll well &mdash; it is the engineer's instinct.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch02-econ5200-poll-4" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Repair Is Maintenance</h2>
+        <div class="poll-results-chart" data-poll-id="ch02-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 20px;"></div>
+        <div style="padding: 0 46px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>Why A is wrong:</strong> the counter-metric <em>did</em> work &mdash; it detected and corrected the original passive-consumption problem. It then acquired a gaming surface of its own.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 13px 20px; border-radius: 8px; margin-top: 13px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting:</strong> more metrics do raise the cost of gaming. But every metric you add is another <em>target</em>, and a system optimising against ten proxies is not obviously better aligned than one optimising against two. You have multiplied the surface, not removed it.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SLIDE 44: KPI taxonomy -->
+    <section id="kpi-taxonomy" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-sitemap" style="color: var(--secondary-color);"></i> The Vocabulary to Leave With</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 6px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt;"><strong>North Star</strong></p>
+            <p style="font-size: 13.5pt; margin-top: 5px;">The one metric best proxying delivered value. Spotify: time listening. Airbnb: nights booked. Choosing it is as consequential as the BLS choosing the basket.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt;"><strong>Guardrail</strong></p>
+            <p style="font-size: 13.5pt; margin-top: 5px;">Must not degrade while the North Star is optimised. If &ldquo;time listening&rdquo; rises because autoplay queues unwanted songs, &ldquo;skips within 10 seconds&rdquo; should catch it.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt;"><strong>Counter-metric</strong></p>
+            <p style="font-size: 13.5pt; margin-top: 5px;">Built specifically to detect gaming &mdash; and, per MSI, itself gameable. The immune response, not immunity.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 14px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15.5pt;"><strong>Metric tree</strong></p>
+            <p style="font-size: 13.5pt; margin-top: 5px;">$\text{Revenue} = \text{Users} \times \text{Conversion} \times \text{AOV}$. Decomposition makes explicit which sub-metrics drive the aggregate &mdash; and which are ignored.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 14.5pt;"><i class="fa-solid fa-rotate-left" style="color: #7C3A5F;"></i> <strong>Ch 1 callback.</strong> DAU/MAU is <em>ratio-scale</em> &mdash; 0.5 really is half of 1.0. <strong>NPS is ordinal</strong>: the 6&rarr;7 gap is not the 9&rarr;10 gap. Averaging NPS is averaging zip codes.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. The metric tree is "what is in the basket?" for KPIs &mdash; say that explicitly, it is the cleanest bridge between the macro half and the industry half of this lecture. The NPS line closes the loop on the retrieval question you opened with.</aside>
+    </section>
+
+    <!-- SLIDE 45: Figure 5 -->
+    <section id="goodhart-signature" style="padding: 22px 44px;">
+      <h2 style="margin-bottom: 4px;"><i class="fa-solid fa-arrows-split-up-and-left" style="color: var(--accent-color);"></i> The Goodhart Signature Is the <em>Sign Flip</em></h2>
+      <div class="content" style="display: grid; grid-template-columns: 400px 1fr; gap: 24px; align-items: center;">
+        <img src="figures/figure_005_goodhart_divergence.png" alt="Two stacked panels sharing a timeline: DAU over MAU climbing steadily from 0.45 to 0.66 while minutes per session climbs then reverses downward at the same moment, with the correlation flipping from plus 0.93 in the organic phase to minus 0.96 in the gaming phase" style="width: 100%; border-radius: 6px;">
+        <div>
+          <p style="font-size: 15pt; line-height: 1.55;">From <strong>Lab 2, Part 3</strong>. In the organic phase the primary metric and the counter-metric move together &mdash; real engagement lifts both.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; text-align: center;">
+            <div style="background: #eef5ee; border-radius: 8px; padding: 14px;">
+              <p style="font-size: 21pt; font-weight: 700; color: var(--success-color); line-height: 1;">+0.93</p>
+              <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 5px;">organic</p>
+            </div>
+            <div style="background: #fdf0ea; border-radius: 8px; padding: 14px;">
+              <p style="font-size: 21pt; font-weight: 700; color: var(--danger-color); line-height: 1;">&minus;0.96</p>
+              <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 5px;">gaming</p>
+            </div>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 16px;">
+            <p style="font-size: 14.5pt; margin: 0;">A dashboard showing <strong>only the top panel</strong> shows an unbroken <strong>46%</strong> rise in engagement.<br><span style="color: var(--danger-color); font-weight: 600;">That dashboard is the problem.</span></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. The diagnostic is the SIGN FLIP, not the level of either series. Neither panel alone is alarming &mdash; the top one is a great quarter. You need both, and you need to be watching the correlation between them. This is exactly what they build in Lab Part 3.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--secondary-color);"></i> Discussion: Design It, Then Break It</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; padding: 18px 26px; border-radius: 12px;">
+          <p class="text-lg" style="font-weight: 600;">You own a metric for something you know &mdash; a course, a team, an app, your own research output.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px;">
+          <div style="padding: 16px 20px; border: 2px solid var(--success-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--success-color); font-size: 15pt;">Prompt A &mdash; build</p>
+            <p style="font-size: 15pt;">Name a <strong>North Star</strong>, one <strong>guardrail</strong>, and one <strong>counter-metric</strong>.</p>
+          </div>
+          <div style="padding: 16px 20px; border: 2px solid var(--danger-color); border-radius: 8px;">
+            <p style="font-weight: 600; color: var(--danger-color); font-size: 15pt;">Prompt B &mdash; attack</p>
+            <p style="font-size: 15pt;">Now break all three. How would a motivated team hit each number without delivering the thing &mdash; <strong>including the counter-metric</strong>?</p>
+          </div>
+        </div>
+        <p style="margin-top: 18px; text-align: center;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 2 min think &rarr; 2 min pairs &rarr; 1 min share</span></p>
+      </div>
+      <aside class="notes">5 min, press 5. Make them commit to Prompt A in writing BEFORE they see Prompt B &mdash; that is what makes the lesson land, because they will have to attack their own design. Debrief line: if you could not break your own counter-metric in two minutes, you have not found its gaming surface, you have just not looked. Your team's incentives will find it for you.</aside>
+    </section>
+
+    <!-- SLIDE 47: Takeaways -->
+    <section id="key-takeaways" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-star" style="color: var(--accent-color);"></i> Key Takeaways</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-compress" style="color: var(--secondary-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>An index is a compression algorithm.</strong> Compression always discards. Ask what it discarded and whether that matters for <em>your</em> question.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-ruler-horizontal" style="color: var(--accent-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>Laspeyres and Paasche bound the answer.</strong> Our wedge: 9.0 points, with Fisher and T&ouml;rnqvist 0.05 apart. Superlative is a claim about <em>approximation order</em>, not truth.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #eef5ee; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-scale-balanced" style="color: var(--success-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>The deflator is part of the finding.</strong> &ldquo;Real wages were flat for fifty years&rdquo; is a joint claim about wages <em>and</em> the CPI. At 0.45 pp/yr, the ruler is doing real work.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 42px 1fr; align-items: start; background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt;"><i class="fa-solid fa-bullseye" style="color: var(--danger-color);"></i></p>
+            <p style="font-size: 14pt;"><strong>Goodhart is a design constraint.</strong> Diagnose the <em>mechanism</em> &mdash; optimisation, gaming, or obsolescence &mdash; because the fix differs for each.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 18px; margin-top: 12px; text-align: center; border-left: 4px solid #7C3A5F;">
+          <p style="font-size: 15.5pt;"><i class="fa-solid fa-shield-halved" style="color: #7C3A5F;"></i> <strong>The counter-metric is not immunity.</strong> MSI <em>was</em> the repair, and it was Goodharted. Measurement is maintenance &mdash; and you have to ask &ldquo;what did this discard?&rdquo; of the guardrail too.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Read the fifth one last and slowly. If they remember one sentence from this module, it should be that one &mdash; it is the sentence that separates this lecture from every undergraduate treatment of Goodhart's Law.</aside>
+    </section>
+
+    <!-- SLIDE 48: Exit ticket -->
+    <section id="exit-ticket" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket (2 min)</h2>
+      <div class="content">
+        <div style="background: linear-gradient(135deg, #eef2ff, #dbeafe); border-radius: 12px; padding: 26px 34px; margin-top: 10px;">
+          <p class="text-xl" style="line-height: 1.5; text-align: center;">For one metric you will use in <strong>your own project</strong>, in three sentences:</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px;">
+            <div><p style="font-size: 15pt;"><strong>(a)</strong> Name the index and the <em>exact question</em> it answers.</p></div>
+            <div><p style="font-size: 15pt;"><strong>(b)</strong> Name what it <em>discards</em>.</p></div>
+            <div><p style="font-size: 15pt;"><strong>(c)</strong> Name the counter-metric you would pair it with &mdash; and say how <em>that</em> one could be gamed.</p></div>
+          </div>
+        </div>
+        <p style="margin-top: 20px; text-align: center; font-size: 14pt; color: var(--muted-color);">Submit on paper or device &bull; Not graded &bull; Assesses LO 2.2 and LO 2.4</p>
+      </div>
+      <aside class="notes">2 min. Collect these. Part (c) is the discriminating one &mdash; a student who only reached the naive version of Goodhart will name a counter-metric and stop. The ones who write the second sentence understood MSI.</aside>
+    </section>
+
+    <!-- SLIDE 49: Looking ahead -->
+    <section id="looking-ahead" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-road" style="color: var(--secondary-color);"></i> Next: Lab 2, and Where This Returns</h2>
+      <div class="content">
+        <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+          <p style="font-size: 14.5pt;"><strong>Lab 2 &mdash; <code>lab-ch02-diagnostic.ipynb</code>.</strong> Four bugs in a deflation pipeline &mdash; the broken version returns values in the <strong>7.6&ndash;9.8</strong> range, which are index units, not dollars, and that alone should tell you it is wrong. Then CPI-U vs C-CPI-U on live FRED, a Goodhart dashboard, and you ship <code>deflation_utils.py</code>.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 14px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 13px 16px; text-align: center;">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--success-color);">Ch 3 &mdash; EDA</p>
+            <p style="font-size: 13pt; margin-top: 6px;">Today's wage chart is your first time series. Ch 3 asks when a chart like it is <em>honest</em>.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 13px 16px; text-align: center;">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">Ch 4 &mdash; Robust stats</p>
+            <p style="font-size: 13pt; margin-top: 6px;">The CPI is a weighted mean. Ch 4 is about when the mean <em>lies</em>.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 13px 16px; text-align: center;">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--secondary-color);">Ch 12 &mdash; OLS</p>
+            <p style="font-size: 13pt; margin-top: 6px;">Deflate every monetary variable, or you will estimate <em>inflation</em> and call it a relationship.</p>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 13px;">
+          <div style="background: #f3e8ff; border-radius: 10px; padding: 13px 18px;">
+            <p style="font-size: 14pt;"><strong style="color: #7c3aed;">Ch 18 &mdash; Model evaluation.</strong> Accuracy, precision, recall, AUC are all indexes, and all Goodhartable. Today's counter-metric becomes an evaluation design principle.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 13px 18px;">
+            <p style="font-size: 14pt;"><strong>Ch 20 &mdash; Time series.</strong> The 1973 and 2020 breaks get tested formally with changepoint detection.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 20px; margin-top: 13px; text-align: center; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 15.5pt;"><strong>The rule to carry out of this room:</strong> before you use any number, say out loud which question it answers.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. Close by returning to the vibecession: the CPI was correct, the households were correct, and the entire disagreement was that nobody said out loud which question the number answered. That is the habit &mdash; not a formula.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

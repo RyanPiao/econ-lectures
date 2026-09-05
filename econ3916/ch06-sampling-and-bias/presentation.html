@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sampling and Bias</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 55% 45%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 50px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 3916 &bull; Data Science for Economists &bull; Topic 6</p>
+          <h1 style="font-size: 34pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">Sampling and Bias</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">Why a bigger sample cannot rescue a broken one &mdash; and how the Law of Large Numbers turns against you</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch06-sampling.png" alt="Field of scattered dots with a vertical line dividing them; only the dots on one side of the line are coloured, representing a sample drawn from one slice of a population" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 34px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">6.1</p>
+            <p style="font-size: 14.5pt;">Tell a <strong>sampling frame</strong> apart from a <strong>target population</strong>, and name who the gap leaves out</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">6.2</p>
+            <p style="font-size: 14.5pt;">Explain why only <strong>probability sampling</strong> buys you an unbiased estimate</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--success-color);">6.3</p>
+            <p style="font-size: 14.5pt;">Recognise selection, survivorship, nonresponse and self-selection bias as <strong>one condition in four costumes</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--danger-color);">6.4</p>
+            <p style="font-size: 14.5pt;">Run a <strong>stratified train-test split</strong> and spot <strong>data leakage</strong> in a pipeline</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 58px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 12px 18px; border-left: 4px solid var(--muted-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--muted-color);">6.5</p>
+            <p style="font-size: 14.5pt;">Judge whether a dataset actually supports the claim someone is making from it</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 6.3 as the spine &mdash; four named biases that students usually memorise as a list are going to collapse into a single equation today. Say that out loud now so they are listening for it.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px; margin-bottom: 14px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Topic 4, the dartboard.</strong> Which is worse for a forecast you are about to publish: darts scattered <em>wide</em> around the bullseye, or darts in a <em>tight cluster</em> two inches off it?</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 26px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Topic 5, the Law of Large Numbers.</strong> You simulated 100,000 coin flips and the running mean settled on 0.5. What did <code>rng.choice()</code> guarantee that made that happen?</p>
+        </div>
+        <p style="margin-top: 18px; color: var(--accent-color); font-weight: 600; font-size: 15.5pt;"><i class="fa-solid fa-arrow-right"></i> Hold both answers. Today we break the QC2 guarantee, and the QC1 tight cluster is what we get.</p>
+      </div>
+      <aside class="notes">2 min, cold-call two students. Target for QC2: "every draw was equally likely to be observed." Do not resolve QC1 yet &mdash; the honest answer is "it depends," and the simulation at minute 50 settles it. If a student answers "the tight cluster, because it looks like skill," tell them to remember they said it; you will credit them later.</aside>
+    </section>
+
+    <!-- SLIDES 4-5: Hook -->
+    <section>
+      <section id="hook-1" style="padding: 36px 60px;">
+        <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i> Two Ways to Estimate the Same Thing</h2>
+        <div class="content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 10px;">
+            <div style="background: #f7ece5; border-radius: 10px; padding: 24px 26px; border-top: 5px solid var(--accent-color);">
+              <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color); font-family: var(--heading-font);">2,300,000</p>
+              <p style="font-size: 14.5pt; margin-top: 8px;">responses to a <strong>self-selected</strong> online survey &mdash; about 1% of the entire American electorate</p>
+            </div>
+            <div style="background: #eef2f6; border-radius: 10px; padding: 24px 26px; border-top: 5px solid var(--secondary-color);">
+              <p style="font-size: 30pt; font-weight: 700; color: var(--secondary-color); font-family: var(--heading-font);">1,200</p>
+              <p style="font-size: 14.5pt; margin-top: 8px;">responses to a <strong>designed probability sample</strong> &mdash; the size the American National Election Studies actually fields</p>
+            </div>
+          </div>
+          <p style="margin-top: 30px; font-size: 19pt; text-align: center; color: var(--primary-color); font-weight: 600;">Both are estimating the same national vote share.<br>Which number do you put in the report?</p>
+        </div>
+        <aside class="notes">2 min. Let the room sit with it. Almost everyone's gut says 2.3 million. Do not correct anyone yet &mdash; the poll two slides from now is worth much more if their instinct is still intact when they vote.</aside>
+      </section>
+      <section id="hook-2" style="padding: 36px 60px;">
+        <h2><i class="fa-solid fa-bolt" style="color: var(--danger-color);"></i> Meng&rsquo;s Answer</h2>
+        <div class="content">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 26px 32px; text-align: center;">
+            <p style="font-size: 17pt;">Those <strong>2.3 million</strong> self-selected responses carry roughly the estimation error of</p>
+            <p style="font-size: 40pt; font-weight: 700; color: var(--danger-color); font-family: var(--heading-font); margin: 12px 0;">a random sample of 400</p>
+          </div>
+          <p style="font-size: 15.5pt; margin-top: 20px; line-height: 1.6;">The culprit is a correlation of about <strong>&minus;0.005</strong> between <em>whether someone responds</em> and <em>how they would answer</em> &mdash; a number you would round to zero without a second thought.</p>
+          <p style="font-size: 15.5pt; margin-top: 12px; line-height: 1.6;">It was enough to erase the advantage of a dataset <strong>5,750 times larger</strong>.</p>
+          <p style="font-size: 12pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">Meng (2018), <em>Annals of Applied Statistics</em>, on the 2016 US presidential election.</p>
+        </div>
+        <aside class="notes">3 min. This is the thesis of the whole lecture in one number. Say the phrase you want them to leave with: "sample size cannot cure sample bias." Do NOT explain the mechanism yet &mdash; Section 3 earns it. Note for yourself: this &minus;0.005 is the REAL 2016 figure. The simulation later has a much larger rho of 0.1475. Keep them separate; a student who conflates them will conclude that a tiny correlation caused an 8-point error, which is not what the simulation shows.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDES 6-7: POLL 1 -->
+    <section>
+      <section id="poll-1" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Which Sample Do You Want?</h2>
+        <div class="content">
+          <p class="text-lg">You must estimate the share of Northeastern undergraduates with a paid internship lined up. Pick one.</p>
+          <div class="poll-grid" data-poll-id="ch06-econ3916-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) 8,000 replies to an Instagram story poll</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) 300 replies from a random draw off the registrar&rsquo;s list</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) 8,000 replies to a survey emailed to <em>every</em> student</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) 300 replies from the students in this room</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Students click to vote on their phones; results appear on the next slide. Expect C to lead &mdash; "we emailed everyone" feels like a census. That is the productive error and the whole reason this poll comes before the theory.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch06-econ3916-poll-1" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; the Small Random One</h2>
+        <div class="poll-results-chart" data-poll-id="ch06-econ3916-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 40px;">
+          <p style="font-size: 15pt; line-height: 1.6;">Only <strong>B</strong> gives every student a known, non-zero chance of being picked. A and C are large and <em>self-selected</em> &mdash; the people who bother to answer are the people with news to report. D is small <em>and</em> self-selected.</p>
+          <div style="background: #f7ece5; border-left: 4px solid var(--accent-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why C is tempting but wrong:</strong> emailing everyone builds a perfect <em>frame</em>. A census needs everyone to <em>answer</em> &mdash; and the answerers are self-selected all over again.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Name the axis explicitly: size is not what separates these options; known selection probability is. Credit whoever picked B out loud &mdash; they are about to be outvoted by their own instincts in an hour, and it helps to have an ally in the room.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 8: DIVIDER 1 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Your Data Is Not Your Population</h1>
+      <p class="subtitle">Three nested circles, and the gap between two of them</p>
+      <aside class="notes">Transition. "Before we can talk about bias we need vocabulary precise enough to locate it."</aside>
+    </section>
+
+    <!-- SLIDE 9: Population / frame / sample -->
+    <section id="three-circles" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-layer-group" style="color: var(--secondary-color);"></i> Three Words People Use Interchangeably</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px; margin-top: 6px;">
+          <div style="background: #eef2f6; border-radius: 9px; padding: 15px 22px; border-left: 5px solid var(--secondary-color);">
+            <p style="font-size: 16pt;"><strong>Target population</strong> &mdash; everyone your question is actually about.</p>
+          </div>
+          <div style="background: #f7ece5; border-radius: 9px; padding: 15px 22px; border-left: 5px solid var(--accent-color);">
+            <p style="font-size: 16pt;"><strong>Sampling frame</strong> &mdash; the list you actually draw from. The operational answer to <em>&ldquo;who could possibly end up in my dataset?&rdquo;</em></p>
+          </div>
+          <div style="background: #e9f0e9; border-radius: 9px; padding: 15px 22px; border-left: 5px solid var(--success-color);">
+            <p style="font-size: 16pt;"><strong>Sample</strong> &mdash; who you actually ended up with.</p>
+          </div>
+        </div>
+        <p style="margin-top: 24px; font-size: 17pt; color: var(--danger-color); font-weight: 600; text-align: center;">The gap between the first two is where bias lives &mdash; and no amount of extra data closes it.</p>
+      </div>
+      <aside class="notes">3 min. Do the hand-raise: "if I surveyed everyone in this room about average household income in Boston, would I get the right answer?" They will spot it instantly. Then push: the room is not a bad SAMPLE, it is a bad FRAME. That distinction is the slide.</aside>
+    </section>
+
+    <!-- SLIDE 10: Figure 001 -->
+    <section id="frame-gap-figure" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-circle-nodes" style="color: var(--accent-color);"></i> The Gap Is the Bias</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_001_frame_gap.png" alt="Three nested circles: a large target population circle, a smaller sampling frame circle inside it, and a smaller sample circle inside that; an arrow labels the crescent between population and frame as the bias" style="max-height: 500px; width: auto;">
+      </div>
+      <aside class="notes">2 min. Trace the crescent with your finger. The line to land: "every person in this crescent is someone my question is about, and there is no budget, no server, no scraping run that will ever put them in my data. They were excluded before I collected a single row."</aside>
+    </section>
+
+    <!-- SLIDE 11: Literary Digest -->
+    <section id="literary-digest" style="padding: 32px 50px;">
+      <h2><i class="fa-solid fa-envelope-open-text" style="color: var(--danger-color);"></i> 1936: The Largest Poll in American History</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 4px;">
+          <div style="background: #f7ece5; border-radius: 9px; padding: 18px 22px;">
+            <p style="font-size: 13pt; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;">Literary Digest</p>
+            <p style="font-size: 14.5pt; line-height: 1.55;"><strong>10 million</strong> postcards mailed, <strong>2.3 million</strong> returned.<br><br>Frame: magazine subscribers, car registrations, telephone directories, club rolls.<br><br>Predicted <strong>Landon, 57%</strong>.</p>
+          </div>
+          <div style="background: #eef2f6; border-radius: 9px; padding: 18px 22px;">
+            <p style="font-size: 13pt; color: var(--secondary-color); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;">George Gallup</p>
+            <p style="font-size: 14.5pt; line-height: 1.55;"><strong>50,000</strong> people, quota sampled to match known demographics.<br><br>Frame: built deliberately to <em>represent</em> the electorate.<br><br>Called it <strong>correctly</strong>.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 15px 22px; margin-top: 20px;">
+          <p style="font-size: 16pt;">Roosevelt won with <strong>61%</strong> and took <strong>46 of 48 states</strong>. In the Depression, owning a car or a telephone <em>was itself</em> a signal of how you would vote.</p>
+        </div>
+        <p style="font-size: 11.5pt; color: var(--muted-color); margin-top: 12px; font-style: italic;">Squire (1988), <em>Public Opinion Quarterly</em>.</p>
+      </div>
+      <aside class="notes">4 min. The number that should sting is 46 of 48 states &mdash; this was not a near miss, it was a rout in the opposite direction. Then the framing question: the Digest's frame was not stupid in 1936. Car registrations were a genuinely broad list in 1928. The frame did not change; the country did. Frames go stale, and nobody sends you a notification when yours does.</aside>
+    </section>
+
+    <!-- SLIDE 12: DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion: Name the Crescent</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 28px; border-left: 5px solid var(--accent-color);">
+          <p class="text-lg" style="margin-bottom: 14px;">I estimate the average rent paid by Boston residents by surveying everyone in this room. In pairs, three minutes:</p>
+          <p style="font-size: 15.5pt; line-height: 1.9;"><strong>(a)</strong> Name the target population, the frame, and the sample.<br>
+          <strong>(b)</strong> Name one group in the crescent &mdash; in the population, structurally absent from my frame.<br>
+          <strong>(c)</strong> Does their absence push my rent estimate <em>up</em> or <em>down</em>? Commit to a direction.</p>
+        </div>
+        <p style="margin-top: 20px; font-size: 15pt; color: var(--secondary-color); font-weight: 600; text-align: center;"><i class="fa-solid fa-arrow-right"></i> Part (c) is the one that matters. A signed guess beats a shrug.</p>
+      </div>
+      <aside class="notes">4 min including debrief; press 3 to start the timer. Expect "students living at home rent-free" (pushes the estimate down) and "families in three-bedrooms in Dorchester" (pushes it up). The teaching point in the debrief: you can almost always reason about the DIRECTION of a bias even when you cannot measure its size, and a decision-maker can act on a signed guess. Take two pairs, one with each direction, and let the room hear that both are right about different groups.</aside>
+    </section>
+
+    <!-- SLIDE 13: DIVIDER 2 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>What Buys the Guarantee</h1>
+      <p class="subtitle">Probability sampling, and the three designs you will actually meet</p>
+      <aside class="notes">Transition. "We have diagnosed the disease. Now the cure &mdash; and it is a property of the procedure, not of the dataset."</aside>
+    </section>
+
+    <!-- SLIDE 14: Probability sample -->
+    <section id="probability-sample" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-dice" style="color: var(--secondary-color);"></i> What Makes a Sample a &ldquo;Probability Sample&rdquo;</h2>
+      <div class="content">
+        <div style="background: #eef2f6; border-radius: 10px; padding: 24px 30px; border-left: 5px solid var(--secondary-color);">
+          <p style="font-size: 18pt; line-height: 1.55;">Every member of the population has a <strong>known, non-zero</strong> chance of being selected.</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 22px; line-height: 1.65;">That single property is what makes unbiased estimation possible. Note what it is <em>not</em> about:</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px;"><p style="font-size: 14.5pt;"><i class="fa-solid fa-xmark" style="color: var(--danger-color);"></i> &nbsp;It is not about the sample being <em>big</em>.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px;"><p style="font-size: 14.5pt;"><i class="fa-solid fa-xmark" style="color: var(--danger-color);"></i> &nbsp;It is not about the sample <em>feeling</em> random or arbitrary.</p></div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px;"><p style="font-size: 14.5pt;"><i class="fa-solid fa-check" style="color: var(--success-color);"></i> &nbsp;It is about the selection probabilities being <em>quantities you know</em>.</p></div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The "feeling random" line is worth pressing on. Whoever happens to walk past your table on Huntington Avenue feels arbitrary, and it is not a probability sample &mdash; you cannot write down anyone's chance of being there. Arbitrary is not the same as random.</aside>
+    </section>
+
+    <!-- SLIDE 15: SRS equation -->
+    <section id="srs-equation" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-equals" style="color: var(--accent-color);"></i> Simple Random Sampling, and What &ldquo;Unbiased&rdquo; Means</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">Every unit has the same chance $\pi_i = n/N$ of being picked. Then:</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 16px; text-align: center; margin: 12px 0 16px;">
+          <p style="font-size: 22pt;">$$E[\bar{y}] = \bar{Y}$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div style="background: #eef2f6; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 13.5pt;">$\bar{y}$ &mdash; the mean you compute from your $n$ sampled units</p></div>
+          <div style="background: #eef2f6; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 13.5pt;">$\bar{Y}$ &mdash; the true mean over all $N$ units in the population</p></div>
+          <div style="background: #eef2f6; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 13.5pt;">$E[\cdot]$ &mdash; &ldquo;the average value of, over many repeats&rdquo;</p></div>
+        </div>
+        <div style="background: #e9f0e9; border-left: 5px solid var(--success-color); border-radius: 8px; padding: 15px 22px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;"><strong>In plain English:</strong> any one sample will miss. But repeat the whole exercise over and over and the sample means centre <em>exactly</em> on the truth &mdash; no systematic push in either direction. That is all &ldquo;unbiased&rdquo; means, and it is a property of the <em>procedure</em>, not of the one dataset on your laptop.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The last clause is the one students need and rarely get: unbiasedness is not a certificate you can inspect your data for. You cannot look at a spreadsheet and see whether it is unbiased. You can only ask how it was collected. That is why "how was this collected?" is the first question in every data job you will ever have.</aside>
+    </section>
+
+    <!-- SLIDE 16: Stratified and cluster -->
+    <section id="stratified-cluster" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-shapes" style="color: var(--secondary-color);"></i> Two Designs That Beat Plain Random</h2>
+      <div class="content">
+        <div style="background: #f7ece5; border-radius: 10px; padding: 18px 24px; border-left: 5px solid var(--accent-color); margin-bottom: 14px;">
+          <p style="font-size: 16pt; margin-bottom: 6px;"><strong>Stratified sampling</strong> &mdash; sort the population into groups, then sample randomly <em>inside each group</em>.</p>
+          <p style="font-size: 14.5pt; color: var(--muted-color); font-style: italic;">Like sorting a bag of mixed candy by colour and grabbing a random handful of each. Every flavour is guaranteed to show up.</p>
+        </div>
+        <div style="background: #eef2f6; border-radius: 10px; padding: 18px 24px; border-left: 5px solid var(--secondary-color); margin-bottom: 16px;">
+          <p style="font-size: 16pt; margin-bottom: 6px;"><strong>Cluster sampling</strong> &mdash; sample whole groups at once, all-or-nothing.</p>
+          <p style="font-size: 14.5pt; color: var(--muted-color); font-style: italic;">Cheaper when the population is spread across a map. Riskier: neighbours resemble each other, so a cluster carries less information than the same count of scattered individuals.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 8px; padding: 14px 22px;">
+          <p style="font-size: 15pt;"><strong>Why stratified usually wins.</strong> Plain random sampling represents every subgroup <em>in expectation</em>. Stratified represents it <em>in this particular sample</em>. When your sample is small or a subgroup is rare, that gap is the whole ballgame.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Anchor it: the unemployment rate on the news comes from the Current Population Survey, a stratified multistage design over roughly 60,000 households. Sixty thousand, for a country of 330 million, accurate to a couple of tenths of a point. The design is doing that, not the size. This slide is also where stratify=y gets planted &mdash; say "hold onto stratified, it comes back as one keyword argument in forty minutes."</aside>
+    </section>
+
+    <!-- SLIDE 17: Figure 002 -->
+    <section id="designs-figure" style="padding: 30px 40px;">
+      <h2><i class="fa-solid fa-border-all" style="color: var(--accent-color);"></i> The Three Designs, Side by Side</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_002_sampling_designs.png" alt="Three nine-by-nine dot grids: simple random sampling with scattered selected dots, stratified sampling with an equal number of selections from each of three horizontal bands, and cluster sampling with three entire blocks selected" style="width: 100%; max-height: 400px; object-fit: contain;">
+        <p style="font-size: 15pt; margin-top: 22px; color: var(--primary-color);">Same population, same number of units selected. <strong>Three different guarantees.</strong></p>
+      </div>
+      <aside class="notes">2 min. Point at the stratified panel: notice the picks are spread evenly down the page by construction. Then the cluster panel: if the top-left block happens to be a wealthy neighbourhood, you have bought nine observations that all say the same thing. Nine correlated observations are worth much less than nine independent ones &mdash; which is the Chapter 5 independence assumption showing up in survey design.</aside>
+    </section>
+
+    <!-- SLIDES 18-19: POLL 2 -->
+    <section>
+      <section id="poll-2" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Which Ingredient Shrinks?</h2>
+        <div class="content">
+          <p class="text-lg">An estimate&rsquo;s error has three ingredients: <strong>how bent the selection is</strong>, <strong>how variable the outcome is</strong>, and <strong>how much of the population you missed</strong>. You collect ten times more data <em>from the same source</em>. Which shrinks?</p>
+          <div class="poll-grid" data-poll-id="ch06-econ3916-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) All three</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) How bent the selection is</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) How much you missed &mdash; and only that one</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) None &mdash; the error is fixed</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Click to vote. This poll is deliberately placed BEFORE the equation that answers it &mdash; they should reason it out in words first, so the algebra on the next section arrives as confirmation rather than as a new thing to memorise.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch06-econ3916-poll-2" style="padding: 30px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Only the Third</h2>
+        <div class="poll-results-chart" data-poll-id="ch06-econ3916-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:160px; margin:10px 60px 22px;"></div>
+        <div style="padding: 0 40px;">
+          <p style="font-size: 15pt; line-height: 1.6;">More data from the same pipe closes the &ldquo;how much did I miss&rdquo; gap and touches nothing else. <strong>How bent the selection is</strong> is a property of the <em>mechanism</em>; <strong>how variable the outcome is</strong> is a property of the <em>world</em>. Neither knows or cares how many rows you have.</p>
+          <div style="background: #f7ece5; border-left: 4px solid var(--accent-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting but wrong:</strong> &ldquo;more data helps&rdquo; is true and load-bearing everywhere else in this course. It is exactly one term of three, and this lecture exists to fence it off.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. The image to leave them with: pouring more water through a bent pipe does not straighten the pipe. Then hand off to the next section &mdash; "there is an equation that says precisely this, and it fits on one line."</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 20: DIVIDER 3 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>One Condition, Four Costumes</h1>
+      <p class="subtitle">Selection, survivorship, nonresponse, self-selection &mdash; and the single line underneath all four</p>
+      <aside class="notes">Transition. Promise the collapse explicitly: "you were probably taught these as a list of four things to memorise. By the end of this section it is one thing."</aside>
+    </section>
+
+    <!-- SLIDE 21: Cov(R,Y) -->
+    <section id="cov-condition" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-link" style="color: var(--danger-color);"></i> The Condition Underneath Everything</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt;">Selection bias means the chance of showing up in your data is correlated with the thing you are trying to measure:</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px; text-align: center; margin: 12px 0 16px;">
+          <p style="font-size: 24pt;">$$\text{Cov}(R_i, Y_i) \neq 0$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div style="background: #eef2f6; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 13.5pt;">$R_i$ &mdash; a switch: 1 if unit $i$ made it into your data, 0 if not</p></div>
+          <div style="background: #eef2f6; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 13.5pt;">$Y_i$ &mdash; the outcome you care about for unit $i$</p></div>
+          <div style="background: #eef2f6; border-radius: 8px; padding: 12px 16px;"><p style="font-size: 13.5pt;">$\text{Cov}$ &mdash; do these two move together?</p></div>
+        </div>
+        <div style="background: #e9f0e9; border-left: 5px solid var(--success-color); border-radius: 8px; padding: 15px 22px;">
+          <p style="font-size: 15.5pt; line-height: 1.6;"><strong>In plain English:</strong> if <em>being in the dataset</em> and <em>what the answer would have been</em> travel together at all, your sample mean sits off the population mean &mdash; and it stays off no matter how many rows you add.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Emphasise "at all." This is not a threshold condition where a little correlation is fine. It is a switch: zero, or not zero. The hook's &minus;0.005 was not zero. Also flag the notation debt: R for "recorded", and it is the same R that shows up as a missingness indicator in Chapter 1. That is not a coincidence and the next slides make it explicit.</aside>
+    </section>
+
+    <!-- SLIDE 22: Meng identity -->
+    <section id="meng-identity" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--accent-color);"></i> Meng&rsquo;s Identity: Error as a Product of Three</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 14px; text-align: center; margin-bottom: 16px;">
+          <p style="font-size: 21pt;">$$\bar{y}_n - \bar{Y}_N \;=\; \rho_{R,Y} \;\times\; \sigma_Y \;\times\; \sqrt{\frac{N-n}{n}}$$</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+          <div style="background: #f7ece5; border-radius: 9px; padding: 15px 18px; border-top: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color); margin-bottom: 6px;">$\rho_{R,Y}$</p>
+            <p style="font-size: 13.5pt; line-height: 1.5;">how <strong>bent</strong> the selection mechanism is</p>
+            <p style="font-size: 13pt; color: var(--danger-color); margin-top: 8px;"><strong>More data: no help.</strong><br>Property of the mechanism.</p>
+          </div>
+          <div style="background: #f7ece5; border-radius: 9px; padding: 15px 18px; border-top: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--accent-color); margin-bottom: 6px;">$\sigma_Y$</p>
+            <p style="font-size: 13.5pt; line-height: 1.5;">how <strong>spread out</strong> the outcome is</p>
+            <p style="font-size: 13pt; color: var(--danger-color); margin-top: 8px;"><strong>More data: no help.</strong><br>Property of the world.</p>
+          </div>
+          <div style="background: #eef2f6; border-radius: 9px; padding: 15px 18px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color); margin-bottom: 6px;">$\sqrt{(N-n)/n}$</p>
+            <p style="font-size: 13.5pt; line-height: 1.5;">how much of the population you <strong>missed</strong></p>
+            <p style="font-size: 13pt; color: var(--success-color); margin-top: 8px;"><strong>More data: yes.</strong><br>The only one.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; line-height: 1.55;"><strong>In plain English:</strong> your error is a <em>product</em>. Random sampling drives the first term to zero, the whole product collapses to zero, and the third term does all the work &mdash; that is the happy Topic 5 story. If the first term is <em>not</em> zero, shrinking only the third factor cannot save you.</p>
+      </div>
+      <aside class="notes">4 min. Write "error = bent x spread x missed" on the board in words before you touch the symbols. Then ask the poll question again verbally: which one does more data touch? They just voted C, so they will answer in chorus. The multiplication is the whole insight &mdash; a product with a non-zero factor cannot be driven to zero by shrinking a different factor.</aside>
+    </section>
+
+    <!-- SLIDE 23: Big Data Paradox -->
+    <section id="big-data-paradox" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> The Big Data Paradox</h2>
+      <div class="content">
+        <div style="background: #f7ece5; border-radius: 10px; padding: 22px 28px; border-left: 5px solid var(--danger-color);">
+          <p style="font-size: 17pt; line-height: 1.6;">For a fixed sample size, the error scales with $\sqrt{N/n}$ &mdash; with the size of the <strong>population</strong>, not just the sample.</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 20px; line-height: 1.65;">So the <em>bigger the world you are trying to describe</em>, the more a small bias costs you. A bent mechanism that is harmless when you are describing a village is catastrophic when you are describing a country.</p>
+        <div style="background: #f8f6f3; border-radius: 9px; padding: 18px 24px; margin-top: 18px;">
+          <p style="font-size: 17pt; text-align: center; color: var(--primary-color);">In the age of big data, <strong>quality beats quantity</strong> &mdash; and it is not close.</p>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 18px; color: var(--muted-color); line-height: 1.55;">This is the result behind the hook: 2.3 million responses reduced to the worth of 400, by a correlation of &minus;0.005, because $N$ was the whole American electorate.</p>
+      </div>
+      <aside class="notes">3 min. Anticipate the objection, because a sharp student will raise it: "so is big data useless?" No &mdash; big data is superb for prediction, for pattern-finding, for anything where you do not need to generalise to a population you did not observe. It is dangerous exactly when you use it to estimate a population quantity. That distinction comes back in Topic 9 when we compare click logs to A/B tests.</aside>
+    </section>
+
+    <!-- SLIDE 24: DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion: Rank These Four</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; border-left: 5px solid var(--accent-color);">
+          <p class="text-lg" style="margin-bottom: 12px;">Question: <strong>&ldquo;How much do Boston renters pay?&rdquo;</strong> Rank these best to worst, and say what breaks in your worst one.</p>
+          <p style="font-size: 15pt; line-height: 1.95;">
+          <strong>(a)</strong> 4,000,000 Zillow listing views<br>
+          <strong>(b)</strong> 1,200 randomly dialled Boston phone numbers<br>
+          <strong>(c)</strong> Every lease filed with the city last year<br>
+          <strong>(d)</strong> 50,000 Reddit r/boston comments mentioning rent</p>
+        </div>
+        <p style="margin-top: 18px; font-size: 15pt; color: var(--secondary-color); font-weight: 600; text-align: center;"><i class="fa-solid fa-arrow-right"></i> Four minutes in pairs. Be ready to defend your last place.</p>
+      </div>
+      <aside class="notes">5 min including debrief; press 4 for the timer. (c) is the sleeper best answer &mdash; a near-census of a well-defined frame, though it silently drops informal arrangements and sublets, which is worth naming. (b) beats (a) and (d) despite being three thousand times smaller, and that is the point of the exercise. Press hard on (a): a listing is an ASKING price, not a paid rent, so it is proxy bias; and viewing is self-selected, so it is selection bias too. Two failures stacked, and only one of them shrinks with more users.</aside>
+    </section>
+
+    <!-- SLIDE 25: Survivorship -->
+    <section id="survivorship" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-trophy" style="color: var(--accent-color);"></i> Costume 1: Survivorship Bias</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">Your data is missing the units that <strong>exited</strong> &mdash; funds that closed, firms that went bankrupt, patients who died, students who dropped out.</p>
+        <div style="background: #f7ece5; border-radius: 9px; padding: 16px 24px; margin-top: 16px; border-left: 5px solid var(--accent-color);">
+          <p style="font-size: 15pt; line-height: 1.6;">Backtest a momentum strategy on <em>today&rsquo;s</em> Nasdaq 100 members and it looks brilliant. Put the dot-com casualties back in and returns more than halve while maximum drawdowns roughly double.</p>
+          <p style="font-size: 15pt; line-height: 1.6; margin-top: 10px;">A 2024 study found that ignoring survivorship overstated median mutual fund alpha by <strong>0.60% a year</strong>.</p>
+        </div>
+        <div style="background: #e9f0e9; border-left: 5px solid var(--success-color); border-radius: 8px; padding: 15px 22px; margin-top: 16px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>Think like an economist.</strong> Before accepting any performance number &mdash; fund returns, startup success rates, hospital quality scores, graduation rates &mdash; ask: <em>who is missing, and did they leave</em> because <em>of the outcome?</em> If yes, that is $\text{Cov}(R,Y) \neq 0$, and it is Chapter 1&rsquo;s MNAR wearing a finance suit.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The classroom version that lands: "has anyone seen the statistic that 90% of startups fail? Where would that number have to come from?" Somebody has to have found the failed companies, and failed companies do not file surveys. Then the MNAR link explicitly: a fund's returns are missing BECAUSE the returns were catastrophic. Missingness caused by the value itself. Same equation.</aside>
+    </section>
+
+    <!-- SLIDE 26: Nonresponse -->
+    <section id="nonresponse" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-phone-slash" style="color: var(--accent-color);"></i> Costume 2: Nonresponse Bias</h2>
+      <div class="content">
+        <p style="font-size: 16pt; line-height: 1.6;">The people who decline differ systematically from the people who answer. Survey response rates have collapsed:</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px;">
+          <div style="background: #eef2f6; border-radius: 9px; padding: 18px 12px; text-align: center;">
+            <p style="font-size: 12.5pt; color: var(--muted-color); letter-spacing: 1.5px;">1997</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--secondary-color); font-family: var(--heading-font);">36%</p>
+          </div>
+          <div style="background: #f2eee9; border-radius: 9px; padding: 18px 12px; text-align: center;">
+            <p style="font-size: 12.5pt; color: var(--muted-color); letter-spacing: 1.5px;">2012</p>
+            <p style="font-size: 30pt; font-weight: 700; color: #9a8f86; font-family: var(--heading-font);">9%</p>
+          </div>
+          <div style="background: #f7ece5; border-radius: 9px; padding: 18px 12px; text-align: center;">
+            <p style="font-size: 12.5pt; color: var(--muted-color); letter-spacing: 1.5px;">2018</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--accent-color); font-family: var(--heading-font);">6%</p>
+          </div>
+          <div style="background: #f5e3e3; border-radius: 9px; padding: 18px 12px; text-align: center;">
+            <p style="font-size: 12.5pt; color: var(--muted-color); letter-spacing: 1.5px;">2024</p>
+            <p style="font-size: 30pt; font-weight: 700; color: var(--danger-color); font-family: var(--heading-font);">1&ndash;5%</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 9px; padding: 16px 24px; margin-top: 22px;">
+          <p style="font-size: 16.5pt; text-align: center;">When 95&ndash;99% refuse, the survivors of that filter are <strong>not</strong> a random 1&ndash;5%.</p>
+        </div>
+        <p style="font-size: 11.5pt; color: var(--muted-color); margin-top: 14px; font-style: italic;">Pew Research Center (2024).</p>
+      </div>
+      <aside class="notes">2 min. The live question is never WHETHER there is nonresponse bias &mdash; at a 3% response rate there certainly is. It is how much and in which direction, which is the same signed-guess discipline from Discussion 1.</aside>
+    </section>
+
+    <!-- SLIDE 27: Figure 005 -->
+    <section id="response-figure" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-chart-line" style="color: var(--danger-color);"></i> Who Is Left in the 3%?</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_005_response_rate_decline.png" alt="Line chart of telephone survey response rates falling from 36 percent in 1997 to 9 percent in 2012, 6 percent in 2018 and 1 to 5 percent by 2024" style="max-height: 490px; width: auto;">
+      </div>
+      <aside class="notes">2 min. Ask the room the question on the chart and take three answers. They will say: retired, strong opinions, trusts institutions, has time. Every one of those traits correlates with political preference &mdash; which makes this MNAR, not MAR, and that distinction is the next slide.</aside>
+    </section>
+
+    <!-- SLIDE 28: MCAR/MAR/MNAR -->
+    <section id="mcar-mar-mnar" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-table-list" style="color: var(--secondary-color);"></i> Topic 1&rsquo;s Framework, Doing Real Work</h2>
+      <div class="content">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14.5pt;">
+          <thead>
+            <tr style="background: #f8f6f3;">
+              <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--line-color); width: 15%;">Term</th>
+              <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--line-color); width: 44%;">The nonresponse version</th>
+              <th style="padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--line-color);">Can you fix it?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color); font-weight: 700; color: var(--success-color);">MCAR</td>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color);">Who answers is pure chance</td>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color);">Nothing to fix. You just have a smaller sample.</td>
+            </tr>
+            <tr>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color); font-weight: 700; color: var(--accent-color);">MAR</td>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color);">Answering depends on things you <em>can see</em> &mdash; age, ZIP, gender</td>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color);">Yes. Reweight the groups you can observe.</td>
+            </tr>
+            <tr>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color); font-weight: 700; color: var(--danger-color);">MNAR</td>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color);">Answering depends on <em>the answer itself</em></td>
+              <td style="padding: 14px 16px; border-bottom: 1px solid var(--line-color);">Not fully. You would have to model why people stayed silent.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="background: #f5e3e3; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 20px;">
+          <p style="font-size: 14.5pt; line-height: 1.6;"><strong>Common misconception: &ldquo;just weight the sample to match the census.&rdquo;</strong> Weighting fixes MAR. It cannot fix MNAR &mdash; the young people <em>who did answer</em> may not represent young people at all. Weighting corrects the group <em>proportions</em> and leaves the <em>within-group</em> distortion exactly where it was.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This table is the diagnostic students will actually reuse, so slow down. The misconception box is the highest-value 30 seconds in the section: weighting is what every polling firm does, it genuinely helps, and it is not a solution. It moves you from "wrong" to "less wrong by an unknown amount."</aside>
+    </section>
+
+    <!-- SLIDE 29: Obermeyer -->
+    <section id="obermeyer" style="padding: 28px 50px;">
+      <h2><i class="fa-solid fa-user-doctor" style="color: var(--accent-color);"></i> Economist at Work: The Algorithm That Encoded Race Without Using Race</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; line-height: 1.55;">Obermeyer, Powers, Vogeli &amp; Mullainathan (<em>Science</em>, 2019) studied a healthcare algorithm affecting roughly <strong>200 million patients a year</strong>. It selected patients for extra care using predicted future healthcare <strong>cost</strong> as a stand-in for health <strong>need</strong>.</p>
+        <div style="background: #f7ece5; border-radius: 9px; padding: 14px 22px; margin: 14px 0; border-left: 5px solid var(--accent-color);">
+          <p style="font-size: 14.5pt; line-height: 1.55;">Black patients had historically had <em>less access</em> to care &mdash; so they generated <em>lower costs</em> at the same level of illness. Cost was a bent proxy for need.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px;">
+          <div style="background: #eef2f6; border-radius: 9px; padding: 14px 16px; text-align: center;">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--secondary-color); font-family: var(--heading-font);">26.3%</p>
+            <p style="font-size: 12.5pt; margin-top: 4px; line-height: 1.4;">more active chronic conditions at the same risk score</p>
+          </div>
+          <div style="background: #f5e3e3; border-radius: 9px; padding: 14px 16px; text-align: center;">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--danger-color); font-family: var(--heading-font);">17.7% &rarr; 46.5%</p>
+            <p style="font-size: 12.5pt; margin-top: 4px; line-height: 1.4;">share of flagged patients who were Black, actual vs corrected</p>
+          </div>
+          <div style="background: #e9f0e9; border-radius: 9px; padding: 14px 16px; text-align: center;">
+            <p style="font-size: 24pt; font-weight: 700; color: var(--success-color); font-family: var(--heading-font);">84%</p>
+            <p style="font-size: 12.5pt; margin-top: 4px; line-height: 1.4;">of the bias removed by swapping the proxy</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; text-align: center; color: var(--primary-color);"><strong>Race was never an input.</strong> The proxy carried it.</p>
+      </div>
+      <aside class="notes">4 min. Open with the question, not the answer: "the algorithm never used race as a variable. How can it be racially biased?" Let them work it. The chain is cost proxies for need, cost also tracks access, access tracks race. Then the general lesson: whenever a model selects who gets something, the selected set is a SAMPLE, and the selection rule is the sampling mechanism. If that rule runs on a bent proxy, you have Cov(R,Y) != 0 with real people on the other end of it.</aside>
+    </section>
+
+    <!-- SLIDE 30: Four costumes recap -->
+    <section id="four-costumes" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-masks-theater" style="color: var(--secondary-color);"></i> Four Costumes, One Condition</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">Selection</p>
+            <p style="font-size: 14pt; margin-top: 5px;">The frame excluded people whose answers differ.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">Survivorship</p>
+            <p style="font-size: 14pt; margin-top: 5px;">They left, <em>because</em> of the outcome.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">Nonresponse</p>
+            <p style="font-size: 14pt; margin-top: 5px;">They were asked and stayed silent, <em>because</em> of the outcome.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; font-weight: 700; color: var(--accent-color);">Self-selection</p>
+            <p style="font-size: 14pt; margin-top: 5px;">They walked in on their own, <em>because</em> of the outcome.</p>
+          </div>
+        </div>
+        <div style="background: #eef2f6; border-radius: 10px; padding: 18px; text-align: center; margin-top: 20px; border: 2px solid var(--secondary-color);">
+          <p style="font-size: 20pt;">$$\text{Cov}(R_i, Y_i) \neq 0$$</p>
+        </div>
+        <p style="font-size: 15.5pt; margin-top: 16px; text-align: center;">Different stories about <em>how</em> the switch got flipped. Identical damage.</p>
+      </div>
+      <aside class="notes">2 min. This is the promised collapse &mdash; call it in. The practical payoff: they no longer need to remember four definitions for the exam, they need one question. "Who is missing, and is their absence related to the answer?" That question generates all four names on demand.</aside>
+    </section>
+
+    <!-- SLIDE 31: DIVIDER 4 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Watching the Law of Large Numbers Work Against You</h1>
+      <p class="subtitle">We can run 1936 &mdash; ten million voters, one hundred times</p>
+      <aside class="notes">Transition. The emotional beat of the lecture. Say: "everything so far has been an argument. The next four slides are a measurement."</aside>
+    </section>
+
+    <!-- SLIDE 32: Simulation setup -->
+    <section id="sim-setup" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> The Setup &mdash; and One Honest Warning</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">Lab 6&rsquo;s extension builds a synthetic electorate of <strong>10,000,000</strong> voters where income predicts vote, then draws two samples with the tools you already have from Topic 5:</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #f7ece5; border-radius: 9px; padding: 16px 22px; border-top: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt;"><strong>The &ldquo;Digest&rdquo; draw</strong><br><span style="font-size: 14pt;">the richer you are, the likelier you are included</span></p>
+          </div>
+          <div style="background: #eef2f6; border-radius: 9px; padding: 16px 22px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt;"><strong>The &ldquo;Gallup&rdquo; draw</strong><br><span style="font-size: 14pt;">50,000 people, chosen at random</span></p>
+          </div>
+        </div>
+        <div style="background: #f5e3e3; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 16px 22px; margin-top: 20px;">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>This is a model of the mechanism, not a re-run of history.</strong> The simulated electorate has Landon <em>ahead</em> at 55.3%. Real 1936 had Roosevelt at 61%. Every number on the next three slides is what the code prints &mdash; the historical figures from earlier stay separate.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Do not skip the warning box; read it aloud. Students who conflate the simulated 55.3% with the historical 61% will "remember" that we replicated 1936, and we did not. What transfers is the mechanism and the arithmetic, and that is worth more anyway. Also worth naming: they can run this themselves tonight &mdash; it takes about seven seconds.</aside>
+    </section>
+
+    <!-- SLIDE 33: Figure 003 + results -->
+    <section id="sim-results" style="padding: 26px 45px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--danger-color);"></i> 88 Times the Data. 40 Times the Error.</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 46% 54%; gap: 22px; align-items: center;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13.5pt;">
+            <thead>
+              <tr style="background: #f8f6f3;">
+                <th style="padding: 9px 11px; text-align: left; border-bottom: 2px solid var(--line-color);"></th>
+                <th style="padding: 9px 11px; text-align: right; border-bottom: 2px solid var(--line-color); color: #E8AA8C;">Biased</th>
+                <th style="padding: 9px 11px; text-align: right; border-bottom: 2px solid var(--line-color); color: #A9C4D8;">Random</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding: 10px 11px; border-bottom: 1px solid var(--line-color);">Responses</td><td style="padding: 10px 11px; text-align: right; border-bottom: 1px solid var(--line-color);"><strong>4,382,503</strong></td><td style="padding: 10px 11px; text-align: right; border-bottom: 1px solid var(--line-color);"><strong>50,000</strong></td></tr>
+              <tr><td style="padding: 10px 11px; border-bottom: 1px solid var(--line-color);">Estimated Landon share</td><td style="padding: 10px 11px; text-align: right; border-bottom: 1px solid var(--line-color);">0.636</td><td style="padding: 10px 11px; text-align: right; border-bottom: 1px solid var(--line-color);">0.550</td></tr>
+              <tr><td style="padding: 10px 11px; border-bottom: 1px solid var(--line-color);">True share</td><td style="padding: 10px 11px; text-align: right; border-bottom: 1px solid var(--line-color);">0.553</td><td style="padding: 10px 11px; text-align: right; border-bottom: 1px solid var(--line-color);">0.553</td></tr>
+              <tr style="background: #f8f6f3;"><td style="padding: 11px 11px;"><strong>Error</strong></td><td style="padding: 11px 11px; text-align: right; color: var(--danger-color);"><strong>+8.30 pts</strong></td><td style="padding: 11px 11px; text-align: right; color: var(--success-color);"><strong>&minus;0.20 pts</strong></td></tr>
+            </tbody>
+          </table>
+          <img src="figures/figure_003_digest_vs_gallup.png" alt="Bar chart contrasting an 8.30 percentage point error from a biased sample of 4.38 million responses against a 0.20 point error from a random sample of 50,000" style="width: 100%;">
+        </div>
+      </div>
+      <aside class="notes">2 min. Let the arithmetic land before you interpret: 4.38 million against 50,000 is 88 times the data, and 8.30 against 0.20 is roughly 40 times the error. Then the sentence the chapter wants them to own: sample size did not help; sample design did.</aside>
+    </section>
+
+    <!-- SLIDE 34: identity exact -->
+    <section id="identity-exact" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-equals" style="color: var(--success-color);"></i> The Identity Balances Exactly</h2>
+      <div class="content">
+        <p style="font-size: 15pt;">The lab computes all three ingredients directly from the simulated population:</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 14px 0;">
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 14px; text-align: center;">
+            <p style="font-size: 13pt; color: var(--muted-color);">bent selection</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">$\rho_{R,Y} = 0.1475$</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 14px; text-align: center;">
+            <p style="font-size: 13pt; color: var(--muted-color);">outcome spread</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">$\sigma_Y = 0.4972$</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 14px; text-align: center;">
+            <p style="font-size: 13pt; color: var(--muted-color);">fraction sampled</p>
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">$f = 0.4383$</p>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div style="background: #eef2f6; border-radius: 9px; padding: 16px; text-align: center;">
+            <p style="font-size: 14pt; color: var(--muted-color);">Meng&rsquo;s formula predicts</p>
+            <p style="font-size: 28pt; font-weight: 700; color: var(--secondary-color); font-family: var(--heading-font);">0.0830</p>
+          </div>
+          <div style="background: #e9f0e9; border-radius: 9px; padding: 16px; text-align: center;">
+            <p style="font-size: 14pt; color: var(--muted-color);">The observed error is</p>
+            <p style="font-size: 28pt; font-weight: 700; color: var(--success-color); font-family: var(--heading-font);">0.0830</p>
+          </div>
+        </div>
+        <div style="background: #f5e3e3; border-left: 5px solid var(--danger-color); border-radius: 8px; padding: 13px 20px; margin-top: 16px;">
+          <p style="font-size: 13.5pt; line-height: 1.55;"><strong>Do not merge two numbers.</strong> This $\rho = 0.1475$ is a <em>badly</em> bent mechanism. Meng&rsquo;s famous &minus;0.005 belongs to the real 2016 survey in our hook, where an enormous $N$ did the damage instead. Same formula, different ingredient doing the work.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This slide exists to make the equation feel like accounting rather than theory &mdash; it is not an approximation, it balances to four decimals. The warning box matters: last year's version of this deck let students walk away believing rho = 0.005 caused an eight-point error. It did not. In the simulation the bend is large; in 2016 the bend was tiny and the population was 200 million.</aside>
+    </section>
+
+    <!-- SLIDE 35: Figure 004 -->
+    <section id="replications" style="padding: 24px 45px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--danger-color);"></i> One Hundred Runs: Precise, and Wrong Every Time</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_004_replication_errors.png" alt="Histogram of estimation errors over 100 replications: the random sample of 50,000 forms a modest cluster centred on zero while the biased sample of 4.38 million forms an extremely narrow spike at plus 8.3 percentage points" style="max-height: 400px; width: auto;">
+        <div style="background: #f8f6f3; border-radius: 9px; padding: 14px 24px; margin-top: 14px;">
+          <p style="font-size: 15.5pt; line-height: 1.5;">Biased, n &asymp; 4.38M: mean error <strong style="color: var(--danger-color);">+8.30 pts</strong>, sd <strong>0.01</strong> &nbsp;&bull;&nbsp; Random, n = 50,000: mean error <strong style="color: var(--success-color);">&minus;0.02 pts</strong>, sd <strong>0.20</strong></p>
+        </div>
+      </div>
+      <aside class="notes">3 min. THIS is the lecture. The biased estimator is about twenty times more PRECISE than the random one and wrong by 8.3 points on every single run. The Law of Large Numbers did its job perfectly &mdash; it converged. It converged on the wrong number, and the more data it got the more certain it became. Now cash the Topic 4 retrieval question: this is the tight cluster two inches off the bullseye, and if a student answered that at minute 3, credit them by name.</aside>
+    </section>
+
+    <!-- SLIDES 36-37: POLL 3 -->
+    <section>
+      <section id="poll-3" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Why Is Stability Bad News?</h2>
+        <div class="content">
+          <p class="text-lg">Across 100 runs the biased estimate&rsquo;s errors have a standard deviation of <strong>0.01</strong> points; the random estimate&rsquo;s is <strong>0.20</strong>. The biased one is twenty times more <em>stable</em>. Why is that bad news?</p>
+          <div class="poll-grid" data-poll-id="ch06-econ3916-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) It is good news &mdash; stable estimates are what we want</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Stability only reflects the bigger sample; it says nothing about being right</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) The random sample must have a bug</div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Low variance always implies low bias</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Click to vote. Expect a real A share even now &mdash; "it reproduces" is the everyday test people use for whether a finding is solid, and it is about to fail them. A large A vote here is the honest starting point, not an embarrassment.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch06-econ3916-poll-3" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Precision and Accuracy Are Different Axes</h2>
+        <div class="poll-results-chart" data-poll-id="ch06-econ3916-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:8px 60px 20px;"></div>
+        <div style="padding: 0 40px;">
+          <p style="font-size: 15pt; line-height: 1.6;">The biased estimate is stable because 4.38 million observations pin down <em>its own</em> answer very tightly. Its answer is wrong. Worse: that tightness would show up as a <strong>narrow confidence interval</strong> &mdash; so the very mechanism producing the error also produces false reassurance about it.</p>
+          <div style="background: #f7ece5; border-left: 4px solid var(--accent-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why A is tempting but wrong:</strong> a number that reproduces across reruns is exactly what people cite as evidence a finding is solid. Reproducibility tests your <em>code</em>. It cannot test your <em>frame</em>.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Seed Topic 7 here: next week you build confidence intervals by bootstrapping, and this slide is the caveat that comes with them. A bootstrap resamples your data, so a narrow bootstrap interval on a biased sample is a precise measurement of the wrong quantity.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 38: DIVIDER 5 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>The Same Problem, Inside Your Own Laptop</h1>
+      <p class="subtitle">The train-test split is a sampling design &mdash; and leakage is a broken frame</p>
+      <aside class="notes">Transition. "Everything so far was about surveys. Now the part that shows up in every model you will ever build."</aside>
+    </section>
+
+    <!-- SLIDE 39: split is a design -->
+    <section id="split-is-design" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-scissors" style="color: var(--secondary-color);"></i> Your Split Is a Sampling Design</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 6px;">
+          <div style="background: #eef2f6; border-radius: 10px; padding: 20px 24px; border-top: 5px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color); margin-bottom: 8px;">Training set</p>
+            <p style="font-size: 14.5pt; line-height: 1.55;">The <strong>sample</strong> your model learns from.</p>
+          </div>
+          <div style="background: #f7ece5; border-radius: 10px; padding: 20px 24px; border-top: 5px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--accent-color); margin-bottom: 8px;">Test set</p>
+            <p style="font-size: 14.5pt; line-height: 1.55;">Stands in for the <strong>population</strong> your model will meet in deployment.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 9px; padding: 18px 26px; margin-top: 22px;">
+          <p style="font-size: 17pt; text-align: center; line-height: 1.55;">A bad split is <strong>selection bias</strong> with a different variable name.<br><span style="font-size: 15pt; color: var(--muted-color);">The test number stops meaning what you think it means.</span></p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Make the analogy exact rather than loose: when you report 87% test accuracy you are making an inference about a population you never observed &mdash; future users &mdash; from a sample you drew yourself. That is a survey. You are the pollster, and you chose the frame.</aside>
+    </section>
+
+    <!-- SLIDE 40: Titanic numbers -->
+    <section id="titanic-numbers" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-ship" style="color: var(--accent-color);"></i> Titanic: One Keyword Argument</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt; line-height: 1.55;">891 passengers, 342 survived &mdash; an overall rate of <strong>0.384</strong>. Survival was wildly unequal: <strong>63%</strong> in 1st class, <strong>47%</strong> in 2nd, <strong>24%</strong> in 3rd. Dropping rows with a missing Age leaves <strong>714</strong> passengers at a <strong>0.406</strong> rate.</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14.5pt; margin-top: 16px;">
+          <thead>
+            <tr style="background: #f8f6f3;">
+              <th style="padding: 11px 16px; text-align: left; border-bottom: 2px solid var(--line-color);">Split</th>
+              <th style="padding: 11px 16px; text-align: right; border-bottom: 2px solid var(--line-color);">Train rate</th>
+              <th style="padding: 11px 16px; text-align: right; border-bottom: 2px solid var(--line-color);">Test rate</th>
+              <th style="padding: 11px 16px; text-align: right; border-bottom: 2px solid var(--line-color);">Test deviation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 13px 16px; border-bottom: 1px solid var(--line-color);"><code style="font-size: 13pt;">train_test_split(X, y)</code></td>
+              <td style="padding: 13px 16px; text-align: right; border-bottom: 1px solid var(--line-color);">0.410</td>
+              <td style="padding: 13px 16px; text-align: right; border-bottom: 1px solid var(--line-color);">0.392</td>
+              <td style="padding: 13px 16px; text-align: right; border-bottom: 1px solid var(--line-color); color: var(--danger-color);"><strong>&minus;1.46 pts</strong></td>
+            </tr>
+            <tr>
+              <td style="padding: 13px 16px; border-bottom: 1px solid var(--line-color);"><code style="font-size: 13pt;">... , stratify=y)</code></td>
+              <td style="padding: 13px 16px; text-align: right; border-bottom: 1px solid var(--line-color);">0.406</td>
+              <td style="padding: 13px 16px; text-align: right; border-bottom: 1px solid var(--line-color);">0.406</td>
+              <td style="padding: 13px 16px; text-align: right; border-bottom: 1px solid var(--line-color); color: var(--success-color);"><strong>&minus;0.06 pts</strong></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="background: #f7ece5; border-left: 5px solid var(--accent-color); border-radius: 8px; padding: 13px 20px; margin-top: 18px;">
+          <p style="font-size: 13.5pt; line-height: 1.55;"><strong>One honest caveat.</strong> <code>stratify=y</code> balances <em>survival</em>, not passenger class. The stratified test set&rsquo;s class shares came out closer to the population too &mdash; but that is a by-product, not a promise. If you need class balanced, stratify on it.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Live-code this if the room is with you; the whole thing is two calls. The caveat box is there because the lab's own interpretation question asks students to check whether stratify=y preserved Pclass, and the honest answer is "it did here, and it did not have to." Do not let them generalise from one lucky seed.</aside>
+    </section>
+
+    <!-- SLIDE 41: Figure 006 -->
+    <section id="split-figure" style="padding: 26px 50px;">
+      <h2><i class="fa-solid fa-chart-simple" style="color: var(--secondary-color);"></i> A 1.46-Point Hole, Closed to 0.06</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_006_titanic_splits.png" alt="Bar chart of deviations from the full dataset survival rate: the naive test set is off by 1.46 percentage points while the stratified train and test sets are off by only 0.01 and 0.06 points" style="max-height: 430px; width: auto;">
+        <p style="font-size: 15pt; margin-top: 14px;">It matters most when the class is <strong>rare</strong>: 2% fraud, 5% defaults, 1% click-through. A naive split can hand you a test set with almost no positive cases at all.</p>
+      </div>
+      <aside class="notes">2 min. Titanic at 40% survival is a forgiving case &mdash; and it still lost 1.46 points. Ask them to picture the same split on a fraud dataset at 2%: an 80/20 split of 1,000 rows leaves 200 test rows and roughly 4 fraud cases. Your recall metric is then computed on four observations, and it will swing wildly with the seed.</aside>
+    </section>
+
+    <!-- SLIDE 42: leakage patterns -->
+    <section id="leakage-patterns" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-faucet-drip" style="color: var(--danger-color);"></i> Data Leakage: Three Ways It Gets In</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; margin-bottom: 14px;">Leakage is information flowing from the test set into training. It is a survey where the pollster already knows the answers.</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 14px 22px; border-left: 5px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>1. Preprocessing leakage</strong> &mdash; fitting a scaler or imputer on <em>all</em> the data before splitting.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 14px 22px; border-left: 5px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>2. Feature leakage</strong> &mdash; using a variable that is a <em>consequence</em> of the outcome. <span style="font-size: 13.5pt; color: var(--muted-color);">Predicting loan default from <code>total_payments</code>: defaulted loans have fewer payments by definition.</span></p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 9px; padding: 14px 22px; border-left: 5px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>3. Temporal leakage</strong> &mdash; training on 2020&ndash;2024 to predict 2019.</p>
+          </div>
+        </div>
+        <div style="background: #eef2f6; border-radius: 8px; padding: 14px 22px; margin-top: 18px;">
+          <p style="font-size: 14.5pt; line-height: 1.55;">Why it belongs in <em>this</em> lecture: leakage breaks the independence of train and test. Topic 5 taught you that independence of draws is what makes the LLN work. Break it and the convergence guarantee dissolves &mdash; again.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Feature leakage is the one that ends careers, so dwell on 2. It produces a model with 99% accuracy that a manager will love and that collapses instantly in production, because the magic column simply does not exist at prediction time. The diagnostic to teach: for every feature, ask "would I actually have this value at the moment I need to make the prediction?"</aside>
+    </section>
+
+    <!-- SLIDE 43: leakage numbers -->
+    <section id="leakage-numbers" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--accent-color);"></i> What Leakage Looks Like in Numbers</h2>
+      <div class="content">
+        <p style="font-size: 14.5pt;">Standardising Age on the Titanic data, two orders of operations:</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14pt; margin-top: 12px;">
+          <thead>
+            <tr style="background: #f8f6f3;">
+              <th style="padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--line-color);"></th>
+              <th style="padding: 10px 14px; text-align: right; border-bottom: 2px solid var(--line-color);">Train mean</th>
+              <th style="padding: 10px 14px; text-align: right; border-bottom: 2px solid var(--line-color);">Train sd</th>
+              <th style="padding: 10px 14px; text-align: right; border-bottom: 2px solid var(--line-color);">Test mean</th>
+              <th style="padding: 10px 14px; text-align: right; border-bottom: 2px solid var(--line-color);">Test sd</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 12px 14px; border-bottom: 1px solid var(--line-color); color: var(--danger-color);"><strong>Scale, then split</strong></td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);">&minus;0.0253</td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);">0.9973</td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);">0.1009</td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);">1.0044</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 14px; border-bottom: 1px solid var(--line-color); color: var(--success-color);"><strong>Split, then scale</strong></td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);"><strong>0.0000</strong></td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);"><strong>1.0000</strong></td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);">0.1265</td>
+              <td style="padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line-color);">1.0072</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="background: #e9f0e9; border-left: 5px solid var(--success-color); border-radius: 8px; padding: 13px 20px; margin-top: 16px;">
+          <p style="font-size: 14pt; line-height: 1.55;">The test set <em>not</em> being perfectly standardised is the <strong>correct</strong> result. It is unseen data with its own distribution. The fill values differ too: mean Age is <strong>29.6991</strong> computed from everything, <strong>29.3325</strong> from the training rows alone.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. The tell is the top-left cell: &minus;0.0253 rather than 0.0000. If you scale then split, your training set is not quite centred, because the scaler was tuned to a dataset containing rows the model is not allowed to see. It is a small number here &mdash; 0.37 of a year on mean Age &mdash; and it is not small when train and test come from different periods or places. Point at the row and say: this cell is the fingerprint.</aside>
+    </section>
+
+    <!-- SLIDES 44-45: POLL 4 -->
+    <section>
+      <section id="poll-4" style="padding: 34px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Find the Leak</h2>
+        <div class="content">
+          <p class="text-lg">You are predicting which customers churn next month. Which of these <strong>leaks</strong>?</p>
+          <div class="poll-grid" data-poll-id="ch06-econ3916-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+            <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) <code>months_as_customer</code>, recorded at signup</div>
+            <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Fitting <code>StandardScaler</code> on train, applying it to test</div>
+            <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) <code>tickets_closed_after_cancellation</code></div>
+            <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Splitting 80/20 with <code>stratify=y</code> on the churn label</div>
+          </div>
+        </div>
+        <aside class="notes">1 min. Click to vote. Watch for B &mdash; students who half-remember "the scaler causes leakage" will pick it, and that half-memory is worth surfacing and correcting out loud.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch06-econ3916-poll-4" style="padding: 28px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Feature Leakage</h2>
+        <div class="poll-results-chart" data-poll-id="ch06-econ3916-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:8px 60px 20px;"></div>
+        <div style="padding: 0 40px;">
+          <p style="font-size: 15pt; line-height: 1.6;">That column can only be recorded <em>after</em> the outcome has already happened. It will look like a spectacular predictor right up to deployment, where the field is empty for every customer you actually need to score. <strong>B and D are the correct procedures</strong>; <strong>A</strong> is a legitimate feature, known at prediction time.</p>
+          <div style="background: #f7ece5; border-left: 4px solid var(--accent-color); padding: 13px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why B is tempting but wrong:</strong> it is fitting the scaler on <em>test data</em> that leaks &mdash; not using a scaler at all. B describes exactly the fix.</p>
+          </div>
+        </div>
+        <aside class="notes">2 min. Give them the portable test to write down: for every feature, ask whether you would have that value at the moment the prediction has to be made. If the answer is no, it is not a feature, it is the answer key.</aside>
+      </section>
+    </section>
+
+    <!-- SLIDE 46: DIVIDER 6 -->
+    <section class="section-divider" data-state="is-section-divider">
+      <h1>Close</h1>
+      <p class="subtitle">One question to carry into every dataset you touch</p>
+      <aside class="notes">Transition. Five minutes left. Exit ticket first so it gets collected, then the summary.</aside>
+    </section>
+
+    <!-- SLIDE 47: Exit ticket -->
+    <section id="exit-ticket" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--accent-color);"></i> Exit Ticket: Your Own Project</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 22px 30px; border-left: 5px solid var(--accent-color);">
+          <p class="text-lg" style="margin-bottom: 14px;">Think of the dataset you plan to use for your portfolio project. On an index card, write:</p>
+          <p style="font-size: 16pt; line-height: 2.0;">
+          <strong>1.</strong> The <strong>target population</strong> your question is really about.<br>
+          <strong>2.</strong> The <strong>sampling frame</strong> the data actually came from.<br>
+          <strong>3.</strong> One group in the gap &mdash; and the <strong>direction</strong> they push your answer.</p>
+        </div>
+        <p style="margin-top: 20px; font-size: 15.5pt; color: var(--secondary-color); font-weight: 600; text-align: center;">Three minutes. Hand them in on your way out.</p>
+      </div>
+      <aside class="notes">3 min; press 3 for the timer. Collect these &mdash; they are the highest-signal diagnostic of the term. A student who cannot fill line 2 has just discovered the most important thing they will learn this week, and it is worth a one-line reply on the card telling them so. Skim for anyone whose line 1 and line 2 are identical; that is the misconception to open next class with.</aside>
+    </section>
+
+    <!-- SLIDE 48: Summary -->
+    <section id="summary" style="padding: 30px 50px;">
+      <h2><i class="fa-solid fa-list-check" style="color: var(--secondary-color);"></i> Topic 6 in a Nutshell</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 14.5pt;"><strong>Design, not size, decides whether an estimate is trustworthy.</strong> A probability sample buys unbiasedness. A non-probability sample buys nothing, at any scale.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt;"><strong>One condition, four costumes.</strong> Selection, survivorship, nonresponse and self-selection are all $\text{Cov}(R_i, Y_i) \neq 0$.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt;"><strong>Error is a product of three terms</strong> &mdash; bent, spread, missed &mdash; and more data shrinks only the last one.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 14.5pt;"><strong>MCAR / MAR / MNAR is the diagnostic:</strong> no bias, correctable by weighting, or genuinely hard.</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--muted-color);">
+            <p style="font-size: 14.5pt;"><strong>In ML the training data IS the sample.</strong> The split is a sampling design, <code>stratify=y</code> is stratified sampling, and leakage is the violation of sample independence.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Close on the sentence from the very first slide: sample size cannot cure sample bias. Then the one question that generates the entire lecture on demand &mdash; "who is missing, and is their absence related to the answer?"</aside>
+    </section>
+
+    <!-- SLIDE 49: Forward -->
+    <section id="forward" style="padding: 32px 55px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--accent-color);"></i> Where This Goes Next</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px;">
+          <div style="background: #eef2f6; border-radius: 9px; padding: 14px 20px;">
+            <p style="font-size: 14.5pt;"><strong>Topic 7 &mdash; Bootstrap.</strong> Resampling from your own data. Every replicate inherits whatever bias the original had.</p>
+          </div>
+          <div style="background: #eef2f6; border-radius: 9px; padding: 14px 20px;">
+            <p style="font-size: 14.5pt;"><strong>Topic 8 &mdash; Hypothesis testing.</strong> A $p$-value assumes your data came from the distribution the null describes. Selection bias voids that.</p>
+          </div>
+          <div style="background: #eef2f6; border-radius: 9px; padding: 14px 20px;">
+            <p style="font-size: 14.5pt;"><strong>Topic 9 &mdash; A/B testing.</strong> Randomisation is the gold standard precisely because it forces $\text{Cov}(R_i, Y_i) = 0$ by construction.</p>
+          </div>
+          <div style="background: #eef2f6; border-radius: 9px; padding: 14px 20px;">
+            <p style="font-size: 14.5pt;"><strong>Topic 15 &mdash; Bias&ndash;variance.</strong> Today&rsquo;s tight-but-wrong cluster is that topic&rsquo;s entire subject.</p>
+          </div>
+        </div>
+        <div style="background: #f7ece5; border-radius: 9px; padding: 16px 24px; margin-top: 20px; border-left: 5px solid var(--accent-color);">
+          <p style="font-size: 15pt; line-height: 1.6;"><strong>Lab 6 &mdash; <code>lab-ch06-guided.ipynb</code>.</strong> Parts 1&ndash;3 guided, Part 4 fill-in, and the Extension runs the Literary Digest simulation you just watched. Submit to <code>econ3916-lab06-sampling</code>.</p>
+        </div>
+      </div>
+      <aside class="notes">1 min. The Topic 7 line is the important one to say out loud: next week they build confidence intervals, and a bootstrap interval computed on a biased sample is a precise statement about the wrong number. That is the thread today ties to next week.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>

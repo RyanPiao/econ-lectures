@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDA: Visual Forensics at Scale</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax -->
+  <script>
+    MathJax = {tex: {inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']]}, svg: {fontCache: 'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+    <!-- SLIDE 1: Cover -->
+    <section id="title" class="section-divider" data-state="is-section-divider" style="padding: 0;">
+      <div style="display: grid; grid-template-columns: 56% 44%; height: 720px;">
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 50px 46px 50px 60px;">
+          <p style="font-size: 12pt; color: var(--secondary-color); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px;">ECON 5200 &bull; Causal ML &amp; Applied Analytics &bull; Chapter 3</p>
+          <h1 style="font-size: 32pt; line-height: 1.25; color: var(--primary-color); margin-bottom: 25px;">EDA: Visual Forensics at Scale</h1>
+          <div style="width: 50px; height: 3px; background: var(--secondary-color); margin-bottom: 18px;"></div>
+          <p style="font-size: 14pt; color: var(--muted-color); font-style: italic; line-height: 1.5;">A chart is a measurement decision &mdash; it carries the same responsibility as choosing an index</p>
+          <div style="margin-top: auto; padding-bottom: 15px;">
+            <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
+            <p style="font-size: 12pt; color: var(--muted-color); font-weight: 400; font-style: italic; line-height: 1.8;">Department of Economics<br>Northeastern University</p>
+          </div>
+        </div>
+        <div style="overflow: hidden;">
+          <img src="figures/cover-ch03-eda.png" alt="Four unlabelled scatter plots in a two-by-two grid, each with the same dashed regression line running through visibly different point patterns" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section id="learning-objectives" style="padding: 36px 50px;">
+      <h2><i class="fa-solid fa-bullseye" style="color: var(--accent-color);"></i> Learning Objectives</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--secondary-color);">3.1</p>
+            <p style="font-size: 15pt;">Explain why summary statistics are <strong>insufficient</strong>, using Anscombe's Quartet as the proof</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--accent-color);">3.2</p>
+            <p style="font-size: 15pt;">Compute the <strong>Data-Ink Ratio</strong> and the <strong>Lie Factor</strong>, and redesign a chart against both</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--success-color);">3.3</p>
+            <p style="font-size: 15pt;">Diagnose the <strong>six deception mechanisms</strong> and name the mechanism, not just the verdict</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 62px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 19pt; font-weight: 700; color: var(--danger-color);">3.4</p>
+            <p style="font-size: 15pt;">Judge a published chart &mdash; and defend a <strong>threshold</strong> you did not choose yourself</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">1 min. Flag 3.4 as today's centre of gravity. Everything before it is craft; 3.4 is the professional judgement the craft exists to support. The last four words &mdash; "you did not choose yourself" &mdash; set up the PSI section at the end.</aside>
+    </section>
+
+    <!-- SLIDE 3: Retrieval Practice -->
+    <section id="retrieval" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-brain" style="color: var(--secondary-color);"></i> Retrieval Practice</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; margin-bottom: 14px;">
+          <p class="text-lg"><strong>Quick Check 1 &mdash; Ch 1.</strong> Tidy data was sold to you as a storage convention. Give the second reason it matters, the one that only shows up when you plot.</p>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px;">
+          <p class="text-lg"><strong>Quick Check 2 &mdash; Ch 2.</strong> The Laspeyres basket is fixed. Name the bias that follows, and say who chose the base year.</p>
+        </div>
+        <p style="margin-top: 18px; color: var(--accent-color); font-weight: 600; font-size: 16pt;"><i class="fa-solid fa-arrow-right"></i> Both converge on today: <strong>a default you did not choose is still a choice you own.</strong></p>
+      </div>
+      <aside class="notes">2 min verbal, cold-call two students. QC1 target: tidy structure is the precondition for systematic visualisation &mdash; one loop over a long frame gives you four panels; a wide frame gives you four hand-written blocks. QC2 target: substitution bias, and the base year was chosen by BLS, not by them. That second half is the sentence you will reuse in Section 4 when the PSI threshold of 0.10 turns out to be someone else's number too.</aside>
+    </section>
+
+    <!-- SLIDE 4: Hook 1 -->
+    <section id="hook-map" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-map" style="color: var(--danger-color);"></i> Every County Was Coloured Correctly</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">November 2024. A county-level election map floods every timeline. Red from Appalachia to the Rockies; blue reduced to specks. Commentators read it as a mandate.</p>
+        <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; line-height: 1.55;">Not one county was mis-coloured. Not one label was wrong. There is no error to find.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; line-height: 1.55;">Los Angeles County &mdash; a speck &mdash; held more voters than the twelve largest red counties combined.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 20px; color: var(--accent-color); font-weight: 600;">The encoding was the argument. Colour was mapped to <em>acreage</em>, and acreage does not vote.</p>
+      </div>
+      <aside class="notes">2 min. Do not rush past "there is no error to find." That is the whole discomfort of this chapter: your usual QA &mdash; check the numbers, check the labels &mdash; passes cleanly on a chart that misleads a nation. The fix is a cartogram, which we name in Section 2 mechanism 4. Source: 33 Sticks, 2025.</aside>
+    </section>
+
+    <!-- SLIDE 5: Hook 2 -->
+    <section id="hook-georgia" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-chart-column" style="color: var(--danger-color);"></i> And a Version You Cannot Catch by Reading the Axis</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">May 2020. Georgia's Department of Public Health published confirmed COVID-19 cases for the five worst-affected counties. The bars descended left to right. The state looked to be recovering.</p>
+        <div class="fragment fade-up" style="background: #fdf0ea; border-radius: 12px; padding: 22px 28px; margin-top: 20px; border-left: 4px solid var(--danger-color);">
+          <p style="font-size: 16pt; line-height: 1.6;">The dates on the x-axis <strong>were not in chronological order.</strong> They had been sorted so that bar heights descended. Put the dates back in time order and the decline disappears entirely.</p>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 18px; line-height: 1.6;">Truncation you can catch from the tick labels. <strong>Reordering looks exactly like a normal chart</strong> &mdash; because nobody reads an x-axis they already assume runs forward in time. The state acknowledged the error and redesigned the chart.</p>
+      </div>
+      <aside class="notes">2 min. This is the pair to the map: the map fooled you through encoding, Georgia through ordering. Neither is a numerical error. Ask for a show of hands: "who reads x-axis tick labels on a time series?" Almost nobody will raise a hand, which is the point. Source: Georgia DPH dashboard, May 2020, and the state's subsequent correction.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 1 -->
+    <section id="divider-compression" class="section-divider" data-state="is-section-divider">
+      <p style="font-size: 13pt; color: var(--secondary-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 18px;">Section One</p>
+      <h1 style="font-size: 38pt; color: var(--primary-color); margin-bottom: 20px;">Summary Statistics Are a Compression</h1>
+      <div style="width: 60px; height: 3px; background: var(--accent-color); margin: 0 auto 20px;"></div>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic;">And every compression is lossy in a direction someone chose</p>
+      <aside class="notes">15 min for this section. Say the subtitle out loud &mdash; it is the graduate-level version of "always plot your data."</aside>
+    </section>
+
+    <!-- SLIDE 7: Anscombe intuition -->
+    <section id="anscombe-intuition" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-clone" style="color: var(--secondary-color);"></i> Anscombe, 1973</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Francis Anscombe constructed four datasets of eleven \((x, y)\) pairs each. They agree on <strong>every</strong> statistic an analyst would normally report.</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">9.00</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 6px;">mean of \(x\)</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">7.50</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 6px;">mean of \(y\)</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--secondary-color); line-height: 1;">0.816</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 6px;">correlation</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 12px; text-align: center;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color); line-height: 1.2; margin-top: 4px;">\(\hat y = 3 + \tfrac{1}{2}x\)</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 8px;">fitted line</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 20px; line-height: 1.6;"><strong>Reading the equation:</strong> the OLS fit says every dataset starts at 3 when \(x=0\) and rises half a unit for each unit of \(x\). One sentence, four datasets, and it is a true sentence about all four.</p>
+      </div>
+      <aside class="notes">2 min. Write the four numbers on the board before you show the plots. Ask: "on this evidence, would you model these four the same way?" Nearly everyone says yes, and they are being reasonable &mdash; that is what makes the next slide land.</aside>
+    </section>
+
+    <!-- SLIDE 8: Anscombe figure -->
+    <section id="anscombe-figure" style="padding: 26px 44px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-chart-scatter" style="color: var(--accent-color);"></i> The Same Four Numbers, Plotted</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_001_anscombe.png" alt="Anscombe's Quartet: four scatter plots sharing one dashed regression line — a clean linear cloud, a parabola, a straight line with a single high outlier, and a vertical column of points at x equals 8 with one distant point at x equals 19" style="max-height: 500px; width: auto; border-radius: 8px;">
+      </div>
+      <aside class="notes">2 min. Show it and say nothing for five seconds. Then: dataset II is a parabola and the linear fit is simply the wrong model. III is a perfect line that one outlier has tilted. IV is the pathological one &mdash; ten points share an x value, so the eleventh point alone determines the slope; delete it and the slope is undefined. Every one of those four stories is invisible in the numbers on the previous slide.</aside>
+    </section>
+
+    <!-- SLIDE 9: verified stats -->
+    <section id="anscombe-stats" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-table" style="color: var(--secondary-color);"></i> Verified, Not Quoted</h2>
+      <div class="content">
+        <p style="font-size: 15pt; margin-bottom: 14px;">Recomputed from <code>seaborn.load_dataset("anscombe")</code> when this deck was built &mdash; not copied from Anscombe's paper.</p>
+        <table style="width: 100%; font-size: 15pt; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--line-color);">
+              <th style="text-align: left; padding: 9px 8px;">Dataset</th>
+              <th style="text-align: right; padding: 9px 8px;">mean \(x\)</th>
+              <th style="text-align: right; padding: 9px 8px;">mean \(y\)</th>
+              <th style="text-align: right; padding: 9px 8px;">var \(x\)</th>
+              <th style="text-align: right; padding: 9px 8px;">var \(y\)</th>
+              <th style="text-align: right; padding: 9px 8px;">corr</th>
+              <th style="text-align: right; padding: 9px 8px;">slope</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px;">I</td><td style="text-align: right; padding: 8px;">9.00</td><td style="text-align: right; padding: 8px;">7.501</td><td style="text-align: right; padding: 8px;">11.00</td><td style="text-align: right; padding: 8px;">4.127</td><td style="text-align: right; padding: 8px;">0.8164</td><td style="text-align: right; padding: 8px;">0.5001</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px;">II</td><td style="text-align: right; padding: 8px;">9.00</td><td style="text-align: right; padding: 8px;">7.501</td><td style="text-align: right; padding: 8px;">11.00</td><td style="text-align: right; padding: 8px;">4.128</td><td style="text-align: right; padding: 8px;">0.8162</td><td style="text-align: right; padding: 8px;">0.5000</td></tr>
+            <tr style="border-bottom: 1px solid var(--line-color);"><td style="padding: 8px;">III</td><td style="text-align: right; padding: 8px;">9.00</td><td style="text-align: right; padding: 8px;">7.500</td><td style="text-align: right; padding: 8px;">11.00</td><td style="text-align: right; padding: 8px;">4.123</td><td style="text-align: right; padding: 8px;">0.8163</td><td style="text-align: right; padding: 8px;">0.4997</td></tr>
+            <tr><td style="padding: 8px;">IV</td><td style="text-align: right; padding: 8px;">9.00</td><td style="text-align: right; padding: 8px;">7.501</td><td style="text-align: right; padding: 8px;">11.00</td><td style="text-align: right; padding: 8px;">4.123</td><td style="text-align: right; padding: 8px;">0.8165</td><td style="text-align: right; padding: 8px;">0.4999</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">Agreement to three decimals across every column. The disagreement lives entirely in a dimension none of these columns has.</p>
+      </div>
+      <aside class="notes">1 min. The point of showing the recomputation rather than the citation: in this course you check the number before you put it on a slide. Anscombe rounded his construction, which is why the variances differ in the third decimal &mdash; that residue is real, and quoting "identical" without the caveat would be a small lie of exactly the kind this chapter is about.</aside>
+    </section>
+
+    <!-- SLIDE 10: Datasaurus -->
+    <section id="datasaurus" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-dragon" style="color: var(--accent-color);"></i> Then It Got Worse</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Matejka &amp; Fitzmaurice (2017) generalised Anscombe with simulated annealing: perturb points iteratively while <em>constraining the summary statistics to stay fixed</em>. Thirteen datasets came out.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px; text-align: center;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">54.26 / 47.83</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 6px;">means of \(x\), \(y\) &mdash; all thirteen</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px; text-align: center;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">16.77 / 26.93</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 6px;">standard deviations</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 18px; text-align: center;">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--secondary-color);">&minus;0.06</p>
+            <p style="font-size: 12pt; color: var(--muted-color); margin-top: 6px;">correlation</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 20px; line-height: 1.6;">Plotted, they are circles, stars, parallel lines, a cross &mdash; and a <em>Tyrannosaurus rex</em>. This is proof by construction: <strong>summary statistics can hide any shape you like.</strong></p>
+      </div>
+      <aside class="notes">2 min. The upgrade over Anscombe is not the dinosaur, it is the method. Anscombe hand-built four counterexamples; annealing manufactures them on demand. So the defence "well, Anscombe is a contrived special case" is dead &mdash; the special case is constructible for any target statistics you name.</aside>
+    </section>
+
+    <!-- SLIDE 11: economics clusters -->
+    <section id="econ-clusters" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-people-group" style="color: var(--secondary-color);"></i> Why an Economist Should Care</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">1,000 households. Income against consumption. You report \(r = 0.72\) and a slope.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; line-height: 1.55;"><strong>Low-income cluster.</strong> Steep slope &mdash; nearly every extra dollar is spent. Marginal propensity to consume close to one.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; line-height: 1.55;"><strong>High-income cluster.</strong> Flat slope &mdash; most of the extra dollar is saved. A different MPC entirely.</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 20px; line-height: 1.6;">One OLS line through both returns an <strong>average of two slopes that describes neither group</strong> &mdash; and every policy simulation you run off that coefficient inherits the error. The scatter plot is what tells you to split the sample.</p>
+      </div>
+      <aside class="notes">3 min. Make the stakes concrete: a stimulus-multiplier estimate built on the pooled MPC will misprice a transfer that is targeted at one of the two groups. This is not an aesthetic complaint about charts &mdash; it is a specification error that a two-second scatter would have caught.</aside>
+    </section>
+
+    <!-- SLIDE 12: unemployment vs LFPR -->
+    <section id="unemployment-lfpr" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-gauge-high" style="color: var(--accent-color);"></i> The Rate Is Itself a Summary Statistic</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">2010 to 2019. A dashboard showing one series declares victory.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px;">
+          <div style="background: #eef5ee; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;"><strong>Unemployment rate</strong></p>
+            <p style="font-size: 26pt; font-weight: 700; color: var(--success-color); margin: 8px 0;">9.6% &rarr; 3.5%</p>
+            <p style="font-size: 13pt; color: var(--muted-color);">share of the labour force seeking work</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;"><strong>Labour force participation</strong></p>
+            <p style="font-size: 26pt; font-weight: 700; color: var(--danger-color); margin: 8px 0;">64.7% &rarr; 63.1%</p>
+            <p style="font-size: 13pt; color: var(--muted-color);">share of working-age population <em>in</em> the labour force</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15pt; margin-top: 18px; line-height: 1.6;">People who stop looking leave the denominator of the first series entirely. Workforce exit and genuine recovery push the unemployment rate the <strong>same direction</strong>. Only plotting both separates them.</p>
+      </div>
+      <aside class="notes">3 min. This is the bridge from Ch 2. The unemployment rate is a constructed index with a chosen denominator, exactly like CPI has a chosen basket. Anscombe applies to it: the rate compresses two different labour-market worlds into one number, and the compression is lossy in a direction that flatters whoever is in office.</aside>
+    </section>
+
+    <!-- SLIDE 13: misconception -->
+    <section id="misconception-summary" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-radius: 12px; padding: 22px 28px; border-left: 5px solid var(--danger-color);">
+          <p style="font-size: 17pt; font-style: italic; line-height: 1.55;">&ldquo;I computed the mean, the standard deviation, and the correlation. I understand my data.&rdquo;</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 20px; line-height: 1.65;">Those three capture <strong>centre, spread, and linear association</strong>. That is the entire list. They are silent on multimodality, non-linearity, clusters, outliers, gaps, and shape.</p>
+        <div style="background: #eef5ee; border-radius: 10px; padding: 18px 24px; margin-top: 16px; border-left: 4px solid var(--success-color);">
+          <p style="font-size: 15pt; margin: 0;"><strong>The related trap:</strong> &ldquo;correlation near zero means no relationship.&rdquo; A perfect parabola \(y = x^2\) has correlation near zero &mdash; the halves cancel. That is Anscombe II wearing a different hat. Low \(r\) is a reason to plot, never a reason to stop.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say plainly: "plot first, summarise second" is the rule, and it inverts what most of you were trained to do, which is summarise first and plot only if a referee asks.</aside>
+    </section>
+
+    <!-- POLL 1 STACK -->
+    <section>
+      <section id="poll-1" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: What Does Agreement Buy You?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Two datasets agree on mean, variance, correlation, <em>and</em> the fitted regression line, to three decimals.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What may you conclude about their shapes?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch03-econ5200-poll-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) They are the same data up to row order</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) Same shape, possibly different scale</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Nothing at all &mdash; shape is not in those statistics</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) Both must be at least approximately linear</div>
+        </div>
+        <aside class="notes">1 min. Students click to vote on their devices; results appear on the next slide. Expect a real D share &mdash; a high \(r\) feels like evidence of linearity, and Anscombe II is precisely the counterexample they have just seen.</aside>
+      </section>
+      <section id="poll-1-reveal" data-poll-results="ch03-econ5200-poll-1" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Nothing at All</h2>
+        <div class="poll-results-chart" data-poll-id="ch03-econ5200-poll-1" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Those four statistics are a map from a dataset to \(\mathbb{R}^4\). The map is <strong>massively many-to-one</strong>, and annealing shows the preimage is rich enough to contain a dinosaur. Agreement in the image tells you nothing about the preimage.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is the interesting wrong answer:</strong> \(r = 0.816\) is high, and high \(r\) feels like it certifies linearity. It does not. Anscombe II has \(r = 0.816\) and is a parabola. \(r\) measures how well <em>a</em> line fits, not whether a line is the right object.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DISCUSSION 1 -->
+    <section id="discussion-1" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion &mdash; Three Minutes, Pairs</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 22px 28px;">
+          <p style="font-size: 17pt; line-height: 1.6;">Your co-author reports \(r = 0.72\) between household income and consumption and wants to publish the pooled slope.</p>
+          <p style="font-size: 17pt; line-height: 1.6; margin-top: 12px;"><strong>(a)</strong> Name <em>two</em> distinct data structures that would both produce \(r = 0.72\) but demand different models.</p>
+          <p style="font-size: 17pt; line-height: 1.6; margin-top: 8px;"><strong>(b)</strong> What single plot distinguishes them &mdash; and what would you look for in it?</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">Press <strong>3</strong> to start the timer.</p>
+      </div>
+      <aside class="notes">3 min pairs, 2 min report-out. Answers worth harvesting for (a): two clusters with different slopes; a single cloud with a handful of leverage points; a curved relationship over a restricted range. For (b): the scatter, and specifically look for gaps, curvature, and isolated points far in x. Push back on anyone who says "a residual plot" &mdash; correct, but it comes after fitting a model you have not yet earned the right to fit.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 2 -->
+    <section id="divider-lie-factor" class="section-divider" data-state="is-section-divider">
+      <p style="font-size: 13pt; color: var(--secondary-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 18px;">Section Two</p>
+      <h1 style="font-size: 38pt; color: var(--primary-color); margin-bottom: 20px;">Putting a Number on Distortion</h1>
+      <div style="width: 60px; height: 3px; background: var(--accent-color); margin: 0 auto 20px;"></div>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic;">Tufte's two ratios, and the six mechanisms they do and do not catch</p>
+      <aside class="notes">20 min. This is the longest section and the one with the most transferable craft in it.</aside>
+    </section>
+
+    <!-- Data-Ink Ratio -->
+    <section id="data-ink" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-pen-nib" style="color: var(--secondary-color);"></i> The Data-Ink Ratio</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; text-align: center;">
+          <p style="font-size: 20pt; margin: 0;">\[\text{Data-Ink Ratio} = \frac{\text{ink that encodes data}}{\text{total ink in the graphic}}\]</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; line-height: 1.65;"><strong>Reading it:</strong> of everything the printer puts on the page, what fraction is carrying information? Points, bars and lines count in the numerator. Grid lines, borders, drop shadows, 3-D extrusions, background images and decorative fills go only in the denominator.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Ratio near 0</strong> &mdash; a chart that is mostly decoration. Tufte's word for the decoration is <em>chartjunk</em>.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Ratio near 1</strong> &mdash; erase anything you can erase without losing information. What survives is the data.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. This one measures efficiency, not honesty &mdash; a chart can be beautifully spare and still lie. Say that explicitly, because students routinely conflate the two ratios. The Lie Factor is the honesty instrument and it is next.</aside>
+    </section>
+
+    <!-- Lie Factor formula -->
+    <section id="lie-factor-formula" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ruler-combined" style="color: var(--accent-color);"></i> The Lie Factor</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 20px 28px; text-align: center;">
+          <p style="font-size: 20pt; margin: 0;">\[\text{Lie Factor} = \frac{\text{size of effect shown in the graphic}}{\text{size of effect in the data}}\]</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; line-height: 1.65;"><strong>Reading it:</strong> a ratio of two proportional changes &mdash; how much bigger the picture got, over how much bigger the number got. Both are unitless, so the ratio is unitless. A value of 1.0 means the eye and the arithmetic agree.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px; text-align: center; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--success-color);">1.0</p>
+            <p style="font-size: 13pt; margin-top: 4px;">honest</p>
+          </div>
+          <div style="background: #fdf6ef; border-radius: 10px; padding: 16px; text-align: center; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--accent-color);">&gt; 1.5</p>
+            <p style="font-size: 13pt; margin-top: 4px;">meaningful exaggeration</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px; text-align: center; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 22pt; font-weight: 700; color: var(--danger-color);">&gt; 5.0</p>
+            <p style="font-size: 13pt; margin-top: 4px;">serious distortion</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">Below 1.0 is understatement &mdash; also a distortion, and the one nobody complains about.</p>
+      </div>
+      <aside class="notes">3 min. Stress that the two inputs must be measured the same way &mdash; both as proportional change &mdash; or the ratio is meaningless. And flag that these thresholds are conventions, not theorems. We come back to "whose threshold is this?" hard in Section 4.</aside>
+    </section>
+
+    <!-- Lie factor figure -->
+    <section id="lie-factor-figure" style="padding: 26px 44px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-chart-column" style="color: var(--accent-color);"></i> One Dataset, Two Baselines</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_002_lie_factor.png" alt="Two bar charts of the same quarterly revenue figures 98, 99, 100 and 102 million dollars: the left panel truncated at 96 million shows steeply rising bars, the right panel with a zero baseline shows four bars of near-identical height" style="max-height: 480px; width: auto; border-radius: 8px;">
+      </div>
+      <p style="text-align: center; font-size: 14pt; color: var(--muted-color); margin-top: 8px; font-style: italic;">Q1 $98M &bull; Q2 $99M &bull; Q3 $100M &bull; Q4 $102M &mdash; identical numbers in both panels</p>
+      <aside class="notes">1 min. Ask which panel goes in the investor deck and which one the regulator wants. Then ask which one is <em>wrong</em>. Neither is wrong. That is the uncomfortable answer and it is the correct one.</aside>
+    </section>
+
+    <!-- Lie factor arithmetic -->
+    <section id="lie-factor-arithmetic" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-calculator" style="color: var(--secondary-color);"></i> Do the Arithmetic</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; font-weight: 600; margin-bottom: 10px;">What the eye is given</p>
+            <p style="font-size: 14.5pt; line-height: 1.6;">Above the $96M cut, the Q1 bar is 2 units tall and the Q4 bar is 6. The drawn quantity grows by</p>
+            <p style="font-size: 17pt; text-align: center; margin: 10px 0;">\(\dfrac{6-2}{2} = 2.00 = 200\%\)</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; font-weight: 600; margin-bottom: 10px;">What the data says</p>
+            <p style="font-size: 14.5pt; line-height: 1.6;">Revenue goes from $98M to $102M, so the underlying quantity grows by</p>
+            <p style="font-size: 17pt; text-align: center; margin: 10px 0;">\(\dfrac{102-98}{98} = 0.0408 = 4.08\%\)</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 12px; padding: 18px 26px; margin-top: 18px; text-align: center;">
+          <p style="font-size: 19pt; margin: 0;">\(\text{Lie Factor} = \dfrac{2.00}{0.0408} \approx \mathbf{49}\)</p>
+          <p style="font-size: 14pt; color: var(--muted-color); margin-top: 8px; font-style: italic;">The picture overstates the change by roughly fifty times. A trivial fluctuation, drawn as a revolution.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. Walk the arithmetic on the board, slowly. The move students miss is that the numerator is computed on the <em>drawn</em> heights above the truncation point, not on the revenue values &mdash; truncation is exactly the act of changing what "height" means. Then note the second cost of truncation, which the wage figure later makes visible: a truncated axis does not merely exaggerate, it silently deletes every observation below the cut.</aside>
+    </section>
+
+    <!-- 86% audit -->
+    <section id="broken-charts" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-building-columns" style="color: var(--danger-color);"></i> This Is the Norm, Not the Edge Case</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 28px; align-items: center; margin-top: 10px;">
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 26px; text-align: center;">
+            <p style="font-size: 52pt; font-weight: 700; color: var(--accent-color); line-height: 1;">86%</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 10px;">of audited annual reports</p>
+          </div>
+          <div>
+            <p style="font-size: 16pt; line-height: 1.6;">An audit of 50 publicly traded companies found that <strong>86% contained at least one broken chart.</strong> The single most common defect: a truncated y-axis on revenue and earnings.</p>
+            <div style="background: #f8f6f3; border-radius: 10px; padding: 14px 20px; margin-top: 14px;">
+              <p style="font-size: 14pt; margin: 0;"><strong>Read the statistic precisely.</strong> The audit counted <em>broken charts</em>. It did not count charts above some Lie Factor. The 1.5 and 5.0 cut-offs are ours, for teaching &mdash; not the source's.</p>
+            </div>
+            <p style="font-size: 12.5pt; color: var(--muted-color); margin-top: 10px; font-style: italic;">CPA Journal, "The Danger of Bad Charts," October 2025.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. The grey box is not pedantry, it is the habit the whole chapter is trying to build: when you put someone else's number on a slide, state what it actually counted. A student who quotes "86% of corporate charts exceed a Lie Factor of 1.5" has invented a finding. Do not let that pass in the midterm.</aside>
+    </section>
+
+    <!-- Mechanisms 1-3 -->
+    <section id="mechanisms-a" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i> Six Mechanisms &mdash; The Geometry Three</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px; margin-top: 8px;">
+          <div style="display: grid; grid-template-columns: 46px 1fr; gap: 14px; background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--danger-color);">1</p>
+            <p style="font-size: 15pt; line-height: 1.5;"><strong>Truncated axis.</strong> Move the baseline and every drawn height changes meaning. The commonest source of a high Lie Factor.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; gap: 14px; background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--danger-color);">2</p>
+            <p style="font-size: 15pt; line-height: 1.5;"><strong>Dual y-axes.</strong> Two independent scales are two free parameters. Tune them and any two series can be made to move together &mdash; or apart. The reader cannot audit a scaling they cannot see.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; gap: 14px; background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--danger-color);">3</p>
+            <p style="font-size: 15pt; line-height: 1.5;"><strong>Area encoding.</strong> Double a radius and you quadruple the area; a sphere gets eight times the volume. Bubble charts turn a linear difference into a quadratic impression.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. These three are geometric &mdash; the picture's proportions no longer match the numbers' proportions, and in principle a careful reader with a ruler could catch all three. The next three are worse, because a ruler will not help.</aside>
+    </section>
+
+    <!-- Mechanisms 4-6 -->
+    <section id="mechanisms-b" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--accent-color);"></i> Six Mechanisms &mdash; The Three a Ruler Misses</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px; margin-top: 8px;">
+          <div style="display: grid; grid-template-columns: 46px 1fr; gap: 14px; background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">4</p>
+            <p style="font-size: 15pt; line-height: 1.5;"><strong>Misleading maps.</strong> A choropleth weights by acreage. Our hook. The fix is a <em>cartogram</em> &mdash; distort the geography so area encodes the variable you actually mean.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; gap: 14px; background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">5</p>
+            <p style="font-size: 15pt; line-height: 1.5;"><strong>Metric mislabelling.</strong> May 2025: an <em>FT</em> chart titled "Hires per month" for the top 15 US AI companies dipped below zero &mdash; impossible for a count. The series was <em>net</em> employment change. The geometry was fine; the label lied.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 46px 1fr; gap: 14px; background: #f8f6f3; border-radius: 10px; padding: 15px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 20pt; font-weight: 700; color: var(--accent-color);">6</p>
+            <p style="font-size: 15pt; line-height: 1.5;"><strong>Missing context.</strong> No uncertainty band implies a precision you have not got. No mention of last month's revision implies a change that may not have happened.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Mechanism 5 is the one to dwell on for this cohort: a gross-flow label on a net-flow series turns a structural contraction into a hiring slowdown, and no amount of chart-craft catches it. Only reading the variable definition does. That is a data-provenance skill, not a design skill. Mechanism 6 seeds Ch 7 &mdash; from bootstrap intervals onward, every estimate you show gets a band.</aside>
+    </section>
+
+    <!-- POLL 2 STACK -->
+    <section>
+      <section id="poll-2" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Compute It</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">Revenue runs $98M &rarr; $102M across the year. The y-axis is cut at $96M, so the Q4 bar draws three times the height of the Q1 bar.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What is the Lie Factor?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch03-econ5200-poll-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) About 3 &mdash; the bar tripled</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) About 4 &mdash; revenue rose about 4%</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) About 49</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) About 200 &mdash; the drawn height rose 200%</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. A and D are each half the calculation &mdash; A reports only the visual ratio, D only the visual percentage. Both are the error of forgetting to divide by the data effect.</aside>
+      </section>
+      <section id="poll-2-reveal" data-poll-results="ch03-econ5200-poll-2" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; About 49</h2>
+        <div class="poll-results-chart" data-poll-id="ch03-econ5200-poll-2" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Visual effect \(= 200\%\). Data effect \(= 4.08\%\). The ratio is \(200/4.08 \approx 49\). Both inputs must be <em>proportional changes</em>; mixing a ratio with a percentage is what produces A and D.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>The habit worth keeping:</strong> a Lie Factor near 50 is not a rhetorical flourish &mdash; it is a computed quantity you can put in a referee report, an audit memo, or a footnote. That is why Tufte bothered to define it.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Encoding hierarchy -->
+    <section id="encoding-hierarchy" style="padding: 26px 44px;">
+      <h2 style="font-size: 24pt;"><i class="fa-solid fa-eye" style="color: var(--secondary-color);"></i> Encoding Is Measured, Not Debated</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_004_encoding_hierarchy.png" alt="Horizontal bar chart ranking six visual encodings by decoding accuracy: position on a common scale ranked first, position on non-aligned scales second, length third, angle fourth, area fifth, colour saturation sixth" style="max-height: 470px; width: auto; border-radius: 8px;">
+      </div>
+      <p style="text-align: center; font-size: 13pt; color: var(--muted-color); margin-top: 6px; font-style: italic;">Cleveland &amp; McGill (1984), controlled experiments; replicated by Heer &amp; Bostock (2010), n = 688</p>
+      <aside class="notes">3 min. The move that matters for a graduate audience: this is not taste. Cleveland and McGill ran experiments and measured error rates. Angle judgements carry roughly 1.8 times the error of position judgements. So "I prefer bar charts to pie charts" is not an aesthetic preference, it is a claim with an effect size behind it. Heer and Bostock replicated it on Mechanical Turk and also found stacked bars add error, because comparing non-baseline segments requires mental subtraction.</aside>
+    </section>
+
+    <!-- Encoding implications -->
+    <section id="encoding-implications" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-wrench" style="color: var(--accent-color);"></i> What Follows for Your Charts</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15.5pt; margin: 0;">Use <strong>position</strong> &mdash; scatter, dot plot, line &mdash; whenever the reader must compare precisely.</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15.5pt; margin: 0;">Use <strong>colour</strong> for categorical grouping, not for quantity. It sits last on the list for a measured reason.</p>
+          </div>
+          <div style="background: #fdf6ef; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15.5pt; margin: 0;">Use <strong>area</strong> only when approximate magnitude is genuinely all you need.</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15.5pt; margin: 0;">Avoid <strong>pie charts</strong> for exact comparison, and <strong>stacked bars</strong> whenever a non-baseline segment must be compared.</p>
+          </div>
+        </div>
+        <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">Mueller et al. (2025) now automate part of this: MisVisFix flags truncated axes, 3-D distortion and dual-axis manipulation at 0.96&ndash;0.98 F1 and localises the offending pixels.</p>
+      </div>
+      <aside class="notes">2 min. Close the section on the automation note but do not oversell it &mdash; the tool catches geometry, which is mechanisms 1 to 3. Nothing in it catches a gross-flow label on a net-flow series. The judgement does not automate.</aside>
+    </section>
+
+    <!-- Think like an economist -->
+    <section id="think-like-economist" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-lightbulb" style="color: var(--accent-color);"></i> Think Like an Economist</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Every chart makes three decisions. Interrogate all three before you trust one &mdash; including your own.</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px; border-top: 4px solid var(--secondary-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color); margin-bottom: 8px;">What to show</p>
+            <p style="font-size: 14pt; line-height: 1.5;">Which variables? Which window? Which units?</p>
+          </div>
+          <div style="background: #fdf6ef; border-radius: 12px; padding: 20px; border-top: 4px solid var(--accent-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color); margin-bottom: 8px;">How to encode</p>
+            <p style="font-size: 14pt; line-height: 1.5;">Position, length, area, angle, colour?</p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 20px; border-top: 4px solid var(--danger-color);">
+            <p style="font-size: 17pt; font-weight: 700; color: var(--danger-color); margin-bottom: 8px;">What to omit</p>
+            <p style="font-size: 14pt; line-height: 1.5;">Missing data? Uncertainty? Context variables?</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 16pt; margin-top: 20px; text-align: center; color: var(--primary-color); font-weight: 600;">A chart is not a window onto the data. It is an argument made in visual rhetoric.</p>
+      </div>
+      <aside class="notes">2 min. The third column is the one people skip, and it is where the serious failures live &mdash; omission leaves no trace on the page for anyone to audit.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 3 -->
+    <section id="divider-axis-ethics" class="section-divider" data-state="is-section-divider">
+      <p style="font-size: 13pt; color: var(--secondary-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 18px;">Section Three</p>
+      <h1 style="font-size: 38pt; color: var(--primary-color); margin-bottom: 20px;">Breaking Your Own Chart</h1>
+      <div style="width: 60px; height: 3px; background: var(--accent-color); margin: 0 auto 20px;"></div>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic;">The Chapter 2 wage series, four ways, all of them true</p>
+      <aside class="notes">18 min. The pedagogic bet: they will not internalise this by grading someone else's chart. They have to watch their own chart be broken.</aside>
+    </section>
+
+    <!-- Wage setup -->
+    <section id="wage-setup" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-rotate-left" style="color: var(--secondary-color);"></i> The Chart You Already Built</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">In Chapter 2 you deflated <code>AHETPI</code> by <code>CPIAUCSL</code> and plotted real average hourly earnings in 2020 dollars. You started at zero, used a linear scale, and showed the whole sample &mdash; three defensible choices you probably made without noticing you were choosing.</p>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 26px; margin-top: 18px;">
+          <p style="font-size: 15pt; line-height: 1.6; margin: 0;">Now change only those three choices. Same series. Same deflator. Same code path. <strong>No number is altered anywhere.</strong></p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">Series pulled live from the FRED public CSV endpoint when this deck was built: AHETPI 1964-01 to 2026-08, n = 752 monthly observations.</p>
+      </div>
+      <aside class="notes">2 min. Say the last line out loud. Every panel you are about to see comes from one dataframe and four matplotlib calls. There is no manipulation of data anywhere in this section &mdash; which is exactly why it is a section about ethics rather than a section about fraud.</aside>
+    </section>
+
+    <!-- Wage figure -->
+    <section id="wage-figure" style="padding: 24px 40px;">
+      <h2 style="font-size: 23pt;"><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i> Four Arguments From One Series</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_003_wage_redesigns.png" alt="Four line charts of real average hourly earnings from 1964 to 2026: panel A full range from a zero baseline showing a long plateau, panel B truncated to twenty to thirty dollars turning the plateau into dramatic swings, panel C cropped to 2015 onward showing steady growth, panel D on a log scale flattening the structural breaks" style="max-height: 490px; width: auto; border-radius: 8px;">
+      </div>
+      <aside class="notes">2 min. Reveal and let them look. Then point at panel B and note something the chapter does not: the truncation at twenty dollars does not merely exaggerate, it <em>erases</em> — the line disappears entirely through the mid-1990s because the series fell below the cut. A reader of panel B sees a gap and has no way to know whether it is missing data or an axis decision.</aside>
+    </section>
+
+    <!-- Wage numbers -->
+    <section id="wage-numbers" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-hashtag" style="color: var(--secondary-color);"></i> The Same Series, Two Honest Sentences</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 6px;">
+          <div style="background: #fdf0ea; border-radius: 12px; padding: 22px 26px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--danger-color); line-height: 1;">+3.2%</p>
+            <p style="font-size: 15pt; margin-top: 10px; line-height: 1.5;">real wages today against the <strong>January 1973 peak</strong> of $24.43 &mdash; fifty-three years, in 2020 dollars</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 12px; padding: 22px 26px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 30pt; font-weight: 700; color: var(--success-color); line-height: 1;">+9.9%</p>
+            <p style="font-size: 15pt; margin-top: 10px; line-height: 1.5;">real wages today against <strong>January 2015</strong> &mdash; the window panel C happens to show</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; line-height: 1.6;">Both computed from the same 750 monthly observations. Neither is false. A press office that reports only the second has told you the truth and hidden the story.</p>
+        <p style="font-size: 13.5pt; margin-top: 12px; color: var(--muted-color); font-style: italic;">Full-sample range $19.71&ndash;$25.42, a ratio of 1.29&times; &mdash; which is precisely why panel D's log scale flattens everything worth looking at.</p>
+      </div>
+      <aside class="notes">3 min. These are recomputed live, not quoted from the chapter &mdash; state that. The 1.29&times; range is the quantitative case against panel D: log scales earn their keep when a series spans orders of magnitude, and this one spans a factor of one point three. The chapter says "within a factor of 1.5"; we checked, and it is 1.29.</aside>
+    </section>
+
+    <!-- When truncation is fine -->
+    <section id="truncation-ok" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-scale-balanced" style="color: var(--success-color);"></i> When Truncation Is the Honest Choice</h2>
+      <div class="content">
+        <p class="text-lg" style="line-height: 1.6;">Truncation is not a sin. Zero is not sacred. Some quantities simply do not live near zero.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; margin: 0;">Body temperature in Fahrenheit lives in 97&ndash;104. A zero baseline spends 93% of the panel on a region no observation will ever occupy.</p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; margin: 0;">Policy rates live in 0&ndash;10%. Here the natural baseline <em>is</em> zero &mdash; and it has been binding, which is itself the interesting fact.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 18px 26px; margin-top: 18px;">
+          <p style="font-size: 16pt; margin: 0; line-height: 1.6;"><strong>The test is not "does it start at zero."</strong> It is: <em>does the truncation make a small change appear large?</em> If the change is genuinely large within the relevant range, truncating is informative. If not, it is distortion.</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 14px;"><strong>Practical rule:</strong> Lie Factor above 2.0 &rarr; annotate the chart. "Note: y-axis does not start at zero." Disclosure is the floor, not the ceiling.</p>
+      </div>
+      <aside class="notes">3 min. This is the slide that stops the chapter collapsing into a rule of thumb students then apply badly. Someone always leaves Ch 3 believing "truncated axis equals lie," and then truncates nothing, and produces unreadable interest-rate charts. The criterion is the ratio, not the baseline.</aside>
+    </section>
+
+    <!-- Log scale misconception -->
+    <section id="log-misconception" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger-color);"></i> Common Misconception</h2>
+      <div class="content">
+        <div style="background: #fdf0ea; border-radius: 12px; padding: 20px 28px; border-left: 5px solid var(--danger-color);">
+          <p style="font-size: 17pt; font-style: italic; line-height: 1.55;">&ldquo;Log scales are dishonest &mdash; they hide how big the change really was.&rdquo;</p>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; line-height: 1.65;">Log scales answer a <em>different question</em>. On a linear axis, equal distances are equal <strong>differences</strong> &mdash; a $10 rise looks the same from $20 as from $100. On a log axis, equal distances are equal <strong>ratios</strong>, so a 50% rise looks the same wherever it starts.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>Log is the honest choice</strong> for GDP, population, stock indices &mdash; anything spanning orders of magnitude, where constant growth should draw as a straight line.</p>
+          </div>
+          <div style="background: #fdf6ef; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 14.5pt; margin: 0;"><strong>Linear is the honest choice</strong> for our wage series, varying by 1.29&times;, where the structural breaks are the whole economic story and log compresses them away.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; text-align: center; font-weight: 600; color: var(--primary-color);">The choice depends on the question. There is no blanket rule, and anyone offering you one is selling something.</p>
+      </div>
+      <aside class="notes">2 min. Seeds Ch 20: this same choice reappears as a modelling decision when you decide between levels and log-returns. It is the same decision wearing different clothes &mdash; here it is a presentation choice, there it is a specification choice, and in both places the justification is about the question, not the data.</aside>
+    </section>
+
+    <!-- POLL 3 STACK -->
+    <section>
+      <section id="poll-3" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: Where Is the Line?</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">A press release uses panel C &mdash; the 2015-onward window &mdash; and states: <em>&ldquo;real wages are up 9.9%.&rdquo;</em> The number is correct. The 53-year figure of +3.2% is not mentioned.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">Which verdict is defensible?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch03-econ5200-poll-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) It is a lie &mdash; the number is wrong</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) It is fine &mdash; readers should check the axis themselves</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) Defensible only if the window choice is disclosed</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) No window is ever defensible; always show everything</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. Expect the room to split A against C, and that split is the productive one &mdash; A is a moral instinct reaching for a factual verdict that is not available.</aside>
+      </section>
+      <section id="poll-3-reveal" data-poll-results="ch03-econ5200-poll-3" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: C &mdash; Disclosure Is the Hinge</h2>
+        <div class="poll-results-chart" data-poll-id="ch03-econ5200-poll-3" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">+9.9% since January 2015 is arithmetically correct. A window is a legitimate analytical choice &mdash; and an <em>undisclosed</em> window is the mechanism, because the reader cannot weigh a choice they were never shown.</p>
+          <div style="background: #fdf0ea; border-left: 4px solid var(--danger-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;"><strong>Why D is tempting and wrong:</strong> "always show everything" is unworkable &mdash; every chart is a window, and a 60-year axis would bury a genuine 2024 turning point. The obligation is to state the window and be able to defend it, not to abolish it.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- MBTA -->
+    <section id="mbta-goodhart" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-train-subway" style="color: var(--accent-color);"></i> Economist at Work: The Dashboard Optimises Itself</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">March 2025. The Massachusetts State Auditor reported on the MBTA's oversight of Keolis, operator of Boston's commuter rail. The public dashboards showed acceptable on-time performance. <strong>The charts were fine.</strong></p>
+        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: center; margin-top: 18px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px;">
+            <p style="font-size: 15pt; line-height: 1.6; margin: 0;">What had degraded was everything <em>not</em> on the dashboard: station repair logs, snow removal records, ADA compliance inspections. The documentation failures meant the agency did not collect the contractual penalties it was owed.</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #fdf0ea, #f8ded1); border-radius: 12px; padding: 22px; text-align: center;">
+            <p style="font-size: 32pt; font-weight: 700; color: var(--accent-color); line-height: 1;">$3.3M</p>
+            <p style="font-size: 13pt; color: #7a4a2f; margin-top: 8px;">uncollected penalties, 2020&ndash;2023</p>
+          </div>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin-top: 16px; line-height: 1.6;">This is Goodhart's Law from Chapter 2 in visual form. Scrutiny concentrated on one visualised metric; the agency optimised that metric; the un-visualised data rotted. <strong>A dashboard is only as honest as the measurement system feeding it.</strong></p>
+      </div>
+      <aside class="notes">3 min. This is the slide that connects chart ethics to institutional design, and it is why the chapter belongs in a graduate course rather than a design workshop. The failure is not that anyone drew a misleading chart. It is that choosing what to visualise <em>is</em> choosing what gets managed. Mechanism 6 &mdash; omission &mdash; operating at organisational scale.</aside>
+    </section>
+
+    <!-- DISCUSSION 2 -->
+    <section id="discussion-2" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion &mdash; Four Minutes, Pairs</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 22px 28px;">
+          <p style="font-size: 17pt; line-height: 1.6;">You are the analyst. Communications wants panel C for the press release and will not run panel A alongside it.</p>
+          <p style="font-size: 17pt; line-height: 1.6; margin-top: 12px;"><strong>(a)</strong> Write the one-sentence caption you would insist on before your name goes near it.</p>
+          <p style="font-size: 17pt; line-height: 1.6; margin-top: 8px;"><strong>(b)</strong> Name the point at which you decline &mdash; and say what makes that point a principle rather than a preference.</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">Press <strong>4</strong> to start the timer.</p>
+      </div>
+      <aside class="notes">4 min pairs, 3 min report-out. Push hard on (b). "I'd feel uncomfortable" is not an answer. A usable principle sounds like: I will present any window I can defend on the record, and I will not present a window whose selection criterion was the result it produced. That is a testable line, and it is the one that survives contact with a communications director.</aside>
+    </section>
+
+    <!-- SECTION DIVIDER 4 -->
+    <section id="divider-forensics" class="section-divider" data-state="is-section-divider">
+      <p style="font-size: 13pt; color: var(--secondary-color); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 18px;">Section Four</p>
+      <h1 style="font-size: 38pt; color: var(--primary-color); margin-bottom: 20px;">EDA as Forensics</h1>
+      <div style="width: 60px; height: 3px; background: var(--accent-color); margin: 0 auto 20px;"></div>
+      <p style="font-size: 16pt; color: var(--muted-color); font-style: italic;">Tukey called it detective work. In production it never stops running.</p>
+      <aside class="notes">12 min. Shift of register here: sections 1 to 3 were about charts you show other people. This one is about charts you show yourself, before anyone else sees anything.</aside>
+    </section>
+
+    <!-- EDA workflow -->
+    <section id="eda-workflow" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--secondary-color);"></i> Four Passes, In Order</h2>
+      <div class="content">
+        <p style="font-size: 15pt; line-height: 1.6;">Tukey coined EDA in 1977 and described it as detective work &mdash; clues, leads, hypotheses that formal analysis will later test. The order matters: each pass tells you what to look for in the next.</p>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px;">
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color);">1 &nbsp;Structure</p>
+            <p style="font-size: 14pt; margin-top: 6px;">Dimensions, types, tidiness. <code>shape</code>, <code>dtypes</code>, <code>head</code></p>
+          </div>
+          <div style="background: #fdf6ef; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--accent-color);">2 &nbsp;Distributions</p>
+            <p style="font-size: 14pt; margin-top: 6px;">Normal, skewed, bimodal? <code>hist</code>, <code>kdeplot</code></p>
+          </div>
+          <div style="background: #eef5ee; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--success-color);">3 &nbsp;Relationships</p>
+            <p style="font-size: 14pt; margin-top: 6px;">What moves with what, and how? <code>pairplot</code>, <code>corr</code></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--danger-color);">4 &nbsp;Anomalies</p>
+            <p style="font-size: 14pt; margin-top: 6px;">Missing, duplicated, impossible. <code>describe</code>, <code>duplicated</code></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Emphasise that this is not a warm-up you do before the real work. Pass 3 is what tells you whether OLS in Ch 12 is even the right object; pass 4 is what stops you fitting a model to an encoding error. Skipping EDA is how you end up fitting a line to Anscombe II.</aside>
+    </section>
+
+    <!-- Histogram vs KDE -->
+    <section id="hist-kde" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-chart-area" style="color: var(--accent-color);"></i> Both Tools Have a Dial You Chose</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f0f5f8; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--secondary-color); margin-bottom: 8px;">Histogram</p>
+            <p style="font-size: 14.5pt; line-height: 1.55;">Bins the range, counts per bin. Concrete and honest about \(n\). Its shape depends on <strong>bin width</strong> &mdash; too few and detail vanishes, too many and noise wins.</p>
+          </div>
+          <div style="background: #fdf6ef; border-radius: 12px; padding: 20px 24px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 16pt; font-weight: 700; color: var(--accent-color); margin-bottom: 8px;">Kernel density estimate</p>
+            <p style="font-size: 14.5pt; line-height: 1.55;">A kernel at every point, summed into a smooth curve. No bins &mdash; but a <strong>bandwidth</strong> instead. Narrow is noisy; wide can smooth a genuine second mode out of existence.</p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 18px 26px; margin-top: 18px;">
+          <p style="font-size: 16pt; line-height: 1.6; margin: 0;"><strong>There is no free choice here.</strong> Bin width and bandwidth are design decisions in exactly the sense the axis range was &mdash; and a bandwidth that hides bimodality is a Lie Factor you cannot compute. Plot both, and vary the dial before you believe the shape.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the slide that ties Section 4 back to Sections 2 and 3, so do not skip it for time. The through-line of the whole lecture: every visual tool has a parameter someone chose, and the professional obligation is to know which parameter you chose and why. KDE bandwidth is the sneakiest because it comes with a plausible default and no tick labels to audit it against.</aside>
+    </section>
+
+    <!-- Lab preview -->
+    <section id="lab-preview" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-flask" style="color: var(--secondary-color);"></i> Lab 3: Pipeline Health Check</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">A dataset merged from three sources: 10 countries &times; 24 years, plus what the merge did to it. Five things went wrong. Find them with EDA alone, before fitting anything.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14.5pt; margin: 0; line-height: 1.55;"><strong>Part 1</strong> &mdash; diagnose and fix five planted defects<br><strong>Part 2</strong> &mdash; build a distribution-shift detector (PSI)</p>
+          </div>
+          <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px;">
+            <p style="font-size: 14.5pt; margin: 0; line-height: 1.55;"><strong>Part 3</strong> &mdash; manual EDA against <code>ydata-profiling</code><br><strong>Part 4</strong> &mdash; ship a reusable <code>eda_utils.py</code></p>
+          </div>
+        </div>
+        <div style="background: #fdf6ef; border-radius: 10px; padding: 16px 24px; margin-top: 16px; border-left: 4px solid var(--accent-color);">
+          <p style="font-size: 14.5pt; margin: 0; line-height: 1.6;">The generator is seeded and fully synthetic &mdash; <code>np.random.seed(42)</code>, no network call, no live series. So every number below is reproducible on your machine, and none of it is a claim about any real economy.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. Say the last box out loud and mean it. The data is invented on purpose so the defects are known; that is what makes it a diagnostic exercise. Anyone who writes "GDP fell in Brazil" in their lab report has misread the entire premise.</aside>
+    </section>
+
+    <!-- Lab bugs figure -->
+    <section id="lab-bugs-figure" style="padding: 26px 44px;">
+      <h2 style="font-size: 23pt;"><i class="fa-solid fa-bug" style="color: var(--danger-color);"></i> Count the Defects. Then Count Again.</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_005_lab_bugs.png" alt="Grouped bar chart comparing rows the lab generator plants against rows actually present in the delivered frame for five bugs: negative GDP 10 planted versus 12 present, life expectancy in months 15 versus 16, duplicate country-years 20 versus 20, trade percentage encoding 40 versus 40, GDP unit mismatch 50 versus 50" style="max-height: 470px; width: auto; border-radius: 8px;">
+      </div>
+      <aside class="notes">2 min. Run this live if the room is awake &mdash; it is twelve lines. The two red numbers are the whole point of the slide and students will not spot why until you tell them.</aside>
+    </section>
+
+    <!-- Lab bugs lesson -->
+    <section id="lab-bugs-lesson" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-code-branch" style="color: var(--accent-color);"></i> Why 10 Planted Becomes 12 Found</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">The generator negates 10 GDP values, then converts 15 life expectancies to months, and <em>then</em> duplicates 20 randomly chosen rows. Some of those duplicated rows were already corrupt. The defect is copied along with the row.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px;">
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; margin: 0;">Negative GDP: <strong>10 planted, 12 present</strong></p>
+          </div>
+          <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt; margin: 0;">Life expectancy in months: <strong>15 planted, 16 present</strong></p>
+          </div>
+        </div>
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 18px 26px; margin-top: 18px;">
+          <p style="font-size: 16pt; line-height: 1.6; margin: 0;"><strong>The transferable lesson:</strong> in a real pipeline the count of corrupted rows is not the count of corrupting events. Defects propagate through joins, appends and backfills, and the multiplier is whatever the merge did. <em>Never</em> reconcile "we know about 10 bad rows" against a scan that returns 12 by assuming the scan is wrong.</p>
+        </div>
+      </div>
+      <aside class="notes">3 min. This is the graduate payoff of the lab and it is worth the time. Ask: if your upstream team tells you they injected exactly N bad records, and your audit finds N + k, what are the candidate explanations? Answers: propagation through a join, a retry that double-wrote, or your detector's threshold is catching something else. All three are worth ruling out separately, and none of them is "the audit is buggy."</aside>
+    </section>
+
+    <!-- POLL 4 STACK -->
+    <section>
+      <section id="poll-4" style="padding: 36px 50px;">
+        <h2><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary-color);"></i> Poll: The Detector Fires on Untouched Columns</h2>
+        <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 12px;">
+          <p style="font-size: 16pt; line-height: 1.6;">In Part 2 only <code>gdp</code> is shifted, by a factor of 1.3. Run PSI on all four columns against the usual 0.10 &ldquo;moderate shift&rdquo; threshold, and three untouched columns return <strong>0.092, 0.164 and 0.234</strong>.</p>
+          <p style="font-size: 16pt; font-weight: 600; margin-top: 10px;">What is the right reading?</p>
+        </div>
+        <div class="poll-grid" data-poll-id="ch03-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 15pt;">
+          <div class="poll-option" data-choice="A" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">A) The cleaning step introduced real shifts in those columns</div>
+          <div class="poll-option" data-choice="B" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">B) The threshold has no null distribution &mdash; at this \(n\), noise alone clears 0.10</div>
+          <div class="poll-option" data-choice="C" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">C) PSI is the wrong statistic; a KS test would return zero</div>
+          <div class="poll-option" data-choice="D" style="background: #f0f5f8; padding: 15px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">D) The training share is too large; use a 50/50 split</div>
+        </div>
+        <aside class="notes">1 min. Click to vote. A is the reflex of anyone who trusts a threshold they inherited, and it is the answer that gets a production team paged at 3am for nothing.</aside>
+      </section>
+      <section id="poll-4-reveal" data-poll-results="ch03-econ5200-poll-4" style="padding: 32px 50px;">
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Whose Threshold Is 0.10?</h2>
+        <div class="poll-results-chart" data-poll-id="ch03-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:170px; margin:12px 60px 22px;"></div>
+        <div style="padding: 0 50px;">
+          <p style="font-size: 15pt; line-height: 1.65;">Those three columns were never touched. With 138 training and 92 inference rows spread over 10 bins, the sampling variation in the bin proportions alone produces PSI in the low tenths. The statistic is behaving correctly; the <strong>cut-off</strong> was imported without its sample size.</p>
+          <div style="background: #eef5ee; border-left: 4px solid var(--success-color); padding: 14px 20px; border-radius: 8px; margin-top: 14px;">
+            <p style="font-size: 14pt; margin: 0;">0.10 and 0.25 are credit-scoring folklore, calibrated on populations of tens of thousands. Carried onto \(n \approx 100\) without recalibration, they are Chapter 2's base-year problem again: <strong>a default you did not choose is still a choice you own.</strong></p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- PSI figure -->
+    <section id="psi-figure" style="padding: 26px 44px;">
+      <h2 style="font-size: 23pt;"><i class="fa-solid fa-chart-simple" style="color: var(--accent-color);"></i> The Signal Is Real. So Is the Noise Floor.</h2>
+      <div class="content" style="text-align: center;">
+        <img src="figures/figure_006_psi.png" alt="Bar chart of Population Stability Index on a log scale for four columns: gdp at 2.459 far above both thresholds, population at 0.092 below the 0.10 line, life expectancy at 0.164 and trade percentage at 0.234 both between the 0.10 moderate and 0.25 significant reference lines" style="max-height: 460px; width: auto; border-radius: 8px;">
+      </div>
+      <aside class="notes">2 min. Note the log axis, and say why you chose it: gdp is more than ten times the next bar, so on a linear scale the three columns that carry the lesson would be unreadable slivers. That is a defensible use of a log scale by the criterion from Section 3 &mdash; the data spans an order of magnitude &mdash; and you should narrate the choice rather than let it pass. Practise what the lecture preaches.</aside>
+    </section>
+
+    <!-- PSI lesson -->
+    <section id="psi-lesson" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-bell" style="color: var(--danger-color);"></i> What a Usable Monitor Looks Like</h2>
+      <div class="content">
+        <p style="font-size: 15.5pt; line-height: 1.6;">The gdp shift is unmistakable at PSI 2.46 &mdash; twenty-six times the &ldquo;significant&rdquo; line. That detection is not in doubt. The problem is everything else the same rule fires on.</p>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+          <div style="background: #eef5ee; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Bootstrap the null.</strong> Resample train against train, no shift, and read off the PSI you get from noise at <em>your</em> \(n\) and bin count. That distribution is your threshold. (Ch 7.)</p>
+          </div>
+          <div style="background: #f0f5f8; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Report the value, not the verdict.</strong> &ldquo;PSI = 0.164&rdquo; survives review. &ldquo;SIGNIFICANT SHIFT&rdquo; hides the number that would have let a reader disagree.</p>
+          </div>
+          <div style="background: #fdf6ef; border-radius: 10px; padding: 15px 22px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 15pt; margin: 0;"><strong>Plot the overlay anyway.</strong> A KDE of train against inference shows you <em>where</em> the mass moved. A scalar never will &mdash; which is Anscombe, one last time, wearing production clothes.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">3 min. Land the closing callback deliberately: PSI is a summary statistic, so everything Section 1 said about summary statistics applies to it. Two very different drifts &mdash; a uniform level shift and a new mode appearing in one tail &mdash; can return the same PSI. The overlay plot is the Anscombe diagnostic for distribution monitoring, and it costs one line.</aside>
+    </section>
+
+    <!-- DISCUSSION 3 -->
+    <section id="discussion-3" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Discussion &mdash; Four Minutes, Table Groups</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 22px 28px;">
+          <p style="font-size: 17pt; line-height: 1.6;">You own the daily monitor for a pipeline feeding a deployed model. The inherited rule is &ldquo;alert if PSI &gt; 0.10 on any column.&rdquo;</p>
+          <p style="font-size: 17pt; line-height: 1.6; margin-top: 12px;"><strong>(a)</strong> Write the rule you would actually deploy, given what you have just seen.</p>
+          <p style="font-size: 17pt; line-height: 1.6; margin-top: 8px;"><strong>(b)</strong> Your rule will fire less often. Justify that to a risk officer who reads fewer alerts as less safety.</p>
+        </div>
+        <p style="font-size: 14pt; margin-top: 16px; color: var(--muted-color); font-style: italic;">Press <strong>4</strong> to start the timer.</p>
+      </div>
+      <aside class="notes">4 min groups, 3 min report-out. Part (b) is the one that separates this from an undergraduate answer. The argument a risk officer will accept: a monitor that fires on noise gets muted within a fortnight, and a muted monitor has a true-positive rate of zero. Fewer, calibrated alerts is the safer system, not the laxer one. Harvest at least one group's exact wording &mdash; they will need it in the midterm memo.</aside>
+    </section>
+
+    <!-- Key takeaways -->
+    <section id="key-takeaways" style="padding: 34px 55px;">
+      <h2><i class="fa-solid fa-key" style="color: var(--accent-color);"></i> Five Things to Keep</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">1</p>
+            <p style="font-size: 15pt;">Summary statistics are a <strong>lossy compression</strong>. Anscombe and the Datasaurus prove the preimage is rich. Plot first, summarise second.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--accent-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color);">2</p>
+            <p style="font-size: 15pt;">The <strong>Lie Factor</strong> makes distortion a computed number you can put in a memo: visual effect over data effect, both as proportions.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--success-color);">3</p>
+            <p style="font-size: 15pt;">Six mechanisms. Three are geometric and a ruler catches them; <strong>mislabelling and omission it does not.</strong></p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--danger-color);">4</p>
+            <p style="font-size: 15pt;">Truncation, windows and log scales are <strong>defensible or not by the question</strong>, never by a blanket rule. Disclosure is the floor.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: #f8f6f3; border-radius: 8px; padding: 13px 20px; border-left: 4px solid var(--secondary-color);">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color);">5</p>
+            <p style="font-size: 15pt;">EDA is a <strong>four-pass workflow</strong>, and in production it never stops &mdash; with thresholds you calibrate rather than inherit.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">2 min. If you are running behind, this slide alone can carry the close &mdash; drop the exit ticket to a one-line verbal prompt and keep 4 and 5, which are the two the midterm assesses.</aside>
+    </section>
+
+    <!-- Exit ticket -->
+    <section id="exit-ticket" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-ticket" style="color: var(--secondary-color);"></i> Exit Ticket</h2>
+      <div class="content">
+        <div style="background: #f8f6f3; border-radius: 12px; padding: 24px 30px;">
+          <p style="font-size: 17pt; line-height: 1.6;">Find one chart published in the last month &mdash; news article, corporate report, government dashboard. On one page:</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+            <p style="font-size: 16pt; margin: 0;"><strong>(a)</strong> Name which of the six mechanisms it uses, or state that it uses none.</p>
+            <p style="font-size: 16pt; margin: 0;"><strong>(b)</strong> Estimate its Lie Factor, showing both inputs.</p>
+            <p style="font-size: 16pt; margin: 0;"><strong>(c)</strong> Name the one design change that would do the most to fix it &mdash; and say what that change costs the chart.</p>
+          </div>
+        </div>
+        <p style="font-size: 14.5pt; margin-top: 16px; line-height: 1.6;">Part (c) is the graded half. Every fix has a price &mdash; a zero baseline can bury a real movement, a full window can hide a turning point. An analyst who cannot name the cost of their own recommendation has not finished thinking.</p>
+      </div>
+      <aside class="notes">2 min to brief. Due before the next session. Say explicitly that "it uses none" is an acceptable and sometimes correct answer to (a) &mdash; otherwise you will receive thirty forced accusations against thirty innocent charts, which is its own failure of judgement.</aside>
+    </section>
+
+    <!-- Looking ahead -->
+    <section id="looking-ahead" style="padding: 36px 60px;">
+      <h2><i class="fa-solid fa-forward" style="color: var(--accent-color);"></i> Where This Goes</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 130px 1fr; gap: 16px; align-items: center; background: #f0f5f8; border-radius: 10px; padding: 14px 22px;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Chapter 4</p>
+            <p style="font-size: 14.5pt;">The skew you just saw in a histogram becomes a formal problem: when the mean stops being a usable summary, and what replaces it.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 130px 1fr; gap: 16px; align-items: center; background: #f0f5f8; border-radius: 10px; padding: 14px 22px;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Chapter 7</p>
+            <p style="font-size: 14.5pt;">Mechanism 6 gets its remedy. Bootstrap intervals &mdash; and the null distribution that turns an inherited PSI threshold into a calibrated one.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 130px 1fr; gap: 16px; align-items: center; background: #f0f5f8; border-radius: 10px; padding: 14px 22px;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Chapter 12</p>
+            <p style="font-size: 14.5pt;">Every regression opens with a scatter. Anscombe is the standing warning about what skipping it costs.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 130px 1fr; gap: 16px; align-items: center; background: #f0f5f8; border-radius: 10px; padding: 14px 22px;">
+            <p style="font-size: 15pt; font-weight: 700; color: var(--secondary-color);">Chapter 20</p>
+            <p style="font-size: 14.5pt;">Linear against log stops being a presentation choice and becomes a specification choice &mdash; same decision, higher stakes.</p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 18px; text-align: center; color: var(--primary-color); font-weight: 600; font-style: italic;">Read Chapter 4 before next session. Lab 3 is due Friday.</p>
+      </div>
+      <aside class="notes">1 min. Close on the Ch 7 line if you can &mdash; it is the promise that today's unsatisfying answer ("calibrate it yourself") has a concrete method four weeks out.</aside>
+    </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: true,
+      hash: true,
+      transition: 'fade',
+      transitionSpeed: 'default',
+      center: false,
+      autoAnimateDuration: 0.6,
+      autoAnimateEasing: 'ease-out',
+      pdfSeparateFragments: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+
+  <!-- Countdown Timer (press 1-9 to start N-minute countdown) -->
+  <style>
+    .cd-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .cd-wrap.visible{transform:translateX(-50%) translateY(0)}
+    .cd-wrap.hiding{transform:translateX(-50%) translateY(-100%)}
+    .cd-pill{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1e3a5f,#2a5a8a);color:#fff;padding:10px 24px;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:'SF Mono',Menlo,monospace;pointer-events:auto}
+    .cd-pill .cd-time{font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center}
+    .cd-pill .cd-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px}
+    .cd-pill .cd-bar{width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .cd-pill .cd-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 1s linear,background-color .5s}
+    .cd-pill.cd-warn{background:linear-gradient(135deg,#854d0e,#a16207)}.cd-pill.cd-warn .cd-fill{background:#fbbf24}
+    .cd-pill.cd-danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.cd-pill.cd-danger .cd-fill{background:#ef4444}
+    .cd-pill.cd-done{animation:cdF .5s ease 3;background:linear-gradient(135deg,#166534,#22c55e)}
+    @keyframes cdF{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.05)}}
+  </style>
+  <div class="cd-wrap" id="cd-wrap"><div class="cd-pill" id="cd-pill"><div><div class="cd-label">Activity Timer</div><div class="cd-time" id="cd-time">0:00</div></div><div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div></div></div>
+  <script>
+  (function(){
+    var w=document.getElementById('cd-wrap'),p=document.getElementById('cd-pill'),t=document.getElementById('cd-time'),f=document.getElementById('cd-fill');
+    var iv=null,total=0,rem=0,vis=false;
+    function upd(){var m=Math.floor(rem/60),s=rem%60;t.textContent=m+':'+(s<10?'0':'')+s;f.style.width=(total>0?((total-rem)/total)*100:0)+'%';}
+    function show(){vis=true;w.classList.add('visible');w.classList.remove('hiding');}
+    function hide(){vis=false;w.classList.remove('visible');w.classList.add('hiding');}
+    function done(){p.classList.remove('cd-warn','cd-danger');p.classList.add('cd-done');t.textContent='0:00';f.style.width='100%';
+      try{var c=new(window.AudioContext||window.webkitAudioContext);[0,.25,.5].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type='sine';g.gain.value=.3;o.start(c.currentTime+d);o.stop(c.currentTime+d+.15);});}catch(e){}
+      setTimeout(function(){if(p.classList.contains('cd-done')){hide();setTimeout(function(){p.classList.remove('cd-done');},500);}},5000);}
+    function start(min){
+      if(iv&&vis&&total===min*60){if(vis)hide();else show();return;}
+      clearInterval(iv);total=min*60;rem=total;p.classList.remove('cd-warn','cd-danger','cd-done');upd();show();
+      iv=setInterval(function(){rem--;if(rem<=0){rem=0;clearInterval(iv);iv=null;upd();done();return;}upd();
+        var pct=rem/total;if(pct<=.15){p.classList.add('cd-danger');p.classList.remove('cd-warn');}else if(pct<=.33){p.classList.add('cd-warn');p.classList.remove('cd-danger');}},1000);}
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key>='1'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){start(parseInt(e.key));}
+    });
+  })();
+  </script>
+
+  <!-- Live Polling via Supabase (students click to vote, results on reveal slide) -->
+  <style>
+    .poll-option:hover{background:#dbeafe!important;border-color:#3b82f6!important}
+    .poll-option.voted{background:#dbeafe!important;border-color:#2563eb!important;font-weight:600}
+    .poll-option.voted::after{content:" \2713";color:#2563eb}
+    .poll-option.disabled{pointer-events:none;opacity:.6}
+    .poll-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+    .poll-bar{width:60px;border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+    .poll-bar-label{font-size:13px;font-weight:700;margin-top:6px}
+    .poll-bar-count{font-size:20px;font-weight:700;margin-bottom:4px}
+    .poll-vote-count{text-align:center;font-size:13px;color:#888;margin-top:10px}
+    .reset-btn{display:none}body.instructor-mode .reset-btn{display:inline-block}
+  </style>
+  <script>
+  (function(){
+    var SU="https://dpntbrsorgbivmntwmod.supabase.co",SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZtbnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0.7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI";
+    var VID="v_"+Math.random().toString(36).slice(2,10),voted={},CL={A:"#3b82f6",B:"#22c55e",C:"#f97316",D:"#a855f7"};
+    if(window.location.search.indexOf("instructor")!==-1)document.body.classList.add("instructor-mode");
+    function sf(m,p,b){var o={method:m,headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Cache-Control":"no-cache, no-store","Pragma":"no-cache"}};if(b)o.body=JSON.stringify(b);return fetch(SU+"/rest/v1/"+p,o);}
+    function vote(pid,ch){if(voted[pid])return;voted[pid]=ch;var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.add("disabled");if(o.dataset.choice===ch)o.classList.add("voted");});sf("POST","poll_votes",{poll_id:pid,choice:ch,voter_id:VID}).then(function(){fetchR(pid);});}
+    function render(pid,ct){var t=0,ch=["A","B","C","D"];ch.forEach(function(k){t+=(ct[k]||0);});var c=document.querySelector('.poll-results-chart[data-poll-id="'+pid+'"]');if(c){var mx=Math.max.apply(null,ch.map(function(k){return ct[k]||0;}));if(mx===0)mx=1;var h="";ch.forEach(function(k){var n=ct[k]||0,ht=Math.max(4,(n/mx)*140);h+='<div class="poll-bar-wrap"><div class="poll-bar-count">'+n+'</div><div class="poll-bar" style="height:'+ht+'px;background:'+CL[k]+';"></div><div class="poll-bar-label">'+k+'</div></div>';});if(t>0)h+='<div style="position:absolute;bottom:-25px;width:100%;text-align:center;font-size:12px;color:#888;">'+t+' votes</div>';c.style.position="relative";c.innerHTML=h;}var ce=document.querySelector('.poll-vote-count[data-poll-id="'+pid+'"]');if(ce)ce.textContent=t>0?t+" vote"+(t!==1?"s":"")+" so far":"";}
+    function fetchR(pid){sf("GET","poll_votes?poll_id=eq."+pid+"&select=choice").then(function(r){return r.json();}).then(function(rows){var ct={};rows.forEach(function(r){ct[r.choice]=(ct[r.choice]||0)+1;});render(pid,ct);}).catch(function(){});}
+    window.clearPoll=function(pid){if(!confirm("Clear all votes?"))return;sf("DELETE","poll_votes?poll_id=eq."+pid).then(function(){render(pid,{});delete voted[pid];var g=document.querySelector('.poll-grid[data-poll-id="'+pid+'"]');if(g)g.querySelectorAll(".poll-option").forEach(function(o){o.classList.remove("disabled","voted");});});};
+    document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){vote(pid,o.dataset.choice);});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){fetchR(pid);},2000);});
+  })();
+  </script>
+</body>
+</html>
