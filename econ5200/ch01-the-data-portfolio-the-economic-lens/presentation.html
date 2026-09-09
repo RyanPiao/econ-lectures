@@ -1327,7 +1327,35 @@ df.groupby("date")["name"].nunique()   # if min &lt;&lt; max, the panel is unbal
             <img src="figures/figure_004_panel-completeness.png" alt="Countries reporting to the Big Mac Index each period from 2000 to 2026, growing from 28 to about 55, with Russia's final observation marked in early 2022" style="max-height:500px;object-fit:contain;">
           </div>
         </section>
+
+      
+
+      
       </section>
+
+      <!-- ===== ADDED 2026-09-09 - uses figure_003, which was sitting unused in figures/ ===== -->
+      <section id="missing-heatmap">
+        <h2>The Gaps Have Structure</h2>
+        <div class="content" style="justify-content:center;">
+          <img src="figures/figure_003_missing-data-heatmap.png" alt="Data availability by country and year for the Big Mac Index: white cells are observed, dark cells are missing, with Russia's exit after 2022 annotated" style="max-height:470px;object-fit:contain;">
+          <p style="font-size:15pt;line-height:1.55;margin-top:10px;">Dark cells are <strong>missing</strong>, white cells observed. Look at the shapes: Colombia and Nigeria are absent for a solid decade, India for its first four years, Russia from 2022 on. <strong>None of that is random.</strong> Each block has a different cause, and only one of them is safe to ignore.</p>
+        </div>
+      </section>
+
+      <section data-ported="3916-ch01" id="unbalanced" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-scale-unbalanced" style="color: var(--accent-color);"></i> 32 of 57 Countries Have Incomplete Panels</h2>
+      <div class="content">
+        <pre><code class="language-python">max_periods = df["date"].nunique()                 # 45
+counts      = df.groupby("name")["date"].count()
+incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code></pre>
+        <p style="font-size: 15pt; line-height: 1.6; margin-top: 16px;">Remember 57 &times; 45 = 2,565 possible rows against 2,056 actual ones. This is where those 509 missing cells live.</p>
+        <div class="fragment fade-up" style="background: #fdf0ec; border-left: 4px solid var(--danger-color); padding: 15px 22px; border-radius: 8px; margin-top: 14px;">
+          <p style="font-size: 16pt;">Drop every incomplete country and you are left with the economies that a Western fast-food chain has covered continuously for 25 years. That is <strong>not a random sample of the world</strong> &mdash; it biases every average you compute toward stable, open, high-income markets.</p>
+        </div>
+      </div>
+      <aside class="notes">2 min. This is the payoff of the "hold that" from the Big Mac shape slide. The fragment is the important half: dropping incomplete cases is not neutral, and "I dropped the NaNs" is not a methods section.</aside>
+    </section>
+
 
       <section id="missing-rubin">
           <h2>Rubin (1976): Three Mechanisms</h2>
@@ -1392,6 +1420,25 @@ df.groupby("date")["name"].nunique()   # if min &lt;&lt; max, the panel is unbal
             <img src="figures/figure_005_missingness-decision-tree.png" alt="Decision tree: does missingness depend on any variable, then on the missing value itself, yielding MCAR, MAR or MNAR" style="max-height:500px;object-fit:contain;">
           </div>
         </section>
+
+      <section data-ported="3916-ch01" id="drill" style="padding: 30px 55px;">
+      <h2><i class="fa-solid fa-list-ol" style="color: var(--success-color);"></i> Classify These Three</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 13px; margin-top: 4px;">
+          <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            <p style="font-size: 15pt;">A country's early rows are absent because <em>The Economist</em> only began surveying it in 2011. <span class="fragment fade-in" style="font-weight: 700; color: var(--success-color);">&rarr; MCAR with respect to valuation &mdash; the start date has nothing to do with the price.</span></p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;">Venezuela's gaps during hyperinflation, when a dollar price was not meaningfully measurable. <span class="fragment fade-in" style="font-weight: 700; color: var(--danger-color);">&rarr; MNAR &mdash; the gap is caused by the extreme value it would have held.</span></p>
+          </div>
+          <div style="background: #f0f5f8; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+            <p style="font-size: 15pt;">Russia, after February 2022. <span class="fragment fade-in" style="font-weight: 700; color: var(--danger-color);">&rarr; MNAR &mdash; the cause of the gap is the thing the data measures.</span></p>
+          </div>
+        </div>
+        <p style="font-size: 15pt; margin-top: 16px; text-align: center;">You can never see the missing values. You can always reason about <strong>how the data came to be</strong> &mdash; and that reasoning is the job.</p>
+      </div>
+      <aside class="notes">2 min. Take each one cold before revealing the fragment. The Venezuela case is the hardest and the most useful: the value is missing precisely because it was extreme, which is the cleanest MNAR intuition students will get.</aside>
+    </section>
 
 
       <section id="missing-ons">
