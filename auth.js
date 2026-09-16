@@ -78,8 +78,8 @@ window.CCGate = (function () {
     const done = (data) => { host.remove(); onUnlock(data); };
 
     (async () => {
-      const saved = store.get(KEY);
-      if (saved) {
+      const saved = (store.get(KEY) || "").trim();
+      if (saved && window.crypto && crypto.subtle) {
         try { return done(await decrypt(payload, saved)); }
         catch (e) { store.del(KEY); }
       }
@@ -89,17 +89,28 @@ window.CCGate = (function () {
 
     document.getElementById("cc-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const v = document.getElementById("cc-pass").value;
-      msg().textContent = "Checking…";
-      try {
-        const data = await decrypt(payload, v);
-        await remember(v);
-        done(data);
-      } catch (err) {
-        msg().textContent = "Incorrect passphrase.";
-        document.getElementById("cc-pass").value = "";
-        document.getElementById("cc-pass").focus();
+      // Trim: copying a passphrase out of a chat or doc often brings a
+      // trailing space along, which is invisible and fails decryption.
+      const v = document.getElementById("cc-pass").value.trim();
+      if (!(window.crypto && crypto.subtle)) {
+        msg().textContent = "This page needs https — open it at https://ryanpiao.github.io/econ-lectures/";
+        return;
       }
+      msg().textContent = "Checking…";
+      let data;
+      try {
+        data = await decrypt(payload, v);
+      } catch (err) {
+        // AES-GCM reports a wrong key as OperationError. Anything else is a
+        // browser problem, and saying "incorrect passphrase" would mislead.
+        msg().textContent = err && err.name === "OperationError"
+          ? "Incorrect passphrase."
+          : "Could not unlock (" + (err && err.name) + ": " + (err && err.message) + ")";
+        document.getElementById("cc-pass").select();
+        return;
+      }
+      await remember(v);
+      done(data);
     });
   }
 
