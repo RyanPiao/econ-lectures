@@ -2819,7 +2819,7 @@
 })();
 </script>
 
-<!-- presenter-gate v3 -->
+<!-- presenter-gate v4 -->
 <script>
 (function () {
   var q = location.search;
@@ -2868,7 +2868,28 @@
   function fireKey(key) {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
   }
+  var CTL = 'input, select, textarea, button';
+  function here() { var i = Reveal.getIndices(); return { h: i.h, v: i.v || 0 }; }
   function speakerSide() {
+    // controls: the preview keeps its own state and the projected slide gets the same change
+    function ctl(ev) {
+      var e = ev.target.closest && ev.target.closest(CTL), sl = Reveal.getCurrentSlide();
+      if (!ev.isTrusted || !e || !sl || !sl.contains(e)) return;
+      if (ev.type === 'click' && e.tagName !== 'BUTTON') return;
+      var at = here();
+      toMain({ bridge: 'ctl', h: at.h, v: at.v, idx: [].indexOf.call(sl.querySelectorAll(CTL), e),
+               kind: ev.type, value: e.value, checked: e.checked });
+    }
+    document.addEventListener('input', ctl, true);
+    document.addEventListener('change', ctl, true);
+    document.addEventListener('click', ctl, true);
+    // a video: play it on the projector, not in the preview
+    document.addEventListener('click', function (ev) {
+      var f = ev.target.closest && ev.target.closest('.yt-facade');
+      if (!f || ev.target.closest('a')) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var at = here(); toMain({ bridge: 'yt', h: at.h, v: at.v });
+    }, true);
     document.addEventListener('mousemove', function (ev) { var p = slideXY(ev); toMain({ bridge: 'laser', x: p.x, y: p.y }); });
     document.addEventListener('mouseleave', function () { toMain({ bridge: 'laser', hide: true }); });
     // a digit pressed with the preview focused: its own timer runs here; start the projected one too
@@ -2895,6 +2916,27 @@
       var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
       if (!d || !d.bridge) return;
       if (d.bridge === 'timer') { fireKey(d.key); return; }
+      if (d.bridge === 'ctl' || d.bridge === 'yt') {
+        var at = here(), sl = Reveal.getCurrentSlide();
+        if (!sl || at.h !== d.h || at.v !== d.v) return;      // the two windows are on different slides
+        if (d.bridge === 'yt') {
+          var f = sl.querySelector('.yt-facade');
+          if (f) { f.click(); return; }
+          var yt = sl.querySelector('iframe[src*="youtube"]');
+          if (yt && yt.contentWindow) {
+            yt.dataset.tiPaused = yt.dataset.tiPaused === '1' ? '0' : '1';
+            yt.contentWindow.postMessage(JSON.stringify({ event: 'command',
+              func: yt.dataset.tiPaused === '1' ? 'pauseVideo' : 'playVideo', args: [] }), '*');
+          }
+          return;
+        }
+        var e = sl.querySelectorAll(CTL)[d.idx];
+        if (!e) return;
+        if (d.kind === 'click') { e.click(); return; }
+        if (e.type === 'checkbox' || e.type === 'radio') e.checked = d.checked; else e.value = d.value;
+        e.dispatchEvent(new Event(d.kind, { bubbles: true }));
+        return;
+      }
       if (d.bridge === 'laser') {
         if (d.hide) { dot.style.display = 'none'; return; }
         var r = document.querySelector('.reveal .slides').getBoundingClientRect(), k = Reveal.getScale();
