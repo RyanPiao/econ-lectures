@@ -1543,7 +1543,7 @@
     border-radius: 7px; padding: 5px 13px; }
   .inc-preset:hover { background: var(--secondary-color); color: #fff; }
 </style>
-<!-- presenter-gate v2 -->
+<!-- presenter-gate v3 -->
 <script>
 (function () {
   var q = location.search;
@@ -1583,7 +1583,10 @@
     return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k };
   }
   function toMain(msg) {
-    try { var m = window.parent && window.parent.opener; if (m) m.postMessage(JSON.stringify(msg), location.origin); } catch (e) {}
+    // a deck opened as a local file has an opaque origin ("null" or "file://") that
+    // postMessage cannot target, so local files send to "*" (the receiver still checks)
+    var target = (location.protocol === 'file:' || !location.origin || location.origin === 'null') ? '*' : location.origin;
+    try { var m = window.parent && window.parent.opener; if (m) m.postMessage(JSON.stringify(msg), target); } catch (e) {}
   }
   function isDigit(code) { return code >= 49 && code <= 57; }
   function fireKey(key) {
@@ -1612,7 +1615,7 @@
       'z-index:10000;display:none';
     document.body.appendChild(dot);
     window.addEventListener('message', function (ev) {
-      if (ev.origin !== location.origin) return;
+      if (ev.origin !== location.origin && location.protocol !== 'file:') return;
       var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
       if (!d || !d.bridge) return;
       if (d.bridge === 'timer') { fireKey(d.key); return; }
@@ -1626,7 +1629,16 @@
     });
   }
 
+  function tallOnce() {                   // speaker view opens in Tall the first time; after that, your choice sticks
+    try {
+      if (!localStorage.getItem('ti-speaker-tall')) {
+        localStorage.setItem('reveal-speaker-layout', 'tall');
+        localStorage.setItem('ti-speaker-tall', '1');
+      }
+    } catch (e) {}
+  }
   function start() {
+    if (on && !receiver) tallOnce();
     if (on) loadNotes();
     if (current) speakerSide();
     else if (on && !receiver) mainSide();

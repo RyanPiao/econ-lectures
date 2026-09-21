@@ -2043,10 +2043,13 @@ REVEAL 3 is the honest caveat and the handoff. What the room just performed was 
  })();
 </script>
 
-<!-- presenter-gate v1 -->
+<!-- presenter-gate v3 -->
 <script>
 (function () {
-  var on = /[?&]presenter(&|=|$)/.test(location.search);
+  var q = location.search;
+  var on = /[?&]presenter(&|=|$)/.test(q);
+  var receiver = /[?&]receiver(&|$)/.test(q);            // a speaker-view preview iframe
+  var current = receiver && /postMessageEvents=true/.test(q);   // the CURRENT-slide preview, not "upcoming"
   var NAME = /^\s*Dr\.?\s+Richeng\b[^\n]{0,20}\bPiao\b/;
   function notes() { return Reveal.getPlugin && Reveal.getPlugin('notes'); }
   function loadNotes() {
@@ -2061,13 +2064,11 @@ REVEAL 3 is the honest caveat and the handoff. What the room just performed was 
     var els = document.querySelectorAll('.reveal .slides p, .reveal .slides h1, .reveal .slides h2, .reveal .slides h3, .reveal .slides div, .reveal .slides span');
     [].forEach.call(els, function (e) {
       if (e.children.length || !NAME.test(e.textContent)) return;
-      e.title = '';
       e.addEventListener('dblclick', function (ev) {
         ev.preventDefault();
         if (window.getSelection) window.getSelection().removeAllRanges();
         if (!on) {
-          var q = location.search ? location.search + '&presenter' : '?presenter';
-          location.href = location.pathname + q + location.hash;
+          location.href = location.pathname + (q ? q + '&presenter' : '?presenter') + location.hash;
         } else {
           var n = notes();
           if (n && n.open) n.open();
@@ -2075,7 +2076,74 @@ REVEAL 3 is the honest caveat and the handoff. What the room just performed was 
       });
     });
   }
-  function start() { if (on) loadNotes(); wire(); }
+
+  // ---- bridge: speaker view -> projected window (pointer + activity timer) ----
+  function slideXY(ev) {                   // pointer in slide units (1280 x 720), whatever the scale
+    var r = document.querySelector('.reveal .slides').getBoundingClientRect(), k = Reveal.getScale();
+    return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k };
+  }
+  function toMain(msg) {
+    // a deck opened as a local file has an opaque origin ("null" or "file://") that
+    // postMessage cannot target, so local files send to "*" (the receiver still checks)
+    var target = (location.protocol === 'file:' || !location.origin || location.origin === 'null') ? '*' : location.origin;
+    try { var m = window.parent && window.parent.opener; if (m) m.postMessage(JSON.stringify(msg), target); } catch (e) {}
+  }
+  function isDigit(code) { return code >= 49 && code <= 57; }
+  function fireKey(key) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
+  }
+  function speakerSide() {
+    document.addEventListener('mousemove', function (ev) { var p = slideXY(ev); toMain({ bridge: 'laser', x: p.x, y: p.y }); });
+    document.addEventListener('mouseleave', function () { toMain({ bridge: 'laser', hide: true }); });
+    // a digit pressed with the preview focused: its own timer runs here; start the projected one too
+    document.addEventListener('keydown', function (e) {
+      if (e.isTrusted && e.key >= '1' && e.key <= '9' && !e.metaKey && !e.ctrlKey && !e.altKey) toMain({ bridge: 'timer', key: e.key });
+    });
+    // a digit pressed over the notes: reveal forwards it as triggerKey, which the timer never sees
+    window.addEventListener('message', function (ev) {
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d && d.method === 'triggerKey' && isDigit(d.args && d.args[0])) {
+        var key = String.fromCharCode(d.args[0]);
+        fireKey(key); toMain({ bridge: 'timer', key: key });
+      }
+    });
+  }
+  function mainSide() {
+    var dot = document.createElement('div'), idle = null;
+    dot.style.cssText = 'position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;' +
+      'background:rgba(220,38,38,.85);box-shadow:0 0 12px 4px rgba(220,38,38,.55);pointer-events:none;' +
+      'z-index:10000;display:none';
+    document.body.appendChild(dot);
+    window.addEventListener('message', function (ev) {
+      if (ev.origin !== location.origin && location.protocol !== 'file:') return;
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (!d || !d.bridge) return;
+      if (d.bridge === 'timer') { fireKey(d.key); return; }
+      if (d.bridge === 'laser') {
+        if (d.hide) { dot.style.display = 'none'; return; }
+        var r = document.querySelector('.reveal .slides').getBoundingClientRect(), k = Reveal.getScale();
+        dot.style.left = (r.left + d.x * k) + 'px'; dot.style.top = (r.top + d.y * k) + 'px';
+        dot.style.display = 'block';
+        clearTimeout(idle); idle = setTimeout(function () { dot.style.display = 'none'; }, 2500);
+      }
+    });
+  }
+
+  function tallOnce() {                   // speaker view opens in Tall the first time; after that, your choice sticks
+    try {
+      if (!localStorage.getItem('ti-speaker-tall')) {
+        localStorage.setItem('reveal-speaker-layout', 'tall');
+        localStorage.setItem('ti-speaker-tall', '1');
+      }
+    } catch (e) {}
+  }
+  function start() {
+    if (on && !receiver) tallOnce();
+    if (on) loadNotes();
+    if (current) speakerSide();
+    else if (on && !receiver) mainSide();
+    if (!receiver) wire();
+  }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
 })();
 </script>
