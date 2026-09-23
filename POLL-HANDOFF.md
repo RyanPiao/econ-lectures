@@ -140,7 +140,34 @@ Ungated, every deck refreshes every poll every 2 s forever, on screen or not.
 | 80 students, semester | 685 MB | 274 MB |
 
 **Keep your 2 s.** The gate does ~98% of the work; the interval is not the
-lever. A student's own chart refreshes immediately anyway — the vote POST
+lever.
+
+Measured by 5200 Producer on `econ5200/ch03` (4 grids), requests per 10 s:
+
+| position | before | after |
+|---|---|---|
+| on the poll sub-slide | 20 | 5 |
+| down on the answer sub-slide | 20 | 0 |
+| parked twenty slides away | 20 | 0 |
+
+Note the multi-grid case beats the single-poll arithmetic: even standing ON the
+poll, three idle grids go quiet, so it is a 75% cut there as well as 100%
+everywhere else. All 26 5200 decks carrying polls are now gated (87 grids,
+`a348778`; authoring `05db4fa`).
+
+**One deck needed a different edit**, and it is the shape to watch for: an older
+generation where the interval lives in a named `startPolling(pollId)` that never
+receives the element, and which calls `fetchResults`, not `fetchR`. Both halves
+of a mechanical port miss it silently. Look the grid up by the id the function
+already holds:
+
+```js
+var g = document.querySelector('.poll-grid[data-poll-id="' + pollId + '"]');
+var sec = g && g.closest("section");
+if (sec && !sec.classList.contains("present")) return;
+```
+
+Grep for the call-site shape across every deck BEFORE starting, not on deck 19. A student's own chart refreshes immediately anyway — the vote POST
 chains `.then(function(){ fetchR(pid); })` — so the interval only governs how
 fast the *projected* tally catches up.
 
@@ -251,20 +278,22 @@ So 2316 keeps four files per deck by design, while **3916 and 5200 keep only
 `~/econ-lectures`. A T4 authoring folder with no `index.html` is therefore
 CORRECT, not a defect. I previously called it incomplete; that was wrong.
 
-The single `index.html` each of 3916 and 5200 has is an anomaly, both from the
-bulk commit `3d180de`, and both went stale because nothing maintains them:
+The single `index.html` each of 3916 and 5200 has is an anomaly, and both went
+stale because nothing maintains them. **They are not the same case, and the
+remedy differs** — corrected after 3916 Producer and 5200 Producer each checked
+their own tree:
 
-- **econ5200** `ch03-econ5200-eda-…/index.html` — was two generations behind.
-  5200 Producer synced it to `3218839` and pushed `36142eb`.
-- **econ3916** `ch03-econ3916-eda-…/index.html` — **still stale as of this
-  writing**: 250,687 B against the repo's 276,757 B, and **0 `data-notes`
-  against the repo's 44**, i.e. missing every step note. Anyone opening that
-  file to present gets a deck that does not match Pages. This is the 3916
-  session's tree to fix.
+| | 5200 `ch03-econ5200-eda-…/index.html` | 3916 `ch03-econ3916-eda-…/index.html` |
+|---|---|---|
+| git | **tracked** | **untracked** (`git status` shows `??`) |
+| travels by | git | Resilio only — exists on this machine |
+| was | two generations behind | 250,687 B vs repo 276,757 B; **0 `data-notes` vs 44** |
+| remedy | **sync** — done, `3218839` → `36142eb` | **delete** — still present |
 
-Both probably want deleting rather than maintaining, so the courses are
-internally consistent. That is Ryan's call; they are harmless in the meantime
-as long as nobody presents from them.
+A tracked stale copy wants syncing; an untracked one wants deleting. Neither is
+"an incomplete pair", which is how I first wrote this up and it was wrong on
+both counts. Deleting the 3916 one is Ryan's call; it is harmless meanwhile as
+long as nobody presents from it.
 
 ## 10. Before you finish: run the step-notes checker
 
