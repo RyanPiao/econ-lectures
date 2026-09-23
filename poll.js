@@ -413,8 +413,24 @@
     return out;
   }
 
+  // Polls whose VOTING GRID is on screen. Deliberately narrower than
+  // pollIdsOnCurrentSlide(): the answer/reveal sub-slide also carries
+  // data-poll-id (on its results chart), and treating that as "still here"
+  // kept voting open while the correct answer was projected. Advancing to the
+  // reveal must close the poll.
+  function votingPollsHere() {
+    var sec = document.querySelector("section.present");
+    if (!sec) return [];
+    var out = [];
+    [].forEach.call(sec.querySelectorAll(".poll-grid[data-poll-id]"), function (e) {
+      var id = e.getAttribute("data-poll-id");
+      if (id && out.indexOf(id) < 0) out.push(id);
+    });
+    return out;
+  }
+
   function onSlideChanged() {
-    var here = pollIdsOnCurrentSlide();
+    var here = votingPollsHere();
 
     // Arriving at a poll slide does NOT open it. You open it when you are
     // ready -- press "o", or the button in speaker view. Arriving only cancels
@@ -431,7 +447,7 @@
       if (openIds[id] !== true) { delete openIds[id]; return; }
       closeTimers[id] = setTimeout(function () {
         delete closeTimers[id];
-        if (pollIdsOnCurrentSlide().indexOf(id) >= 0) return;   // came back
+        if (votingPollsHere().indexOf(id) >= 0) return;   // came back
         delete openIds[id];
         closePoll(id);
       }, GRACE_MS);
