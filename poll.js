@@ -414,6 +414,12 @@
       if (openIds[id] !== true) { delete openIds[id]; return; }
       closeTimers[id] = setTimeout(function () {
         delete closeTimers[id];
+        // Re-check before closing. Reveal can fire an extra slidechanged during
+        // hash startup (deep-linking to #/poll-N), which schedules a close, and
+        // then settle back on the same slide WITHOUT firing again -- leaving a
+        // stale timer that would close a poll still on screen. Never close a
+        // poll that is currently being shown.
+        if (pollIdsOnCurrentSlide().indexOf(id) >= 0) return;
         delete openIds[id];
         closePoll(id);
       }, GRACE_MS);
