@@ -211,13 +211,27 @@
     return tag ? tag.getAttribute("src").replace(/poll\.js$/, "") : "../../";
   }
 
+  // Fetched, never <script src>. A script tag is cached by the browser, so
+  // after a passphrase rotation the page keeps the OLD payload and the correct
+  // passphrase can never open it -- silently, because the projector suppresses
+  // every message. no-store is the whole point of this function.
+  function loadPayload() {
+    return fetch(base() + "poll-secret.js", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.text() : null; })
+      .then(function (t) {
+        if (!t) return null;
+        var m = t.match(/=\s*(\{[\s\S]*?\})\s*;/);
+        return m ? JSON.parse(m[1]) : null;
+      })
+      .catch(function () { return null; });
+  }
+
   function instructorSecret() {
     if (secretPromise) return secretPromise;
     secretPromise = new Promise(function (resolve) {
       if (!INSTRUCTOR || IS_FILE || !(window.crypto && crypto.subtle)) return resolve(null);
-      loadScript(base() + "poll-secret.js")
-        .then(function () {
-          var pl = window.POLL_SECRET_PAYLOAD;
+      loadPayload()
+        .then(function (pl) {
           if (!pl) return resolve(null);
           var cached = ls("cc.pass");
           if (cached) {
