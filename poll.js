@@ -563,7 +563,7 @@
     var dot = bar.querySelector("#ec-spk-dot");
     var st  = bar.querySelector("#ec-spk-state");
     var ct  = bar.querySelector("#ec-spk-count");
-    var pin = bar.querySelector('[data-a="pin"]');
+    var openBtn = bar.querySelector('[data-a="open"]');
 
     windowState(id).then(function (w) {
       var closing = !!closeTimers[id];
@@ -573,10 +573,15 @@
                                 st.textContent = "open by default \u2014 press o to take control"; }
       else                    { dot.className = "red";
                                 st.textContent = "CLOSED \u2014 press o to open"; }
-      var canOpen = (w !== "open");
-      pin.style.opacity = canOpen ? "1" : ".45";
-      pin.className     = canOpen ? "on" : "";
-    });
+      // Guarded: this lookup went stale once when the button was renamed from
+      // "pin" to "open", and the resulting null threw inside this promise on
+      // every repaint -- 124 unhandled rejections on a single deck load.
+      if (openBtn) {
+        var canOpen = (w !== "open");
+        openBtn.style.opacity = canOpen ? "1" : ".45";
+        openBtn.className     = canOpen ? "on" : "";
+      }
+    }).catch(function () {});
 
     if (!IS_FILE) {
       sf("GET", "poll_votes?poll_id=eq." + encodeURIComponent(id) + "&select=choice" + q())
