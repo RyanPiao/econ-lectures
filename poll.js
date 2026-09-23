@@ -23,6 +23,23 @@
   var K_DEVICE = "ec_device_id";
   var K_NUID   = "ec_nuid";
 
+  /* ---------- identity check-in is OPT-IN, per deck ---------- */
+  // A deck that wants the NUID check-in asks for it, either with
+  //     <script>window.POLL_CHECKIN = true;</script>   (before poll.js)
+  // or  <script src="../../poll.js" data-checkin></script>
+  //
+  // Default OFF. A course that has not asked can never prompt a student for
+  // an identifier, even if it calls Poll.ready(). Decided by Ryan 2026-09-23:
+  // 2316 opts in and keeps its participation check-in; 3916, 5200 and 1116
+  // use the Canvas quiz gated by a code read aloud, and must not be one line
+  // away from collecting IDs.
+  var CHECKIN = (function () {
+    if (window.POLL_CHECKIN === true) return true;
+    var s = document.currentScript ||
+            document.querySelector('script[src*="poll.js"]');
+    return !!(s && s.hasAttribute("data-checkin"));
+  })();
+
   var IS_FILE = (window.location.protocol === "file:");
   var qs      = new URLSearchParams(window.location.search);
 
@@ -356,6 +373,7 @@
   }
 
   function paintChip() {
+    if (!CHECKIN) return;
     var chip = document.getElementById("ec-chip");
     var n = nuid();
     if (!n) { if (chip) chip.remove(); return; }
@@ -389,7 +407,7 @@
         go();
       });
     };
-    if (nuid()) { proceed(); return; }
+    if (!CHECKIN || nuid()) { proceed(); return; }
     modal(function () { proceed(); });   // skipping still votes, just uncredited
   }
 
@@ -652,7 +670,7 @@
     openHere:   openHere,
     closeHere:  closeHere,
     closePoll:  closePoll,
-    checkIn:    function () { modal(null); },
+    checkIn:    function () { if (CHECKIN) modal(null); },
     pollIdsHere: pollIdsOnCurrentSlide,
     toast:      toast
   };
