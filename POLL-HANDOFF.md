@@ -229,23 +229,42 @@ you who wrote a change. Path and commit-message prefix are the only signals.
 
 ---
 
-## 9. Two-folder rule — and it is currently broken for your T4 decks
+## 9. Two-folder rule — and it differs by course
 
-Each deck normally lives in two places: the authoring copy under
-`econ-lecture-material/<course>/` and `~/econ-lectures/`, which is the only one
-that pushes. Both `index.html` and `presentation.html` must stay identical.
+CORRECTED 2026-09-23 after 5200 Producer checked their own tree. My first
+version of this section was wrong; here is what the filesystem actually says.
 
-Verified 2026-09-23, and you should resolve this before editing:
+The rule is that `~/econ-lectures` is the only copy that pushes, and inside it
+`index.html` and `presentation.html` must stay identical. GitHub Pages serves
+`index.html`. That part holds everywhere.
 
-- `econ3916` T3 and `econ5200` T3: authoring copy exists but **differs from the
-  repo** (e.g. econ3916 ch03: repo 276757 B, authoring 250687 B, ~104 lines
-  apart; repo is newer). Do not blindly copy either direction.
-- `econ3916` T4 and `econ5200` T4: the authoring folder has
-  **`presentation.html` but NO `index.html`**. The pair is already incomplete.
+What differs is the authoring side under `econ-lecture-material/`:
 
-GitHub Pages serves `index.html`, not `presentation.html`. Sync and push both.
+| course | authoring folders | with `index.html` | with `presentation.html` |
+|---|---|---|---|
+| `econ2316-micro-theory` | 23 | **23** | 23 |
+| `econ3916-applied-data-analytics` | 26 | **1** | 26 |
+| `econ5200-applied-data-analytics` | 27 | **1** | 27 |
 
----
+So 2316 keeps four files per deck by design, while **3916 and 5200 keep only
+`presentation.html` on the authoring side** — the two live copies sit in
+`~/econ-lectures`. A T4 authoring folder with no `index.html` is therefore
+CORRECT, not a defect. I previously called it incomplete; that was wrong.
+
+The single `index.html` each of 3916 and 5200 has is an anomaly, both from the
+bulk commit `3d180de`, and both went stale because nothing maintains them:
+
+- **econ5200** `ch03-econ5200-eda-…/index.html` — was two generations behind.
+  5200 Producer synced it to `3218839` and pushed `36142eb`.
+- **econ3916** `ch03-econ3916-eda-…/index.html` — **still stale as of this
+  writing**: 250,687 B against the repo's 276,757 B, and **0 `data-notes`
+  against the repo's 44**, i.e. missing every step note. Anyone opening that
+  file to present gets a deck that does not match Pages. This is the 3916
+  session's tree to fix.
+
+Both probably want deleting rather than maintaining, so the courses are
+internally consistent. That is Ryan's call; they are harmless in the meantime
+as long as nobody presents from them.
 
 ## 10. Before you finish: run the step-notes checker
 
@@ -262,8 +281,20 @@ Status on 2026-09-23 for the four decks in scope: **all 0 unreachable**
 (econ3916 T3/T4, econ5200 T3/T4). `econ2316/ch04` has 7 and is being handled
 separately.
 
-A warning from my own mistake: I wrote a quick checker that looked only for
-nested `aside.notes` and reported "zero across all 23 decks". It was a false
-negative — 2316 uses the `data-notes` attribute form. A second homemade version
-then over-reported 14 on `econ5200/ch03`, which their tool correctly says is 0.
-**Use their checker, not a fresh regex.**
+A warning from my own mistakes, both of which a fresh regex will repeat:
+
+1. **False negative.** My first check looked only for nested `aside.notes` and
+   reported "zero across all 23 decks". 2316 uses the `data-notes` attribute
+   form, so it could never have found anything. Check BOTH forms.
+2. **False positive.** My second version reported 14 on `econ5200/ch03`, where
+   their tool says 0. Both numbers are correct and answer different questions.
+   14 is how many non-first elements in a shared group carry a note at all — and
+   in a well-written deck every one of those is a deliberate repeat of its
+   group's line, which is exactly the pattern the fix produces. A note is only
+   *unreachable* when the later element's text DIFFERS from the first.
+   **The discriminator is the text comparison, not the presence of a note**, or
+   you cry wolf on every correctly-written deck.
+
+`data-fragment-index` is scoped per slide, not per deck — group accordingly.
+
+**Use `step_notes_check.py`, not a fresh regex.**
