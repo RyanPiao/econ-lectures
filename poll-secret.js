@@ -3,4 +3,4 @@
  * passphrase (PBKDF2-SHA256 600000 -> AES-GCM), same scheme as the
  * class-console and poll-admin payloads. Safe to publish.
  */
-window.POLL_SECRET_PAYLOAD = {"salt": "Tu4XdZV5RbkVEEeLznVTWw==", "iv": "JTJNLMp3CGoEhntI", "ct": "GKwx4gAbNRJMeFmlALyDrmLJrat1LxMHnGdSLWRIc02er47Zc+AaonjkxftlRutuN/fv0vtX8TBYPA1Mud3HY3m7FABhbPMdvgAgIyym", "iter": 600000};
+window.POLL_SECRET_PAYLOAD = {"salt": "4yb/9Ouv0A0i9qhCpjwqAA==", "iv": "jfKIe8YnH1ud0+Cc", "ct": "ZOAYy8Q7g0hHIfSyuR5g9pxrUTIS/ilcnMlW+a/+JMtSDij2lfeuznuRJwakI+ZkujXOQncdnKMyKjsd1gwuyVp8ux8eomZrPiI+S3js", "iter": 600000};
