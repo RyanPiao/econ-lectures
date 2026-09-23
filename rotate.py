@@ -48,6 +48,38 @@ def encrypt(clear, p):
     return {"salt": B(salt), "iv": B(iv), "ct": B(AESGCM(key).encrypt(iv, clear, None)), "iter": ITER}
 
 
+def print_sql():
+    """--sql : re-print the SQL line for the secret ALREADY in poll-secret.js.
+
+    For when the rotation worked but its SQL never reached Supabase. This does
+    NOT mint a new secret -- it decrypts the one you already published, so the
+    file and the database end up agreeing instead of drifting further apart.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    ps = os.path.join(here, "poll-secret.js")
+    if not os.path.exists(ps):
+        sys.exit("poll-secret.js not found.")
+    pl = json.loads(re.search(r"=\s*(\{.*\});", open(ps).read(), re.S).group(1))
+    pw = ask("Instructor passphrase (the CURRENT one): ")
+    try:
+        secret = json.loads(decrypt(pl, pw))["poll_secret"]
+    except Exception:
+        sys.exit("\nThat passphrase does not open poll-secret.js.\n"
+                 "So the problem is the PASSPHRASE, not the SQL. Nothing was changed.\n"
+                 "If the current one is truly lost, the pre-rotation files are in\n"
+                 "the .rotate-backup-* directory and can be restored.")
+    print("\n  poll-secret.js opened. The passphrase is correct.\n")
+    print("=" * 72)
+    print("PASTE THIS INTO THE SUPABASE SQL EDITOR AND PRESS RUN:")
+    print("=" * 72)
+    print("insert into public.poll_secrets (k, v)")
+    print("values ('instructor', '%s')" % secret)
+    print("on conflict (k) do update set v = excluded.v;")
+    print("=" * 72)
+    print("\nNo new secret was minted and no file changed.")
+    print("Do not paste the line above into a chat -- it is the live secret.\n")
+
+
 def main():
     old = ask("CURRENT passphrase: ")
     if not old:
@@ -120,4 +152,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if "--sql" in sys.argv:
+        print_sql()
+    else:
+        main()
