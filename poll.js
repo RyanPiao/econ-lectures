@@ -22,11 +22,22 @@
 
   var K_DEVICE = "ec_device_id";
   var K_NUID   = "ec_nuid";
-  var K_PASS   = "ec_poll_pass";
 
   var IS_FILE = (window.location.protocol === "file:");
   var qs      = new URLSearchParams(window.location.search);
-  var INSTRUCTOR = qs.has("instructor");
+
+  // Which window are we? Mirrors presenter-gate v5's detection exactly.
+  //   PROJECTOR — the deck the room sees (?presenter). Owns auto open/close.
+  //   SPEAKER   — the current-slide preview INSIDE reveal's speaker view.
+  //               Renders the status bar and the manual overrides.
+  //   A student's deck is neither, so it never loads the secret and never
+  //   touches a window.
+  var Q          = location.search;
+  var PROJECTOR  = /[?&]presenter(&|=|$)/.test(Q);
+  var SPEAKER    = /[?&]receiver(&|$)/.test(Q) && /postMessageEvents=true/.test(Q);
+  var INSTRUCTOR = PROJECTOR || SPEAKER || qs.has("instructor");
+
+  var GRACE_MS = 20000;   // keep a poll open this long after leaving its slide
 
   // Feature probes — resolved once, then cached for the session.
   var hasSessionKey = null;   // null = unknown, true/false once probed
@@ -154,24 +165,104 @@
       .catch(function () { return true; });
   }
 
-  function openPoll(pollId)  { return windowRpc("open_poll", pollId); }
+  function openPoll(pollId)  { return windowRpc("open_poll",  pollId); }
   function closePoll(pollId) { return windowRpc("close_poll", pollId); }
 
-  function windowRpc(fn, pollId) {
-    var pass = ls(K_PASS);
-    if (!pass) {
-      pass = window.prompt("Instructor passphrase (stored on this device only):");
-      if (!pass) return Promise.resolve(false);
-      ls(K_PASS, pass);
-    }
-    return rpc(fn, { p_poll_id: pollId, p_session_key: sessionKey(), p_pass: pass })
-      .then(function (r) {
-        if (!r.ok) { ls(K_PASS, ""); toast("Passphrase rejected — try again."); return false; }
-        windowCache[pollId] = null;
-        toast(fn === "open_poll" ? "Voting OPEN" : "Voting closed");
-        return true;
+  /* ---------- instructor secret, via the shared CCGate passphrase ---------- */
+  // The Supabase secret is a random machine string nobody types. It lives
+  // encrypted in poll-secret.js under the SAME passphrase that unlocks
+  // /poll-admin/ and /class-console/, and CCGate caches that passphrase
+  // origin-wide as "cc.pass". So unlocking any instructor page in this
+  // browser makes this silent forever after.
+  //
+  // Silent-only on the PROJECTOR: mounting CCGate's full-screen gate there
+  // would cover the slide in front of the room. The gate is only ever shown
+  // in speaker view.
+
+  var secretPromise = null;
+
+  function b64(str) { return Uint8Array.from(atob(str), function (c) { return c.charCodeAt(0); }); }
+
+  function ccDecrypt(payload, pass) {
+    var enc = new TextEncoder();
+    return crypto.subtle
+      .importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"])
+      .then(function (base) {
+        return crypto.subtle.deriveKey(
+          { name: "PBKDF2", salt: b64(payload.salt), iterations: payload.iter, hash: "SHA-256" },
+          base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
       })
-      .catch(function () { toast("Could not reach the server."); return false; });
+      .then(function (key) {
+        return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(payload.iv) }, key, b64(payload.ct));
+      })
+      .then(function (clear) { return JSON.parse(new TextDecoder().decode(clear)); });
+  }
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var el = document.createElement("script");
+      el.src = src; el.onload = resolve; el.onerror = reject;
+      document.head.appendChild(el);
+    });
+  }
+
+  function base() {   // poll.js sits at the repo root, two levels above a deck
+    var tag = document.querySelector('script[src$="poll.js"]');
+    return tag ? tag.getAttribute("src").replace(/poll\.js$/, "") : "../../";
+  }
+
+  function instructorSecret() {
+    if (secretPromise) return secretPromise;
+    secretPromise = new Promise(function (resolve) {
+      if (!INSTRUCTOR || IS_FILE || !(window.crypto && crypto.subtle)) return resolve(null);
+      loadScript(base() + "poll-secret.js")
+        .then(function () {
+          var pl = window.POLL_SECRET_PAYLOAD;
+          if (!pl) return resolve(null);
+          var cached = ls("cc.pass");
+          if (cached) {
+            return ccDecrypt(pl, cached.trim())
+              .then(function (d) { resolve(d && d.poll_secret || null); })
+              .catch(function () { gate(pl, resolve); });      // stale passphrase
+          }
+          gate(pl, resolve);
+        })
+        .catch(function () { resolve(null); });     // no poll-secret.js yet
+    });
+    return secretPromise;
+  }
+
+  // Only reachable from speaker view / ?instructor, never from the projector.
+  function gate(payload, resolve) {
+    if (!SPEAKER && !qs.has("instructor")) return resolve(null);
+    loadScript(base() + "auth.js")
+      .then(function () {
+        if (!window.CCGate) return resolve(null);
+        window.CCGate.mount({
+          payload: payload,
+          title: "Instructor passphrase (same one as poll-admin)",
+          onUnlock: function (d) { resolve(d && d.poll_secret || null); }
+        });
+      })
+      .catch(function () { resolve(null); });
+  }
+
+  function windowRpc(fn, pollId) {
+    return instructorSecret().then(function (secret) {
+      // Anything that goes wrong here must stay off the projected screen.
+      // Only speaker view is allowed to say a word about it, and the fallback
+      // is always "windows unused" -> voting open, never a dead room.
+      var say = SPEAKER ? toast : function () {};
+      if (!secret) { say("No instructor secret on this device."); return false; }
+      return rpc(fn, { p_poll_id: pollId, p_session_key: sessionKey(), p_pass: secret })
+        .then(function (r) {
+          if (!r.ok) { secretPromise = null; say("Server rejected the instructor secret."); return false; }
+          windowCache[pollId] = null;
+          paintSpeakerBar();
+          return true;
+        })
+        .catch(function () { say("Could not reach the server."); return false; });
+    });
   }
 
   /* ---------- check-in UI ---------- */
@@ -269,38 +360,126 @@
     modal(function () { proceed(); });   // skipping still votes, just uncredited
   }
 
-  /* ---------- instructor controls ---------- */
+  /* ---------- auto open/close, driven by the slide ---------- */
+  // The point of this block: you never have to remember anything. Walking
+  // onto a poll slide opens voting; walking off it closes voting after a
+  // grace period, so a student mid-tap is not cut off. Speaker view shows
+  // the state and can override it.
 
-  function mountInstructorBar() {
-    if (!INSTRUCTOR) return;
+  var openIds = {};        // pollId -> true while we believe it is open
+  var closeTimers = {};    // pollId -> timeout id
+  var pinned = {};         // pollId -> true: "keep open", survives leaving
+
+  function pollIdsOnCurrentSlide() {
+    var sec = document.querySelector("section.present");
+    if (!sec) return [];
+    var out = [];
+    [].forEach.call(sec.querySelectorAll("[data-poll-id]"), function (e) {
+      var id = e.getAttribute("data-poll-id");
+      if (id && out.indexOf(id) < 0) out.push(id);
+    });
+    return out;
+  }
+
+  function onSlideChanged() {
+    var here = pollIdsOnCurrentSlide();
+
+    here.forEach(function (id) {
+      if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
+      if (openIds[id]) return;
+      openIds[id] = "pending";
+      openPoll(id).then(function (ok) {
+        if (ok) openIds[id] = true;
+        else delete openIds[id];      // failed: leave windows unused, retry on re-entry
+        paintSpeakerBar();
+      });
+    });
+
+    Object.keys(openIds).forEach(function (id) {
+      if (here.indexOf(id) >= 0 || pinned[id] || closeTimers[id]) return;
+      if (openIds[id] !== true) { delete openIds[id]; return; }
+      closeTimers[id] = setTimeout(function () {
+        delete closeTimers[id];
+        delete openIds[id];
+        closePoll(id);
+      }, GRACE_MS);
+    });
+
+    paintSpeakerBar();
+  }
+
+  /* ---------- speaker-view status bar ---------- */
+  // Rendered ONLY inside reveal's speaker-view preview. The projected deck
+  // never shows it, so the room never sees the controls.
+
+  function mountSpeakerBar() {
+    if (!SPEAKER) return;
     var bar = document.createElement("div");
-    bar.id = "ec-instr";
-    bar.innerHTML = '<button data-a="open">Open voting</button>' +
-                    '<button data-a="close">Close voting</button>' +
-                    '<span id="ec-instr-pid"></span>';
+    bar.id = "ec-spk";
+    bar.innerHTML =
+      '<span id="ec-spk-dot"></span>' +
+      '<span id="ec-spk-state">—</span>' +
+      '<span id="ec-spk-count"></span>' +
+      '<span id="ec-spk-grow"></span>' +
+      '<button data-a="pin"   type="button">Keep open</button>' +
+      '<button data-a="close" type="button">Close now</button>';
     document.body.appendChild(bar);
 
-    function currentPoll() {
-      var sec = document.querySelector("section.present");
-      var g = sec && sec.querySelector("[data-poll-id]");
-      return g ? g.getAttribute("data-poll-id") : null;
-    }
-    function refresh() {
-      var pid = currentPoll();
-      bar.style.display = pid ? "flex" : "none";
-      bar.querySelector("#ec-instr-pid").textContent = pid || "";
-    }
     bar.addEventListener("click", function (e) {
       var a = e.target.getAttribute && e.target.getAttribute("data-a");
       if (!a) return;
-      var pid = currentPoll();
-      if (pid) (a === "open" ? openPoll : closePoll)(pid);
+      var ids = pollIdsOnCurrentSlide();
+      if (!ids.length) return;
+      ids.forEach(function (id) {
+        if (a === "pin") {
+          pinned[id] = !pinned[id];
+          if (pinned[id]) {
+            if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
+            if (!openIds[id]) { openIds[id] = true; openPoll(id); }
+          }
+        } else {
+          if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
+          pinned[id] = false;
+          delete openIds[id];
+          closePoll(id);
+        }
+      });
+      paintSpeakerBar();
     });
-    if (window.Reveal && Reveal.addEventListener) {
-      Reveal.addEventListener("slidechanged", refresh);
+
+    setInterval(paintSpeakerBar, 3000);
+    paintSpeakerBar();
+  }
+
+  function paintSpeakerBar() {
+    var bar = document.getElementById("ec-spk");
+    if (!bar) return;
+    var ids = pollIdsOnCurrentSlide();
+    if (!ids.length) { bar.style.display = "none"; return; }
+    bar.style.display = "flex";
+
+    var id = ids[0];
+    var dot = bar.querySelector("#ec-spk-dot");
+    var st  = bar.querySelector("#ec-spk-state");
+    var ct  = bar.querySelector("#ec-spk-count");
+    var pin = bar.querySelector('[data-a="pin"]');
+
+    isOpen(id).then(function (open) {
+      var closing = !!closeTimers[id];
+      dot.className = open ? (closing ? "amber" : "green") : "red";
+      st.textContent = open ? (closing ? "CLOSING…" : "VOTING OPEN") : "CLOSED";
+      pin.textContent = pinned[id] ? "Unpin" : "Keep open";
+      pin.className   = pinned[id] ? "on" : "";
+    });
+
+    if (!IS_FILE) {
+      sf("GET", "poll_votes?poll_id=eq." + encodeURIComponent(id) + "&select=choice" + q())
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (rows) {
+          ct.textContent = rows.length + (rows.length === 1 ? " vote" : " votes");
+        })
+        .catch(function () {});
     }
-    setInterval(refresh, 1000);
-    refresh();
   }
 
   /* ---------- styles ---------- */
@@ -332,10 +511,19 @@
     ".ec-toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:99999;" +
       "background:rgba(17,24,39,.94);color:#fff;font:600 14px/1.3 system-ui,sans-serif;" +
       "padding:11px 18px;border-radius:10px}" +
-    "#ec-instr{position:fixed;left:10px;bottom:10px;z-index:9998;display:none;gap:6px;align-items:center;" +
-      "background:rgba(17,24,39,.9);padding:6px 8px;border-radius:10px}" +
-    "#ec-instr button{font:600 11px system-ui,sans-serif;padding:5px 9px;border:0;border-radius:6px;cursor:pointer}" +
-    "#ec-instr span{color:#9ca3af;font:500 10px ui-monospace,monospace}";
+    "#ec-spk{position:fixed;top:0;left:0;right:0;z-index:9998;display:none;gap:10px;" +
+      "align-items:center;padding:7px 12px;background:#111827;color:#fff;" +
+      "font:600 13px/1 system-ui,-apple-system,sans-serif}" +
+    "#ec-spk-dot{width:11px;height:11px;border-radius:50%;background:#6b7280;flex:none}" +
+    "#ec-spk-dot.green{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.25)}" +
+    "#ec-spk-dot.amber{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.25)}" +
+    "#ec-spk-dot.red{background:#ef4444}" +
+    "#ec-spk-count{color:#9ca3af;font-weight:500}" +
+    "#ec-spk-grow{flex:1}" +
+    "#ec-spk button{font:600 11px system-ui,sans-serif;padding:5px 10px;border:0;" +
+      "border-radius:6px;cursor:pointer;background:#374151;color:#e5e7eb}" +
+    "#ec-spk button:hover{background:#4b5563}" +
+    "#ec-spk button.on{background:#f59e0b;color:#111827}";
   document.head.appendChild(css);
 
   /* ---------- boot ---------- */
@@ -351,13 +539,23 @@
     openPoll:   openPoll,
     closePoll:  closePoll,
     checkIn:    function () { modal(null); },
+    pollIdsHere: pollIdsOnCurrentSlide,
     toast:      toast
   };
 
   function boot() {
     probeSessionKey();
     paintChip();
-    mountInstructorBar();
+    mountSpeakerBar();
+    if (PROJECTOR || SPEAKER) {
+      if (window.Reveal && Reveal.addEventListener) {
+        Reveal.addEventListener("slidechanged", function () {
+          // only the projector drives the windows; speaker view just redraws
+          if (PROJECTOR) onSlideChanged(); else paintSpeakerBar();
+        });
+      }
+      if (PROJECTOR) onSlideChanged();
+    }
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
