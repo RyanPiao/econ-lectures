@@ -3853,7 +3853,18 @@
       zaxis:{title:'Utility',range:[UMIN,UMAX],backgroundcolor:'#f8fafc',showbackground:true}}};
   var config={responsive:true,displayModeBar:false};
   var plotted=false;
-  function ensure(){if(plotted||typeof Plotly==='undefined')return;Plotly.newPlot(div,[surfTrace()].concat(ringTraces()).concat([planeTrace(),dropTrace()]),layout,config);plotted=true;}
+  // Plotly comes from a CDN: on a direct link to this slide the script is often still loading,
+  // so retry instead of giving up (that left the box blank), and say so if it never arrives
+  var tries=0;
+  function ensure(){
+    if(plotted)return;
+    if(typeof Plotly==='undefined'){
+      if(++tries>60){div.innerHTML='<p style="font-size:12pt;color:#8C8580;text-align:center;padding:40px 20px">'+
+        'The 3D figure needs the Plotly library, which is loaded from the internet. Reconnect and reload this slide.</p>';return;}
+      setTimeout(ensure,200);return;
+    }
+    Plotly.newPlot(div,[surfTrace()].concat(ringTraces()).concat([planeTrace(),dropTrace()]),layout,config);plotted=true;
+  }
   var lval=document.getElementById('mtn-level-val'); if(lval)lval.textContent=Math.round(level);
   var lv=document.getElementById('mtn-level');
   if(lv)lv.addEventListener('input',function(){level=parseFloat(lv.value);if(lval)lval.textContent=Math.round(level);if(!plotted)return;var r=ring(level,null),rf=ring(level,UMIN),dp=dropTrace();Plotly.restyle(div,{x:[r.x,rf.x,dp.x],y:[r.y,rf.y,dp.y],z:[r.z,rf.z,dp.z]},[1,2,4]);Plotly.restyle(div,{z:[[[level,level],[level,level]]]},[3]);});
@@ -3863,9 +3874,13 @@
   if(top)top.addEventListener('click',function(){if(!plotted)return;Plotly.relayout(div,{'scene.camera.eye':{x:0,y:0.6,z:2.2},'scene.camera.up':{x:0,y:1,z:0}});});
   var slice=document.getElementById('mtn-slice');
   if(slice)slice.addEventListener('click',function(){if(!plotted)return;Plotly.relayout(div,{'scene.camera.eye':{x:1.45,y:-1.45,z:1.05},'scene.camera.up':{x:0,y:0,z:1}});});
+  function onThisSlide(){try{var c=Reveal.getCurrentSlide();return !!(c&&c.querySelector('#mtn-plot'));}catch(e){return false;}}
   if(window.Reveal){
     Reveal.on('ready',function(e){if(e.currentSlide&&e.currentSlide.querySelector('#mtn-plot'))ensure();});
     Reveal.on('slidechanged',function(e){if(e.currentSlide&&e.currentSlide.querySelector('#mtn-plot')){ensure();if(plotted)setTimeout(function(){Plotly.Plots.resize(div);},60);}});
+    // a direct link to this slide can land after reveal's 'ready' has already fired, and then
+    // nothing would ever draw the figure: check once the deck has settled
+    setTimeout(function(){if(onThisSlide())ensure();},800);
   } else { ensure(); }
 })();
 </script>
