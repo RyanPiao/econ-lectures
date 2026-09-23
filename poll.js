@@ -135,15 +135,19 @@
     if (IS_FILE || !hasSessionKey) return Promise.resolve(true);
     var c = windowCache[pollId];
     if (c && (Date.now() - c.at) < 3000) return Promise.resolve(c.open);
-    return sf("GET", "poll_windows?poll_id=eq." + encodeURIComponent(pollId) +
-                     "&session_key=eq." + encodeURIComponent(sessionKey()) +
-                     "&select=opened_at,closed_at")
+    // Query every window for this SESSION, not just this poll. If the
+    // instructor has not opened a single poll yet this session, windows are
+    // simply not in use and voting stays open -- forgetting to press Open can
+    // never silently kill a class. Once any poll has been opened this session,
+    // windows are in use and an unopened poll is treated as closed.
+    return sf("GET", "poll_windows?session_key=eq." + encodeURIComponent(sessionKey()) +
+                     "&select=poll_id,opened_at,closed_at")
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (rows) {
-        if (rows === null) return true;                 // table absent -> open
-        if (!rows.length)  return false;                // never opened -> shut
-        var w = rows[0];
-        var open = !!w.opened_at && !w.closed_at;
+        if (rows === null)  return true;          // table absent -> open
+        if (!rows.length)   return true;          // windows unused today -> open
+        var mine = rows.filter(function (w) { return w.poll_id === pollId; })[0];
+        var open = !!mine && !!mine.opened_at && !mine.closed_at;
         windowCache[pollId] = { open: open, at: Date.now() };
         return open;
       })
