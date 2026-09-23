@@ -2406,7 +2406,7 @@
 })();
 </script>
 
-<!-- presenter-gate v4 -->
+<!-- presenter-gate v5 -->
 <script>
 (function () {
   var q = location.search;
@@ -2456,6 +2456,9 @@
     document.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
   }
   var CTL = 'input, select, textarea, button';
+  var NAV = { ArrowRight: 'next', ArrowLeft: 'prev', ArrowUp: 'up', ArrowDown: 'down',
+              PageDown: 'next', PageUp: 'prev', ' ': 'next', Spacebar: 'next',
+              n: 'next', p: 'prev', N: 'next', P: 'prev', Home: 'first', End: 'last' };
   function here() { var i = Reveal.getIndices(); return { h: i.h, v: i.v || 0 }; }
   function speakerSide() {
     // controls: the preview keeps its own state and the projected slide gets the same change
@@ -2467,6 +2470,17 @@
       toMain({ bridge: 'ctl', h: at.h, v: at.v, idx: [].indexOf.call(sl.querySelectorAll(CTL), e),
                kind: ev.type, value: e.value, checked: e.checked });
     }
+    // clicking a slider or a button leaves focus inside the preview, so reveal's keys would
+    // move the preview only: take them here and move the projected deck instead
+    document.addEventListener('keydown', function (e) {
+      if (!e.isTrusted || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      var act = NAV[e.key];
+      if (!act) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      toMain({ bridge: 'nav', action: act });
+    }, true);
     document.addEventListener('input', ctl, true);
     document.addEventListener('change', ctl, true);
     document.addEventListener('click', ctl, true);
@@ -2503,6 +2517,16 @@
       var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
       if (!d || !d.bridge) return;
       if (d.bridge === 'timer') { fireKey(d.key); return; }
+      if (d.bridge === 'nav') {
+        var n = Reveal.getTotalSlides ? Reveal.getTotalSlides() : 0;
+        if (d.action === 'next') Reveal.next();
+        else if (d.action === 'prev') Reveal.prev();
+        else if (d.action === 'up') Reveal.up();
+        else if (d.action === 'down') Reveal.down();
+        else if (d.action === 'first') Reveal.slide(0, 0);
+        else if (d.action === 'last') Reveal.slide(Reveal.getHorizontalSlides().length - 1, 0);
+        return;
+      }
       if (d.bridge === 'ctl' || d.bridge === 'yt') {
         var at = here(), sl = Reveal.getCurrentSlide();
         if (!sl || at.h !== d.h || at.v !== d.v) return;      // the two windows are on different slides
@@ -2534,6 +2558,18 @@
     });
   }
 
+  function homeLink() {            // presenter only: a faint way back to the chapter list
+    if (document.getElementById('ti-home')) return;
+    var a = document.createElement('a');
+    a.id = 'ti-home'; a.href = '../index.html'; a.title = 'Chapter list';
+    a.innerHTML = '<i class="fa-solid fa-house"></i>';
+    a.style.cssText = 'position:fixed;left:14px;bottom:12px;z-index:10001;width:34px;height:34px;' +
+      'border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.9);' +
+      'color:#6b8ba4;border:1px solid #e5e7eb;text-decoration:none;font-size:15px;opacity:.18;transition:opacity .2s';
+    a.addEventListener('mouseenter', function () { a.style.opacity = '1'; });
+    a.addEventListener('mouseleave', function () { a.style.opacity = '.18'; });
+    document.body.appendChild(a);
+  }
   function tallOnce() {                   // speaker view opens in Tall the first time; after that, your choice sticks
     try {
       if (!localStorage.getItem('ti-speaker-tall')) {
@@ -2546,7 +2582,7 @@
     if (on && !receiver) tallOnce();
     if (on) loadNotes();
     if (current) speakerSide();
-    else if (on && !receiver) mainSide();
+    else if (on && !receiver) { mainSide(); homeLink(); }
     if (!receiver) wire();
   }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
