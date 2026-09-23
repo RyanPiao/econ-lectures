@@ -1580,10 +1580,16 @@
         .catch(function() {});
     }
 
-    // --- Poll every 2 seconds (always, regardless of visibility) ---
+    // --- Poll every 2 seconds while the poll's own slide is current and the tab is visible ---
     function startPolling(pollId) {
       fetchResults(pollId);
-      setInterval(function() { fetchResults(pollId); }, 2000);
+      setInterval(function() {
+        if (document.hidden) return;
+        var g = document.querySelector('.poll-grid[data-poll-id="' + pollId + '"]');
+        var sec = g && g.closest("section");
+        if (sec && !sec.classList.contains("present")) return;
+        fetchResults(pollId);
+      }, 2000);
     }
 
     // --- Clear votes (instructor only) ---
