@@ -120,6 +120,27 @@
 
   /* ---------- session key: 2026-09-23-am ---------- */
 
+  // The course this deck belongs to: econ2316, econ5200, ... Taken from the
+  // URL path first, since every deck lives under /<course>/, and from the poll
+  // id only as a fallback (they are namespaced chNN-econXXXX-poll-N).
+  function courseToken() {
+    var m = location.pathname.match(/\/(econ\d{3,4})\//i);
+    if (m) return m[1].toLowerCase();
+    var g = document.querySelector("[data-poll-id]");
+    var id = g && g.getAttribute("data-poll-id");
+    var n = id && id.match(/(econ\d{3,4})/i);
+    return n ? n[1].toLowerCase() : "deck";
+  }
+
+  // MUST include the course. It did not, and that was a real outage waiting to
+  // happen: session_key was date+half only, shared by every course, while
+  // isOpen() treats "any window row exists for this session" as "windows are
+  // in use" and therefore "a poll with no row of its own is closed". One 2316
+  // window opened at 12:19 under 2026-09-23-pm would have closed every 5200
+  // poll that afternoon -- students tapping and being told voting is not open.
+  // Invisible until a second course ran the check-in in the same half-day.
+  // Found by the 5200 Producer with Supabase writes intercepted, before it hit
+  // a class.
   function sessionKey() {
     var forced = qs.get("sec");                      // ?sec=am / ?sec=pm
     var now = new Date();
@@ -127,7 +148,14 @@
                       : (now.getHours() < 12 ? "am" : "pm");
     var p = function (x) { return (x < 10 ? "0" : "") + x; };
     return now.getFullYear() + "-" + p(now.getMonth() + 1) + "-" +
-           p(now.getDate()) + "-" + half;
+           p(now.getDate()) + "-" + half + "-" + courseToken();
+  }
+
+  // Belt and braces on top of the key: never let a row that plainly belongs to
+  // another course influence this one, even if a key collides again.
+  function ownCourse(pollId) {
+    var m = String(pollId).match(/(econ\d{3,4})/i);
+    return !m || m[1].toLowerCase() === courseToken();
   }
 
   /* ---------- session_key column probe ---------- */
@@ -173,6 +201,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (rows) {
         if (rows === null)  return true;          // table absent -> open
+        rows = rows.filter(function (w) { return ownCourse(w.poll_id); });
         if (!rows.length)   return true;          // windows unused today -> open
         var mine = rows.filter(function (w) { return w.poll_id === pollId; })[0];
         var open = !!mine && !!mine.opened_at && !mine.closed_at;
@@ -193,7 +222,8 @@
                      "&select=poll_id,opened_at,closed_at")
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (rows) {
-        if (!rows || !rows.length) return "none";
+        rows = (rows || []).filter(function (w) { return ownCourse(w.poll_id); });
+        if (!rows.length) return "none";
         var mine = rows.filter(function (w) { return w.poll_id === pollId; })[0];
         if (!mine) return "closed";
         return (mine.opened_at && !mine.closed_at) ? "open" : "closed";
@@ -469,6 +499,7 @@
       .then(function (rows) {
         rows.forEach(function (w) {
           var id = w.poll_id;
+          if (!ownCourse(id)) return;                      // another course's row
           if (!w.opened_at || w.closed_at) return;        // not currently open
           if (here.indexOf(id) >= 0) return;              // its grid is on screen
           if (closeTimers[id]) return;                    // already counting down
