@@ -147,6 +147,7 @@ CCGate.mount({
     <input type="search" id="filter" placeholder="Filter by poll ID, course, or chapter…">
     <button id="refresh" title="Refresh now">↻ Refresh</button>
     <button id="auto" title="Toggle auto-refresh (every 5s)">⏱ Auto</button>
+    <label id="scopeBox" title="Off (default): a Clear removes only today's meeting for that section. On: it removes every session, every date — the old behaviour."><input type="checkbox" id="everySession"> every session</label>
     <button class="danger-solid" id="clearAll" title="Delete ALL votes from ALL courses">🗑 Clear ALL</button>
   </div>
 </header>
@@ -177,7 +178,7 @@ CCGate.mount({
   // === Course code → display name ===
   const COURSE_NAMES = {
     "econ1116": "ECON 1116 — Principles of Microeconomics",
-    "econ2316": "ECON 2316 — Macroeconomics",  // adjust as needed
+    "econ2316": "ECON 2316 — Microeconomic Theory",
     "econ3916": "ECON 3916 — Data Science for Economists",
     "econ5200": "ECON 5200 — Data Science for Economists (grad)",
     "_legacy": "ECON 1116 (legacy — pre-prefix polls)"
@@ -198,6 +199,62 @@ CCGate.mount({
     };
     if (body) opts.body = JSON.stringify(body);
     return fetch(SU + "/rest/v1/" + path, opts);
+  }
+
+  // === Delete scoping =======================================================
+  // Votes are the attendance record now, so a Clear must not reach past today's
+  // meeting. poll.js stamps each vote with session_key = YYYY-MM-DD-am|pm-course;
+  // a few bespoke widgets (ch14's games, ch10's auction) still write rows with no
+  // session_key at all, which is why the scope is
+  //     created inside this half-day  AND  (this session's key OR unstamped)
+  // The time window is what protects an unstamped poll's earlier meetings --
+  // including the 8:00 section's, which a plain "since midnight" rule would
+  // still have swept up during the 1:35 one.
+  const ADMIN_QS = new URLSearchParams(location.search);
+
+  function courseOf(pid) {
+    const m = String(pid || "").match(/(econ\d{3,4})/i);
+    return m ? m[1].toLowerCase() : "deck";
+  }
+
+  function sessionKeyFor(pid) {
+    const forced = ADMIN_QS.get("sec");                 // ?sec=am / ?sec=pm
+    const now = new Date();
+    const half = forced ? forced.toLowerCase() : (now.getHours() < 12 ? "am" : "pm");
+    const p2 = (x) => (x < 10 ? "0" : "") + x;
+    return `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}-${half}-${courseOf(pid)}`;
+  }
+
+  // The half-day window this session occupies, so that an unstamped row from the
+  // 8:00 meeting is not swept up by a clear run during the 1:35 one. am = local
+  // midnight to noon, pm = noon to the next midnight -- the same split that
+  // sessionKey() itself uses.
+  function sessionWindow() {
+    const forced = ADMIN_QS.get("sec");
+    const n = new Date();
+    const pm = forced ? forced.toLowerCase() === "pm" : n.getHours() >= 12;
+    const day = (h) => new Date(n.getFullYear(), n.getMonth(), n.getDate(), h).toISOString();
+    return pm ? [day(12), day(24)] : [day(0), day(12)];
+  }
+
+  function everySession() {
+    const el = document.getElementById("everySession");
+    return !!(el && el.checked);
+  }
+
+  function scopeSuffix(pid) {
+    if (everySession()) return "";
+    const [from, to] = sessionWindow();
+    return "&created_at=gte." + encodeURIComponent(from) +
+           "&created_at=lt." + encodeURIComponent(to) +
+           "&or=(session_key.eq." + encodeURIComponent(sessionKeyFor(pid)) +
+           ",session_key.is.null)";
+  }
+
+  function scopeLabel(pid) {
+    return everySession()
+      ? "EVERY session, every date — including past meetings' attendance."
+      : `this meeting only (${sessionKeyFor(pid)}), plus any unstamped rows cast inside it. Earlier meetings, and the other section's, are not touched.`;
   }
 
   function toast(msg, kind) {
@@ -372,20 +429,20 @@ CCGate.mount({
     const a = e.target.dataset.action;
     if (a === "clear-poll") {
       const pid = e.target.dataset.pid;
-      if (!confirm(`Delete ALL votes for poll "${pid}"?\n\nThis cannot be undone.`)) return;
-      await deleteWhere(`poll_id=eq.${encodeURIComponent(pid)}`, `Cleared votes for ${pid}`);
+      if (!confirm(`Delete votes for poll "${pid}"?\n\nScope: ${scopeLabel(pid)}\n\nThis cannot be undone.`)) return;
+      await deleteWhere(`poll_id=eq.${encodeURIComponent(pid)}`, `Cleared votes for ${pid}`, pid);
     } else if (a === "clear-chapter") {
       const pids = (e.target.dataset.pids || "").split(",").filter(Boolean);
       const label = e.target.dataset.label;
       if (!pids.length) return;
-      if (!confirm(`Delete ALL votes for these ${pids.length} poll(s)?\n\n${pids.join("\n")}\n\nThis cannot be undone.`)) return;
-      await deleteWhere(idListFilter(pids), `Cleared chapter polls (${label})`);
+      if (!confirm(`Delete votes for these ${pids.length} poll(s)?\n\n${pids.join("\n")}\n\nScope: ${scopeLabel(pids[0])}\n\nThis cannot be undone.`)) return;
+      await deleteWhere(idListFilter(pids), `Cleared chapter polls (${label})`, pids[0]);
     } else if (a === "clear-course") {
       const course = e.target.dataset.course;
       const pids = (e.target.dataset.pids || "").split(",").filter(Boolean);
       if (!pids.length) return;
-      if (!confirm(`Delete ALL votes for course "${course}" (${pids.length} poll(s), every chapter)?\n\nThis cannot be undone.`)) return;
-      await deleteWhere(idListFilter(pids), `Cleared all ${course} polls`);
+      if (!confirm(`Delete votes for course "${course}" (${pids.length} poll(s), every chapter)?\n\nScope: ${scopeLabel(pids[0])}\n\nThis cannot be undone.`)) return;
+      await deleteWhere(idListFilter(pids), `Cleared all ${course} polls`, pids[0]);
     }
   }
 
@@ -396,9 +453,9 @@ CCGate.mount({
     return "poll_id=in.(" + ids.map(i => encodeURIComponent('"' + i + '"')).join(",") + ")";
   }
 
-  async function deleteWhere(filter, successMsg) {
+  async function deleteWhere(filter, successMsg, scopePid) {
     try {
-      const r = await sf("DELETE", "poll_votes?" + filter);
+      const r = await sf("DELETE", "poll_votes?" + filter + scopeSuffix(scopePid));
       if (!r.ok) throw new Error("HTTP " + r.status);
       toast(successMsg, "ok");
       await fetchAll();
@@ -409,7 +466,7 @@ CCGate.mount({
 
   // Clear ALL — extra-safe gate (typed confirmation)
   document.getElementById("clearAll").addEventListener("click", async () => {
-    const phrase = prompt('Type "CLEAR EVERYTHING" to delete every poll vote in EVERY course (irreversible):');
+    const phrase = prompt('Type "CLEAR EVERYTHING" to delete every poll vote in EVERY course, on every date — this one ignores the "every session" toggle and destroys the attendance record (irreversible):');
     if (phrase !== "CLEAR EVERYTHING") {
       if (phrase !== null) toast("Confirmation phrase did not match — nothing deleted.", "error");
       return;
