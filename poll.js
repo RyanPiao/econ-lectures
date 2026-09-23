@@ -467,7 +467,11 @@
   function toggleHere() {
     var ids = pollIdsOnCurrentSlide();
     if (!ids.length) return;
-    isOpen(ids[0]).then(function (open) { (open ? closeHere : openHere)(); });
+    // Must ask windowState, not isOpen. isOpen() answers "can a student vote",
+    // which is TRUE in the default state where no window exists at all -- so
+    // toggling on isOpen made the first press try to CLOSE a poll that had
+    // never been opened. Only an actually-open window should toggle shut.
+    windowState(ids[0]).then(function (w) { (w === "open" ? closeHere : openHere)(); });
   }
 
   /* ---------- speaker-view status bar ---------- */
