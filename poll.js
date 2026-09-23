@@ -470,11 +470,16 @@
     var here = votingPollsHere();
 
     // Arriving at a poll slide does NOT open it. You open it when you are
-    // ready -- press "o", or the button in speaker view. Arriving only cancels
-    // a pending close, so stepping back to a poll you just left keeps it live.
-    here.forEach(function (id) {
-      if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
-    });
+    // ready -- press "o", or the button in speaker view.
+    //
+    // Deliberately NOT cancelling pending closes here. Reveal fires a transient
+    // slidechanged during vertical moves in which the poll is briefly current
+    // again, and cancelling on arrival let that transient wipe the close that
+    // had just been scheduled -- so advancing to the answer sub-slide never
+    // closed voting, with the correct answer on screen. The timer re-checks the
+    // current slide before it closes anything, so stepping back onto a poll
+    // within the grace still keeps it open. That check is the only thing that
+    // should decide.
 
     // Leaving closes whatever is open, after a grace so a student mid-tap still
     // lands. Driven by the SERVER's window rows, not by what this page happens
