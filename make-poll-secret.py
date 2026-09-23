@@ -53,6 +53,51 @@ def check(passphrase):
     print("Passphrase verified against the existing class-console payload.\n")
 
 
+def verify():
+    """--check : is the secret in poll-secret.js the one Supabase actually holds?
+
+    Side-effect free. close_poll() checks the passphrase first, then UPDATEs zero
+    rows for a poll id that does not exist, so nothing is created or changed.
+    """
+    import urllib.request, urllib.error
+    SU = "https://dpntbrsorgbivmntwmod.supabase.co"
+    ANON = ("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbnRicnNvcmdiaXZt"
+            "bnR3bW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjY5NzksImV4cCI6MjA5MTQ0Mjk3OX0."
+            "7__ja5Sq2AB__iFXhj-CKZJ0l7SjUerf8mpGQlo2bxI")
+    here = os.path.dirname(os.path.abspath(__file__))
+    ps = os.path.join(here, "poll-secret.js")
+    if not os.path.exists(ps):
+        sys.exit("poll-secret.js does not exist yet. Run this script with no arguments first.")
+    import re
+    pl = json.loads(re.search(r"=\s*(\{.*\});", open(ps).read(), re.S).group(1))
+
+    pw = unquote(getpass.getpass("Instructor passphrase: ").strip())
+    key = hashlib.pbkdf2_hmac("sha256", pw.encode(), base64.b64decode(pl["salt"]), pl["iter"], dklen=32)
+    try:
+        secret = json.loads(AESGCM(key).decrypt(
+            base64.b64decode(pl["iv"]), base64.b64decode(pl["ct"]), None))["poll_secret"]
+    except Exception:
+        sys.exit("That passphrase does not open poll-secret.js. (Wrong passphrase, or the file\n"
+                 "was generated under a different one -- regenerate it.)")
+    print("  poll-secret.js opens with this passphrase.")
+
+    body = json.dumps({"p_poll_id": "__probe__", "p_session_key": "__probe__",
+                       "p_pass": secret}).encode()
+    req = urllib.request.Request(SU + "/rest/v1/rpc/close_poll", data=body, method="POST",
+                                 headers={"apikey": ANON, "Authorization": "Bearer " + ANON,
+                                          "Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=15)
+    except urllib.error.HTTPError as e:
+        if b"not authorized" in e.read():
+            sys.exit("\nMISMATCH. Supabase is holding a DIFFERENT secret than poll-secret.js.\n"
+                     "Every run of this script mints a NEW secret, so the SQL line it printed must\n"
+                     "be pasted from the SAME run that wrote poll-secret.js.\n"
+                     "Fix: run this script again and paste the SQL line it prints.")
+        raise
+    print("\n  Supabase accepts this secret. Open/close voting will work.\n")
+
+
 def main():
     print(__doc__.split("\n\n")[1].replace("\n", " "), "\n")
     p1 = unquote(getpass.getpass("CCGate passphrase (same as poll-admin): ").strip())
@@ -99,4 +144,7 @@ def main():
     print("Do not paste the line above into a chat -- it is the live secret.\n")
 
 if __name__ == "__main__":
-    main()
+    if "--check" in sys.argv:
+        verify()
+    else:
+        main()
