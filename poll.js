@@ -165,6 +165,25 @@
       .catch(function () { return true; });
   }
 
+  // "none"   -> no window row for this session: voting is open by default,
+  //             because you have not taken control of any poll yet
+  // "open"   -> you opened it
+  // "closed" -> it was opened and has since closed, or others were opened and
+  //             this one never was
+  function windowState(pollId) {
+    if (IS_FILE || !hasSessionKey) return Promise.resolve("none");
+    return sf("GET", "poll_windows?session_key=eq." + encodeURIComponent(sessionKey()) +
+                     "&select=poll_id,opened_at,closed_at")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        if (!rows || !rows.length) return "none";
+        var mine = rows.filter(function (w) { return w.poll_id === pollId; })[0];
+        if (!mine) return "closed";
+        return (mine.opened_at && !mine.closed_at) ? "open" : "closed";
+      })
+      .catch(function () { return "none"; });
+  }
+
   function openPoll(pollId)  { return windowRpc("open_poll",  pollId); }
   function closePoll(pollId) { return windowRpc("close_poll", pollId); }
 
@@ -382,7 +401,6 @@
 
   var openIds = {};        // pollId -> true while we believe it is open
   var closeTimers = {};    // pollId -> timeout id
-  var pinned = {};         // pollId -> true: "keep open", survives leaving
 
   function pollIdsOnCurrentSlide() {
     var sec = document.querySelector("section.present");
@@ -398,34 +416,58 @@
   function onSlideChanged() {
     var here = pollIdsOnCurrentSlide();
 
+    // Arriving at a poll slide does NOT open it. You open it when you are
+    // ready -- press "o", or the button in speaker view. Arriving only cancels
+    // a pending close, so stepping back to a poll you just left keeps it live.
     here.forEach(function (id) {
       if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
-      if (openIds[id]) return;
-      openIds[id] = "pending";
-      openPoll(id).then(function (ok) {
-        if (ok) openIds[id] = true;
-        else delete openIds[id];      // failed: leave windows unused, retry on re-entry
-        paintSpeakerBar();
-      });
     });
 
+    // Leaving closes whatever you opened, after a grace so a student mid-tap
+    // still lands. That half stays automatic: forgetting to close is the easy
+    // mistake, and it is the one that silently keeps voting alive all lecture.
     Object.keys(openIds).forEach(function (id) {
-      if (here.indexOf(id) >= 0 || pinned[id] || closeTimers[id]) return;
+      if (here.indexOf(id) >= 0 || closeTimers[id]) return;
       if (openIds[id] !== true) { delete openIds[id]; return; }
       closeTimers[id] = setTimeout(function () {
         delete closeTimers[id];
-        // Re-check before closing. Reveal can fire an extra slidechanged during
-        // hash startup (deep-linking to #/poll-N), which schedules a close, and
-        // then settle back on the same slide WITHOUT firing again -- leaving a
-        // stale timer that would close a poll still on screen. Never close a
-        // poll that is currently being shown.
-        if (pollIdsOnCurrentSlide().indexOf(id) >= 0) return;
+        if (pollIdsOnCurrentSlide().indexOf(id) >= 0) return;   // came back
         delete openIds[id];
         closePoll(id);
       }, GRACE_MS);
     });
 
     paintSpeakerBar();
+  }
+
+  /* ---------- manual open / close ---------- */
+
+  function openHere() {
+    pollIdsOnCurrentSlide().forEach(function (id) {
+      if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
+      if (openIds[id] === true) return;
+      openIds[id] = "pending";
+      openPoll(id).then(function (ok) {
+        if (ok) openIds[id] = true; else delete openIds[id];
+        paintSpeakerBar();
+      });
+    });
+    paintSpeakerBar();
+  }
+
+  function closeHere() {
+    pollIdsOnCurrentSlide().forEach(function (id) {
+      if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
+      delete openIds[id];
+      closePoll(id);
+    });
+    paintSpeakerBar();
+  }
+
+  function toggleHere() {
+    var ids = pollIdsOnCurrentSlide();
+    if (!ids.length) return;
+    isOpen(ids[0]).then(function (open) { (open ? closeHere : openHere)(); });
   }
 
   /* ---------- speaker-view status bar ---------- */
@@ -441,30 +483,14 @@
       '<span id="ec-spk-state">—</span>' +
       '<span id="ec-spk-count"></span>' +
       '<span id="ec-spk-grow"></span>' +
-      '<button data-a="pin"   type="button">Keep open</button>' +
+      '<button data-a="open"  type="button">Open voting &nbsp;(o)</button>' +
       '<button data-a="close" type="button">Close now</button>';
     document.body.appendChild(bar);
 
     bar.addEventListener("click", function (e) {
       var a = e.target.getAttribute && e.target.getAttribute("data-a");
-      if (!a) return;
-      var ids = pollIdsOnCurrentSlide();
-      if (!ids.length) return;
-      ids.forEach(function (id) {
-        if (a === "pin") {
-          pinned[id] = !pinned[id];
-          if (pinned[id]) {
-            if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
-            if (!openIds[id]) { openIds[id] = true; openPoll(id); }
-          }
-        } else {
-          if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
-          pinned[id] = false;
-          delete openIds[id];
-          closePoll(id);
-        }
-      });
-      paintSpeakerBar();
+      if (a === "open")  openHere();
+      if (a === "close") closeHere();
     });
 
     setInterval(paintSpeakerBar, 3000);
@@ -484,12 +510,17 @@
     var ct  = bar.querySelector("#ec-spk-count");
     var pin = bar.querySelector('[data-a="pin"]');
 
-    isOpen(id).then(function (open) {
+    windowState(id).then(function (w) {
       var closing = !!closeTimers[id];
-      dot.className = open ? (closing ? "amber" : "green") : "red";
-      st.textContent = open ? (closing ? "CLOSING…" : "VOTING OPEN") : "CLOSED";
-      pin.textContent = pinned[id] ? "Unpin" : "Keep open";
-      pin.className   = pinned[id] ? "on" : "";
+      if (closing)            { dot.className = "amber"; st.textContent = "CLOSING\u2026"; }
+      else if (w === "open")  { dot.className = "green"; st.textContent = "VOTING OPEN"; }
+      else if (w === "none")  { dot.className = "grey";
+                                st.textContent = "open by default \u2014 press o to take control"; }
+      else                    { dot.className = "red";
+                                st.textContent = "CLOSED \u2014 press o to open"; }
+      var canOpen = (w !== "open");
+      pin.style.opacity = canOpen ? "1" : ".45";
+      pin.className     = canOpen ? "on" : "";
     });
 
     if (!IS_FILE) {
@@ -538,6 +569,7 @@
     "#ec-spk-dot.green{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.25)}" +
     "#ec-spk-dot.amber{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.25)}" +
     "#ec-spk-dot.red{background:#ef4444}" +
+    "#ec-spk-dot.grey{background:#9ca3af}" +
     "#ec-spk-count{color:#9ca3af;font-weight:500}" +
     "#ec-spk-grow{flex:1}" +
     "#ec-spk button{font:600 11px system-ui,sans-serif;padding:5px 10px;border:0;" +
@@ -557,6 +589,8 @@
     ready:      ready,
     isOpen:     isOpen,
     openPoll:   openPoll,
+    openHere:   openHere,
+    closeHere:  closeHere,
     closePoll:  closePoll,
     checkIn:    function () { modal(null); },
     pollIdsHere: pollIdsOnCurrentSlide,
@@ -567,6 +601,16 @@
     probeSessionKey();
     paintChip();
     mountSpeakerBar();
+    if (INSTRUCTOR) {
+      document.addEventListener("keydown", function (e) {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        var t = e.target, tag = t && t.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+        if (e.key !== "o" && e.key !== "O") return;
+        e.preventDefault();
+        toggleHere();
+      });
+    }
     if (PROJECTOR || SPEAKER) {
       if (window.Reveal && Reveal.addEventListener) {
         Reveal.addEventListener("slidechanged", function () {
