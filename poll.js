@@ -633,7 +633,7 @@
     "#ec-ci-cancel:hover{background:#cbd5e1}" +
     "#ec-ci-go:hover{background:#1d4ed8}" +
     ".ec-ci-skip{font-size:11.5px!important;color:#9ca3af!important;margin:12px 0 0!important}" +
-    "#ec-chip{position:fixed;right:10px;bottom:10px;z-index:9998;background:rgba(30,58,138,.92);color:#fff;" +
+    "#ec-chip{position:fixed;left:10px;bottom:10px;z-index:9998;background:rgba(30,58,138,.92);color:#fff;" +
       "font:600 11px/1 system-ui,sans-serif;padding:7px 10px;border-radius:999px;cursor:pointer;opacity:.75}" +
     "#ec-chip:hover{opacity:1}" +
     "#ec-chip em{font-style:normal;text-decoration:underline;opacity:.8}" +
