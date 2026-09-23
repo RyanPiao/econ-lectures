@@ -138,6 +138,24 @@ def main():
     assert json.loads(decrypt(pl, new))["poll_secret"] == poll_secret
     print("  rotated + verified: poll-secret.js (new secret minted)\n")
 
+    # ---- prove the new passphrase can actually be reproduced ----
+    # The real failure mode is not a bad write, it is typing a new passphrase
+    # twice and then being unable to reproduce it an hour later -- which locks
+    # you out of your own attendance codes. Catch it here, while the backup is
+    # fresh and you are still standing at the terminal.
+    print("\nOne more time, from your password manager, to prove you can reproduce it.")
+    print("If this does not match, everything is rolled back automatically.")
+    if ask("Confirm the NEW passphrase: ") != new:
+        for rel in PAGES:
+            shutil.copy2(os.path.join(backup, rel.replace("/", "_")), os.path.join(HERE, rel))
+        bps = os.path.join(backup, "poll-secret.js")
+        if os.path.exists(bps):
+            shutil.copy2(bps, ps)
+        sys.exit("\nDid not match. EVERYTHING HAS BEEN ROLLED BACK -- the old passphrase\n"
+                 "still works and nothing needs to be pasted or pushed.\n"
+                 "Save the passphrase somewhere first, then run this again.")
+    print("  Confirmed.\n")
+
     print("Backup of the previous files:", backup)
     print("\n" + "=" * 72)
     print("PASTE THIS INTO THE SUPABASE SQL EDITOR AND PRESS RUN:")
