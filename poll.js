@@ -429,6 +429,29 @@
     return out;
   }
 
+  function scheduleClosesFor(here) {
+    if (IS_FILE || !hasSessionKey) return;
+    sf("GET", "poll_windows?session_key=eq." + encodeURIComponent(sessionKey()) +
+              "&select=poll_id,opened_at,closed_at")
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        rows.forEach(function (w) {
+          var id = w.poll_id;
+          if (!w.opened_at || w.closed_at) return;        // not currently open
+          if (here.indexOf(id) >= 0) return;              // its grid is on screen
+          if (closeTimers[id]) return;                    // already counting down
+          closeTimers[id] = setTimeout(function () {
+            delete closeTimers[id];
+            if (votingPollsHere().indexOf(id) >= 0) return;   // walked back onto it
+            delete openIds[id];
+            closePoll(id);
+          }, GRACE_MS);
+        });
+        paintSpeakerBar();
+      })
+      .catch(function () {});
+  }
+
   function onSlideChanged() {
     var here = votingPollsHere();
 
@@ -439,20 +462,13 @@
       if (closeTimers[id]) { clearTimeout(closeTimers[id]); delete closeTimers[id]; }
     });
 
-    // Leaving closes whatever you opened, after a grace so a student mid-tap
-    // still lands. That half stays automatic: forgetting to close is the easy
-    // mistake, and it is the one that silently keeps voting alive all lecture.
-    Object.keys(openIds).forEach(function (id) {
-      if (here.indexOf(id) >= 0 || closeTimers[id]) return;
-      if (openIds[id] !== true) { delete openIds[id]; return; }
-      closeTimers[id] = setTimeout(function () {
-        delete closeTimers[id];
-        if (votingPollsHere().indexOf(id) >= 0) return;   // came back
-        delete openIds[id];
-        closePoll(id);
-      }, GRACE_MS);
-    });
-
+    // Leaving closes whatever is open, after a grace so a student mid-tap still
+    // lands. Driven by the SERVER's window rows, not by what this page happens
+    // to remember: reloading the deck mid-class wipes local state, and an
+    // openIds-only version then left earlier polls open for the rest of the
+    // lecture. Forgetting to close is the easy mistake and it must not depend
+    // on the tab surviving.
+    scheduleClosesFor(here);
     paintSpeakerBar();
   }
 
