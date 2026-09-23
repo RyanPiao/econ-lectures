@@ -18,6 +18,16 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 ITER = 600_000          # must match the other CCGate payloads on this site
 B = lambda x: base64.b64encode(x).decode()
 
+def unquote(v):
+    """Pasting from a browser console brings the surrounding quotes along, and
+    they are invisible at a getpass prompt. Chrome's console prints strings
+    quoted, so this is the single likeliest way to mistype a correct value."""
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        print("  (stripped the surrounding quotes)")
+        return v[1:-1].strip()
+    return v
+
+
 def check(passphrase):
     """Decrypt the existing class-console payload. Wrong passphrase -> stop."""
     import re
@@ -45,10 +55,10 @@ def check(passphrase):
 
 def main():
     print(__doc__.split("\n\n")[1].replace("\n", " "), "\n")
-    p1 = getpass.getpass("CCGate passphrase (same as poll-admin): ").strip()
+    p1 = unquote(getpass.getpass("CCGate passphrase (same as poll-admin): ").strip())
     if not p1:
         sys.exit("No passphrase given.")
-    p2 = getpass.getpass("Again, to be sure: ").strip()
+    p2 = unquote(getpass.getpass("Again, to be sure: ").strip())
     if p1 != p2:
         sys.exit("They do not match. Nothing was written.")
 
