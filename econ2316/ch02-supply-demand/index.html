@@ -2981,7 +2981,7 @@
        </div>
       </div>
       <aside class="notes">
-       ~60 sec. Students open the deck on their phones and type initials + WTP. Don't mention the price yet &mdash; it's revealed on the next slide. Resubmitting from the same device replaces their earlier answer. Real price: iPhone Duo starts at \$1,999 (256GB), up to \$3,199 for 2TB (Apple newsroom / MacRumors, Sept 9, 2026); pre-orders Oct 16, ships Oct 23. Down-arrow for the class demand curve. <strong>This WTP widget is the exception among the 2316 polls: it is NOT session-keyed</strong> &mdash; its own save and load skip the session stamp and the session filter, so the 8:00 room&rsquo;s answers WILL appear in the 1:35 room. Do not reach for the Clear button to fix that: its dialog says TODAY&rsquo;s responses only, but the request still deletes <strong>every</strong> meeting&rsquo;s rows for this poll id, and those rows are now the attendance record. Screenshot the 8:00 curve and leave the data alone until the widget is session-stamped.
+       ~60 sec. Students open the deck on their phones and type initials + WTP. Don't mention the price yet &mdash; it's revealed on the next slide. Resubmitting from the same device replaces their earlier answer. Real price: iPhone Duo starts at \$1,999 (256GB), up to \$3,199 for 2TB (Apple newsroom / MacRumors, Sept 9, 2026); pre-orders Oct 16, ships Oct 23. Down-arrow for the class demand curve. This WTP widget is now session-keyed like every other 2316 poll: it stamps the session on save and filters on load, so the 1:35 room sees only its own answers and no clearing is needed between sections. The Clear button (add ?instructor) removes today's responses for this room only.
       </aside>
      </section>
      <section id="iphone-duo-results" style="display: flex; flex-direction: column;">
@@ -4013,11 +4013,11 @@
   // one answer per device: delete this voter's old row, then insert
   function save(pid,choice){
     if(IS_FILE){local[pid]=local[pid].filter(function(r){return r.voter_id!==VID;});local[pid].push({choice:choice,voter_id:VID});return Promise.resolve();}
-    return sf('DELETE','poll_votes?poll_id=eq.'+pid+'&voter_id=eq.'+VID).then(function(){return sf('POST','poll_votes',{poll_id:pid,choice:choice,voter_id:VID});}).then(function(r){if(!r.ok)throw new Error(r.status);});
+    return sf('DELETE','poll_votes?poll_id=eq.'+pid+'&voter_id=eq.'+VID+(window.Poll?Poll.q():'')+"&created_at=gte."+encodeURIComponent(new Date(new Date().setHours(0,0,0,0)).toISOString())).then(function(){return sf('POST','poll_votes',(window.Poll?Poll.stamp(pid,choice):{poll_id:pid,choice:choice,voter_id:VID}));}).then(function(r){if(!r.ok)throw new Error(r.status);});
   }
   function load(pid){
     if(IS_FILE) return Promise.resolve(local[pid]);
-    return sf('GET','poll_votes?poll_id=eq.'+pid+'&select=choice,voter_id,created_at&order=created_at.asc').then(function(r){return r.json();});
+    return sf('GET','poll_votes?poll_id=eq.'+pid+'&select=choice,voter_id,created_at&order=created_at.asc'+(window.Poll?Poll.q():'')).then(function(r){return r.json();});
   }
   function parse(rows){ // latest row per voter
     var by={}; (rows||[]).forEach(function(r){var p=String(r.choice||'').split('|');var v=num(p[1]);if(isNaN(v))return;by[r.voter_id]={init:(p[0]||'?').slice(0,4),val:Math.min(v,CAP)};});
@@ -4038,7 +4038,7 @@
   });
   window.iduoClear=function(){ if(!confirm('Clear TODAY\'s iPhone Duo responses? Earlier meetings are not touched.'))return;
     if(IS_FILE){local[PW]=[];refresh();return;}
-    sf('DELETE','poll_votes?poll_id=eq.'+PW).then(refresh);
+    sf('DELETE','poll_votes?poll_id=eq.'+PW+(window.Poll?Poll.q():'')+"&created_at=gte."+encodeURIComponent(new Date(new Date().setHours(0,0,0,0)).toISOString())).then(refresh);
   };
   // ---- results ----
   var pIn=$('iduo-p'), slider=$('iduo-slider'), P=APPLE, data=[];
