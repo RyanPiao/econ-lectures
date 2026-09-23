@@ -184,9 +184,12 @@
         '<input id="ec-ci-input" inputmode="numeric" autocomplete="off" ' +
                'maxlength="9" placeholder="00#######">' +
         '<div id="ec-ci-err"></div>' +
-        '<button id="ec-ci-go">Check in</button>' +
-        '<p class="ec-ci-skip">Press Esc to skip — your vote still counts toward the ' +
-           'class result, but not toward your participation credit.</p>' +
+        '<div class="ec-ci-row">' +
+          '<button id="ec-ci-cancel" type="button">Cancel</button>' +
+          '<button id="ec-ci-go" type="button">Check in</button>' +
+        '</div>' +
+        '<p class="ec-ci-skip">Cancel (or Esc) still records your vote in the class ' +
+           'result \u2014 it just will not count toward your participation credit.</p>' +
       '</div>';
     document.body.appendChild(wrap);
 
@@ -216,6 +219,7 @@
     }
 
     wrap.querySelector("#ec-ci-go").addEventListener("click", submit);
+    wrap.querySelector("#ec-ci-cancel").addEventListener("click", function () { close(false); });
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter") submit();
       if (e.key === "Escape") close(false);
@@ -309,8 +313,12 @@
       "padding:10px;border:2px solid #cbd5e1;border-radius:10px;font-family:ui-monospace,monospace}" +
     "#ec-ci-input:focus{outline:none;border-color:#2563eb}" +
     "#ec-ci-err{color:#dc2626;font-size:13px;min-height:18px;margin:6px 0}" +
-    "#ec-ci-go{width:100%;padding:12px;font-size:16px;font-weight:700;color:#fff;background:#2563eb;" +
-      "border:0;border-radius:10px;cursor:pointer}" +
+    ".ec-ci-row{display:flex;gap:10px}" +
+    ".ec-ci-row button{flex:1;padding:12px;font-size:16px;font-weight:700;border:0;" +
+      "border-radius:10px;cursor:pointer}" +
+    "#ec-ci-go{color:#fff;background:#2563eb;flex:2}" +
+    "#ec-ci-cancel{color:#475569;background:#e2e8f0}" +
+    "#ec-ci-cancel:hover{background:#cbd5e1}" +
     "#ec-ci-go:hover{background:#1d4ed8}" +
     ".ec-ci-skip{font-size:11.5px!important;color:#9ca3af!important;margin:12px 0 0!important}" +
     "#ec-chip{position:fixed;right:10px;bottom:10px;z-index:9998;background:rgba(30,58,138,.92);color:#fff;" +
