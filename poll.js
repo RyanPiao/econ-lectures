@@ -488,7 +488,7 @@
     var here = votingPollsHere();
 
     // Arriving at a poll slide does NOT open it. You open it when you are
-    // ready -- press "g", or the button in speaker view.
+    // ready -- press "t", or the button in speaker view.
     //
     // Deliberately NOT cancelling pending closes here. Reveal fires a transient
     // slidechanged during vertical moves in which the poll is briefly current
@@ -556,7 +556,7 @@
       '<span id="ec-spk-state">—</span>' +
       '<span id="ec-spk-count"></span>' +
       '<span id="ec-spk-grow"></span>' +
-      '<button data-a="open"  type="button">Open voting &nbsp;(g)</button>' +
+      '<button data-a="open"  type="button">Open voting &nbsp;(t)</button>' +
       '<button data-a="close" type="button">Close now</button>';
     document.body.appendChild(bar);
 
@@ -588,9 +588,9 @@
       if (closing)            { dot.className = "amber"; st.textContent = "CLOSING\u2026"; }
       else if (w === "open")  { dot.className = "green"; st.textContent = "VOTING OPEN"; }
       else if (w === "none")  { dot.className = "grey";
-                                st.textContent = "open by default \u2014 press g to take control"; }
+                                st.textContent = "open by default \u2014 press t to take control"; }
       else                    { dot.className = "red";
-                                st.textContent = "CLOSED \u2014 press g to open"; }
+                                st.textContent = "CLOSED \u2014 press t to open"; }
       // Guarded: this lookup went stale once when the button was renamed from
       // "pin" to "open", and the resulting null threw inside this promise on
       // every repaint -- 124 unhandled rejections on a single deck load.
@@ -684,11 +684,24 @@
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         var t = e.target, tag = t && t.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
-        // NOT "o": that is Reveal's built-in overview toggle, and binding it
-        // here fired BOTH -- the poll opened and the deck jumped to overview.
-        // "f" is fullscreen, "s" speaker view, "b"/"." pause, "v" is taken too.
-        // "g" was verified free against Reveal 5.1.0 in a live deck.
-        if (e.key !== "g" && e.key !== "G") return;
+        // Reveal 5.1.0 binds, at least: n p space arrows home end f s b . o
+        // Esc ? and the vim pair h j k l, plus "g" for jump-to-slide. The decks
+        // add digits 1-9 (timer badges) and r (results). "t" is free.
+        //
+        // TWO earlier picks were wrong because the probe was wrong, not the
+        // key: "o" silently also toggled overview, and "g" hijacked
+        // jump-to-slide -- the way Ryan actually navigates. A probe that only
+        // asks "did getIndices() change immediately" cannot see either: "g"
+        // opens an input and waits for digits. Verify by asserting that focus
+        // did NOT land on an INPUT and that a following "2","8",Enter does NOT
+        // move the deck. "k" passes a naive probe too and is still Reveal's
+        // "up" -- it only looks free on a slide with nothing above it.
+        if (e.key !== "t" && e.key !== "T") return;
+
+        // Scope the interception to slides that actually have a poll. On every
+        // other slide the key is left entirely alone, so even a future
+        // collision costs nothing on 72 of 73 slides.
+        if (!pollIdsOnCurrentSlide().length) return;
         e.preventDefault();
         e.stopPropagation();
         toggleHere();
