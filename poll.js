@@ -402,8 +402,22 @@
   var openIds = {};        // pollId -> true while we believe it is open
   var closeTimers = {};    // pollId -> timeout id
 
+  // Reveal's own answer, NOT document.querySelector("section.present").
+  // On a vertical sub-slide the OUTER stack also carries .present and comes
+  // first in document order, so the querySelector version returned the stack --
+  // which still contains the question's voting grid. Advancing from a poll to
+  // its answer sub-slide therefore looked like "still on the poll", and voting
+  // stayed open while the correct answer was projected.
+  function currentSlide() {
+    if (window.Reveal && Reveal.getCurrentSlide) {
+      var s = Reveal.getCurrentSlide();
+      if (s) return s;
+    }
+    return document.querySelector("section.present");
+  }
+
   function pollIdsOnCurrentSlide() {
-    var sec = document.querySelector("section.present");
+    var sec = currentSlide();
     if (!sec) return [];
     var out = [];
     [].forEach.call(sec.querySelectorAll("[data-poll-id]"), function (e) {
@@ -419,7 +433,7 @@
   // kept voting open while the correct answer was projected. Advancing to the
   // reveal must close the poll.
   function votingPollsHere() {
-    var sec = document.querySelector("section.present");
+    var sec = currentSlide();
     if (!sec) return [];
     var out = [];
     [].forEach.call(sec.querySelectorAll(".poll-grid[data-poll-id]"), function (e) {
