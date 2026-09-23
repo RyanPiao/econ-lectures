@@ -1497,6 +1497,7 @@
     .reset-btn { display: none; }
     body.instructor-mode .reset-btn { display: inline-block; }
   </style>
+  <script src="../../poll.js"></script>
   <script>
   (function(){
     var SUPA_URL = "https://dpntbrsorgbivmntwmod.supabase.co";
@@ -1535,7 +1536,7 @@
           if (o.dataset.choice === choice) o.classList.add("voted");
         });
       }
-      supaFetch("POST", "poll_votes", {poll_id: pollId, choice: choice, voter_id: VOTER_ID})
+      supaFetch("POST", "poll_votes", (window.Poll ? Poll.stamp(pollId, choice) : {poll_id: pollId, choice: choice, voter_id: VOTER_ID}))
         .then(function() { fetchResults(pollId); });
     }
 
@@ -1570,7 +1571,7 @@
 
     // --- Fetch results for a poll (no caching) ---
     function fetchResults(pollId) {
-      supaFetch("GET", "poll_votes?poll_id=eq."+pollId+"&select=choice")
+      supaFetch("GET", "poll_votes?poll_id=eq."+pollId+"&select=choice"+(window.Poll ? Poll.q() : ""))
         .then(function(r) { return r.json(); })
         .then(function(rows) {
           var counts = {};
