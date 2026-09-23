@@ -488,7 +488,7 @@
     var here = votingPollsHere();
 
     // Arriving at a poll slide does NOT open it. You open it when you are
-    // ready -- press "o", or the button in speaker view.
+    // ready -- press "g", or the button in speaker view.
     //
     // Deliberately NOT cancelling pending closes here. Reveal fires a transient
     // slidechanged during vertical moves in which the poll is briefly current
@@ -556,7 +556,7 @@
       '<span id="ec-spk-state">—</span>' +
       '<span id="ec-spk-count"></span>' +
       '<span id="ec-spk-grow"></span>' +
-      '<button data-a="open"  type="button">Open voting &nbsp;(o)</button>' +
+      '<button data-a="open"  type="button">Open voting &nbsp;(g)</button>' +
       '<button data-a="close" type="button">Close now</button>';
     document.body.appendChild(bar);
 
@@ -588,9 +588,9 @@
       if (closing)            { dot.className = "amber"; st.textContent = "CLOSING\u2026"; }
       else if (w === "open")  { dot.className = "green"; st.textContent = "VOTING OPEN"; }
       else if (w === "none")  { dot.className = "grey";
-                                st.textContent = "open by default \u2014 press o to take control"; }
+                                st.textContent = "open by default \u2014 press g to take control"; }
       else                    { dot.className = "red";
-                                st.textContent = "CLOSED \u2014 press o to open"; }
+                                st.textContent = "CLOSED \u2014 press g to open"; }
       // Guarded: this lookup went stale once when the button was renamed from
       // "pin" to "open", and the resulting null threw inside this promise on
       // every repaint -- 124 unhandled rejections on a single deck load.
@@ -684,8 +684,13 @@
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         var t = e.target, tag = t && t.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
-        if (e.key !== "o" && e.key !== "O") return;
+        // NOT "o": that is Reveal's built-in overview toggle, and binding it
+        // here fired BOTH -- the poll opened and the deck jumped to overview.
+        // "f" is fullscreen, "s" speaker view, "b"/"." pause, "v" is taken too.
+        // "g" was verified free against Reveal 5.1.0 in a live deck.
+        if (e.key !== "g" && e.key !== "G") return;
         e.preventDefault();
+        e.stopPropagation();
         toggleHere();
       });
     }

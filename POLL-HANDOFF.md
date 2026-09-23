@@ -181,8 +181,11 @@ Two modes. Pick one deliberately.
 accepts votes all session, NUID + timestamp + answer still recorded. Simplest,
 zero risk. Recommended for your first run.
 
-**With `?presenter`** — arriving at a poll does NOT open it. Press `o`, or the
-button in speaker view. Leaving the slide closes it after a 20 s grace so a
+**With `?presenter`** — arriving at a poll does NOT open it. Press `g`, or the
+button in speaker view. The key is `g`, not `o`: `o` is Reveal's
+built-in overview toggle and binding it fired both, opening the poll AND
+jumping the deck to overview. `f` (fullscreen), `s` (speaker), `b`/`.` (pause)
+and `v` are taken too; `g` was verified free against Reveal 5.1.0 in a live deck. Leaving the slide closes it after a 20 s grace so a
 student mid-tap still lands.
 
 The safety net: until you open your FIRST poll of a session there are no window
@@ -206,9 +209,9 @@ delete from public.poll_windows;
    answer is on screen and voting is still live. Network trace shows the
    scheduler runs and GETs `poll_windows` but never issues `rpc/close_poll` on
    that one transition. Three hypotheses were each wrong; unresolved.
-   **Workaround: press `o` when you reveal the answer.**
+   **Workaround: press `g` when you reveal the answer.**
 
-2. **The `o` key binding is UNVERIFIED end-to-end.** Browser automation here
+2. **The `g` key binding is UNVERIFIED end-to-end.** Browser automation here
    cannot deliver real keystrokes to the tab — a capture-phase probe saw zero
    keydown events. The function it calls is tested and works. Press it yourself
    once before relying on it.
