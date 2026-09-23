@@ -324,6 +324,35 @@ A warning from my own mistakes, both of which a fresh regex will repeat:
    **The discriminator is the text comparison, not the presence of a note**, or
    you cry wolf on every correctly-written deck.
 
+3. **A third, on a different check entirely.** Scanning all 29 decks for damage
+   from a tool with a known regex bug, my literal `<link rel="stylesheet"`
+   matched nothing, because these decks write `<link href="…" rel="stylesheet">`
+   — reversed attribute order. It reported 22 of 29 "suspect".
+
 `data-fragment-index` is scoped per slide, not per deck — group accordingly.
 
+### The actual lesson (5200 Producer's framing, which is better than mine)
+
+It is not "homemade checks are unreliable". All three of my false alarms, and
+two of theirs the same day, were **regexes over HTML guessing at attribute
+order, tag spelling, or nesting**. The discriminator is:
+
+> **Does the check parse the structure, or pattern-match the text?**
+
+`step_notes_check.py` survived contact because it uses `html.parser` for the
+nesting question and a regex only for the flat attribute comparison. Anything
+that has to answer "is X inside Y" or "which slide is this in" needs a parser.
+A regex is fine only once you already hold the right element.
+
 **Use `step_notes_check.py`, not a fresh regex.**
+
+### Structural check of the 2316 decks, for the record
+
+A tool in the shared `tools/` directory (`notes_unsplit.py`) had a regex bug in
+which `<li[^>]*>` also matched `<link rel="stylesheet">`, spanning 3.8 KB and a
+`<script>` on one deck; tightened to `<li\b` in `a51dff6`. Who ran it over
+which course is unresolved. Independently of that, all 29 econ2316 decks were
+checked and are clean: `<section>` balanced, `<script>` balanced, no `<link>`
+absorbed into a following `<script>` or `<section>`, stylesheet links intact.
+If you maintain 3916 or 5200 decks, run the same check — the patched tool does
+not repair damage already written.
