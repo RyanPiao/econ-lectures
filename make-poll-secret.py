@@ -18,6 +18,31 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 ITER = 600_000          # must match the other CCGate payloads on this site
 B = lambda x: base64.b64encode(x).decode()
 
+def check(passphrase):
+    """Decrypt the existing class-console payload. Wrong passphrase -> stop."""
+    import re
+    here = os.path.dirname(os.path.abspath(__file__))
+    ref = os.path.join(here, "class-console", "index.html")
+    if not os.path.exists(ref):
+        print("! class-console/index.html not found -- cannot verify the passphrase.")
+        return
+    m = re.search(r'payload:\s*(\{.*?\})\s*,\s*\n', open(ref, encoding="utf-8").read(), re.S)
+    if not m:
+        print("! could not find the class-console payload -- skipping verification.")
+        return
+    pl = json.loads(m.group(1))
+    key = hashlib.pbkdf2_hmac("sha256", passphrase.encode(),
+                              base64.b64decode(pl["salt"]), pl["iter"], dklen=32)
+    try:
+        AESGCM(key).decrypt(base64.b64decode(pl["iv"]), base64.b64decode(pl["ct"]), None)
+    except Exception:
+        sys.exit("\nThat is NOT the passphrase that unlocks /class-console/ and /poll-admin/.\n"
+                 "It has to be the same one, or your browser can never decrypt what this\n"
+                 "script writes -- and the failure would be silent.\n"
+                 "Nothing was written. Try again with the shared instructor passphrase.")
+    print("Passphrase verified against the existing class-console payload.\n")
+
+
 def main():
     print(__doc__.split("\n\n")[1].replace("\n", " "), "\n")
     p1 = getpass.getpass("CCGate passphrase (same as poll-admin): ").strip()
@@ -26,6 +51,12 @@ def main():
     p2 = getpass.getpass("Again, to be sure: ").strip()
     if p1 != p2:
         sys.exit("They do not match. Nothing was written.")
+
+    # Prove it is the RIGHT passphrase before writing anything.
+    # It must be the one that already unlocks class-console, or the browser
+    # will never be able to decrypt what we are about to write -- and the
+    # failure would be silent and, on a projector, invisible.
+    check(p1)
 
     # The Supabase-side secret. Random, machine-only, never typed by a human.
     poll_secret = secrets.token_urlsafe(32)
