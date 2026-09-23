@@ -132,7 +132,20 @@ def main():
     with open(path, "w") as f:
         f.write(out)
 
+    # Also drop the SQL in a file. Printing it alone has now twice ended with it
+    # scrolling away unpasted, which leaves poll-secret.js and poll_secrets holding
+    # secrets from different runs -- a mismatch whose only symptom is silence.
+    sqlp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "poll-secret.sql")
+    with open(sqlp, "w") as f:
+        f.write("-- Paste into the Supabase SQL editor and press Run.\n"
+                "-- Pairs with the poll-secret.js written in the SAME run; regenerate both together.\n"
+                "-- Gitignored: this file holds the live secret in plaintext. Delete it once pasted.\n"
+                "insert into public.poll_secrets (k, v)\n"
+                "values ('instructor', '%s')\n"
+                "on conflict (k) do update set v = excluded.v;\n" % poll_secret)
+
     print("\nWrote", path)
+    print("Wrote", sqlp, "(gitignored -- delete it once pasted)")
     print("\n" + "=" * 72)
     print("PASTE THIS ONE LINE INTO THE SUPABASE SQL EDITOR, THEN PRESS RUN:")
     print("=" * 72)
@@ -140,7 +153,10 @@ def main():
     print("values ('instructor', '%s')" % poll_secret)
     print("on conflict (k) do update set v = excluded.v;")
     print("=" * 72)
-    print("\nThen: git add poll-secret.js && git commit && git push")
+    print("\nThen, in order:")
+    print("  1. paste the SQL above (or the contents of poll-secret.sql) into Supabase")
+    print("  2. git add poll-secret.js && git commit -m 'new poll secret' && git push")
+    print("  3. python3 make-poll-secret.py --check     <- confirms the two now agree")
     print("Do not paste the line above into a chat -- it is the live secret.\n")
 
 if __name__ == "__main__":
