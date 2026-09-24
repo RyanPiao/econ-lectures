@@ -354,7 +354,7 @@
 })();
 </script>
 
-<!-- presenter-gate v19 -->
+<!-- presenter-gate v20 -->
 <script>
 (function () {
   var q = location.search;
@@ -1013,7 +1013,7 @@
   // old gate for the rest of the session. The speaker window is about:blank
   // written by this one, so it is same-origin and writable, and reveal's notes
   // plugin heartbeats us a live handle to it every second.
-  var spkWin = null, SPK = 'v19';
+  var spkWin = null, SPK = 'v20';
   // The SAME handler has to go in every document that can hold the keyboard.
   // Clicking the speaker view's slide preview puts focus INSIDE that iframe,
   // which is its own document -- keydowns there never reach the speaker
@@ -1040,7 +1040,12 @@
       'try{var o=' + ref + ';' +
       'if(!o){m="m: no handle to the projected window";}' +
       'else if(o.closed){m="m: the projected window is closed";}' +
-      'else{o.focus();m="m: asked the projector to come forward";}' +
+      'else{o.focus();m="m: focus() sent";' +
+      'var n=o.name;' +
+      'if(n){var w=window.open("",n);if(w){try{w.focus();}catch(_2){}' +
+      'm="m: focus() + window.open(\'"+n+"\') sent";}' +
+      'else{m="m: focus() sent; window.open returned null";}}' +
+      'else{m="m: focus() sent; projector has no window name";}}' +
       '}catch(err){m="m: blocked \u2014 "+err.name;}' +
       'var b=document.getElementById("ti-m-say");' +
       'if(!b){b=document.createElement("div");b.id="ti-m-say";' +
@@ -1087,6 +1092,14 @@
   }
 
   function mainSide() {
+    // A named window can be targeted by window.open(name), which is a DIFFERENT
+    // code path from focus(): it runs the "open a window" algorithm, which the
+    // browser honours on a fresh keypress even where a bare focus() is ignored.
+    // With an empty url it navigates nothing -- it just returns and surfaces the
+    // existing window. This is the last mechanism available to a web page; if it
+    // does not raise the window either, the refusal is macOS's and no page can
+    // get past it.
+    try { if (!window.name) window.name = 'ti-projector'; } catch (e) {}
     var dot = document.createElement('div'), idle = null;
     dot.style.cssText = 'position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;' +
       'background:rgba(220,38,38,.85);box-shadow:0 0 12px 4px rgba(220,38,38,.55);pointer-events:none;' +
