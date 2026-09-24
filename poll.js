@@ -455,13 +455,38 @@
     el.dataset.self = "1";
     var boxes = inkRects(currentSlide());
     delete el.dataset.self;
-    var cands = [[r.left + M, r.bottom - h - M], [r.right - w - M, r.bottom - h - M],
+    // same near-miss candidates as the badge, for the same reason
+    var cands = [[M, H - h - 2], [M, 2],
+                 [r.left + M, r.bottom - h - M], [r.right - w - M, r.bottom - h - M],
                  [r.left + M, r.top + M], [r.right - w - M, r.top + M]];
-    var best = null;
-    cands.forEach(function (c) {
-      var o = overlapAt(c[0], c[1], w, h, boxes);
-      if (!best || o < best.o) best = { x: c[0], y: c[1], o: o };
-    });
+    var score = function (cw, ch) {
+      var b = null;
+      cands.forEach(function (c) {
+        var x = Math.max(2, Math.min(W - cw - 2, c[0]));
+        var y = Math.max(2, Math.min(H - ch - 2, c[1]));
+        var o = overlapAt(x, y, cw, ch, boxes);
+        if (!b || o < b.o) b = { x: x, y: y, o: o };
+      });
+      return b;
+    };
+    var best = score(w, h);
+    if (best.o > 0) {
+      // Nothing is free at full size. This happens on a dense slide in an
+      // exactly-16:9 window, where the top strip is the title and the bottom
+      // strip is reveal's own navigation -- on ch02 the enabled down-arrow sits
+      // dead centre at the bottom and costs more to cover (1620px) than
+      // clipping a corner of text (608px). Rather than pick the least-bad
+      // collision, drop the "press G" hint and keep the number: the compact
+      // badge is 142x43 instead of 226x59 and fits where the full one cannot.
+      // The number is the part the room needs; the hint is a courtesy.
+      el.className = "compact";
+      var cw = el.offsetWidth, ch2 = el.offsetHeight;
+      var alt = score(cw, ch2);
+      if (alt.o < best.o) { set(alt.x, alt.y); return; }
+      el.className = "";                    // compact was no better; keep the hint
+    } else if (el.className === "compact") {
+      el.className = "";
+    }
     set(best.x, best.y);
   }
 
@@ -636,7 +661,26 @@
   // Bound to reveal's events INSTEAD of paintPageNo: reveal writes its slide
   // number after dispatching the event, so painting inside the handler reads
   // the old value. Two frames puts this safely after reveal's own update.
+  // Late content is the rule, not the exception: poll bars fill from the
+  // network, KaTeX typesets, images decode. A paint at +80ms or even +520ms
+  // measures a slide that is not finished. This watches the slide itself and
+  // re-checks, debounced; placePageNo then decides whether anything needs to
+  // move. Nothing here mutates the slide, so it cannot feed itself.
+  var slideWatch = null, watchT = null;
+  function watchSlide() {
+    if (!window.MutationObserver) return;
+    var sec = currentSlide();
+    if (slideWatch) slideWatch.disconnect();
+    if (!sec) return;
+    slideWatch = new MutationObserver(function () {
+      clearTimeout(watchT);
+      watchT = setTimeout(function () { paintPageNo(); paintChip(); }, 160);
+    });
+    slideWatch.observe(sec, { childList: true, subtree: true, characterData: true });
+  }
+
   function schedulePageNo() {
+    watchSlide();
     requestAnimationFrame(function () { requestAnimationFrame(paintPageNo); });
     requestAnimationFrame(function () { requestAnimationFrame(paintChip); });
     // requestAnimationFrame does NOT run while the tab is hidden, and a deck
@@ -646,6 +690,9 @@
     // window is revealed. paintPageNo is idempotent, so running twice is free.
     setTimeout(paintPageNo, 80);
     setTimeout(paintChip, 90);
+    // backstop for decks whose transition does not fire the event
+    setTimeout(paintPageNo, 520);
+    setTimeout(paintChip, 530);
   }
 
   function paintPageNo() {
@@ -778,9 +825,38 @@
     el.dataset.self = "1";                 // inkRects skips anything marked self
     var boxes = inkRects(sec);
     delete el.dataset.self;
+
+    // Poll results arrive over the network and keep changing while the class
+    // votes, so the content under the badge is not settled when it is first
+    // placed. Re-running the whole search on every change would make the badge
+    // hop around mid-question, so it only moves when the spot it is actually
+    // in has stopped being clear -- and it always re-searches on a new slide.
+    var here = Reveal.getIndices ? (Reveal.getIndices().h + "." + (Reveal.getIndices().v || 0)) : "";
+    var cur = el.getBoundingClientRect();
+    if (el.dataset.at === here && cur.width &&
+        overlapAt(cur.left, cur.top, cur.width, cur.height, boxes) === 0) return;
+    el.dataset.at = here;
+    // A laptop gives a letterbox that is real but a few px too small: 47px on a
+    // 1512x945 screen against a badge 59px tall, so the full-clearance branch
+    // above rejects it and the badge lands over the slide. Rather than a second
+    // arithmetic rule, offer the near-miss as a CANDIDATE and let the same glyph
+    // test judge it -- hugging the viewport edge overlaps only the slide's outer
+    // few px, which is padding on every deck checked. Scaling the badge with
+    // Reveal.getScale() would have made this worse, not better: at 1512x945 the
+    // scale is 1.18, so the badge would grow to ~70px against a 47px gap.
+    var hugTop = Math.max(barBottom + 2, 2);
+    var hugBot = H - h - 2;
     var top1 = Math.max(barBottom + M, r.top + M);
     var bot1 = Math.min(H - h - M, r.bottom - h - M);
-    var cands = [[cx, top1], [r.right - w - M, top1], [r.left + M, top1],
+    // Centre-hug alone is not enough when there is NO letterbox at all (an
+    // exactly-16:9 window): dead centre at the top edge is precisely where the
+    // title sits. The edge CORNERS are the positions that survive a dense
+    // slide, so they are offered too. Order is preference; the first candidate
+    // scoring zero wins, so the centred ones are still taken when they are free.
+    var lx = Math.max(2, r.left + 2), rx = Math.min(W - w - 2, r.right - w - 2);
+    var cands = [[cx, hugTop], [cx, hugBot],
+                 [rx, hugTop], [lx, hugTop], [rx, hugBot], [lx, hugBot],
+                 [cx, top1], [r.right - w - M, top1], [r.left + M, top1],
                  [cx, bot1], [r.right - w - M, bot1], [r.left + M, bot1]];
     var best = null;
     cands.forEach(function (c) {
@@ -900,6 +976,8 @@
     "letter-spacing:.01em}" +
     "#ec-pageno i{display:block;font-style:normal;font-size:13px;font-weight:500;" +
     "opacity:.85;margin-top:3px}" +
+    "#ec-pageno.compact i{display:none}" +
+    "#ec-pageno.compact{padding:6px 14px 7px}" +
     "#ec-pageno kbd{font:inherit;font-weight:700;background:rgba(255,255,255,.22);" +
     "border-radius:4px;padding:0 5px}" +
     "#ec-spk{position:fixed;top:0;left:0;right:0;z-index:9998;display:none;gap:10px;" +
@@ -973,7 +1051,12 @@
     // projector is what the room reads, and a student on their own phone is
     // on their own slide and needs their own number.
     if (window.Reveal && Reveal.addEventListener) {
-      ["ready", "slidechanged", "fragmentshown", "fragmenthidden", "overviewhidden"]
+      // "slidetransitionend" matters as much as "slidechanged": the first paint
+      // lands ~80ms in, while reveal is still animating the incoming slide, so
+      // the glyph rectangles it measures are mid-flight and a position scored
+      // clear can be covered once everything settles. Re-place when it stops.
+      ["ready", "slidechanged", "slidetransitionend", "fragmentshown",
+       "fragmenthidden", "overviewhidden"]
         .forEach(function (ev) { Reveal.addEventListener(ev, schedulePageNo); });
     }
     // same reason: bringing the window forward must repaint, because every
