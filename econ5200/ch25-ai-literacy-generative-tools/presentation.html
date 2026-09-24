@@ -600,7 +600,7 @@
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var sec=g.closest("section");if(sec&&!sec.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v2 -->
+<!-- presenter-gate v6 -->
 <script>
 (function () {
   var q = location.search;
@@ -640,13 +640,72 @@
     return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k };
   }
   function toMain(msg) {
-    try { var m = window.parent && window.parent.opener; if (m) m.postMessage(JSON.stringify(msg), location.origin); } catch (e) {}
+    // a deck opened as a local file has an opaque origin ("null" or "file://") that
+    // postMessage cannot target, so local files send to "*" (the receiver still checks)
+    var target = (location.protocol === 'file:' || !location.origin || location.origin === 'null') ? '*' : location.origin;
+    try { var m = window.parent && window.parent.opener; if (m) m.postMessage(JSON.stringify(msg), target); } catch (e) {}
   }
   function isDigit(code) { return code >= 49 && code <= 57; }
   function fireKey(key) {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
   }
+  var CTL = 'input, select, textarea, button';
+  var NAV = { ArrowRight: 'next', ArrowLeft: 'prev', ArrowUp: 'up', ArrowDown: 'down',
+              PageDown: 'next', PageUp: 'prev', ' ': 'next', Spacebar: 'next',
+              n: 'next', p: 'prev', N: 'next', P: 'prev', Home: 'first', End: 'last' };
+  function here() { var i = Reveal.getIndices(); return { h: i.h, v: i.v || 0 }; }
+  function fsAsk() {               // speaker view: ask the projector to go full screen
+    if (document.getElementById('ti-fs-ask')) return;
+    var b = document.createElement('button');
+    b.id = 'ti-fs-ask'; b.type = 'button';
+    b.title = 'Chrome only lets a window go full screen from a click inside that window. ' +
+              'This brings the projected deck forward and puts one big button on it.';
+    b.innerHTML = '<i class="fa-solid fa-expand"></i> Projector full screen';
+    b.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:10001;' +
+      'font:600 12px system-ui,sans-serif;padding:6px 11px;border:0;border-radius:7px;' +
+      'background:rgba(55,65,81,.92);color:#fff;cursor:pointer;opacity:.55;transition:opacity .2s';
+    b.addEventListener('mouseenter', function () { b.style.opacity = '1'; });
+    b.addEventListener('mouseleave', function () { b.style.opacity = '.55'; });
+    b.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      try { var m = window.parent && window.parent.opener; if (m) m.focus(); } catch (_) {}
+      toMain({ bridge: 'fs' });
+    });
+    document.body.appendChild(b);
+  }
+
   function speakerSide() {
+    fsAsk();
+    // controls: the preview keeps its own state and the projected slide gets the same change
+    function ctl(ev) {
+      var e = ev.target.closest && ev.target.closest(CTL), sl = Reveal.getCurrentSlide();
+      if (!ev.isTrusted || !e || !sl || !sl.contains(e)) return;
+      if (ev.type === 'click' && e.tagName !== 'BUTTON') return;
+      var at = here();
+      toMain({ bridge: 'ctl', h: at.h, v: at.v, idx: [].indexOf.call(sl.querySelectorAll(CTL), e),
+               kind: ev.type, value: e.value, checked: e.checked });
+    }
+    // clicking a slider or a button leaves focus inside the preview, so reveal's keys would
+    // move the preview only: take them here and move the projected deck instead
+    document.addEventListener('keydown', function (e) {
+      if (!e.isTrusted || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      var act = NAV[e.key];
+      if (!act) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      toMain({ bridge: 'nav', action: act });
+    }, true);
+    document.addEventListener('input', ctl, true);
+    document.addEventListener('change', ctl, true);
+    document.addEventListener('click', ctl, true);
+    // a video: play it on the projector, not in the preview
+    document.addEventListener('click', function (ev) {
+      var f = ev.target.closest && ev.target.closest('.yt-facade');
+      if (!f || ev.target.closest('a')) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var at = here(); toMain({ bridge: 'yt', h: at.h, v: at.v });
+    }, true);
     document.addEventListener('mousemove', function (ev) { var p = slideXY(ev); toMain({ bridge: 'laser', x: p.x, y: p.y }); });
     document.addEventListener('mouseleave', function () { toMain({ bridge: 'laser', hide: true }); });
     // a digit pressed with the preview focused: its own timer runs here; start the projected one too
@@ -662,6 +721,56 @@
       }
     });
   }
+  // ---- full screen ----------------------------------------------------
+  // requestFullscreen needs TRANSIENT user activation IN THE WINDOW THAT GOES
+  // FULL SCREEN. A postMessage handler never has it -- measured, Chrome throws
+  // "TypeError: Permissions check failed". So no button in the speaker view can
+  // fullscreen the projected window on its own, however it is worded, and the
+  // reason "f" appears not to work is that it fullscreens whichever window has
+  // focus: press it in speaker view and the LAPTOP window goes full screen.
+  // What the speaker view can do is bring the projected window forward and put
+  // one unmissable target on it; that click is the activation Chrome wants.
+  function goFull() {
+    var el = document.documentElement;
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    var p;
+    try { p = el.requestFullscreen(); } catch (e) { armFull(); return; }
+    if (p && p.catch) p.catch(function () { armFull(); });
+  }
+  function armFull() {
+    if (document.getElementById('ti-fs-arm')) return;
+    var o = document.createElement('div');
+    o.id = 'ti-fs-arm';
+    o.innerHTML = '<div style="pointer-events:none"><div style="font-size:64px;line-height:1">&#9974;</div>' +
+                  '<div style="margin-top:14px">Click to go full screen</div>' +
+                  '<div style="margin-top:6px;font-size:16px;font-weight:400;opacity:.8">' +
+                  'the browser needs the click on this window</div></div>';
+    o.style.cssText = 'position:fixed;inset:0;z-index:10002;display:flex;align-items:center;' +
+      'justify-content:center;text-align:center;background:rgba(15,23,42,.78);color:#fff;' +
+      'font:700 30px system-ui,sans-serif;cursor:pointer';
+    o.addEventListener('click', function () { o.remove(); goFull(); });
+    document.body.appendChild(o);
+    setTimeout(function () { if (o.parentNode) o.remove(); }, 20000);
+  }
+  function fsButton() {                 // projector window: the one-click path
+    if (document.getElementById('ti-fs')) return;
+    var b = document.createElement('button');
+    b.id = 'ti-fs'; b.type = 'button'; b.title = 'Full screen (f)';
+    b.innerHTML = '<i class="fa-solid fa-expand"></i>';
+    b.style.cssText = 'position:fixed;left:54px;bottom:12px;z-index:10001;width:34px;height:34px;' +
+      'border-radius:50%;display:flex;align-items:center;justify-content:center;' +
+      'background:rgba(255,255,255,.9);color:#6b8ba4;border:1px solid #e5e7eb;cursor:pointer;' +
+      'font-size:14px;padding:0;opacity:.18;transition:opacity .2s';
+    b.addEventListener('mouseenter', function () { b.style.opacity = '1'; });
+    b.addEventListener('mouseleave', function () { b.style.opacity = '.18'; });
+    b.addEventListener('click', function (e) { e.preventDefault(); goFull(); });
+    document.addEventListener('fullscreenchange', function () {
+      b.innerHTML = document.fullscreenElement ? '<i class="fa-solid fa-compress"></i>'
+                                               : '<i class="fa-solid fa-expand"></i>';
+    });
+    document.body.appendChild(b);
+  }
+
   function mainSide() {
     var dot = document.createElement('div'), idle = null;
     dot.style.cssText = 'position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;' +
@@ -669,10 +778,42 @@
       'z-index:10000;display:none';
     document.body.appendChild(dot);
     window.addEventListener('message', function (ev) {
-      if (ev.origin !== location.origin) return;
+      if (ev.origin !== location.origin && location.protocol !== 'file:') return;
       var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
       if (!d || !d.bridge) return;
       if (d.bridge === 'timer') { fireKey(d.key); return; }
+      if (d.bridge === 'fs') { goFull(); return; }   // rejects -> armFull()
+      if (d.bridge === 'nav') {
+        var n = Reveal.getTotalSlides ? Reveal.getTotalSlides() : 0;
+        if (d.action === 'next') Reveal.next();
+        else if (d.action === 'prev') Reveal.prev();
+        else if (d.action === 'up') Reveal.up();
+        else if (d.action === 'down') Reveal.down();
+        else if (d.action === 'first') Reveal.slide(0, 0);
+        else if (d.action === 'last') Reveal.slide(Reveal.getHorizontalSlides().length - 1, 0);
+        return;
+      }
+      if (d.bridge === 'ctl' || d.bridge === 'yt') {
+        var at = here(), sl = Reveal.getCurrentSlide();
+        if (!sl || at.h !== d.h || at.v !== d.v) return;      // the two windows are on different slides
+        if (d.bridge === 'yt') {
+          var f = sl.querySelector('.yt-facade');
+          if (f) { f.click(); return; }
+          var yt = sl.querySelector('iframe[src*="youtube"]');
+          if (yt && yt.contentWindow) {
+            yt.dataset.tiPaused = yt.dataset.tiPaused === '1' ? '0' : '1';
+            yt.contentWindow.postMessage(JSON.stringify({ event: 'command',
+              func: yt.dataset.tiPaused === '1' ? 'pauseVideo' : 'playVideo', args: [] }), '*');
+          }
+          return;
+        }
+        var e = sl.querySelectorAll(CTL)[d.idx];
+        if (!e) return;
+        if (d.kind === 'click') { e.click(); return; }
+        if (e.type === 'checkbox' || e.type === 'radio') e.checked = d.checked; else e.value = d.value;
+        e.dispatchEvent(new Event(d.kind, { bubbles: true }));
+        return;
+      }
       if (d.bridge === 'laser') {
         if (d.hide) { dot.style.display = 'none'; return; }
         var r = document.querySelector('.reveal .slides').getBoundingClientRect(), k = Reveal.getScale();
@@ -683,10 +824,31 @@
     });
   }
 
+  function homeLink() {            // presenter only: a faint way back to the chapter list
+    if (document.getElementById('ti-home')) return;
+    var a = document.createElement('a');
+    a.id = 'ti-home'; a.href = '../index.html'; a.title = 'Chapter list';
+    a.innerHTML = '<i class="fa-solid fa-house"></i>';
+    a.style.cssText = 'position:fixed;left:14px;bottom:12px;z-index:10001;width:34px;height:34px;' +
+      'border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.9);' +
+      'color:#6b8ba4;border:1px solid #e5e7eb;text-decoration:none;font-size:15px;opacity:.18;transition:opacity .2s';
+    a.addEventListener('mouseenter', function () { a.style.opacity = '1'; });
+    a.addEventListener('mouseleave', function () { a.style.opacity = '.18'; });
+    document.body.appendChild(a);
+  }
+  function tallOnce() {                   // speaker view opens in Tall the first time; after that, your choice sticks
+    try {
+      if (!localStorage.getItem('ti-speaker-tall')) {
+        localStorage.setItem('reveal-speaker-layout', 'tall');
+        localStorage.setItem('ti-speaker-tall', '1');
+      }
+    } catch (e) {}
+  }
   function start() {
+    if (on && !receiver) tallOnce();
     if (on) loadNotes();
     if (current) speakerSide();
-    else if (on && !receiver) mainSide();
+    else if (on && !receiver) { mainSide(); homeLink(); fsButton(); }
     if (!receiver) wire();
   }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
