@@ -599,6 +599,13 @@
      cannot drift apart, and if the deck has slide numbers switched off
      nothing is invented. Poll slides only; every other slide is untouched. */
 
+  // Bound to reveal's events INSTEAD of paintPageNo: reveal writes its slide
+  // number after dispatching the event, so painting inside the handler reads
+  // the old value. Two frames puts this safely after reveal's own update.
+  function schedulePageNo() {
+    requestAnimationFrame(function () { requestAnimationFrame(paintPageNo); });
+  }
+
   function paintPageNo() {
     var el = document.getElementById("ec-pageno");
     var src = document.querySelector(".reveal .slide-number");
@@ -611,6 +618,17 @@
     var a = src && src.querySelector(".slide-number-a");
     var txt = a ? a.textContent.replace(/\s+/g, "")
                 : (src ? src.textContent.replace(/\s+/g, "") : "");
+    // Reveal writes .slide-number AFTER it dispatches "slidechanged", so a
+    // handler bound to that event mirrors the PREVIOUS slide's number. This was
+    // off by one on EVERY horizontal arrival -- "Slide 27" while standing on 28
+    // -- which made the badge's own "press G, type 27" hint send the room to
+    // the wrong slide. schedulePageNo() fixes the ordering; this is the belt to
+    // that braces. In reveal's "h.v"/"all" formats the major number IS h+1 by
+    // definition, so any disagreement means we just read a stale DOM.
+    if (a && window.Reveal && Reveal.getIndices) {
+      var h1 = String((Reveal.getIndices().h || 0) + 1);
+      if (txt !== h1) txt = h1;
+    }
     if (!/^\d+$/.test(txt) || !pollIdsOnCurrentSlide().length) {
       if (el) el.style.display = "none";
       return;
@@ -808,7 +826,7 @@
     // on their own slide and needs their own number.
     if (window.Reveal && Reveal.addEventListener) {
       ["ready", "slidechanged", "fragmentshown", "fragmenthidden", "overviewhidden"]
-        .forEach(function (ev) { Reveal.addEventListener(ev, paintPageNo); });
+        .forEach(function (ev) { Reveal.addEventListener(ev, schedulePageNo); });
     }
     paintPageNo();
 
