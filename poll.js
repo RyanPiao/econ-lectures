@@ -404,6 +404,17 @@
 
   function paintChip() {
     if (!CHECKIN) return;
+    // Not on the instructor's own windows. Two reasons, both seen on a real
+    // projector: it sat on top of the gate's home and full-screen buttons at
+    // bottom-left, and it put "checked in ....1111" on the projected screen --
+    // Ryan's own demo check-in, shown to the room for the whole lecture. The
+    // explicit "?instructor" flag is deliberately NOT included, so there is
+    // still a way to demonstrate the check-in flow on purpose.
+    if (PROJECTOR || SPEAKER) {
+      var old = document.getElementById("ec-chip");
+      if (old) old.remove();
+      return;
+    }
     var chip = document.getElementById("ec-chip");
     var n = nuid();
     if (!n) { if (chip) chip.remove(); return; }
@@ -591,8 +602,16 @@
   function paintPageNo() {
     var el = document.getElementById("ec-pageno");
     var src = document.querySelector(".reveal .slide-number");
-    var txt = src ? src.textContent.replace(/\s+/g, "") : "";
-    if (!txt || !pollIdsOnCurrentSlide().length) {
+    // The MAJOR number only. Reveal renders "28 . 1" as three spans; the
+    // sub-slide part is noise to a student -- reveal's own jump-to-slide takes
+    // "28" and lands on 28.1, so printing the ".1" only invites them to type
+    // something longer that does the same thing. Read the span rather than
+    // splitting the text, so a deck configured to a different slideNumber
+    // format degrades to "no badge" instead of to a wrong number.
+    var a = src && src.querySelector(".slide-number-a");
+    var txt = a ? a.textContent.replace(/\s+/g, "")
+                : (src ? src.textContent.replace(/\s+/g, "") : "");
+    if (!/^\d+$/.test(txt) || !pollIdsOnCurrentSlide().length) {
       if (el) el.style.display = "none";
       return;
     }
@@ -602,7 +621,10 @@
       if (SPEAKER) el.className = "below-bar";   // the status bar owns top:0
       document.body.appendChild(el);
     }
-    el.textContent = "Slide " + txt;
+    // Verified against reveal 5.1.0: "g" opens .jump-to-slide-input and "28"
+    // lands on 28.1. The hint is only printed because that was tested.
+    el.innerHTML = '<b>Slide ' + txt + '</b>' +
+                   '<i>press <kbd>G</kbd> \u2192 type <kbd>' + txt + '</kbd> \u2192 Enter</i>';
     el.style.display = "block";
   }
 
@@ -703,10 +725,16 @@
     ".ec-toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:99999;" +
       "background:rgba(17,24,39,.94);color:#fff;font:600 14px/1.3 system-ui,sans-serif;" +
       "padding:11px 18px;border-radius:10px}" +
-    "#ec-pageno{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9997;" +
-    "display:none;background:rgba(30,58,138,.90);color:#fff;border-radius:999px;" +
-    "padding:5px 14px;font:600 15px system-ui,sans-serif;letter-spacing:.02em;" +
-    "pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.25)}" +
+    "#ec-pageno{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9997;" +
+    "display:none;text-align:center;background:rgba(30,58,138,.93);color:#fff;" +
+    "border-radius:14px;padding:7px 20px 8px;font-family:system-ui,sans-serif;" +
+    "pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.3)}" +
+    "#ec-pageno b{display:block;font-size:27px;font-weight:700;line-height:1.05;" +
+    "letter-spacing:.01em}" +
+    "#ec-pageno i{display:block;font-style:normal;font-size:13px;font-weight:500;" +
+    "opacity:.85;margin-top:3px}" +
+    "#ec-pageno kbd{font:inherit;font-weight:700;background:rgba(255,255,255,.22);" +
+    "border-radius:4px;padding:0 5px}" +
     "#ec-pageno.below-bar{top:38px}" +
     "#ec-spk{position:fixed;top:0;left:0;right:0;z-index:9998;display:none;gap:10px;" +
       "align-items:center;padding:7px 12px;background:#111827;color:#fff;" +
