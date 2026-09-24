@@ -1099,7 +1099,7 @@
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var s=g.closest("section");if(s&&!s.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v14 -->
+<!-- presenter-gate v15 -->
 <script>
 (function () {
   var q = location.search;
@@ -1871,6 +1871,49 @@
     document.body.appendChild(b);
   }
 
+  // ---- repair the speaker window FROM HERE ------------------------------
+  // The speaker window is about:blank written by this window, so it is
+  // same-origin and reachable. That matters because its preview iframe caches
+  // the deck: reopening speaker view can STILL run an old gate, which is why a
+  // button fixed here kept appearing in its old place and behaving in its old
+  // way. reveal's notes plugin heartbeats to us every second, and ev.source on
+  // that heartbeat is a live handle to the speaker window -- so the projected
+  // window, which the instructor DOES hard-reload, can reach in and replace the
+  // button itself. No dependence on whatever version the iframe happens to be.
+  //
+  // The click still cannot grant us full screen (activation belongs to the
+  // window that was clicked), so it does what actually works: focuses this
+  // window and arms the one-click target on it.
+  var FSBTN = 'v15';
+  function fixSpeakerButton(w) {
+    var d;
+    try { d = w && w.document; } catch (e) { return; }      // cross-origin: leave it
+    if (!d || !d.body) return;
+    var old = d.getElementById('ti-fs-ask');
+    if (old && old.dataset.ver === FSBTN) return;
+    if (old) old.remove();
+    var b = d.createElement('button');
+    b.id = 'ti-fs-ask'; b.type = 'button'; b.dataset.ver = FSBTN;
+    b.textContent = '\u26f6 Projector full screen';
+    b.title = 'Brings the projected window forward and arms it: one click anywhere ' +
+              'on that screen and it goes full screen. Chrome will not let any other ' +
+              'window do it for you.';
+    b.style.cssText = 'position:absolute;top:10px;left:10px;z-index:30;' +
+      'font:600 12px Helvetica,sans-serif;padding:5px 11px;border:0;border-radius:5px;' +
+      'background:#3a3a3a;color:#eee;cursor:pointer';
+    var LABEL = b.textContent;
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      try { window.focus(); } catch (_) {}
+      armFull();                                  // runs HERE, on the projector
+      b.textContent = '\u2192 Now click the projected screen';
+      b.style.background = '#1d4ed8';
+      clearTimeout(b.__t);
+      b.__t = setTimeout(function () { b.textContent = LABEL; b.style.background = '#3a3a3a'; }, 9000);
+    });
+    d.body.appendChild(b);
+  }
+
   function mainSide() {
     var dot = document.createElement('div'), idle = null;
     dot.style.cssText = 'position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;' +
@@ -1880,6 +1923,9 @@
     window.addEventListener('message', function (ev) {
       if (ev.origin !== location.origin && location.protocol !== 'file:') return;
       var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      // reveal's notes window heartbeats to its opener once a second; that is
+      // our handle on it, and the only one we get
+      if (d && d.namespace === 'reveal-notes' && ev.source) fixSpeakerButton(ev.source);
       if (!d || !d.bridge) return;
       if (d.bridge === 'timer') { fireKey(d.key); return; }
       if (d.bridge === 'fs') {
