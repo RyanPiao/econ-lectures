@@ -2074,7 +2074,8 @@
       </p>
     </div>
 
-    <div class="cobb-card" style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 20px; margin-top:12px;">
+    <div class="cobb-card" data-poll-id="ch04-econ2316-cobb-live" data-poll-voting
+         style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 20px; margin-top:12px;">
       <div style="display:grid; grid-template-columns: 90px 1fr 1fr; gap:12px; align-items:end;">
         <div>
           <label class="cobb-lab">Initials</label>
@@ -3510,6 +3511,15 @@
   paint();
 
   function submit(){
+    if (sent) return;
+    // Same gate as every A/B/C/D vote: collect the NUID once, then refuse
+    // while the window is shut. This form used to POST straight to Supabase,
+    // so it neither earned attendance nor obeyed open/close.
+    if (window.Poll) { Poll.ready(PID, doSubmit); return; }
+    doSubmit();
+  }
+
+  function doSubmit(){
     if (sent) return;
     var i = clean(ini.value,3).toUpperCase().replace(/[^A-Z]/g,"");
     var x = clean(gx.value,18), y = clean(gy.value,18);

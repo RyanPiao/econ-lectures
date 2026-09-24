@@ -484,7 +484,12 @@
     var sec = currentSlide();
     if (!sec) return [];
     var out = [];
-    [].forEach.call(sec.querySelectorAll(".poll-grid[data-poll-id]"), function (e) {
+    // ".poll-grid" covers the ordinary A/B/C/D polls. "[data-poll-voting]" is
+    // the escape hatch for a live activity that is not a choice grid at all --
+    // ch04's Cobb-Douglas form, where the students type two goods and drag a
+    // slider. Without it that slide had no poll id on it, so the speaker bar
+    // hid itself and "t" did nothing: there was no way to open or close it.
+    [].forEach.call(sec.querySelectorAll(".poll-grid[data-poll-id], [data-poll-voting][data-poll-id]"), function (e) {
       var id = e.getAttribute("data-poll-id");
       if (id && out.indexOf(id) < 0) out.push(id);
     });
@@ -572,6 +577,33 @@
     // toggling on isOpen made the first press try to CLOSE a poll that had
     // never been opened. Only an actually-open window should toggle shut.
     windowState(ids[0]).then(function (w) { (w === "open" ? closeHere : openHere)(); });
+  }
+
+  /* ---------- page number, readable from the back of the room ----------
+     Reveal's own slide number sits in the bottom corner, small, and on at
+     least one lecture-hall projector it lands on the screen's black bar. On a
+     poll slide the room needs it: it is how a student says which question
+     they are answering. So it is MIRRORED to the top -- the text is copied
+     from reveal's own element rather than re-derived, so the two numbers
+     cannot drift apart, and if the deck has slide numbers switched off
+     nothing is invented. Poll slides only; every other slide is untouched. */
+
+  function paintPageNo() {
+    var el = document.getElementById("ec-pageno");
+    var src = document.querySelector(".reveal .slide-number");
+    var txt = src ? src.textContent.replace(/\s+/g, "") : "";
+    if (!txt || !pollIdsOnCurrentSlide().length) {
+      if (el) el.style.display = "none";
+      return;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "ec-pageno";
+      if (SPEAKER) el.className = "below-bar";   // the status bar owns top:0
+      document.body.appendChild(el);
+    }
+    el.textContent = "Slide " + txt;
+    el.style.display = "block";
   }
 
   /* ---------- speaker-view status bar ---------- */
@@ -671,6 +703,11 @@
     ".ec-toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:99999;" +
       "background:rgba(17,24,39,.94);color:#fff;font:600 14px/1.3 system-ui,sans-serif;" +
       "padding:11px 18px;border-radius:10px}" +
+    "#ec-pageno{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9997;" +
+    "display:none;background:rgba(30,58,138,.90);color:#fff;border-radius:999px;" +
+    "padding:5px 14px;font:600 15px system-ui,sans-serif;letter-spacing:.02em;" +
+    "pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.25)}" +
+    "#ec-pageno.below-bar{top:38px}" +
     "#ec-spk{position:fixed;top:0;left:0;right:0;z-index:9998;display:none;gap:10px;" +
       "align-items:center;padding:7px 12px;background:#111827;color:#fff;" +
       "font:600 13px/1 system-ui,-apple-system,sans-serif}" +
@@ -738,6 +775,15 @@
         toggleHere();
       });
     }
+    // Everyone sees the mirrored page number, not just the instructor: the
+    // projector is what the room reads, and a student on their own phone is
+    // on their own slide and needs their own number.
+    if (window.Reveal && Reveal.addEventListener) {
+      ["ready", "slidechanged", "fragmentshown", "fragmenthidden", "overviewhidden"]
+        .forEach(function (ev) { Reveal.addEventListener(ev, paintPageNo); });
+    }
+    paintPageNo();
+
     if (PROJECTOR || SPEAKER) {
       if (window.Reveal && Reveal.addEventListener) {
         Reveal.addEventListener("slidechanged", function () {
