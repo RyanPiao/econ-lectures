@@ -441,7 +441,7 @@
     var slides = document.querySelector(".reveal .slides");
     if (!slides) return;
     var r = slides.getBoundingClientRect();
-    var H = window.innerHeight;
+    var H = window.innerHeight, W = window.innerWidth;
     var w = el.offsetWidth || 150, h = el.offsetHeight || 26, M = 8;
     if (!w || !window.innerWidth) return;
     var set = function (x, y) {
@@ -449,16 +449,36 @@
       el.style.top = Math.round(y) + "px";
       el.style.bottom = "auto";
     };
+    // Preferred home: immediately LEFT of reveal's own page number, on the same
+    // line. That is the deck's existing "status" row, it is outside the slide
+    // whenever there is a letterbox, and it keeps the bottom-LEFT corner free --
+    // which now holds the home / full-screen / pen buttons on a student's device
+    // too, not just the projector.
+    var num = document.querySelector(".reveal .slide-number");
+    if (num && getComputedStyle(num).display !== "none") {
+      var nr = num.getBoundingClientRect();
+      if (nr.width > 1) {
+        var nx = nr.left - w - 10;
+        var ny = nr.top + (nr.height - h) / 2;
+        if (nx >= M) {
+          el.dataset.self = "1";
+          var nb = inkRects(currentSlide());
+          delete el.dataset.self;
+          if (overlapAt(nx, ny, w, h, nb) === 0) { set(nx, ny); return; }
+        }
+      }
+    }
     var below = H - r.bottom;
-    if (below >= h + M) { set(M, r.bottom + (below - h) / 2); return; }
-    if (r.top >= h + M) { set(M, (r.top - h) / 2); return; }
+    if (below >= h + M) { set(Math.max(M, r.right - w - M), r.bottom + (below - h) / 2); return; }
+    if (r.top >= h + M) { set(Math.max(M, r.right - w - M), (r.top - h) / 2); return; }
     el.dataset.self = "1";
     var boxes = inkRects(currentSlide());
     delete el.dataset.self;
     // same near-miss candidates as the badge, for the same reason
-    var cands = [[M, H - h - 2], [M, 2],
-                 [r.left + M, r.bottom - h - M], [r.right - w - M, r.bottom - h - M],
-                 [r.left + M, r.top + M], [r.right - w - M, r.top + M]];
+    var cands = [[W - w - 2, H - h - 2], [r.right - w - M, r.bottom - h - M],
+                 [W - w - 2, 2], [r.right - w - M, r.top + M],
+                 [M, H - h - 2], [r.left + M, r.bottom - h - M],
+                 [M, 2], [r.left + M, r.top + M]];
     var score = function (cw, ch) {
       var b = null;
       cands.forEach(function (c) {

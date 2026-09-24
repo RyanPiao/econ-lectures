@@ -1545,7 +1545,7 @@
     border-radius: 7px; padding: 5px 13px; }
   .inc-preset:hover { background: var(--secondary-color); color: #fff; }
 </style>
-<!-- presenter-gate v10 -->
+<!-- presenter-gate v11 -->
 <script>
 (function () {
   var q = location.search;
@@ -2128,6 +2128,14 @@
     if (current) speakerSide();
     else if (on && !receiver) { mainSide(); homeLink(); fsButton(); Ink.mount();
                                 document.addEventListener('keydown', Ink.keys, true); }
+    // Students get the same three controls on their own device. Full screen is
+    // the one they actually want -- a deck on a phone is mostly browser chrome
+    // otherwise -- and the pen is theirs alone: Ink.relayTo is only ever set in
+    // speakerSide, so nothing a student draws leaves their own screen, and it is
+    // memory-only like everywhere else. No presenter powers come with it: the
+    // poll open/close key is INSTRUCTOR-gated separately and stays that way.
+    else if (!receiver) { homeLink(); fsButton(); Ink.mount();
+                          document.addEventListener('keydown', Ink.keys, true); }
     if (!receiver) wire();
   }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
