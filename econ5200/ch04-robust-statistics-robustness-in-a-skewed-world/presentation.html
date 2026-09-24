@@ -1044,7 +1044,7 @@
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var sec=g.closest("section");if(sec&&!sec.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v7 -->
+<!-- presenter-gate v8 -->
 <script>
 (function () {
   var q = location.search;
@@ -1099,6 +1099,35 @@
               n: 'next', p: 'prev', N: 'next', P: 'prev', Home: 'first', End: 'last' };
   function here() { var i = Reveal.getIndices(); return { h: i.h, v: i.v || 0 }; }
   function fsAsk() {               // speaker view: ask the projector to go full screen
+    // Preferred home is the speaker window's own control strip, right beside
+    // "Layout: ...", where Ryan is already looking. That window is an
+    // about:blank document written by the opener, so it inherits the deck's
+    // origin and this preview iframe can reach it. If that ever stops being
+    // true the old in-preview button is still built below.
+    try {
+      var pd = window.parent && window.parent.document;
+      var host = pd && pd.getElementById('speaker-layout');
+      if (host) {
+        if (pd.getElementById('ti-fs-ask')) return;
+        var pb = pd.createElement('button');
+        pb.id = 'ti-fs-ask'; pb.type = 'button';
+        pb.textContent = '\u26F6 Projector full screen';
+        pb.title = 'Chrome only lets a window go full screen from a click inside that ' +
+                   'window, so this brings the projected deck forward and arms it: one ' +
+                   'click anywhere on it and it goes full screen.';
+        pb.style.cssText = 'margin-left:10px;font:600 12px Helvetica,sans-serif;padding:4px 10px;' +
+          'border:0;border-radius:5px;background:#3a3a3a;color:#eee;cursor:pointer;vertical-align:middle';
+        pb.addEventListener('mouseenter', function () { pb.style.background = '#4b5563'; });
+        pb.addEventListener('mouseleave', function () { pb.style.background = '#3a3a3a'; });
+        pb.addEventListener('click', function (e) {
+          e.preventDefault();
+          try { var m = window.parent && window.parent.opener; if (m) m.focus(); } catch (_) {}
+          toMain({ bridge: 'fs' });
+        });
+        host.appendChild(pb);
+        return;
+      }
+    } catch (e) {}                  // cross-origin speaker view: use the fallback
     if (document.getElementById('ti-fs-ask')) return;
     var b = document.createElement('button');
     b.id = 'ti-fs-ask'; b.type = 'button';
@@ -1449,18 +1478,25 @@
   }
   function armFull() {
     if (document.getElementById('ti-fs-arm')) return;
+    // INVISIBLE on purpose. This sits on the PROJECTED window, which is the one
+    // the room is looking at -- the first version covered the slide with a big
+    // dark "Click to go full screen" panel and showed it to the whole class.
+    // The click target is still the entire window, so it is just as easy to
+    // hit; all the students see is a small chip near the bottom edge.
     var o = document.createElement('div');
     o.id = 'ti-fs-arm';
-    o.innerHTML = '<div style="pointer-events:none"><div style="font-size:64px;line-height:1">&#9974;</div>' +
-                  '<div style="margin-top:14px">Click to go full screen</div>' +
-                  '<div style="margin-top:6px;font-size:16px;font-weight:400;opacity:.8">' +
-                  'the browser needs the click on this window</div></div>';
-    o.style.cssText = 'position:fixed;inset:0;z-index:10002;display:flex;align-items:center;' +
-      'justify-content:center;text-align:center;background:rgba(15,23,42,.78);color:#fff;' +
-      'font:700 30px system-ui,sans-serif;cursor:pointer';
-    o.addEventListener('click', function () { o.remove(); goFull(); });
+    o.innerHTML = '<span>&#9974;&nbsp; Click anywhere for full screen</span>';
+    o.style.cssText = 'position:fixed;inset:0;z-index:10002;background:transparent;cursor:pointer;' +
+      'display:flex;align-items:flex-end;justify-content:center;padding-bottom:52px';
+    o.firstChild.style.cssText = 'pointer-events:none;background:rgba(17,24,39,.5);color:#fff;' +
+      'font:600 13px system-ui,sans-serif;padding:5px 13px;border-radius:999px;' +
+      'opacity:.8;transition:opacity .3s';
+    var go = function () { if (o.parentNode) o.remove(); goFull(); };
+    o.addEventListener('click', go);
+    o.addEventListener('keydown', go);
     document.body.appendChild(o);
-    setTimeout(function () { if (o.parentNode) o.remove(); }, 20000);
+    // never leave an invisible click-catcher sitting over a live slide
+    setTimeout(function () { if (o.parentNode) o.remove(); }, 12000);
   }
   function fsButton() {                 // projector window: the one-click path
     if (document.getElementById('ti-fs')) return;
