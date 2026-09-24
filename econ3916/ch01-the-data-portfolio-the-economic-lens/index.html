@@ -1803,7 +1803,7 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var s=g.closest("section");if(s&&!s.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v12 -->
+<!-- presenter-gate v13 -->
 <script>
 (function () {
   var q = location.search;
@@ -1872,7 +1872,7 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
         // of the session. Returning early because "one already exists" meant
         // the fix for it could never take effect -- the stale button kept being
         // the one on screen. Stamp it and replace anything that is not current.
-        var VER = 'v12';
+        var VER = 'v13';
         var old = pd.getElementById('ti-fs-ask');
         if (old && old.dataset.ver === VER) return;
         if (old) old.remove();
@@ -2012,7 +2012,9 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
       { k: 'rect',  i: 'fa-square',           t: 'Rectangle (r)' },
       { k: 'shade', i: 'fa-fill-drip',        t: 'Shaded area — revenue, surplus (s)' },
       { k: 'tri',   i: 'fa-play',             t: 'Right triangle — deadweight loss (y)' },
-      { k: 'guide', i: 'fa-crosshairs',       t: 'Dashed guides to the axes (g)' }
+      { k: 'guide', i: 'fa-crosshairs',       t: 'Dashed guides to the axes (g)' },
+      { k: 'label', i: 'fa-font',             t: 'Curve label \u2014 D, S, MC, D\u2032 (n)' },
+      { k: 'ghost', i: 'fa-clone',            t: 'Shifted ghost of a curve \u2014 drag it across (h)' }
     ];
     var cv, ctx, active = false, erasing = false, pi = 0, si = 1, tool = 'free';
     var ops = {}, undone = {}, cur = null, relay = null, bar = null, btn = null;
@@ -2066,6 +2068,7 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
         return [[a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }, a]];
       if (s.k === 'tri') return [[a, b, { x: b.x, y: a.y }, a]];
       if (s.k === 'guide') return [[a, { x: b.x, y: a.y }], [a, { x: a.x, y: b.y }]];
+      if (s.k === 'text') return [];
       return [p];
     }
     function render() {
@@ -2079,8 +2082,19 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
       var all = live(); if (cur) all = all.concat([cur]);
       all.forEach(function (s) {
         if (!s.pts.length) return;
+        ctx.save();
+        if (s.k === 'text') {
+          ctx.globalAlpha = s.ghost ? 0.6 : 1;
+          ctx.fillStyle = s.c;
+          // italic serif, because that is how a curve is labelled on a board
+          ctx.font = 'italic 700 ' + (s.size || 22) + 'px Georgia,"Times New Roman",serif';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(s.txt || '', s.pts[0].x, s.pts[0].y);
+          ctx.restore(); return;
+        }
         ctx.strokeStyle = s.c; ctx.lineWidth = s.w;
-        ctx.setLineDash(s.k === 'guide' ? [7, 6] : []);
+        if (s.ghost) { ctx.globalAlpha = 0.6; ctx.setLineDash([9, 7]); }
+        else ctx.setLineDash(s.k === 'guide' ? [7, 6] : []);
         if (s.k === 'shade') {
           ctx.save(); ctx.globalAlpha = 0.22; ctx.fillStyle = s.c;
           var q = s.pts[0], z = s.pts[s.pts.length - 1];
@@ -2105,6 +2119,7 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
           ctx.stroke();
         }
         ctx.setLineDash([]);
+        ctx.restore();
       });
     }
     function at(ev) {
@@ -2119,6 +2134,12 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
     function eraseAt(p) {
       var hit = [], R = 14;
       live().forEach(function (s) {
+        if (s.k === 'text') {
+          var half = (s.size || 22) * 0.6, wide = (s.txt || '').length * (s.size || 22) * 0.34;
+          if (p.x > s.pts[0].x - 8 && p.x < s.pts[0].x + wide + 8 &&
+              p.y > s.pts[0].y - half && p.y < s.pts[0].y + half) hit.push(s);
+          return;
+        }
         var segs = paths(s), i, j, pts;
         for (i = 0; i < segs.length; i++) {
           pts = segs[i];
@@ -2139,11 +2160,70 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
       });
       if (hit.length) { push({ t: 'del', ss: hit }); render(); paintBar(); }
     }
+    // nearest live stroke to a point, by the same segment walk the eraser uses
+    function nearest(p) {
+      var best = null, bd = 1e9;
+      live().forEach(function (s) {
+        paths(s).forEach(function (pts) {
+          for (var j = 1; j < pts.length; j++) {
+            var A = pts[j - 1], B = pts[j], L = Math.hypot(B.x - A.x, B.y - A.y);
+            var cx, cy, tt;
+            if (L < 1) { cx = A.x; cy = A.y; }
+            else {
+              tt = Math.max(0, Math.min(1, ((p.x - A.x) * (B.x - A.x) + (p.y - A.y) * (B.y - A.y)) / (L * L)));
+              cx = A.x + tt * (B.x - A.x); cy = A.y + tt * (B.y - A.y);
+            }
+            var d = Math.hypot(p.x - cx, p.y - cy);
+            if (d < bd) { bd = d; best = s; }
+          }
+        });
+      });
+      return bd < 40 ? best : null;
+    }
+    // A label is typed, not drawn, so it gets a real input at the click point
+    // rather than a prompt() -- a modal dialog in front of a projected slide is
+    // worse than the thing it is trying to collect.
+    function labelAt(p, ev) {
+      var r = box(), k = Reveal.getScale() || 1, size = 16 + si * 6;
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.placeholder = 'D\u2032';
+      inp.style.cssText = 'position:fixed;z-index:10004;left:' + (r.left + p.x * k - 6) + 'px;top:' +
+        (r.top + p.y * k - size * k * 0.75) + 'px;width:130px;font:italic 700 ' + Math.round(size * k) +
+        'px Georgia,serif;color:' + PENS[pi].c + ';background:rgba(255,255,255,.92);border:2px solid ' +
+        PENS[pi].c + ';border-radius:6px;padding:1px 5px;outline:none';
+      document.body.appendChild(inp);
+      inp.focus();
+      var done = function (commit) {
+        var txt = inp.value.trim();
+        inp.remove();
+        if (!commit || !txt) return;
+        var s = { k: 'text', c: PENS[pi].c, w: SIZES[si], size: size, txt: txt, pts: [p] };
+        push({ t: 'add', s: s }); send({ k: 'full', s: s });
+        render(); paintBar();
+      };
+      inp.addEventListener('keydown', function (e) {
+        e.stopPropagation();                       // Reveal and Ink both listen on document
+        if (e.key === 'Enter') { e.preventDefault(); done(true); }
+        if (e.key === 'Escape') { e.preventDefault(); done(false); }
+      });
+      inp.addEventListener('blur', function () { done(true); });
+    }
+
     function down(ev) {
       if (!active) return;
       ev.preventDefault(); ev.stopPropagation();
       var p = at(ev);
       if (erasing) { eraseAt(p); send({ k: 'erase', x: p.x, y: p.y }); return; }
+      if (tool === 'label') { labelAt(p, ev); return; }
+      if (tool === 'ghost') {
+        // copy the curve you pressed on, then drag the copy to where it shifted
+        var src = nearest(p);
+        if (!src) return;
+        var base = src.pts.map(function (q) { return { x: q.x, y: q.y }; });
+        cur = { k: src.k, c: src.c, w: src.w, size: src.size, txt: src.txt,
+                ghost: true, base: base, from: p, pts: base };
+        render(); return;
+      }
       cur = { c: PENS[pi].c, w: width(), k: tool, pts: [p, p] };
       send({ k: 'down', x: p.x, y: p.y, c: cur.c, w: cur.w, tool: tool });
       render();
@@ -2157,6 +2237,11 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
       }
       if (!cur) return;
       ev.preventDefault();
+      if (cur.ghost) {
+        var dx = p.x - cur.from.x, dy = p.y - cur.from.y;
+        cur.pts = cur.base.map(function (q) { return { x: q.x + dx, y: q.y + dy }; });
+        render(); return;                          // relayed whole, on release
+      }
       if (cur.k === 'free') cur.pts.push(p); else cur.pts[1] = p;
       send({ k: 'move', x: p.x, y: p.y }); render();
     }
@@ -2164,7 +2249,18 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
       if (!cur) return;
       // a shape needs two distinct corners; a tap is not a rectangle
       var a = cur.pts[0], b = cur.pts[cur.pts.length - 1];
-      var ok = cur.k === 'free' ? cur.pts.length > 1 : Math.hypot(b.x - a.x, b.y - a.y) > 4;
+      var ok = cur.ghost ? Math.hypot(b.x - a.x, b.y - a.y) >= 0
+             : cur.k === 'free' ? cur.pts.length > 1
+             : Math.hypot(b.x - a.x, b.y - a.y) > 4;
+      if (cur.ghost) {
+        var moved = cur.pts.length && cur.base.length &&
+                    Math.hypot(cur.pts[0].x - cur.base[0].x, cur.pts[0].y - cur.base[0].y) > 4;
+        if (moved) {
+          var g = { k: cur.k, c: cur.c, w: cur.w, size: cur.size, txt: cur.txt, ghost: true, pts: cur.pts };
+          push({ t: 'add', s: g }); send({ k: 'full', s: g });
+        }
+        cur = null; render(); paintBar(); return;
+      }
       if (ok) { push({ t: 'add', s: cur }); send({ k: 'up' }); }
       cur = null; render(); paintBar();
     }
@@ -2175,6 +2271,7 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
       if (m.k === 'down') { cur = { c: m.c, w: m.w, k: m.tool || 'free', pts: [{ x: m.x, y: m.y }, { x: m.x, y: m.y }] }; render(); return; }
       if (m.k === 'move') { if (cur) { if (cur.k === 'free') cur.pts.push({ x: m.x, y: m.y }); else cur.pts[1] = { x: m.x, y: m.y }; render(); } return; }
       if (m.k === 'up')   { if (cur) push({ t: 'add', s: cur }); cur = null; render(); return; }
+      if (m.k === 'full') { if (m.s) { push({ t: 'add', s: m.s }); render(); } return; }
       if (m.k === 'erase'){ eraseAt({ x: m.x, y: m.y }); return; }
       if (m.k === 'undo') { undo(true); return; }
       if (m.k === 'redo') { redo(true); return; }
@@ -2377,7 +2474,8 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
       // NOT "t": that is the poll open/close key, and it has to keep working
       // while the pen is armed so a poll slide can be annotated and still
       // opened for voting. Triangle takes "y" instead.
-      var map = { f: 'free', l: 'line', a: 'arrow', r: 'rect', s: 'shade', y: 'tri', g: 'guide' };
+      var map = { f: 'free', l: 'line', a: 'arrow', r: 'rect', s: 'shade', y: 'tri', g: 'guide',
+                  n: 'label', h: 'ghost' };
       var want = map[k.toLowerCase && k.toLowerCase()];
       if (want) { stop(); tool = want; erasing = false; setActive(true); }
     }
