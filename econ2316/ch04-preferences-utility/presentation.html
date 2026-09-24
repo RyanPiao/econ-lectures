@@ -1528,7 +1528,7 @@
       </div>
       <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 16px;">
         <label style="font-size: 12pt; font-weight: 700; color: var(--primary-color);">Utility level &nbsp;<span id="mtn-level-val" style="color: #dc2626;">&mdash;</span></label>
-        <input id="mtn-level" type="range" min="4" max="38" step="0.5" value="18" style="width: 100%; accent-color: #dc2626;">
+        <input id="mtn-level" type="range" min="12" max="44" step="0.5" value="24" style="width: 100%; accent-color: #dc2626;">
         <div style="display: flex; gap: 8px; margin-top: 10px;">
           <button id="mtn-slice" style="flex: 1; background: #2563eb; color: #fff; font-size: 11pt; font-weight: 700; padding: 7px 6px; border: 1.5px solid #2563eb; border-radius: 8px; cursor: pointer;">Slice &mdash; \(\bar U\)</button><button id="mtn-top" style="flex: 1; background: #f0f5f8; color: var(--secondary-color); font-size: 11pt; font-weight: 700; padding: 7px 6px; border: 1.5px solid var(--secondary-color); border-radius: 8px; cursor: pointer;">Top &mdash; the 2D map</button>
           <button id="mtn-side" style="flex: 1; background: var(--secondary-color); color: #fff; font-size: 11pt; font-weight: 700; padding: 7px 6px; border: 1.5px solid var(--secondary-color); border-radius: 8px; cursor: pointer;">Side &mdash; the mountain</button>
@@ -4000,16 +4000,22 @@
 (function(){
   var div=document.getElementById('mtn-plot'); if(!div) return;
   var beta=0.28, NX=42, GMAX=10;
-  function U(x,y){var w=x+y+beta*x*y;return 8.408*Math.pow(w,0.45);}  // Height is a monotone RELABELLING of w = x1+x2+0.28*x1*x2. Same level sets,
-  // so the contour map, the red ring and the floor rings are unchanged; only the
-  // profile rounds over, which is what makes the side view read as a hill rather
-  // than a straight ramp. 8.408 = 48/48^0.45 keeps the axis at 0-48 so the
-  // slider's starting level of 18 still lands inside the range.
+  var KA=8.408,KP=0.45;
+  // Height is a monotone RELABELLING of w = x1+x2+0.28*x1*x2: same level sets, so
+  // the indifference map is unchanged and only the profile rounds over, which is
+  // what makes the side view read as a hill rather than a straight ramp.
+  // KA = 48/48^0.45 keeps the axis at 0-48, so the slider's 4-38 range still fits.
+  function U(x,y){var w=x+y+beta*x*y;return KA*Math.pow(w,KP);}
+  // The inverse MATTERS: ring() draws the contour for a given HEIGHT, and it finds
+  // that contour by solving x + y + beta*x*y = w. With a relabelled height, the w
+  // that sits at height L is winv(L), not L -- solving for L put the ring on the
+  // wrong contour and ~13 units below the surface, i.e. buried inside the hill.
+  function winv(u){return Math.pow(u/KA,1/KP);}
   var xs=[],ys=[],zz=[];
   for(var i=0;i<=NX;i++){xs.push(i*GMAX/NX);ys.push(i*GMAX/NX);}
   for(var j=0;j<=NX;j++){var row=[];for(var i=0;i<=NX;i++)row.push(U(xs[i],ys[j]));zz.push(row);}
-  var UMIN=U(0,0),UMAX=U(GMAX,GMAX),level=18;
-  function ring(L,z){var X=[],Y=[],Z=[];for(var k=0;k<=80;k++){var x=k*GMAX/80,y=(L-x)/(1+beta*x);if(y<0||y>GMAX)continue;X.push(x);Y.push(y);Z.push(z===null?L:z);}return{x:X,y:Y,z:Z};}
+  var UMIN=U(0,0),UMAX=U(GMAX,GMAX),level=24;   // must match #mtn-level's value attribute
+  function ring(L,z){var W=winv(L),X=[],Y=[],Z=[];for(var k=0;k<=80;k++){var x=k*GMAX/80,y=(W-x)/(1+beta*x);if(y<0||y>GMAX)continue;X.push(x);Y.push(y);Z.push(z===null?L:z);}return{x:X,y:Y,z:Z};}
   function surfTrace(){return {type:'surface',x:xs,y:ys,z:zz,showscale:false,colorscale:'YlGnBu',reversescale:true,opacity:0.9,
     contours:{z:{show:true,project:{z:true},usecolormap:false,color:'#60a5fa',width:2,start:UMIN+3,end:UMAX-1,size:(UMAX-UMIN)/9}},hoverinfo:'skip'};}
   function ringTraces(){var r=ring(level,null),rf=ring(level,UMIN);
