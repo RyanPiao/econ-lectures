@@ -572,7 +572,7 @@
 })();
 </script>
 
-<!-- presenter-gate v13 -->
+<!-- presenter-gate v14 -->
 <script>
 (function () {
   var q = location.search;
@@ -626,6 +626,14 @@
               PageDown: 'next', PageUp: 'prev', ' ': 'next', Spacebar: 'next',
               n: 'next', p: 'prev', N: 'next', P: 'prev', Home: 'first', End: 'last' };
   function here() { var i = Reveal.getIndices(); return { h: i.h, v: i.v || 0 }; }
+  var fsAcked = false, say = function () {};
+  // the projected window answers every request, so "it worked" and "nothing is
+  // listening" stop looking the same from here
+  window.addEventListener('message', function (ev) {
+    var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+    if (d && d.bridge === 'fs-ack') { fsAcked = true; say('\u2192 Now click the projected screen', '#1d4ed8'); }
+  });
+
   function fsAsk() {               // speaker view: ask the projector to go full screen
     // Preferred home is the speaker window's own control strip, right beside
     // "Layout: ...", where Ryan is already looking. That window is an
@@ -641,7 +649,7 @@
         // of the session. Returning early because "one already exists" meant
         // the fix for it could never take effect -- the stale button kept being
         // the one on screen. Stamp it and replace anything that is not current.
-        var VER = 'v13';
+        var VER = 'v14';
         var old = pd.getElementById('ti-fs-ask');
         if (old && old.dataset.ver === VER) return;
         if (old) old.remove();
@@ -651,30 +659,45 @@
         pb.title = 'Chrome only lets a window go full screen from a click inside that ' +
                    'window, so this brings the projected deck forward and arms it: one ' +
                    'click anywhere on it and it goes full screen.';
-        pb.style.cssText = 'margin-left:10px;font:600 12px Helvetica,sans-serif;padding:4px 10px;' +
-          'border:0;border-radius:5px;background:#3a3a3a;color:#eee;cursor:pointer;vertical-align:middle';
+        // reveal pins #speaker-layout to top-right, so a button appended inside
+        // it crowds the Layout dropdown. This goes in the OPPOSITE corner --
+        // one left, one right -- as its own absolutely positioned element.
+        pb.style.cssText = 'position:absolute;top:10px;left:10px;z-index:20;' +
+          'font:600 12px Helvetica,sans-serif;padding:5px 11px;' +
+          'border:0;border-radius:5px;background:#3a3a3a;color:#eee;cursor:pointer';
+        var LABEL = pb.textContent;
+        say = function (msg, bg) {
+          pb.textContent = msg;
+          pb.style.background = bg;
+          clearTimeout(pb.__t);
+          pb.__t = setTimeout(function () {
+            pb.textContent = LABEL; pb.style.background = '#3a3a3a';
+          }, 9000);
+        };
         pb.addEventListener('mouseenter', function () { pb.style.background = '#4b5563'; });
         pb.addEventListener('mouseleave', function () { pb.style.background = '#3a3a3a'; });
         pb.addEventListener('click', function (e) {
           e.preventDefault();
-          try { var m = window.parent && window.parent.opener; if (m) m.focus(); } catch (_) {}
+          var reach = null;
+          try { reach = window.parent && window.parent.opener; } catch (_) {}
+          if (reach) { try { reach.focus(); } catch (_) {} }
+          // A silent no-op and a working click looked identical, which is why
+          // this button kept being reported as broken. If the projected window
+          // cannot be reached, or does not answer, SAY SO instead of showing
+          // the same hopeful message either way.
+          if (!reach || reach.closed) { say('\u26a0 No link to the projector \u2014 press f on it', '#b91c1c'); return; }
+          fsAcked = false;
           toMain({ bridge: 'fs' });
+          setTimeout(function () {
+            if (!fsAcked) say('\u26a0 Projector did not answer \u2014 press f on it', '#b91c1c');
+          }, 1200);
           // The effect of this click happens on the OTHER screen, and since v8
           // made the prompt over there deliberately faint so the class would not
           // see it, pressing this looked like nothing happened at all. Say what
           // to do next, here, where the eyes are.
-          if (pb.dataset.busy) return;
-          pb.dataset.busy = '1';
-          var was = pb.textContent;
-          pb.textContent = '\u2192 Now click the projected screen';
-          pb.style.background = '#1d4ed8';
-          setTimeout(function () {
-            pb.textContent = was; pb.style.background = '#3a3a3a';
-            delete pb.dataset.busy;
-          }, 9000);
         });
         pb.dataset.ver = VER;
-        host.appendChild(pb);
+        (pd.body || host).appendChild(pb);
         return;
       }
     } catch (e) {}                  // cross-origin speaker view: use the fallback
@@ -1332,7 +1355,10 @@
       var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
       if (!d || !d.bridge) return;
       if (d.bridge === 'timer') { fireKey(d.key); return; }
-      if (d.bridge === 'fs') { goFull(); return; }   // rejects -> armFull()
+      if (d.bridge === 'fs') {
+        try { if (ev.source) ev.source.postMessage(JSON.stringify({ bridge: 'fs-ack' }), '*'); } catch (_) {}
+        goFull(); return;                            // rejects -> armFull()
+      }
       if (d.bridge === 'ink') { Ink.apply(d.op); return; }
       if (d.bridge === 'nav') {
         var n = Reveal.getTotalSlides ? Reveal.getTotalSlides() : 0;
