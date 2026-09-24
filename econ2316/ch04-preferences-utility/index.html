@@ -1666,8 +1666,21 @@
       <div class="fragment fade-in" data-fragment-index="3" style="background: #f0f5f8; padding: 10px 18px; border-radius: 8px; border-left: 4px solid var(--secondary-color);" data-notes="Same curve, so the gain and the loss have to be exactly equal.">
         <p style="font-size: 14pt; line-height: 1.4; margin: 0;"><strong>Same curve</strong>, so the two are <strong>equal</strong>: \(MU_{fries} \cdot 1 = MU_{burgers} \cdot 2\)</p>
       </div>
-      <div class="fragment fade-in key-result" data-fragment-index="4" style="margin: 0;" data-notes="Divide, and the ratio of marginal utilities is the two she was willing to trade.">
-        <p style="text-align: center; font-size: 18pt; margin: 0;">\[\frac{MU_{fries}}{MU_{burgers}} = 2 = \mathrm{MRS}\]</p>
+      <div class="fragment fade-in key-result" data-fragment-index="4" style="margin: 0;" data-notes="Divide, and the ratio of marginal utilities is the two she was willing to trade. She is holding four burgers and only two baskets, so the scarce one carries the premium.">
+        <div style="display: grid; grid-template-columns: 0.88fr 1.12fr; gap: 16px; align-items: center;">
+          <p style="text-align: center; font-size: 17pt; margin: 0;">\[\frac{MU_{fries}}{MU_{burgers}} = 2\]</p>
+          <div>
+            <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 3px;">
+              <span style="font-size: 18pt; letter-spacing: 1px;">&#127828;&#127828;&#127828;&#127828;</span>
+              <span style="font-size: 11.5pt; color: var(--muted-color);">4 burgers &mdash; <strong style="color: var(--success-color);">abundant</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-size: 18pt; letter-spacing: 1px;">&#127839;&#127839;</span>
+              <span style="font-size: 11.5pt; color: var(--muted-color);">2 baskets &mdash; <strong style="color: var(--danger-color);">scarce</strong></span>
+            </div>
+            <p style="font-size: 12.5pt; line-height: 1.4; margin: 7px 0 0;">She discounts what she has plenty of and pays a premium for what is scarce &mdash; so <strong>one</strong> scarce basket is worth <strong>two</strong> abundant burgers.</p>
+          </div>
+        </div>
       </div>
     </div>
     <div>
@@ -2108,12 +2121,12 @@
 
   <section id="cobb-live-results" data-poll-results="ch04-econ2316-cobb-live">
     <h2><i class="fa-solid fa-dice" style="color: var(--accent-color);"></i> Read one back</h2>
-    <div class="cobb-draw-box" style="background:#f8f6f3; border-radius:12px; padding:18px 24px; min-height:190px; display:flex; flex-direction:column; justify-content:center;">
+    <div class="cobb-draw-box" style="background:#f8f6f3; border-radius:12px; padding:16px 22px; min-height:262px; display:flex; flex-direction:column; justify-content:center;">
       <p class="cobb-drawn" style="text-align:center; font-size:15pt; color:var(--muted-color); margin:0;">Press <strong>Draw</strong> for a random student.</p>
     </div>
     <div style="display:flex; gap:10px; margin-top:12px;">
       <button class="cobb-draw" style="flex:2; padding:11px; font-size:15pt; font-weight:700; color:#fff; background:#2563eb; border:0; border-radius:10px; cursor:pointer;">Draw a student</button>
-      <button class="cobb-reset" style="flex:1; padding:11px; font-size:13pt; font-weight:600; color:#475569; background:#e2e8f0; border:0; border-radius:10px; cursor:pointer;">Clear today's votes</button>
+      <button class="cobb-reset" title="Re-reads the responses and puts everyone back in the hat. Deletes nothing." style="flex:1; padding:11px; font-size:13pt; font-weight:600; color:#475569; background:#e2e8f0; border:0; border-radius:10px; cursor:pointer;">Put everyone back in the hat</button>
     </div>
     <p class="cobb-pool" style="text-align:center; font-size:11.5pt; color:var(--muted-color); margin:8px 0 0;"></p>
 
@@ -3588,15 +3601,24 @@
     });
   });
 
-  function clean(v,n){ return (v||"").replace(/\|/g,"/").trim().slice(0,n); }
+  function clean(v,n){ return (v||"").replace(/\|/g,"/").replace(/[<>]/g,"")
+                                  .replace(/\s+/g," ").trim().slice(0,n); }
+  // these names are typed by students and land in innerHTML on the projector
+  function esc(v){ return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                          .replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  // "bus fare^0.5" reads as if the power lands on "fare" alone, so bracket it
+  function base(v){ return /\s/.test(v) ? "("+esc(v)+")" : esc(v); }
+  // styles.css resets sup to the baseline, so the exponent has to say so itself
+  function pw(e){ return '<sup style="vertical-align:super;font-size:.62em;line-height:0;">'+e+'</sup>'; }
+  function trunc(v){ return v.length>16 ? v.slice(0,15)+"\u2026" : v; }
   function paint(){
     var a = +sl.value, b = 100-a;
     $(".cobb-px",sec).textContent=a; $(".cobb-py",sec).textContent=b;
     $(".cobb-nx",sec).textContent = clean(gx.value,18) || "x";
     $(".cobb-ny",sec).textContent = clean(gy.value,18) || "y";
     $(".cobb-preview",sec).innerHTML =
-      "U = " + (clean(gx.value,18)||"x") + "<sup>" + (a/100).toFixed(2) + "</sup> " +
-               (clean(gy.value,18)||"y") + "<sup>" + (b/100).toFixed(2) + "</sup>";
+      "U = " + base(clean(gx.value,18)||"x") + pw((a/100).toFixed(2)) + " " +
+               base(clean(gy.value,18)||"y") + pw((b/100).toFixed(2));
   }
   ["input","change"].forEach(function(ev){
     [sl,gx,gy].forEach(function(el){ el.addEventListener(ev,paint); });
@@ -3680,15 +3702,54 @@
     if (p) p.textContent = pool.length||drawn.length
       ? drawn.length+" drawn / "+(pool.length+drawn.length)+" responses" : "";
   }
+  // Three indifference curves for U = x^a y^(1-a), each through (u,u) so the
+  // set is readable whatever alpha is. a = 0 or 1 degenerates to straight lines.
+  function map(a, xn, yn){
+    var W=310, H=238, L=44, R=8, T=12, B=34;
+    function sx(x){ return L + x*(W-L-R)/10; }
+    function sy(y){ return (H-B) - y*(H-T-B)/10; }
+    var o = ['<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">',
+      '<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="#6b7280" stroke-width="1.4"/>',
+      '<line x1="'+L+'" y1="'+(H-B)+'" x2="'+L+'" y2="'+T+'" stroke="#6b7280" stroke-width="1.4"/>'];
+    var cols = ["#bcd3e4","#5b8db8","#1e3a8a"];
+    [2.5,5,7.5].forEach(function(U,k){
+      var d = "", on = false, b = 1-a;
+      if (a <= 0)      d = "M"+sx(0.05)+","+sy(U)+" L"+sx(10)+","+sy(U);
+      else if (a >= 1) d = "M"+sx(U)+","+sy(0.05)+" L"+sx(U)+","+sy(10);
+      else for (var i=0;i<=160;i++){
+        var x = 0.08 + i*(10-0.08)/160;
+        var y = Math.pow(U/Math.pow(x,a), 1/b);
+        if (!isFinite(y) || y <= 0.04 || y > 10.2){ on = false; continue; }
+        d += (on?" L":" M") + sx(x).toFixed(1) + "," + sy(y).toFixed(1); on = true;
+      }
+      if (d) o.push('<path d="'+d.trim()+'" fill="none" stroke="'+cols[k]+'" stroke-width="2.2"/>');
+    });
+    var my = (T+H-B)/2;
+    o.push('<text x="'+((L+W-R)/2)+'" y="'+(H-10)+'" font-size="12" font-weight="600" text-anchor="middle" fill="#3a3632">'+xn+'</text>');
+    o.push('<text x="14" y="'+my+'" font-size="12" font-weight="600" text-anchor="middle" fill="#3a3632" transform="rotate(-90 14 '+my+')">'+yn+'</text>');
+    o.push('<text x="'+(W-R-4)+'" y="'+(T+12)+'" font-size="10.5" text-anchor="end" fill="#9a938c">higher U &#8599;</text>');
+    return o.join("") + '</svg>';
+  }
+  function mrsLine(p){
+    var q = 100-p;
+    if (!p || !q) return "One good carries all the weight &mdash; the curves are straight.";
+    return "MRS = " + (p/q).toFixed(2) + " &times; (y / x)";
+  }
   function show(s){
-    var a=(s.a/100).toFixed(2), b=((100-s.a)/100).toFixed(2);
+    var a = s.a/100, b = 1-a, xn = esc(s.x), yn = esc(s.y);
     $(".cobb-drawn",res).innerHTML =
-      '<div style="text-align:center;">' +
-        '<div style="font-size:30pt;font-weight:800;color:#1e3a8a;letter-spacing:2px;">'+s.ini+'</div>' +
-        '<div style="font-size:24pt;font-family:Georgia,serif;margin:10px 0 6px;">U = ' +
-          s.x+'<sup>'+a+'</sup> &middot; '+s.y+'<sup>'+b+'</sup></div>' +
-        '<div style="font-size:13.5pt;color:var(--muted-color);">'+
-          s.a+'% of the week on <strong>'+s.x+'</strong>, '+(100-s.a)+'% on <strong>'+s.y+'</strong>'+
+      '<div style="display:grid;grid-template-columns:1.02fr 0.98fr;gap:20px;align-items:center;">' +
+        '<div style="text-align:center;">' +
+          '<div style="font-size:27pt;font-weight:800;color:#1e3a8a;letter-spacing:2px;">'+esc(s.ini)+'</div>' +
+          '<div style="font-size:20pt;font-family:Georgia,serif;margin:8px 0 7px;">U = ' +
+            base(s.x)+pw(a.toFixed(2))+' '+base(s.y)+pw(b.toFixed(2))+'</div>' +
+          '<div style="font-size:12.5pt;color:var(--muted-color);line-height:1.45;">'+
+            s.a+'% of the week on <strong>'+xn+'</strong>, '+(100-s.a)+'% on <strong>'+yn+'</strong></div>' +
+          '<div style="font-size:12.5pt;margin-top:9px;color:var(--secondary-color);font-weight:700;">'+mrsLine(s.a)+'</div>' +
+        '</div>' +
+        '<div>' + map(a, trunc(xn), trunc(yn)) +
+          '<p style="font-size:11pt;color:var(--muted-color);text-align:center;margin:3px 0 0;">'+
+            esc(s.ini)+'&rsquo;s indifference map</p>' +
         '</div>' +
       '</div>';
   }
@@ -3704,7 +3765,7 @@
   }
   $(".cobb-draw",res).addEventListener("click",draw);
   $(".cobb-reset",res).addEventListener("click",function(){
-    refill(function(){ $(".cobb-drawn",res).innerHTML="Pool refilled. Press <strong>Draw</strong>."; });
+    refill(function(){ $(".cobb-drawn",res).innerHTML="Everyone is back in the hat. Press <strong>Draw</strong>."; });
   });
   if (window.Reveal && Reveal.addEventListener)
     Reveal.addEventListener("slidechanged",function(){
