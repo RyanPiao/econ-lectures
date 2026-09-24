@@ -431,7 +431,7 @@
 })();
 </script>
 
-<!-- presenter-gate v17 -->
+<!-- presenter-gate v18 -->
 <script>
 (function () {
   var q = location.search;
@@ -1090,7 +1090,29 @@
   // old gate for the rest of the session. The speaker window is about:blank
   // written by this one, so it is same-origin and writable, and reveal's notes
   // plugin heartbeats us a live handle to it every second.
-  var spkWin = null, SPK = 'v17';
+  var spkWin = null, SPK = 'v18';
+  // The SAME handler has to go in every document that can hold the keyboard.
+  // Clicking the speaker view's slide preview puts focus INSIDE that iframe,
+  // which is its own document -- keydowns there never reach the speaker
+  // window's document, so a handler attached only to the parent sees nothing.
+  // That is exactly the "click the left panel, then m, nothing happens" case.
+  // "ref" is how that document reaches the projected window from where it sits.
+  function inject(d, ref) {
+    if (!d || !d.body) return;
+    var s = d.createElement('script');
+    s.textContent =
+      '(function(){if(document.__tiM)return;document.__tiM=1;' +
+      'document.addEventListener("keydown",function(e){' +
+      'if(e.key!=="m"&&e.key!=="M")return;' +
+      'if(e.metaKey||e.ctrlKey||e.altKey)return;' +
+      'var t=e.target,g=t&&t.tagName;' +
+      'if(g==="INPUT"||g==="TEXTAREA"||g==="SELECT"||(t&&t.isContentEditable))return;' +
+      'e.preventDefault();' +
+      'try{var o=' + ref + ';if(o&&!o.closed)o.focus();}catch(_){}' +
+      '},true);})();';
+    d.body.appendChild(s);
+  }
+
   function wireSpeaker(w) {
     var d;
     try { d = w && w.document; } catch (e) { return; }    // cross-origin: leave it
@@ -1098,6 +1120,15 @@
     spkWin = w;
     var old = d.getElementById('ti-fs-ask');              // the retired button
     if (old) old.remove();
+    // the previews are re-wired on every heartbeat: the iframe can load, or
+    // reload, long after the speaker window itself did
+    [].forEach.call(d.querySelectorAll('iframe'), function (f) {
+      var fd;
+      try { fd = f.contentDocument; } catch (e) { return; }
+      if (!fd || !fd.body || fd.__tiWired === SPK) return;
+      fd.__tiWired = SPK;
+      inject(fd, 'window.parent.opener');
+    });
     if (d.__tiFocus === SPK) return;
     d.__tiFocus = SPK;
     // INJECTED AS A SCRIPT so the handler belongs to the SPEAKER window's realm.
@@ -1109,17 +1140,7 @@
     // with no user activation in that realm, and Chrome drops it. Defined over
     // there it is a popup focusing its own opener, on a fresh keypress, which
     // is allowed.
-    var s = d.createElement('script');
-    s.textContent =
-      '(function(){document.addEventListener("keydown",function(e){' +
-      'if(e.key!=="m"&&e.key!=="M")return;' +
-      'if(e.metaKey||e.ctrlKey||e.altKey)return;' +
-      'var t=e.target,g=t&&t.tagName;' +
-      'if(g==="INPUT"||g==="TEXTAREA"||g==="SELECT"||(t&&t.isContentEditable))return;' +
-      'e.preventDefault();' +
-      'try{if(window.opener&&!window.opener.closed)window.opener.focus();}catch(_){}' +
-      '},true);})();';
-    d.body.appendChild(s);
+    inject(d, 'window.opener');
   }
   function swapFocus() {
     if (spkWin && !spkWin.closed) { try { spkWin.focus(); } catch (_) {} }
