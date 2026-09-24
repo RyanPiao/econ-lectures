@@ -604,6 +604,12 @@
   // the old value. Two frames puts this safely after reveal's own update.
   function schedulePageNo() {
     requestAnimationFrame(function () { requestAnimationFrame(paintPageNo); });
+    // requestAnimationFrame does NOT run while the tab is hidden, and a deck
+    // often IS hidden at the moment it changes slide -- speaker view opened in
+    // front of it, or the projector window behind something. Without this
+    // backstop the badge never appears until the next navigation after the
+    // window is revealed. paintPageNo is idempotent, so running twice is free.
+    setTimeout(paintPageNo, 80);
   }
 
   function paintPageNo() {
@@ -828,6 +834,11 @@
       ["ready", "slidechanged", "fragmentshown", "fragmenthidden", "overviewhidden"]
         .forEach(function (ev) { Reveal.addEventListener(ev, schedulePageNo); });
     }
+    // same reason: bringing the window forward must repaint, because every
+    // slide change that happened while it was hidden painted nothing.
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) paintPageNo();
+    });
     paintPageNo();
 
     if (PROJECTOR || SPEAKER) {
