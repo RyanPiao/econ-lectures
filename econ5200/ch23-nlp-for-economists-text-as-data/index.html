@@ -764,7 +764,7 @@
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var sec=g.closest("section");if(sec&&!sec.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v15 -->
+<!-- presenter-gate v16 -->
 <script>
 (function () {
   var q = location.search;
@@ -818,102 +818,7 @@
               PageDown: 'next', PageUp: 'prev', ' ': 'next', Spacebar: 'next',
               n: 'next', p: 'prev', N: 'next', P: 'prev', Home: 'first', End: 'last' };
   function here() { var i = Reveal.getIndices(); return { h: i.h, v: i.v || 0 }; }
-  var fsAcked = false, say = function () {};
-  // the projected window answers every request, so "it worked" and "nothing is
-  // listening" stop looking the same from here
-  window.addEventListener('message', function (ev) {
-    var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
-    if (d && d.bridge === 'fs-ack') { fsAcked = true; say('\u2192 Now click the projected screen', '#1d4ed8'); }
-  });
-
-  function fsAsk() {               // speaker view: ask the projector to go full screen
-    // Preferred home is the speaker window's own control strip, right beside
-    // "Layout: ...", where Ryan is already looking. That window is an
-    // about:blank document written by the opener, so it inherits the deck's
-    // origin and this preview iframe can reach it. If that ever stops being
-    // true the old in-preview button is still built below.
-    try {
-      var pd = window.parent && window.parent.document;
-      var host = pd && pd.getElementById('speaker-layout');
-      if (host) {
-        // The speaker window is opened once and SURVIVES every reload of the
-        // deck, so a button injected by an older gate stays there for the rest
-        // of the session. Returning early because "one already exists" meant
-        // the fix for it could never take effect -- the stale button kept being
-        // the one on screen. Stamp it and replace anything that is not current.
-        var VER = 'v14';
-        var old = pd.getElementById('ti-fs-ask');
-        if (old && old.dataset.ver === VER) return;
-        if (old) old.remove();
-        var pb = pd.createElement('button');
-        pb.id = 'ti-fs-ask'; pb.type = 'button';
-        pb.textContent = '\u26F6 Projector full screen';
-        pb.title = 'Chrome only lets a window go full screen from a click inside that ' +
-                   'window, so this brings the projected deck forward and arms it: one ' +
-                   'click anywhere on it and it goes full screen.';
-        // reveal pins #speaker-layout to top-right, so a button appended inside
-        // it crowds the Layout dropdown. This goes in the OPPOSITE corner --
-        // one left, one right -- as its own absolutely positioned element.
-        pb.style.cssText = 'position:absolute;top:10px;left:10px;z-index:20;' +
-          'font:600 12px Helvetica,sans-serif;padding:5px 11px;' +
-          'border:0;border-radius:5px;background:#3a3a3a;color:#eee;cursor:pointer';
-        var LABEL = pb.textContent;
-        say = function (msg, bg) {
-          pb.textContent = msg;
-          pb.style.background = bg;
-          clearTimeout(pb.__t);
-          pb.__t = setTimeout(function () {
-            pb.textContent = LABEL; pb.style.background = '#3a3a3a';
-          }, 9000);
-        };
-        pb.addEventListener('mouseenter', function () { pb.style.background = '#4b5563'; });
-        pb.addEventListener('mouseleave', function () { pb.style.background = '#3a3a3a'; });
-        pb.addEventListener('click', function (e) {
-          e.preventDefault();
-          var reach = null;
-          try { reach = window.parent && window.parent.opener; } catch (_) {}
-          if (reach) { try { reach.focus(); } catch (_) {} }
-          // A silent no-op and a working click looked identical, which is why
-          // this button kept being reported as broken. If the projected window
-          // cannot be reached, or does not answer, SAY SO instead of showing
-          // the same hopeful message either way.
-          if (!reach || reach.closed) { say('\u26a0 No link to the projector \u2014 press f on it', '#b91c1c'); return; }
-          fsAcked = false;
-          toMain({ bridge: 'fs' });
-          setTimeout(function () {
-            if (!fsAcked) say('\u26a0 Projector did not answer \u2014 press f on it', '#b91c1c');
-          }, 1200);
-          // The effect of this click happens on the OTHER screen, and since v8
-          // made the prompt over there deliberately faint so the class would not
-          // see it, pressing this looked like nothing happened at all. Say what
-          // to do next, here, where the eyes are.
-        });
-        pb.dataset.ver = VER;
-        (pd.body || host).appendChild(pb);
-        return;
-      }
-    } catch (e) {}                  // cross-origin speaker view: use the fallback
-    if (document.getElementById('ti-fs-ask')) return;
-    var b = document.createElement('button');
-    b.id = 'ti-fs-ask'; b.type = 'button';
-    b.title = 'Chrome only lets a window go full screen from a click inside that window. ' +
-              'This brings the projected deck forward and puts one big button on it.';
-    b.innerHTML = '<i class="fa-solid fa-expand"></i> Projector full screen';
-    b.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:10001;' +
-      'font:600 12px system-ui,sans-serif;padding:6px 11px;border:0;border-radius:7px;' +
-      'background:rgba(55,65,81,.92);color:#fff;cursor:pointer;opacity:.55;transition:opacity .2s';
-    b.addEventListener('mouseenter', function () { b.style.opacity = '1'; });
-    b.addEventListener('mouseleave', function () { b.style.opacity = '.55'; });
-    b.addEventListener('click', function (e) {
-      e.preventDefault(); e.stopImmediatePropagation();
-      try { var m = window.parent && window.parent.opener; if (m) m.focus(); } catch (_) {}
-      toMain({ bridge: 'fs' });
-    });
-    document.body.appendChild(b);
-  }
-
   function speakerSide() {
-    fsAsk();
     Ink.mount();
     Ink.relayTo(function (m) { toMain({ bridge: 'ink', op: m }); });
     document.addEventListener('keydown', Ink.keys, true);
@@ -1473,50 +1378,20 @@
 
   // ---- full screen ----------------------------------------------------
   // requestFullscreen needs TRANSIENT user activation IN THE WINDOW THAT GOES
-  // FULL SCREEN. A postMessage handler never has it -- measured, Chrome throws
-  // "TypeError: Permissions check failed". So no button in the speaker view can
-  // fullscreen the projected window on its own, however it is worded, and the
-  // reason "f" appears not to work is that it fullscreens whichever window has
-  // focus: press it in speaker view and the LAPTOP window goes full screen.
-  // What the speaker view can do is bring the projected window forward and put
-  // one unmissable target on it; that click is the activation Chrome wants.
+  // FULL SCREEN, so only a click (or "f") inside the projected window can do
+  // it. The speaker-view button and the click-anywhere target that used to work
+  // around that are GONE: they worked, but two windows and two clicks to reach
+  // full screen was never worth it. "m" then "f" does the same job from the
+  // keyboard -- see swapFocus below.
   function goFull() {
     var el = document.documentElement;
     if (document.fullscreenElement) { document.exitFullscreen(); return; }
-    var p;
-    try { p = el.requestFullscreen(); } catch (e) { armFull(); return; }
-    if (p && p.catch) p.catch(function () { armFull(); });
+    try {
+      var p = el.requestFullscreen();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
   }
-  function armFull() {
-    if (document.getElementById('ti-fs-arm')) return;
-    // INVISIBLE on purpose. This sits on the PROJECTED window, which is the one
-    // the room is looking at -- the first version covered the slide with a big
-    // dark "Click to go full screen" panel and showed it to the whole class.
-    // The click target is still the entire window, so it is just as easy to
-    // hit; all the students see is a small chip near the bottom edge.
-    var o = document.createElement('div');
-    o.id = 'ti-fs-arm';
-    o.innerHTML = '<span>&#9974;&nbsp; Click anywhere for full screen</span>';
-    o.style.cssText = 'position:fixed;inset:0;z-index:10002;background:transparent;cursor:pointer;' +
-      'display:flex;align-items:flex-end;justify-content:center;padding-bottom:52px';
-    o.firstChild.style.cssText = 'pointer-events:none;background:rgba(17,24,39,.62);color:#fff;' +
-      'font:600 15px system-ui,sans-serif;padding:7px 16px;border-radius:999px;' +
-      'opacity:.9;animation:ti-fs-pulse 1.4s ease-in-out infinite';
-    if (!document.getElementById('ti-fs-kf')) {
-      var kf = document.createElement('style');
-      kf.id = 'ti-fs-kf';
-      // a slow pulse: enough to catch an eye that is looking for it, far too
-      // quiet to read as part of the slide
-      kf.textContent = '@keyframes ti-fs-pulse{0%,100%{opacity:.55}50%{opacity:1}}';
-      document.head.appendChild(kf);
-    }
-    var go = function () { if (o.parentNode) o.remove(); goFull(); };
-    o.addEventListener('click', go);
-    o.addEventListener('keydown', go);
-    document.body.appendChild(o);
-    // never leave an invisible click-catcher sitting over a live slide
-    setTimeout(function () { if (o.parentNode) o.remove(); }, 12000);
-  }
+
   function fsButton() {                 // projector window: the one-click path
     if (document.getElementById('ti-fs')) return;
     var b = document.createElement('button');
@@ -1536,47 +1411,39 @@
     document.body.appendChild(b);
   }
 
-  // ---- repair the speaker window FROM HERE ------------------------------
-  // The speaker window is about:blank written by this window, so it is
-  // same-origin and reachable. That matters because its preview iframe caches
-  // the deck: reopening speaker view can STILL run an old gate, which is why a
-  // button fixed here kept appearing in its old place and behaving in its old
-  // way. reveal's notes plugin heartbeats to us every second, and ev.source on
-  // that heartbeat is a live handle to the speaker window -- so the projected
-  // window, which the instructor DOES hard-reload, can reach in and replace the
-  // button itself. No dependence on whatever version the iframe happens to be.
+  // ---- jump the KEYBOARD between the two screens ------------------------
+  // Asked for as "move the mouse to the other window". The web cannot do that:
+  // no API repositions the OS pointer, and Pointer Lock only hides or captures
+  // it inside one page. What it CAN do is move FOCUS, which is the part that
+  // matters -- once a window has focus its keys work, so "m" then "f" goes full
+  // screen on the projector without touching the mouse at all.
   //
-  // The click still cannot grant us full screen (activation belongs to the
-  // window that was clicked), so it does what actually works: focuses this
-  // window and arms the one-click target on it.
-  var FSBTN = 'v15';
-  function fixSpeakerButton(w) {
+  // The handler is installed INTO the speaker window from here, not from the
+  // preview iframe, because that iframe caches the deck and can be running an
+  // old gate for the rest of the session. The speaker window is about:blank
+  // written by this one, so it is same-origin and writable, and reveal's notes
+  // plugin heartbeats us a live handle to it every second.
+  var spkWin = null, SPK = 'v16';
+  function wireSpeaker(w) {
     var d;
-    try { d = w && w.document; } catch (e) { return; }      // cross-origin: leave it
+    try { d = w && w.document; } catch (e) { return; }    // cross-origin: leave it
     if (!d || !d.body) return;
-    var old = d.getElementById('ti-fs-ask');
-    if (old && old.dataset.ver === FSBTN) return;
+    spkWin = w;
+    var old = d.getElementById('ti-fs-ask');              // the retired button
     if (old) old.remove();
-    var b = d.createElement('button');
-    b.id = 'ti-fs-ask'; b.type = 'button'; b.dataset.ver = FSBTN;
-    b.textContent = '\u26f6 Projector full screen';
-    b.title = 'Brings the projected window forward and arms it: one click anywhere ' +
-              'on that screen and it goes full screen. Chrome will not let any other ' +
-              'window do it for you.';
-    b.style.cssText = 'position:absolute;top:10px;left:10px;z-index:30;' +
-      'font:600 12px Helvetica,sans-serif;padding:5px 11px;border:0;border-radius:5px;' +
-      'background:#3a3a3a;color:#eee;cursor:pointer';
-    var LABEL = b.textContent;
-    b.addEventListener('click', function (e) {
+    if (d.__tiFocus === SPK) return;
+    d.__tiFocus = SPK;
+    d.addEventListener('keydown', function (e) {
+      if (e.key !== 'm' && e.key !== 'M') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var el = e.target, tag = el && el.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return;
       e.preventDefault();
-      try { window.focus(); } catch (_) {}
-      armFull();                                  // runs HERE, on the projector
-      b.textContent = '\u2192 Now click the projected screen';
-      b.style.background = '#1d4ed8';
-      clearTimeout(b.__t);
-      b.__t = setTimeout(function () { b.textContent = LABEL; b.style.background = '#3a3a3a'; }, 9000);
-    });
-    d.body.appendChild(b);
+      try { window.focus(); } catch (_) {}                // bring the projector forward
+    }, true);
+  }
+  function swapFocus() {
+    if (spkWin && !spkWin.closed) { try { spkWin.focus(); } catch (_) {} }
   }
 
   function mainSide() {
@@ -1590,13 +1457,10 @@
       var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
       // reveal's notes window heartbeats to its opener once a second; that is
       // our handle on it, and the only one we get
-      if (d && d.namespace === 'reveal-notes' && ev.source) fixSpeakerButton(ev.source);
+      if (d && d.namespace === 'reveal-notes' && ev.source) wireSpeaker(ev.source);
       if (!d || !d.bridge) return;
       if (d.bridge === 'timer') { fireKey(d.key); return; }
-      if (d.bridge === 'fs') {
-        try { if (ev.source) ev.source.postMessage(JSON.stringify({ bridge: 'fs-ack' }), '*'); } catch (_) {}
-        goFull(); return;                            // rejects -> armFull()
-      }
+
       if (d.bridge === 'ink') { Ink.apply(d.op); return; }
       if (d.bridge === 'nav') {
         var n = Reveal.getTotalSlides ? Reveal.getTotalSlides() : 0;
@@ -1664,7 +1528,18 @@
     if (on) loadNotes();
     if (current) speakerSide();
     else if (on && !receiver) { mainSide(); homeLink(); fsButton(); Ink.mount();
-                                document.addEventListener('keydown', Ink.keys, true); }
+                                document.addEventListener('keydown', Ink.keys, true);
+                                // "m" from the projector hands focus to the speaker
+                                // window; the mirror of it is installed over there
+                                // by wireSpeaker()
+                                document.addEventListener('keydown', function (e) {
+                                  if (e.key !== 'm' && e.key !== 'M') return;
+                                  if (e.metaKey || e.ctrlKey || e.altKey) return;
+                                  var el = e.target, tag = el && el.tagName;
+                                  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+                                      (el && el.isContentEditable)) return;
+                                  e.preventDefault(); swapFocus();
+                                }, true); }
     // Students get the same three controls on their own device. Full screen is
     // the one they actually want -- a deck on a phone is mostly browser chrome
     // otherwise -- and the pen is theirs alone: Ink.relayTo is only ever set in
