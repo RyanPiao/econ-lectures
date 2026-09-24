@@ -600,7 +600,7 @@
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var sec=g.closest("section");if(sec&&!sec.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v16 -->
+<!-- presenter-gate v17 -->
 <script>
 (function () {
   var q = location.search;
@@ -1259,7 +1259,7 @@
   // old gate for the rest of the session. The speaker window is about:blank
   // written by this one, so it is same-origin and writable, and reveal's notes
   // plugin heartbeats us a live handle to it every second.
-  var spkWin = null, SPK = 'v16';
+  var spkWin = null, SPK = 'v17';
   function wireSpeaker(w) {
     var d;
     try { d = w && w.document; } catch (e) { return; }    // cross-origin: leave it
@@ -1269,14 +1269,26 @@
     if (old) old.remove();
     if (d.__tiFocus === SPK) return;
     d.__tiFocus = SPK;
-    d.addEventListener('keydown', function (e) {
-      if (e.key !== 'm' && e.key !== 'M') return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      var el = e.target, tag = el && el.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return;
-      e.preventDefault();
-      try { window.focus(); } catch (_) {}                // bring the projector forward
-    }, true);
+    // INJECTED AS A SCRIPT so the handler belongs to the SPEAKER window's realm.
+    // This is the whole reason speaker -> projector did not work while
+    // projector -> speaker did. focus() permission is judged against the
+    // INCUMBENT realm -- the realm the running function was created in, not the
+    // window the event happened in. A handler defined here is the projector's
+    // code, so window.focus() reads as the projector trying to raise ITSELF,
+    // with no user activation in that realm, and Chrome drops it. Defined over
+    // there it is a popup focusing its own opener, on a fresh keypress, which
+    // is allowed.
+    var s = d.createElement('script');
+    s.textContent =
+      '(function(){document.addEventListener("keydown",function(e){' +
+      'if(e.key!=="m"&&e.key!=="M")return;' +
+      'if(e.metaKey||e.ctrlKey||e.altKey)return;' +
+      'var t=e.target,g=t&&t.tagName;' +
+      'if(g==="INPUT"||g==="TEXTAREA"||g==="SELECT"||(t&&t.isContentEditable))return;' +
+      'e.preventDefault();' +
+      'try{if(window.opener&&!window.opener.closed)window.opener.focus();}catch(_){}' +
+      '},true);})();';
+    d.body.appendChild(s);
   }
   function swapFocus() {
     if (spkWin && !spkWin.closed) { try { spkWin.focus(); } catch (_) {} }
