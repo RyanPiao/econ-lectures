@@ -431,7 +431,7 @@
 })();
 </script>
 
-<!-- presenter-gate v18 -->
+<!-- presenter-gate v19 -->
 <script>
 (function () {
   var q = location.search;
@@ -1090,7 +1090,7 @@
   // old gate for the rest of the session. The speaker window is about:blank
   // written by this one, so it is same-origin and writable, and reveal's notes
   // plugin heartbeats us a live handle to it every second.
-  var spkWin = null, SPK = 'v18';
+  var spkWin = null, SPK = 'v19';
   // The SAME handler has to go in every document that can hold the keyboard.
   // Clicking the speaker view's slide preview puts focus INSIDE that iframe,
   // which is its own document -- keydowns there never reach the speaker
@@ -1108,7 +1108,24 @@
       'var t=e.target,g=t&&t.tagName;' +
       'if(g==="INPUT"||g==="TEXTAREA"||g==="SELECT"||(t&&t.isContentEditable))return;' +
       'e.preventDefault();' +
-      'try{var o=' + ref + ';if(o&&!o.closed)o.focus();}catch(_){}' +
+      // Say what happened, in the window the key was pressed in. Six rounds of
+      // "still not working" produced no information because a refused focus()
+      // and a successful one are both silent. Now one press distinguishes
+      // "there is no handle to the projector" from "we asked and macOS did not
+      // raise it" -- and the second is not a JavaScript problem.
+      'var m="";' +
+      'try{var o=' + ref + ';' +
+      'if(!o){m="m: no handle to the projected window";}' +
+      'else if(o.closed){m="m: the projected window is closed";}' +
+      'else{o.focus();m="m: asked the projector to come forward";}' +
+      '}catch(err){m="m: blocked \u2014 "+err.name;}' +
+      'var b=document.getElementById("ti-m-say");' +
+      'if(!b){b=document.createElement("div");b.id="ti-m-say";' +
+      'b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:99999;' +
+      'background:rgba(17,24,39,.92);color:#fff;font:600 13px system-ui,sans-serif;padding:6px 14px;' +
+      'border-radius:999px;pointer-events:none";document.body.appendChild(b);}' +
+      'b.textContent=m;b.style.display="block";' +
+      'clearTimeout(b.__t);b.__t=setTimeout(function(){b.style.display="none";},2500);' +
       '},true);})();';
     d.body.appendChild(s);
   }
