@@ -1497,7 +1497,7 @@
     .reset-btn { display: none; }
     body.instructor-mode .reset-btn { display: inline-block; }
   </style>
-  <script src="../../poll.js"></script>
+  <script src="../../poll.js" data-checkin></script>
   <script>
   (function(){
     var SUPA_URL = "https://dpntbrsorgbivmntwmod.supabase.co";
@@ -1610,7 +1610,10 @@
     document.querySelectorAll(".poll-grid").forEach(function(grid) {
       var pollId = grid.dataset.pollId;
       grid.querySelectorAll(".poll-option").forEach(function(opt) {
-        opt.addEventListener("click", function() { castVote(pollId, opt.dataset.choice); });
+        opt.addEventListener("click", function() {
+          var go = function() { castVote(pollId, opt.dataset.choice); };
+          if (window.Poll) { Poll.ready(pollId, go); } else { go(); }
+        });
       });
       // Add live vote counter below the poll grid
       if (!grid.parentNode.querySelector('.poll-vote-count')) {
