@@ -1149,7 +1149,7 @@
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var s=g.closest("section");if(s&&!s.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v9 -->
+<!-- presenter-gate v10 -->
 <script>
 (function () {
   var q = location.search;
@@ -1228,6 +1228,19 @@
           e.preventDefault();
           try { var m = window.parent && window.parent.opener; if (m) m.focus(); } catch (_) {}
           toMain({ bridge: 'fs' });
+          // The effect of this click happens on the OTHER screen, and since v8
+          // made the prompt over there deliberately faint so the class would not
+          // see it, pressing this looked like nothing happened at all. Say what
+          // to do next, here, where the eyes are.
+          if (pb.dataset.busy) return;
+          pb.dataset.busy = '1';
+          var was = pb.textContent;
+          pb.textContent = '\u2192 Now click the projected screen';
+          pb.style.background = '#1d4ed8';
+          setTimeout(function () {
+            pb.textContent = was; pb.style.background = '#3a3a3a';
+            delete pb.dataset.busy;
+          }, 9000);
         });
         host.appendChild(pb);
         return;
@@ -1602,9 +1615,17 @@
     o.innerHTML = '<span>&#9974;&nbsp; Click anywhere for full screen</span>';
     o.style.cssText = 'position:fixed;inset:0;z-index:10002;background:transparent;cursor:pointer;' +
       'display:flex;align-items:flex-end;justify-content:center;padding-bottom:52px';
-    o.firstChild.style.cssText = 'pointer-events:none;background:rgba(17,24,39,.5);color:#fff;' +
-      'font:600 13px system-ui,sans-serif;padding:5px 13px;border-radius:999px;' +
-      'opacity:.8;transition:opacity .3s';
+    o.firstChild.style.cssText = 'pointer-events:none;background:rgba(17,24,39,.62);color:#fff;' +
+      'font:600 15px system-ui,sans-serif;padding:7px 16px;border-radius:999px;' +
+      'opacity:.9;animation:ti-fs-pulse 1.4s ease-in-out infinite';
+    if (!document.getElementById('ti-fs-kf')) {
+      var kf = document.createElement('style');
+      kf.id = 'ti-fs-kf';
+      // a slow pulse: enough to catch an eye that is looking for it, far too
+      // quiet to read as part of the slide
+      kf.textContent = '@keyframes ti-fs-pulse{0%,100%{opacity:.55}50%{opacity:1}}';
+      document.head.appendChild(kf);
+    }
     var go = function () { if (o.parentNode) o.remove(); goFull(); };
     o.addEventListener('click', go);
     o.addEventListener('keydown', go);
