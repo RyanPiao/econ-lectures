@@ -429,6 +429,40 @@
     }
     chip.innerHTML = '<span>&#10003; checked in</span> &middot;&#8226;&#8226;&#8226;&#8226;' +
                      n.slice(-4) + ' <em>change</em>';
+    placeChip(chip);
+  }
+
+  // The chip is the one piece of this that STUDENTS see on their own phones and
+  // laptops, and it sat at a fixed bottom-left where it could land on the
+  // slide's own content. Same rule as the badge: take the letterbox if there is
+  // one, because that can cover nothing at all; otherwise the least-covered
+  // corner of the slide, measured against real glyphs.
+  function placeChip(el) {
+    var slides = document.querySelector(".reveal .slides");
+    if (!slides) return;
+    var r = slides.getBoundingClientRect();
+    var H = window.innerHeight;
+    var w = el.offsetWidth || 150, h = el.offsetHeight || 26, M = 8;
+    if (!w || !window.innerWidth) return;
+    var set = function (x, y) {
+      el.style.left = Math.round(x) + "px";
+      el.style.top = Math.round(y) + "px";
+      el.style.bottom = "auto";
+    };
+    var below = H - r.bottom;
+    if (below >= h + M) { set(M, r.bottom + (below - h) / 2); return; }
+    if (r.top >= h + M) { set(M, (r.top - h) / 2); return; }
+    el.dataset.self = "1";
+    var boxes = inkRects(currentSlide());
+    delete el.dataset.self;
+    var cands = [[r.left + M, r.bottom - h - M], [r.right - w - M, r.bottom - h - M],
+                 [r.left + M, r.top + M], [r.right - w - M, r.top + M]];
+    var best = null;
+    cands.forEach(function (c) {
+      var o = overlapAt(c[0], c[1], w, h, boxes);
+      if (!best || o < best.o) best = { x: c[0], y: c[1], o: o };
+    });
+    set(best.x, best.y);
   }
 
   function toast(msg) {
@@ -604,12 +638,14 @@
   // the old value. Two frames puts this safely after reveal's own update.
   function schedulePageNo() {
     requestAnimationFrame(function () { requestAnimationFrame(paintPageNo); });
+    requestAnimationFrame(function () { requestAnimationFrame(paintChip); });
     // requestAnimationFrame does NOT run while the tab is hidden, and a deck
     // often IS hidden at the moment it changes slide -- speaker view opened in
     // front of it, or the projector window behind something. Without this
     // backstop the badge never appears until the next navigation after the
     // window is revealed. paintPageNo is idempotent, so running twice is free.
     setTimeout(paintPageNo, 80);
+    setTimeout(paintChip, 90);
   }
 
   function paintPageNo() {
@@ -650,6 +686,113 @@
     el.innerHTML = '<b>Slide ' + txt + '</b>' +
                    '<i>press <kbd>G</kbd> \u2192 type <kbd>' + txt + '</kbd> \u2192 Enter</i>';
     el.style.display = "block";
+    placePageNo(el);
+  }
+
+  // Where the badge goes is measured, never assumed. A fixed top-centre badge
+  // covered the title on 3916 ch04 -- decks differ, and sweeping three of them
+  // and generalising was the mistake. Order of preference:
+  //   1. the letterbox above the slide, then below it -- reveal scales the
+  //      slide to fit, so on most windows there is dead space that cannot
+  //      cover anything at all;
+  //   2. failing that, whichever position over the slide hides the least,
+  //      measured against what is actually drawn on THIS slide.
+  // Shared by the badge and the check-in chip.
+  function inkRects(sec) {
+    var out = [], i, r, qs, n;
+    if (sec) {
+      var w = document.createTreeWalker(sec, NodeFilter.SHOW_TEXT, null, false);
+      while ((n = w.nextNode())) {
+        if (!n.nodeValue || !n.nodeValue.trim()) continue;
+        if (!n.parentElement || n.parentElement.closest("aside.notes")) continue;
+        r = document.createRange(); r.selectNodeContents(n);
+        qs = r.getClientRects();
+        for (i = 0; i < qs.length; i++) if (qs[i].width > 1 && qs[i].height > 1) out.push(qs[i]);
+      }
+      [].forEach.call(sec.querySelectorAll("img,svg,canvas,video,iframe,input,button,select,textarea"),
+        function (e) {
+          if (e.closest("aside.notes")) return;
+          var q = e.getBoundingClientRect();
+          if (q.width > 1 && q.height > 1) out.push(q);
+        });
+    }
+    // Chrome counts too, and it is INJECTED AT RUNTIME by the presenter gate --
+    // grepping a deck's HTML for these finds nothing, so they have to be read
+    // from the live DOM at paint time, never from a static scan.
+    ["#ti-home", "#ti-fs", "#ti-pen", "#ti-ink-bar", "#ec-spk", "#ec-pageno", "#ec-chip",
+     ".reveal .slide-number", ".navigate-left", ".navigate-right",
+     ".navigate-up", ".navigate-down"].forEach(function (s) {
+      [].forEach.call(document.querySelectorAll(s), function (e) {
+        if (e.dataset && e.dataset.self) return;               // the element being placed
+        if (getComputedStyle(e).display === "none" || getComputedStyle(e).visibility === "hidden") return;
+        var q = e.getBoundingClientRect();
+        if (q.width > 1 && q.height > 1) out.push(q);
+      });
+    });
+    return out;
+  }
+
+  // Score a fixed-position box against everything on screen; 0 means clear.
+  function overlapAt(x, y, w, h, boxes) {
+    var o = 0, i, b;
+    for (i = 0; i < boxes.length; i++) {
+      b = boxes[i];
+      o += Math.max(0, Math.min(x + w, b.right) - Math.max(x, b.left)) *
+           Math.max(0, Math.min(y + h, b.bottom) - Math.max(y, b.top));
+    }
+    return o;
+  }
+
+  function placePageNo(el) {
+    var slides = document.querySelector(".reveal .slides");
+    var sec = currentSlide();
+    if (!slides || !sec) return;
+    var r = slides.getBoundingClientRect();
+    var W = window.innerWidth, H = window.innerHeight;
+    var w = el.offsetWidth || 220, h = el.offsetHeight || 60;
+    var M = 8;
+    var barBottom = 0;                       // speaker view's status bar owns the top
+    var bar = document.getElementById("ec-spk");
+    if (bar && bar.style.display !== "none") {
+      var br = bar.getBoundingClientRect();
+      if (br.height) barBottom = br.bottom;
+    }
+    var set = function (left, top) {
+      el.style.left = Math.round(left) + "px";
+      el.style.top = Math.round(top) + "px";
+      el.style.bottom = "auto";
+      el.style.transform = "none";
+    };
+    var cx = Math.max(M, Math.min(W - w - M, (W - w) / 2));
+
+    var above = r.top - barBottom;
+    if (above >= h + M) { set(cx, barBottom + (above - h) / 2); return; }
+    var below = H - r.bottom;
+    if (below >= h + M) { set(cx, r.bottom + (below - h) / 2); return; }
+
+    // Over the slide: score every candidate against what is actually DRAWN
+    // here -- glyph extents, not element boxes. A reveal <h2> box spans the
+    // full content width whatever the title says (measured: ink stops near
+    // x=810 while the box runs to 1220), so a box-based score gives every top
+    // candidate the same number and the choice between them becomes noise.
+    el.dataset.self = "1";                 // inkRects skips anything marked self
+    var boxes = inkRects(sec);
+    delete el.dataset.self;
+    var top1 = Math.max(barBottom + M, r.top + M);
+    var bot1 = Math.min(H - h - M, r.bottom - h - M);
+    var cands = [[cx, top1], [r.right - w - M, top1], [r.left + M, top1],
+                 [cx, bot1], [r.right - w - M, bot1], [r.left + M, bot1]];
+    var best = null;
+    cands.forEach(function (c) {
+      var L = c[0], T = c[1], area = 0;
+      for (var i = 0; i < boxes.length; i++) {
+        var b = boxes[i];
+        area += Math.max(0, Math.min(L + w, b.right) - Math.max(L, b.left)) *
+                Math.max(0, Math.min(T + h, b.bottom) - Math.max(T, b.top));
+      }
+      if (!best || area < best.area) best = { l: L, t: T, area: area };
+    });
+    set(best.l, best.t);
   }
 
   /* ---------- speaker-view status bar ---------- */
@@ -749,7 +892,7 @@
     ".ec-toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:99999;" +
       "background:rgba(17,24,39,.94);color:#fff;font:600 14px/1.3 system-ui,sans-serif;" +
       "padding:11px 18px;border-radius:10px}" +
-    "#ec-pageno{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9997;" +
+    "#ec-pageno{position:fixed;top:8px;left:0;z-index:9997;" +
     "display:none;text-align:center;background:rgba(30,58,138,.93);color:#fff;" +
     "border-radius:14px;padding:7px 20px 8px;font-family:system-ui,sans-serif;" +
     "pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.3)}" +
@@ -759,7 +902,6 @@
     "opacity:.85;margin-top:3px}" +
     "#ec-pageno kbd{font:inherit;font-weight:700;background:rgba(255,255,255,.22);" +
     "border-radius:4px;padding:0 5px}" +
-    "#ec-pageno.below-bar{top:38px}" +
     "#ec-spk{position:fixed;top:0;left:0;right:0;z-index:9998;display:none;gap:10px;" +
       "align-items:center;padding:7px 12px;background:#111827;color:#fff;" +
       "font:600 13px/1 system-ui,-apple-system,sans-serif}" +
@@ -837,7 +979,7 @@
     // same reason: bringing the window forward must repaint, because every
     // slide change that happened while it was hidden painted nothing.
     document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) paintPageNo();
+      if (!document.hidden) { paintPageNo(); paintChip(); }
     });
     paintPageNo();
 

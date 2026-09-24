@@ -1247,7 +1247,7 @@ obs above 4/n        941</pre>
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var sec=g.closest("section");if(sec&&!sec.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v8 -->
+<!-- presenter-gate v9 -->
 <script>
 (function () {
   var q = location.search;
@@ -1560,7 +1560,7 @@ obs above 4/n        941</pre>
       cv.style.pointerEvents = active ? 'auto' : 'none';
       cv.style.cursor = active ? (erasing ? 'cell' : 'crosshair') : '';
       if (bar) bar.style.display = active ? 'flex' : 'none';
-      if (btn) btn.style.opacity = active ? '1' : '.18';
+      if (btn) btn.style.opacity = active ? '1' : (current ? '.55' : '.18');
       paintBar(); if (!q) send({ k: 'mode', on: active });
     }
 
@@ -1587,12 +1587,21 @@ obs above 4/n        941</pre>
       btn = document.createElement('button');
       btn.id = 'ti-pen'; btn.type = 'button'; btn.title = 'Draw on the slide (d)';
       btn.innerHTML = '<i class="fa-solid fa-pen"></i>';
-      btn.style.cssText = 'position:fixed;left:94px;bottom:12px;z-index:10001;width:34px;height:34px;' +
+      // In the speaker-view preview the pen is the ONLY one of the three
+      // buttons that makes sense -- "home" would navigate the preview away and
+      // break speaker view, and full screen would expand the little iframe
+      // rather than the projector (that is what "Projector full screen" in the
+      // speaker window's own strip is for). Left at 94px it looked like two
+      // buttons had gone missing, so here it starts the row instead. It is also
+      // less faint, because the room never sees this window.
+      var rest = current ? '.55' : '.18';
+      btn.style.cssText = 'position:fixed;left:' + (current ? 14 : 94) + 'px;bottom:12px;' +
+        'z-index:10001;width:34px;height:34px;' +
         'border-radius:50%;display:flex;align-items:center;justify-content:center;' +
         'background:rgba(255,255,255,.9);color:#6b8ba4;border:1px solid #e5e7eb;cursor:pointer;' +
-        'font-size:14px;padding:0;opacity:.18;transition:opacity .2s';
+        'font-size:14px;padding:0;opacity:' + rest + ';transition:opacity .2s';
       btn.addEventListener('mouseenter', function () { btn.style.opacity = '1'; });
-      btn.addEventListener('mouseleave', function () { if (!active) btn.style.opacity = '.18'; });
+      btn.addEventListener('mouseleave', function () { if (!active) btn.style.opacity = rest; });
       btn.addEventListener('click', function (e) { e.preventDefault(); setActive(!active); });
       document.body.appendChild(btn);
 
