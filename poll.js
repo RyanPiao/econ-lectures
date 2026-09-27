@@ -22,6 +22,7 @@
 
   var K_DEVICE = "ec_device_id";
   var K_NUID   = "ec_nuid";
+  var K_SYNCED = "ec_nuid_synced";   // "<nuid>|<device>" once the server has CONFIRMED the link
 
   /* ---------- identity check-in is OPT-IN, per deck ---------- */
   // A deck that wants the NUID check-in asks for it, either with
@@ -106,15 +107,27 @@
     return (n && /^[0-9]{9}$/.test(n)) ? n : null;
   }
 
+  // Record the device -> NUID link server-side. The anon key can write this
+  // but can never read it back (see poll-schema.sql), and votes carry only the
+  // device id, so this row is the ONLY thing that credits a student's votes.
+  // It used to be one fire-and-forget POST at check-in: if that one request
+  // failed (bad wifi at that moment), the student saw "checked in" on every
+  // later deck while none of their votes were credited. Now the link is sent
+  // again on every page load until a 2xx confirms it. A failure here must
+  // still never block a student from voting.
+  function syncIdentity(n) {
+    if (IS_FILE || !CHECKIN || !n || PROJECTOR || SPEAKER) return;
+    var tag = n + "|" + deviceId();
+    if (ls(K_SYNCED) === tag) return;
+    sf("POST", "poll_identities", { device_id: deviceId(), nuid: n })
+      .then(function (r) { if (r && r.ok) ls(K_SYNCED, tag); })
+      .catch(function () {});
+  }
+
   function setNuid(n) {
     ls(K_NUID, n);
-    // Best-effort: record the mapping server-side. The anon key can
-    // write this but can never read it back (see poll-schema.sql).
-    // A failure here must never block a student from voting.
-    if (!IS_FILE) {
-      sf("POST", "poll_identities", { device_id: deviceId(), nuid: n })
-        .catch(function () {});
-    }
+    ls(K_SYNCED, "");        // a fresh check-in always writes, even back to an earlier NUID
+    syncIdentity(n);
     paintChip();
   }
 
@@ -1037,6 +1050,7 @@
 
   function boot() {
     probeSessionKey();
+    syncIdentity(nuid());
     paintChip();
     mountSpeakerBar();
     if (INSTRUCTOR) {
