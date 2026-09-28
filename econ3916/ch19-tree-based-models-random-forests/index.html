@@ -338,7 +338,7 @@
      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Draw a simple tree on the board with two splits.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Show how each leaf contains a constant prediction.</div></div></aside>
     </section>
     <!-- CUT (nlm-revision, Ch19): duplicate of native 12 '20 Questions' -->
-    <section data-visibility="hidden" id="slide-extra-38" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
+    <section data-visibility="hidden" id="slide-extra-38b" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
      <img alt="slides_part1_slides_part1_page_010.png" src="extra-slides/slides_part1_slides_part1_page_010.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <!-- CUT (nlm-revision, Ch19): narrative/analogy - assigned as chapter reading, not load-bearing for PS5 -->
@@ -1005,8 +1005,32 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
         <p style="font-size: 14.5pt; margin: 6px 0 0; color: var(--muted-color); text-align: center;">One real draw, not an illustration &mdash; 63 in, 37 out.</p>
       </div>
     </section>
-    <section id="slide-extra-51" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
-     <img alt="slides_part2_slides_part2_page_008.png" src="extra-slides/slides_part2_slides_part2_page_008.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
+    <section id="out-of-bag">
+      <h2>The 37% You Left Out Is a Free Test Set</h2>
+      <div class="content">
+        <p style="font-size: 16pt; margin: 0 0 14px;">Each tree is grown on its own bootstrap sample, so each tree has its own leftovers &mdash; rows it never saw. Score the tree on those and you get honest validation without holding anything back up front.</p>
+        <div class="mathjax_ignore tex2jax_ignore">
+        <svg viewBox="0 0 1160 290" style="width: 100%; height: auto;" role="img" aria-label="One bootstrap sample splits into 63 per cent used to grow the tree and 37 per cent out-of-bag rows used to score it.">
+          <rect x="400" y="6" width="360" height="66" rx="10" fill="#2C3E50"/>
+          <text x="580" y="46" text-anchor="middle" font-size="21" font-weight="700" fill="#FFFFFF">One bootstrap sample</text>
+          <path d="M580 72 V 104 H 250 V 136" stroke="#2E86AB" stroke-width="3" fill="none" marker-end="url(#ch19a2)"/>
+          <path d="M580 72 V 104 H 910 V 136" stroke="#A23B72" stroke-width="3" fill="none" marker-end="url(#ch19a3)"/>
+          <text x="330" y="98" font-size="18" font-weight="600" fill="#2E86AB">63% drawn</text>
+          <text x="820" y="98" font-size="18" font-weight="600" fill="#A23B72">37% never drawn</text>
+          <rect x="70" y="144" width="360" height="104" rx="10" fill="#EAF2F8" stroke="#2E86AB" stroke-width="2.5"/>
+          <text x="250" y="182" text-anchor="middle" font-size="21" font-weight="700" fill="#2C3E50">Grow this tree</text>
+          <text x="250" y="212" text-anchor="middle" font-size="17" fill="#7F8C8D">the only rows it ever sees</text>
+          <rect x="730" y="144" width="360" height="104" rx="10" fill="#FDF2F7" stroke="#A23B72" stroke-width="2.5"/>
+          <text x="910" y="182" text-anchor="middle" font-size="21" font-weight="700" fill="#2C3E50">Score this tree</text>
+          <text x="910" y="212" text-anchor="middle" font-size="17" fill="#7F8C8D">out-of-bag rows &mdash; unseen by it</text>
+          <text x="580" y="278" text-anchor="middle" font-size="18" fill="#2C3E50">Average the out-of-bag scores over all trees and you have the OOB estimate.</text>
+          <defs>
+            <marker id="ch19a2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#2E86AB"/></marker>
+            <marker id="ch19a3" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#A23B72"/></marker>
+          </defs>
+        </svg>
+        </div>
+      </div>
     </section>
     <!-- CUT (nlm-revision, Ch19): narrative/analogy - assigned as chapter reading, not load-bearing for PS5 -->
     <section data-visibility="hidden" id="slide-extra-52" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
@@ -1028,7 +1052,7 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
          <strong>
           First term \(\rho\sigma^2\):
          </strong>
-         Stays no matter how many trees. This is the floor.
+         Stays no matter how many trees. With \(\sigma^2 = 0.50\) and \(\rho = 0.85\) the floor is <strong>0.425</strong> &mdash; a thousand more trees will not go below it.
         </p>
        </div>
        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px;">
@@ -1046,7 +1070,8 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
      </div>
      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>This is the most important equation in the lecture.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Circle the first term. No matter how many trees, you cannot push variance below this floor.</div></div></aside>
     </section>
-    <section id="slide-extra-53" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
+    <!-- CUT (nlm-revision, Ch19): duplicates the native "The Correlation Floor" slide, which already carries the decomposition in MathJax. Its one unique contribution -- the worked number 0.85 x 0.50 = 0.425 -- has been folded into that slide instead. -->
+    <section data-visibility="hidden" id="slide-extra-53" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
      <img alt="slides_part2_slides_part2_page_010.png" src="extra-slides/slides_part2_slides_part2_page_010.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <!-- CORRELATION FLOOR -->
@@ -1180,7 +1205,7 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
      <img alt="slides_part2_slides_part2_page_013.png" src="extra-slides/slides_part2_slides_part2_page_013.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <!-- CUT (nlm-revision, Ch19): narrative/analogy - assigned as chapter reading, not load-bearing for PS5 -->
-    <section data-visibility="hidden" id="slide-extra-56" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
+    <section data-visibility="hidden" id="slide-extra-56b" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
      <img alt="slides_part2_slides_part2_page_014.png" src="extra-slides/slides_part2_slides_part2_page_014.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <section id="demo-forest-averaging" style="padding: 10px 30px 10px 30px !important;">
@@ -1329,7 +1354,7 @@ rf.fit(X_train, y_train)
      <img alt="slides_part3_slides_part3_page_009.png" src="extra-slides/slides_part3_slides_part3_page_009.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <!-- CUT (nlm-revision, Ch19): narrative/analogy - assigned as chapter reading, not load-bearing for PS5 -->
-    <section data-visibility="hidden" id="slide-extra-62" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
+    <section data-visibility="hidden" id="slide-extra-62b" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
      <img alt="slides_part3_slides_part3_page_010.png" src="extra-slides/slides_part3_slides_part3_page_010.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <!-- INTERACTIVE DEMO: SHAP Waterfall -->
