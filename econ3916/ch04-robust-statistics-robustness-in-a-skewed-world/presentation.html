@@ -1440,6 +1440,34 @@ scores = iso.decision_function(features)         # more negative = more anomalou
   /* ch04 live numeric poll — one fetch feeds slides 14.1, 14.2, 17.2, 18.2, 19.2, 20.2 */
   (function () {
     var PID = "ch04-econ3916-poll-2";
+
+  /* ---- demo data -------------------------------------------------------
+     30 plausible photo counts, for a thin room or a dry run. This replaces
+     the READ only -- nothing is ever written to the shared poll table.
+     Toggle with ?demo=1 in the URL, or shift+D while presenting.
+     Chosen so every panel in this deck makes its point on real arithmetic:
+       mean 10,812 vs median 3,450          (ratio 3.1, the skew)
+       drop the largest: mean -37%, median -4%, SD -60%, IQR -11%, MAD -9%
+       trimmed dial 10,812 -> 6,999 -> 5,038 -> 3,964 -> 3,642 -> 3,450
+       Tukey Q1 1,950  Q3 7,000  fence 14,575 flags five; lower fence is
+       negative, so nothing is flagged low -- same shape as California. */
+  var DEMO = [380, 620, 950, 1100, 1350, 1600, 1750, 1900, 2100, 2300,
+              2450, 2600, 2800, 3050, 3300, 3600, 3900, 4200, 4600, 5100,
+              5800, 6400, 7200, 8300, 11500, 14800, 19200, 26500, 47000, 128000];
+  var demoOn = /[?&]demo=1/.test(location.search) || /[?&]demo=1/.test(location.hash);
+  function demoBadge() {
+    var b = document.getElementById("ec-demo-badge");
+    if (!demoOn) { if (b) b.remove(); return; }
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "ec-demo-badge";
+      b.style.cssText = "position:fixed;left:14px;bottom:12px;z-index:99998;background:#A85C5C;" +
+        "color:#fff;font:600 13px/1 -apple-system,system-ui,sans-serif;letter-spacing:.06em;" +
+        "padding:7px 12px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.25)";
+      b.textContent = "DEMO DATA \u2014 30 numbers, not the room";
+      document.body.appendChild(b);
+    }
+  }
     var SU  = "https://dpntbrsorgbivmntwmod.supabase.co";
     var RED = "#A85C5C", GRN = "#6A8E6B", MUT = "#8C8580";
     function anon() { return window.__POLL_ANON || null; }
@@ -1457,6 +1485,7 @@ scores = iso.decision_function(features)         # more negative = more anomalou
     var dropLargest = false, cache = [], gamma = 0;
 
     function values() {
+      if (demoOn) return Promise.resolve(DEMO.slice().sort(function (a, b) { return a - b; }));
       return api("GET", "poll_votes?poll_id=eq." + PID + "&select=choice&session_key=eq." + encodeURIComponent(skey()))
         .then(function (r) { return r.json(); })
         .then(function (rows) {
@@ -1659,7 +1688,7 @@ scores = iso.decision_function(features)         # more negative = more anomalou
     function refresh() { return values().then(function (v) { cache = v; renderAll(); countLabel(); }).catch(function () {}); }
     function countLabel() {
       var s = document.getElementById("np-status"); if (!s) return;
-      if (!/Thanks|Already|Enter|Could/.test(s.textContent)) s.textContent = cache.length + (cache.length === 1 ? " response" : " responses");
+      if (!/Thanks|Already|Enter|Could/.test(s.textContent)) s.textContent = cache.length + (demoOn ? " demo numbers" : (cache.length === 1 ? " response" : " responses"));
     }
 
     function boot() {
@@ -1687,6 +1716,16 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       });
       var ref = document.getElementById("np-refresh");
       if (ref) ref.addEventListener("click", refresh);
+      /* demo toggle: shift+D swaps the room's numbers for the 30 demo values
+         and back. Nothing is written either way -- this only changes what is
+         READ. The badge is there so a demo is never mistaken for the room. */
+      demoBadge();
+      document.addEventListener("keydown", function (e) {
+        if (e.key !== "D" || !e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+        var t = e.target && e.target.tagName;
+        if (t === "INPUT" || t === "TEXTAREA") return;
+        demoOn = !demoOn; demoBadge(); refresh();
+      }, true);   /* capture: Reveal binds keydown on document and would eat it */
       var dial = document.getElementById("trim-gamma");
       if (dial) dial.addEventListener("input", function () { gamma = parseInt(dial.value, 10) / 100; drawTrim(); });
 
