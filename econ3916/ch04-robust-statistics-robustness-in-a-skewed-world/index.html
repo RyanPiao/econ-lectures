@@ -369,7 +369,7 @@
     <!-- POLL 1 (vertical stack) -->
     <section>
       <section id="poll-1" style="padding: 32px 55px;">
-        <h2><i class="fa-solid fa-camera" style="color: var(--accent-color);"></i> Your Data, Right Now</h2>
+        <h2><i class="fa-solid fa-camera" id="np-demo-hit" style="color: var(--accent-color); -webkit-user-select: none; user-select: none;"></i> Your Data, Right Now</h2>
         <div class="content">
           <p class="text-lg" style="margin-bottom: 4px;">How many <strong>photos</strong> are on your phone? Settings &rarr; General &rarr; Storage, or your Photos app. A rough count is fine.</p>
           <p style="font-size: 14pt; color: var(--muted-color); margin-top: 0;">No name attached. We are about to compute a mean and a median on this room.</p>
@@ -393,6 +393,24 @@
           </div>
         </div>
         <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p><strong style="display:inline-block;font-size:.42em;font-weight:700;letter-spacing:.08em;color:#1565C0;vertical-align:.28em;margin-right:.5em">SAY:</strong> One extreme value moves the mean by its size divided by n. The median barely notices. ⏸ 3 s.</p></div><p style="margin:0 0 .3em;font-size:.82em;color:#777"><strong>TIME:</strong> Thu 24, ~9:29 &mdash; this slide is where the graded end-of-class check (t04-s1) comes from: 'the mean moves; the median barely notices'.</p><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><p style="color:#a03027"><strong>DON'T SAY:</strong> A large sample protects the mean. &nbsp;|&nbsp; One row in ten thousand is negligible.</p><p><strong>BACKGROUND:</strong> 3 min. If D got real votes, put the contamination formula back on screen and substitute the numbers out loud. This is the single most common wrong intuition in the chapter.</p><p><strong>IF ASKED:</strong> &ldquo;Doesn't n = 10,000 make it negligible?&rdquo; &rarr; No. A billion spread over 10,000 homes is $100,000 each. n divides the damage; it never removes it.</p></div></aside>
+      </section>
+      <section id="poll-1-add" style="padding: 26px 46px;">
+       <h2><i class="fa-solid fa-plus" style="color: var(--accent-color);"></i> One More Number Walks In</h2>
+       <div class="content">
+        <p style="font-size: 15.5pt; margin: 0 0 10px;">Nothing is recomputed from scratch. Each arrival nudges the mean by <strong>(x &minus; x&#772;) / (n+1)</strong> &mdash; so how far it moves depends entirely on how far out the newcomer is.</p>
+        <div style="display: flex; gap: 10px; align-items: center; justify-content: center; margin: 0 0 12px;">
+          <input id="np-add-input" type="number" inputmode="numeric" min="0" max="2000000" placeholder="a number"
+                 style="font-size: 18pt; padding: 7px 12px; border: 2px solid var(--line-color); border-radius: 8px; width: 150px; text-align: center;">
+          <button id="np-add-go" style="font-size: 15pt; padding: 9px 18px; border-radius: 8px; border: none; background: var(--secondary-color); color: #fff; cursor: pointer;">Add it</button>
+          <span style="color: var(--muted-color); font-size: 13pt;">or</span>
+          <button class="np-add-q" data-v="3000" style="font-size: 14pt; padding: 8px 14px; border-radius: 8px; border: 2px solid var(--line-color); background: #fff; cursor: pointer;">3,000</button>
+          <button class="np-add-q" data-v="50000" style="font-size: 14pt; padding: 8px 14px; border-radius: 8px; border: 2px solid var(--line-color); background: #fff; cursor: pointer;">50,000</button>
+          <button class="np-add-q" data-v="500000" style="font-size: 14pt; padding: 8px 14px; border-radius: 8px; border: 2px solid var(--danger-color); color: var(--danger-color); background: #fff; cursor: pointer;">500,000</button>
+          <button id="np-add-reset" style="font-size: 13pt; padding: 8px 14px; border-radius: 8px; border: none; background: #EFEBE6; cursor: pointer;">Reset</button>
+        </div>
+        <div id="np-add-panel"></div>
+       </div>
+       <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Add 3,000 first. Almost nothing happens. Then add 500,000.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>The formula is the whole slide: the mean moves by (x &minus; mean)/(n+1), so a typical arrival moves it by a rounding error and one extreme arrival drags it visibly. The median can only ever step to the next value in the queue, however large the newcomer is &mdash; ask them to predict the median BEFORE you click 500,000, then click it. Reset puts the room back.</div></div></aside>
       </section>
 
     </section>
@@ -1684,7 +1702,43 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
     }
 
-    function renderAll() { drawHist(); drawSD(); drawMed(); drawTrim(); drawSpread(); }
+    
+    /* ---- 14.3: what one more number does ---- */
+    var extra = [];
+    function fmt(x) { return Math.round(x).toLocaleString("en-US"); }
+    function drawAdd() {
+      var el = document.getElementById("np-add-panel"); if (!el) return;
+      var base = cache.slice();
+      if (base.length < 2) { el.innerHTML = '<p style="font-size:15pt;color:' + MUT + '">Waiting for the room &mdash; we need at least two numbers.</p>'; return; }
+      var after = base.concat(extra).sort(function (a, b) { return a - b; });
+      var m0 = mean(base), m1 = mean(after), d0 = median(base), d1 = median(after);
+      function row(label, a, b, col) {
+        var dv = b - a, pc = a ? dv / a * 100 : 0;
+        return '<tr><td style="padding:9px 14px;font-size:16pt">' + label + '</td>' +
+          '<td style="padding:9px 14px;text-align:right;font-size:18pt">' + fmt(a) + '</td>' +
+          '<td style="padding:9px 10px;text-align:center;color:' + MUT + '">&rarr;</td>' +
+          '<td style="padding:9px 14px;text-align:right;font-size:18pt;font-weight:700;color:' + col + '">' + fmt(b) + '</td>' +
+          '<td style="padding:9px 14px;text-align:right;font-size:15pt;color:' + col + '">' +
+          (dv >= 0 ? "+" : "") + fmt(dv) + ' <span style="color:' + MUT + '">(' + (pc >= 0 ? "+" : "") + pc.toFixed(1) + '%)</span></td></tr>';
+      }
+      var h = '<table style="margin:0 auto;border-collapse:collapse">' +
+        '<tr><td></td><td style="text-align:right;font-size:12.5pt;color:' + MUT + '">n = ' + base.length +
+        '</td><td></td><td style="text-align:right;font-size:12.5pt;color:' + MUT + '">n = ' + after.length + '</td><td></td></tr>' +
+        row("mean", m0, m1, RED) + row("median", d0, d1, GRN) + '</table>';
+      if (extra.length) {
+        var last = extra[extra.length - 1], n = base.length + extra.length - 1;
+        h += '<p style="text-align:center;font-size:15pt;margin:12px 0 0">' +
+             'x&#772; + (x &minus; x&#772;) / (n+1) &nbsp;=&nbsp; ' + fmt(mean(base.concat(extra.slice(0, -1)).sort(function (a, b) { return a - b; }))) +
+             ' + (' + fmt(last) + ' &minus; ' + fmt(mean(base.concat(extra.slice(0, -1)).sort(function (a, b) { return a - b; }))) + ') / ' + (n + 1) +
+             ' &nbsp;=&nbsp; <strong>' + fmt(m1) + '</strong></p>' +
+             '<p style="text-align:center;font-size:13.5pt;color:' + MUT + ';margin:6px 0 0">added so far: ' +
+             extra.map(fmt).join(", ") + '</p>';
+      } else {
+        h += '<p style="text-align:center;font-size:14.5pt;color:' + MUT + ';margin:12px 0 0">Add a number and watch which row moves.</p>';
+      }
+      el.innerHTML = h;
+    }
+    function renderAll() { drawHist(); drawSD(); drawMed(); drawTrim(); drawSpread(); drawAdd(); }
     function refresh() { return values().then(function (v) { cache = v; renderAll(); countLabel(); }).catch(function () {}); }
     function countLabel() {
       var s = document.getElementById("np-status"); if (!s) return;
@@ -1716,10 +1770,30 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       });
       var ref = document.getElementById("np-refresh");
       if (ref) ref.addEventListener("click", refresh);
+      function addValue(v) { if (isFinite(v) && v >= 0) { extra.push(Math.round(v)); drawAdd(); } }
+      var ago = document.getElementById("np-add-go"), ain = document.getElementById("np-add-input");
+      if (ago && ain) {
+        var doAdd = function () { addValue(parseFloat(ain.value)); ain.value = ""; };
+        ago.addEventListener("click", doAdd);
+        ain.addEventListener("keydown", function (e) { if (e.key === "Enter") doAdd(); });
+      }
+      Array.prototype.forEach.call(document.querySelectorAll(".np-add-q"), function (b) {
+        b.addEventListener("click", function () { addValue(parseFloat(b.getAttribute("data-v"))); });
+      });
+      var arst = document.getElementById("np-add-reset");
+      if (arst) arst.addEventListener("click", function () { extra = []; drawAdd(); });
       /* demo toggle: shift+D swaps the room's numbers for the 30 demo values
          and back. Nothing is written either way -- this only changes what is
          READ. The badge is there so a demo is never mistaken for the room. */
       demoBadge();
+      /* double-click the camera in this slide's heading to arm the demo set.
+         Deliberately undiscoverable: no cursor change, no tooltip, so it is a
+         presenter control that reads as decoration from the third row. */
+      var hit = document.getElementById("np-demo-hit");
+      if (hit) hit.addEventListener("dblclick", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        demoOn = !demoOn; demoBadge(); refresh();
+      });
       document.addEventListener("keydown", function (e) {
         if (e.key !== "D" || !e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
         var t = e.target && e.target.tagName;
