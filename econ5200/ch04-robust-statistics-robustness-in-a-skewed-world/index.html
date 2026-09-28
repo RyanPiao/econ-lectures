@@ -149,7 +149,7 @@ on the room's own data than on California housing.</li>
 <section class="section-divider" data-state="is-section-divider" id="divider-mean-lies">
 <h1>1  •  Why the Mean Lies</h1>
 <p style="font-size: 17pt; color: var(--muted-color); margin-top: 18px; font-style: italic;">One equation, one definition, and a number that goes to zero as your data grows.</p>
-</section><section id="room-collect" style="padding: 32px 55px;">
+</section><section><section id="room-collect" style="padding: 32px 55px;">
 <h2><i class="fa-solid fa-envelope-open-text" style="color: var(--accent-color);"></i> Your Data, Right Now</h2>
 <div class="content">
 <p class="text-lg" style="margin-bottom: 4px;">How many <strong>unread emails</strong> are in your inbox? Open your mail app and read the badge. A rough count is fine.</p>
@@ -159,7 +159,18 @@ on the room's own data than on California housing.</li>
 <button id="np-send" style="font-size: 19pt; padding: 13px 30px; border-radius: 10px; border: none; background: var(--secondary-color); color: #fff; cursor: pointer; font-family: inherit;">Send</button>
 </div>
 <p id="np-status" style="text-align: center; font-size: 16pt; margin-top: 16px; color: var(--muted-color);">0 responses</p>
-</div></section>
+</div></section><section id="room-first-look" style="padding: 26px 46px;">
+<h2><i class="fa-solid fa-chart-simple" style="color: var(--secondary-color);"></i> Your Distribution — and Two Words for the Middle</h2>
+<div class="content">
+<div id="first-live" style="min-height:240px"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px;">
+<div style="background:#fdf0ea;border-top:5px solid var(--accent-color);border-radius:10px;padding:13px 20px;">
+<p style="font-size:16.5pt;margin:0"><strong style="color:var(--accent-color)">Mean</strong> — add every number up, divide by how many there are. Every value gets a vote, and a big one votes loudly.</p></div>
+<div style="background:#eef5ee;border-top:5px solid var(--success-color);border-radius:10px;padding:13px 20px;">
+<p style="font-size:16.5pt;margin:0"><strong style="color:var(--success-color)">Median</strong> — line everyone up in order, take the one in the middle. Only the <em>rank</em> counts, not the size.</p></div>
+</div>
+<p style="font-size:15pt;color:var(--muted-color);margin-top:10px;text-align:center;">The gap between those two markers is the rest of today.</p>
+</div></section></section>
 <!-- SLIDE 8: Contamination equation -->
 <section><section id="contamination-eq" style="padding: 36px 55px;">
 <h2><i class="fa-solid fa-flask-vial" style="color: var(--danger-color);"></i> The Mechanism, in One Equation</h2>
@@ -183,7 +194,7 @@ on the room's own data than on California housing.</li>
 <h2><i class="fa-solid fa-chart-column" style="color: var(--success-color);"></i> The Same Formula, on This Room</h2>
 <div class="content">
 <div id="np-chart" style="min-height: 280px;"></div>
-<div style="display:flex; gap: 12px; justify-content:center; margin-top: 8px;">
+<div style="display:flex; gap: 12px; justify-content:center; margin-top: 8px;"><button id="np-typo" style="font-size: 14pt; padding: 8px 18px; border-radius: 8px; border: 2px solid var(--line-color); background: #fff; cursor: pointer; font-family: inherit;">Add three zeros to one entry</button>
 <button id="np-drop" style="font-size: 14pt; padding: 8px 18px; border-radius: 8px; border: 2px solid var(--line-color); background: #fff; cursor: pointer; font-family: inherit;">Drop the largest</button>
 <button id="np-refresh" style="font-size: 14pt; padding: 8px 18px; border-radius: 8px; border: 2px solid var(--line-color); background: #fff; cursor: pointer; font-family: inherit;">Refresh</button>
 </div>
@@ -2102,7 +2113,7 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       });
     }
 
-    var dropLargest = false, cache = [], gamma = 0;
+    var dropLargest = false, typoOn = false, cache = [], gamma = 0;
 
     function values() {
       return api("GET", "poll_votes?poll_id=eq." + PID + "&select=choice&session_key=eq." + encodeURIComponent(skey()))
@@ -2141,7 +2152,18 @@ scores = iso.decision_function(features)         # more negative = more anomalou
     function fmt(x) { return (!isFinite(x)) ? "&mdash;" : Math.round(x).toLocaleString(); }
     function pct(a, b) { if (!isFinite(a) || !a) return "&mdash;"; var c = (b - a) / a * 100; return (c >= 0 ? "+" : "") + c.toFixed(0) + "%"; }
 
-    function shown() { var v = cache.slice(); if (dropLargest && v.length > 1) v = v.slice(0, -1); return v; }
+    // the typo REPLACES the largest entry rather than adding one, so (M - x)/n is exact
+    function typoParts() {
+      if (!cache.length) return null;
+      var v = cache.slice().sort(function (a, b) { return a - b; });
+      return { replaced: v[v.length - 1], M: v[v.length - 1] * 1000 };
+    }
+    function shown() {
+      var v = cache.slice().sort(function (a, b) { return a - b; });
+      if (typoOn) { var t = typoParts(); if (t) v[v.length - 1] = t.M; }
+      if (dropLargest && v.length > 1) v = v.slice(0, -1);
+      return v;
+    }
     function cut()   { return cache.length > 1 ? cache.slice(0, -1) : cache.slice(); }
 
     function blank(box, need) {
@@ -2180,7 +2202,13 @@ scores = iso.decision_function(features)         # more negative = more anomalou
         '</svg>' +
         '<p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + st.n +
         ' &#183; mean ' + fmt(st.mean) + ' &#183; median ' + fmt(st.med) + ' &#183; SD ' + fmt(st.sd) +
-        (dropLargest ? ' &#183; <strong style="color:' + RED + '">largest value dropped</strong>' : '') + '</p>';
+        (dropLargest ? ' &#183; <strong style="color:' + RED + '">largest value dropped</strong>' : '') + '</p>' +
+        (function () { if (!typoOn) return ''; var t = typoParts(); if (!t) return '';
+          var shift = (t.M - t.replaced) / cache.length;
+          return '<p style="text-align:center;font-size:16.5pt;margin:8px 0 0;color:#3A3632">'
+            + 'one entry mistyped ' + fmt(t.replaced) + ' &rarr; <strong style="color:' + RED + '">' + fmt(t.M) + '</strong>'
+            + ' &#183; formula says the mean moves (M &minus; x)/n = <strong style="color:' + RED + '">' + fmt(shift) + '</strong>'
+            + ' &#183; the median moved <strong style="color:' + GRN + '">' + fmt(median(shown()) - median(cache)) + '</strong></p>'; })();
     }
 
     /* ---- 20.2 the three locations, on the room's numbers ---- */
@@ -2321,6 +2349,29 @@ scores = iso.decision_function(features)         # more negative = more anomalou
           row("cut-off med + 3.5&#215;MAD/.6745", fmt(cutR), GRN, true) + row("flagged", nR + " of " + v.length, GRN));
     }
 
+    /* ---- 8.2 first look: the distribution and the two words ---- */
+    function drawFirst() {
+      var box = document.getElementById("first-live"); if (!box) return;
+      var v = cache.slice(); if (v.length < 2) { blank(box, "send a number above first."); return; }
+      var m = mean(v), md = median(v);
+      var W = 1080, H = 206, L = 40, B = 168, hi = Math.max.apply(null, v) || 1;
+      var bins = Math.min(16, Math.max(5, Math.ceil(Math.sqrt(v.length))));
+      var w = hi / bins, counts = new Array(bins).fill(0);
+      v.forEach(function (x) { counts[Math.min(bins - 1, Math.floor(x / w))]++; });
+      var mx = Math.max.apply(null, counts) || 1, bw = (W - L - 20) / bins, bars = "";
+      counts.forEach(function (c, i) { var h = (B - 22) * c / mx;
+        bars += '<rect x="' + (L + i * bw + 2) + '" y="' + (B - h) + '" width="' + (bw - 4) + '" height="' + h + '" fill="' + MUT + '"/>'; });
+      function xp(x) { return L + (W - L - 20) * x / hi; }
+      function ln(x, c) { return '<line x1="' + xp(x) + '" y1="12" x2="' + xp(x) + '" y2="' + B + '" stroke="' + c + '" stroke-width="3" stroke-dasharray="7 5"/>'; }
+      var far = Math.abs(xp(m) - xp(md)) > 150;
+      box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:212px">' + bars +
+        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
+        ln(md, GRN) + ln(m, RED) +
+        '<text x="' + xp(md) + '" y="' + (B + 24) + '" font-size="17" fill="' + GRN + '" text-anchor="middle">median ' + fmt(md) + '</text>' +
+        '<text x="' + xp(m) + '" y="' + (far ? B + 24 : 14) + '" font-size="17" fill="' + RED + '" text-anchor="middle">mean ' + fmt(m) + '</text>' +
+        '</svg><p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + v.length + '</p>';
+    }
+
     /* ---- shared two-column shell ---- */
     function cols(leftTitle, rightTitle, leftBody, rightBody) {
       function pane(t, b, bg, bd) {
@@ -2441,7 +2492,7 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
     }
 
-    function renderAll() { drawCeiling(); drawMaskRoom(); drawFence(); drawLocations(); drawHist(); drawSD(); drawMed(); drawTrim(); drawSpread(); }
+    function renderAll() { drawFirst(); drawCeiling(); drawMaskRoom(); drawFence(); drawLocations(); drawHist(); drawSD(); drawMed(); drawTrim(); drawSpread(); }
     function refresh() { return values().then(function (v) { cache = v; renderAll(); countLabel(); }).catch(function () {}); }
     function countLabel() {
       var s = document.getElementById("np-status"); if (!s) return;
@@ -2469,7 +2520,13 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       if (drop) drop.addEventListener("click", function () {
         dropLargest = !dropLargest;
         drop.textContent = dropLargest ? "Put it back" : "Drop the largest value";
-        drawHist();
+        renderAll();
+      });
+      var typo = document.getElementById("np-typo");
+      if (typo) typo.addEventListener("click", function () {
+        typoOn = !typoOn;
+        typo.textContent = typoOn ? "Undo the typo" : "Add three zeros to one entry";
+        renderAll();
       });
       var ref = document.getElementById("np-refresh");
       if (ref) ref.addEventListener("click", refresh);
