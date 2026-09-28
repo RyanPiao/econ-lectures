@@ -30,10 +30,20 @@
   // or  <script src="../../poll.js" data-checkin></script>
   //
   // Default OFF. A course that has not asked can never prompt a student for
-  // an identifier, even if it calls Poll.ready(). Decided by Ryan 2026-09-23:
-  // 2316 opts in and keeps its participation check-in; 3916, 5200 and 1116
-  // use the Canvas quiz gated by a code read aloud, and must not be one line
-  // away from collecting IDs.
+  // an identifier, even if it calls Poll.ready().
+  //
+  // WHO IS ON, as of 2026-09-27 -- check this list, not your memory of it:
+  //   2316  on since 2026-09-23. The deck check-in IS the participation record.
+  //   5200  on since 088f8db, "every poll click now goes through the NUID check-in".
+  //   3916  on since 2026-09-27, asked for by Ryan. UNLIKE the others it KEEPS the
+  //         code-gated Canvas quiz as well, so a meeting nobody exports still has
+  //         an attendance record. Do not retire 3916's access codes.
+  //   1116  OFF, and nothing has asked for it.
+  //
+  // The line this replaces recorded Ryan's 2026-09-23 decision that 3916, 5200 and
+  // 1116 must stay off. Two of the three have since been switched on deliberately,
+  // and the stale comment was quoted as authority on 2026-09-27 before anyone
+  // checked the decks. If you change a course, change this list in the same commit.
   var CHECKIN = (function () {
     if (window.POLL_CHECKIN === true) return true;
     var s = document.currentScript ||
