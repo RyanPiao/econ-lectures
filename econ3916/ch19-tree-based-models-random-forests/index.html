@@ -1052,7 +1052,7 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
          <strong>
           First term \(\rho\sigma^2\):
          </strong>
-         Stays no matter how many trees. With \(\sigma^2 = 0.50\) and \(\rho = 0.85\) the floor is <strong>0.425</strong> &mdash; a thousand more trees will not go below it.
+         Stays no matter how many trees. This is the floor.
         </p>
        </div>
        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px;">
@@ -1292,8 +1292,43 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Put both numbers on the board. The ONLY difference is restricting which features each tree could use at each split.</p></div></aside>
     </section>
     <!-- RF CODE + RESULTS -->
-    <section id="slide-extra-57" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
-     <img alt="slides_part3_slides_part3_page_004.png" src="extra-slides/slides_part3_slides_part3_page_004.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
+    <section id="three-models-r2">
+      <h2>Accuracy and Stability at the Same Time</h2>
+      <div class="content">
+        <p style="font-size: 16pt; margin: 0 0 12px;">The trade-off says you pick one: flexible and unstable, or stable and too simple. Averaging decorrelated trees is how you stop having to pick.</p>
+        <div class="mathjax_ignore tex2jax_ignore">
+        <svg viewBox="0 0 1160 250" style="width: 100%; height: auto;" role="img" aria-label="Single tree R squared 0.60, ridge regression 0.59, random forest 0.81 on the same held-out data.">
+          <g>
+            <rect x="0" y="0" width="368" height="250" rx="12" fill="#FBFCFD" stroke="#D5DBDB" stroke-width="1.5"/>
+            <text x="184" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#2C3E50">Single tree</text>
+            <text x="184" y="104" text-anchor="middle" font-size="46" font-weight="700" fill="#7F8C8D">0.60</text>
+            <rect x="44" y="130" width="280" height="18" rx="9" fill="#ECF0F1"/>
+            <rect x="44" y="130" width="168" height="18" rx="9" fill="#7F8C8D"/>
+            <text x="184" y="188" text-anchor="middle" font-size="18" fill="#C0392B">flexible, unstable</text>
+            <text x="184" y="216" text-anchor="middle" font-size="16" fill="#7F8C8D">high variance</text>
+          </g>
+          <g>
+            <rect x="396" y="0" width="368" height="250" rx="12" fill="#FBFCFD" stroke="#D5DBDB" stroke-width="1.5"/>
+            <text x="580" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#2C3E50">Ridge regression</text>
+            <text x="580" y="104" text-anchor="middle" font-size="46" font-weight="700" fill="#7F8C8D">0.59</text>
+            <rect x="440" y="130" width="280" height="18" rx="9" fill="#ECF0F1"/>
+            <rect x="440" y="130" width="165" height="18" rx="9" fill="#7F8C8D"/>
+            <text x="580" y="188" text-anchor="middle" font-size="18" fill="#C0392B">stable, too simple</text>
+            <text x="580" y="216" text-anchor="middle" font-size="16" fill="#7F8C8D">high bias</text>
+          </g>
+          <g>
+            <rect x="792" y="0" width="368" height="250" rx="12" fill="#FDF2F7" stroke="#A23B72" stroke-width="2.5"/>
+            <text x="976" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#2C3E50">Random forest</text>
+            <text x="976" y="104" text-anchor="middle" font-size="46" font-weight="700" fill="#A23B72">0.81</text>
+            <rect x="836" y="130" width="280" height="18" rx="9" fill="#F5D9E6"/>
+            <rect x="836" y="130" width="227" height="18" rx="9" fill="#A23B72"/>
+            <text x="976" y="188" text-anchor="middle" font-size="18" font-weight="600" fill="#27AE60">flexible AND stable</text>
+            <text x="976" y="216" text-anchor="middle" font-size="16" fill="#7F8C8D">same held-out data</text>
+          </g>
+        </svg>
+        </div>
+        <p style="font-size: 15pt; margin: 8px 0 0; text-align: center; color: var(--muted-color);">R&sup2; on held-out listings. The tree and the forest are equally flexible &mdash; the forest just is not betting on one tree&rsquo;s idiosyncrasies.</p>
+      </div>
     </section>
     <section id="rf-code-results">
      <h2>
@@ -1313,30 +1348,9 @@ rf.fit(X_train, y_train)
      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>The Random Forest captures non-linearities with the stability of averaging.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Flexible AND stable.</div></div></aside>
     </section>
     <!-- MISCONCEPTION -->
-    <section id="more-trees-never-overfits">
-      <h2>Does Adding Trees Ever Start to Hurt?</h2>
-      <div class="content">
-        <p style="font-size: 16pt; margin: 0 0 12px;">No. <em>N</em> appears only in a denominator, so more trees can never make the forest worse &mdash; but it stops making it better, and it stops well above zero.</p>
-        <div class="mathjax_ignore tex2jax_ignore">
-        <svg viewBox="0 0 1160 290" style="width: 100%; height: auto;" role="img" aria-label="Error falls as trees are added and flattens onto the correlation floor; it never rises again and never reaches zero.">
-          <line x1="90" y1="20" x2="90" y2="200" stroke="#7F8C8D" stroke-width="1.5"/>
-          <line x1="90" y1="200" x2="760" y2="200" stroke="#7F8C8D" stroke-width="1.5"/>
-          <line x1="90" y1="162.5" x2="760" y2="162.5" stroke="#A23B72" stroke-width="2" stroke-dasharray="7 5"/>
-          <polyline points="90.0,50.0 171.4,106.2 219.0,125.0 279.1,140.0 318.6,146.4 360.5,151.3 408.1,155.0 468.1,158.0 523.3,159.7 570.9,160.6 631.0,161.4 686.2,161.8 760.0,162.1" fill="none" stroke="#2E86AB" stroke-width="3.5"/>
-          <text x="80" y="30" text-anchor="end" font-size="15" fill="#7F8C8D">higher</text>
-          <text x="80" y="200" text-anchor="end" font-size="15" fill="#7F8C8D">lower</text>
-          <text x="34" y="110" text-anchor="middle" font-size="18" fill="#2C3E50" transform="rotate(-90 34 110)">error</text>
-          <text x="425" y="232" text-anchor="middle" font-size="17" fill="#7F8C8D">number of trees (log scale, 1 &#8594; 300)</text>
-          <text x="774" y="155" font-size="18" font-weight="700" fill="#A23B72">correlation floor &rho;&sigma;&#178;</text>
-          <text x="774" y="181" font-size="16" fill="#7F8C8D">it flattens here, not at zero</text>
-          <rect x="774" y="26" width="372" height="96" rx="10" fill="#EAF2F8" stroke="#2E86AB" stroke-width="2"/>
-          <text x="796" y="60" font-size="18" fill="#2C3E50">The curve never turns back up.</text>
-          <text x="796" y="88" font-size="18" font-weight="700" fill="#2C3E50">There is no overfitting in N.</text>
-          <text x="796" y="112" font-size="16" fill="#7F8C8D">Only the compute bill grows.</text>
-        </svg>
-        </div>
-        <p class="fragment fade-up" style="font-size: 15.5pt; margin: 4px 0 0; text-align: center;">The plateau is &rho;&sigma;&#178; from the correlation-floor slide. <strong>More trees buys you the averaging term; only lower &rho; buys you the floor.</strong></p>
-      </div>
+    <!-- CUT (nlm-revision, Ch19): duplicates native "Common Misconception" (misconception-trees), which makes the same point correctly AND adds what the screenshot omits -- that a forest CAN still overfit through max_depth or max_features near p. The screenshot also claimed variance asymptotes to zero, which contradicts native "The Correlation Floor". -->
+    <section data-visibility="hidden" id="slide-extra-58" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
+     <img alt="slides_part3_slides_part3_page_005.png" src="extra-slides/slides_part3_slides_part3_page_005.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <section id="misconception-trees">
      <h2>
@@ -1396,8 +1410,25 @@ rf.fit(X_train, y_train)
      <img alt="slides_part3_slides_part3_page_008.png" src="extra-slides/slides_part3_slides_part3_page_008.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
     <!-- FEATURE IMPORTANCE -->
-    <section id="slide-extra-61" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
-     <img alt="slides_part3_slides_part3_page_009.png" src="extra-slides/slides_part3_slides_part3_page_009.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
+    <section id="mdi-vs-permutation">
+      <h2>Two Ways to Ask &ldquo;Which Feature Mattered?&rdquo;</h2>
+      <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 4px;">
+          <div style="background: #f0f4f8; border-radius: 12px; padding: 18px 22px;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--secondary-color); margin: 0 0 10px;">Mean decrease in impurity</p>
+            <p style="font-size: 15pt; margin: 0 0 10px;"><strong>How:</strong> add up how much each feature reduced Gini across every split. Free &mdash; it falls out of training.</p>
+            <p style="font-size: 15pt; margin: 0; color: var(--danger-color);"><strong>Flaw:</strong> biased toward features with many possible split points. A continuous variable like exact income can look important merely because it offers more places to cut.</p>
+          </div>
+          <div style="background: #FDF2F7; border-radius: 12px; padding: 18px 22px;">
+            <p style="font-size: 18pt; font-weight: 700; color: var(--accent-color); margin: 0 0 10px;">Permutation importance</p>
+            <p style="font-size: 15pt; margin: 0 0 10px;"><strong>How:</strong> shuffle one column, re-score the fitted model, and see how much accuracy falls. Costs a pass per feature.</p>
+            <p style="font-size: 15pt; margin: 0; color: var(--success-color);"><strong>Why it is better:</strong> it measures what the model actually loses without that feature, so split granularity cannot flatter anything.</p>
+          </div>
+        </div>
+        <div class="fragment fade-up" style="background: #FDEDEC; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 12px 20px; margin-top: 16px;">
+          <p style="font-size: 15.5pt; margin: 0;">Neither one is causal. Both answer &ldquo;what is this model leaning on?&rdquo; &mdash; never &ldquo;what would change the outcome if we intervened?&rdquo;</p>
+        </div>
+      </div>
     </section>
     <!-- CUT (nlm-revision, Ch19): narrative/analogy - assigned as chapter reading, not load-bearing for PS5 -->
     <section data-visibility="hidden" id="slide-extra-62b" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
