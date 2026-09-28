@@ -35,9 +35,11 @@
   // WHO IS ON, as of 2026-09-27 -- check this list, not your memory of it:
   //   2316  on since 2026-09-23. The deck check-in IS the participation record.
   //   5200  on since 088f8db, "every poll click now goes through the NUID check-in".
-  //   3916  on since 2026-09-27, asked for by Ryan. UNLIKE the others it KEEPS the
-  //         code-gated Canvas quiz as well, so a meeting nobody exports still has
-  //         an attendance record. Do not retire 3916's access codes.
+  //   3916  on since 2026-09-27. It briefly kept the code-gated Canvas quiz as a
+  //         fallback; Ryan dropped that the same night and 3916 now follows 2316 --
+  //         the deck check-in IS the record. Canvas course 261878 has Topic 1-4's
+  //         graded quizzes still published and everything from Topic 5 unpublished.
+  //         First real capture is 2026-09-28; nothing earlier has identity data.
   //   1116  OFF, and nothing has asked for it.
   //
   // The line this replaces recorded Ryan's 2026-09-23 decision that 3916, 5200 and
