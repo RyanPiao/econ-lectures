@@ -1197,8 +1197,32 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
     <section data-visibility="hidden" id="slide-extra-54" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
      <img alt="slides_part2_slides_part2_page_011.png" src="extra-slides/slides_part2_slides_part2_page_011.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
     </section>
-    <section id="slide-extra-55" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
-     <img alt="slides_part2_slides_part2_page_012.png" src="extra-slides/slides_part2_slides_part2_page_012.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
+    <section id="feature-restriction">
+      <h2>Hiding Features on Purpose</h2>
+      <div class="content">
+        <p style="font-size: 16pt; margin: 0 0 12px;">At <em>every</em> split, the tree may only look at a random subset of the features. Starve it of the dominant predictor often enough and the trees stop agreeing &mdash; which is the &rho; you are trying to lower.</p>
+        <div class="mathjax_ignore tex2jax_ignore">
+        <svg viewBox="0 0 1160 230" style="width: 100%; height: auto;" role="img" aria-label="With 100 features, classification considers 10 at each split and regression considers 33.">
+          <text x="14" y="42" font-size="20" font-weight="700" fill="#2C3E50">Classification</text>
+          <text x="14" y="68" font-size="17" fill="#7F8C8D">&#8730;p</text>
+          <rect x="230" y="20" width="700" height="52" rx="6" fill="#ECF0F1" stroke="#D5DBDB" stroke-width="1.5"/>
+          <rect x="230" y="20" width="70" height="52" rx="6" fill="#2E86AB"/>
+          <text x="950" y="54" font-size="21" font-weight="700" fill="#2E86AB">10 of 100</text>
+          <text x="14" y="152" font-size="20" font-weight="700" fill="#2C3E50">Regression</text>
+          <text x="14" y="178" font-size="17" fill="#7F8C8D">p / 3</text>
+          <rect x="230" y="130" width="700" height="52" rx="6" fill="#ECF0F1" stroke="#D5DBDB" stroke-width="1.5"/>
+          <rect x="230" y="130" width="231" height="52" rx="6" fill="#A23B72"/>
+          <text x="950" y="164" font-size="21" font-weight="700" fill="#A23B72">33 of 100</text>
+          <text x="230" y="102" font-size="16" fill="#7F8C8D">visible at this split</text>
+          <text x="560" y="102" font-size="16" fill="#7F8C8D">hidden at this split</text>
+          <text x="230" y="212" font-size="16" fill="#7F8C8D">visible at this split</text>
+          <text x="560" y="212" font-size="16" fill="#7F8C8D">hidden at this split</text>
+        </svg>
+        </div>
+        <div style="background: #FDEDEC; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 12px 18px; margin-top: 12px;">
+          <p style="font-size: 15pt; margin: 0;"><strong>Check this in the lab.</strong> &#8730;p is <code>RandomForestClassifier</code>'s default. <code>RandomForestRegressor</code> does <strong>not</strong> default to p/3 &mdash; scikit-learn uses <code>max_features=1.0</code>, every feature, so the trees stay correlated unless you set it yourself.</p>
+        </div>
+      </div>
     </section>
     <!-- CUT (nlm-revision, Ch19): a poll rendered as an image; native 41 is the real poll -->
     <section data-visibility="hidden" id="slide-extra-56" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
@@ -1289,8 +1313,30 @@ rf.fit(X_train, y_train)
      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>The Random Forest captures non-linearities with the stability of averaging.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Flexible AND stable.</div></div></aside>
     </section>
     <!-- MISCONCEPTION -->
-    <section id="slide-extra-58" style="padding: 0; display: flex; align-items: center; justify-content: center; background: #fff;">
-     <img alt="slides_part3_slides_part3_page_005.png" src="extra-slides/slides_part3_slides_part3_page_005.png" style="max-height: 625px; max-width: 1260px; object-fit: contain;">
+    <section id="more-trees-never-overfits">
+      <h2>Does Adding Trees Ever Start to Hurt?</h2>
+      <div class="content">
+        <p style="font-size: 16pt; margin: 0 0 12px;">No. <em>N</em> appears only in a denominator, so more trees can never make the forest worse &mdash; but it stops making it better, and it stops well above zero.</p>
+        <div class="mathjax_ignore tex2jax_ignore">
+        <svg viewBox="0 0 1160 290" style="width: 100%; height: auto;" role="img" aria-label="Error falls as trees are added and flattens onto the correlation floor; it never rises again and never reaches zero.">
+          <line x1="90" y1="20" x2="90" y2="200" stroke="#7F8C8D" stroke-width="1.5"/>
+          <line x1="90" y1="200" x2="760" y2="200" stroke="#7F8C8D" stroke-width="1.5"/>
+          <line x1="90" y1="162.5" x2="760" y2="162.5" stroke="#A23B72" stroke-width="2" stroke-dasharray="7 5"/>
+          <polyline points="90.0,50.0 171.4,106.2 219.0,125.0 279.1,140.0 318.6,146.4 360.5,151.3 408.1,155.0 468.1,158.0 523.3,159.7 570.9,160.6 631.0,161.4 686.2,161.8 760.0,162.1" fill="none" stroke="#2E86AB" stroke-width="3.5"/>
+          <text x="80" y="30" text-anchor="end" font-size="15" fill="#7F8C8D">higher</text>
+          <text x="80" y="200" text-anchor="end" font-size="15" fill="#7F8C8D">lower</text>
+          <text x="34" y="110" text-anchor="middle" font-size="18" fill="#2C3E50" transform="rotate(-90 34 110)">error</text>
+          <text x="425" y="232" text-anchor="middle" font-size="17" fill="#7F8C8D">number of trees (log scale, 1 &#8594; 300)</text>
+          <text x="774" y="155" font-size="18" font-weight="700" fill="#A23B72">correlation floor &rho;&sigma;&#178;</text>
+          <text x="774" y="181" font-size="16" fill="#7F8C8D">it flattens here, not at zero</text>
+          <rect x="774" y="26" width="372" height="96" rx="10" fill="#EAF2F8" stroke="#2E86AB" stroke-width="2"/>
+          <text x="796" y="60" font-size="18" fill="#2C3E50">The curve never turns back up.</text>
+          <text x="796" y="88" font-size="18" font-weight="700" fill="#2C3E50">There is no overfitting in N.</text>
+          <text x="796" y="112" font-size="16" fill="#7F8C8D">Only the compute bill grows.</text>
+        </svg>
+        </div>
+        <p class="fragment fade-up" style="font-size: 15.5pt; margin: 4px 0 0; text-align: center;">The plateau is &rho;&sigma;&#178; from the correlation-floor slide. <strong>More trees buys you the averaging term; only lower &rho; buys you the floor.</strong></p>
+      </div>
     </section>
     <section id="misconception-trees">
      <h2>
