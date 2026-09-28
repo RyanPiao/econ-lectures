@@ -865,11 +865,13 @@
             <div>
               <p style="font-size: 15pt; text-align: center; margin: 0 0 4px; color: var(--danger-color); font-weight: 700;">The odd one out</p>
               <div id="if-a"></div>
+              <div id="if-a-tree"></div>
               <p id="if-a-n" style="font-size: 18pt; text-align: center; margin: 6px 0 0;">0 cuts&#8230;</p>
             </div>
             <div>
               <p style="font-size: 15pt; text-align: center; margin: 0 0 4px; color: var(--secondary-color); font-weight: 700;">A point in the crowd</p>
               <div id="if-b"></div>
+              <div id="if-b-tree"></div>
               <p id="if-b-n" style="font-size: 18pt; text-align: center; margin: 6px 0 0;">0 cuts&#8230;</p>
             </div>
           </div>
@@ -877,7 +879,9 @@
             <button id="if-cut" style="font-size: 15pt; padding: 9px 22px; border-radius: 8px; border: none; background: var(--secondary-color); color: #fff; cursor: pointer; font-family: inherit;">Cut once</button>
             <button id="if-run" style="font-size: 15pt; padding: 9px 22px; border-radius: 8px; border: 2px solid var(--line-color); background: #fff; cursor: pointer; font-family: inherit;">Run / pause</button>
             <button id="if-reset" style="font-size: 15pt; padding: 9px 22px; border-radius: 8px; border: 2px solid var(--line-color); background: #fff; cursor: pointer; font-family: inherit;">New random data</button>
+            <button id="if-100" style="font-size: 15pt; padding: 9px 22px; border-radius: 8px; border: 2px solid var(--accent-color); background: #fff; color: var(--accent-color); cursor: pointer; font-family: inherit; font-weight: 700;">Run 100 trees</button>
           </div>
+          <p id="if-avg" style="font-size: 14.5pt; text-align: center; margin: 10px 0 0; color: var(--muted-color);">One tree is noise. <strong>Run 100 trees</strong> &mdash; the average path length is the anomaly score.</p>
         </div>
         <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Click &ldquo;Cut once&rdquo; and count out loud with the room.</p></div><p style="margin:0 0 .3em;font-size:.82em;color:#777"><strong>TIME:</strong> Thu 24, ~9:58 &mdash; ~2 min</p><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><p style="color:#a03027"><strong>DON'T SAY:</strong> The algorithm looks for points far from the mean. &nbsp;|&nbsp; It knows where the anomaly is.</p><p><strong>BACKGROUND:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Before the first click, point at the red dot and say what makes it odd: its x is ordinary, its y is ordinary, the <em>pair</em> is empty. That is the two-bedroom house with ten rooms.</li><li style="margin:0 0 0.35em">Click once. Count out loud. The shaded box is &ldquo;everything still in the running&rdquo; &mdash; each cut throws half of it away.</li><li style="margin:0 0 0.35em">The red panel usually finishes in 2&ndash;5 cuts; the blue one grinds on past ten. Do not explain why &mdash; ask them.</li><li style="margin:0 0 0.35em">The cuts are random and pick no target. Nothing here knows which point is the anomaly &mdash; that is the entire trick.</li><li style="margin:0 0 0.35em">Hit &ldquo;New random data&rdquo; and run it again so they see it was not a rigged draw. If the red one takes 6 cuts that round, say so &mdash; one tree is noisy, which is exactly why the real thing averages 100 of them.</li></ul><p><strong>IF ASKED:</strong> &ldquo;What if the anomaly is inside the crowd?&rdquo; &rarr; Then it takes many cuts and the forest will not flag it. Isolation Forest finds points that are few <em>and</em> separable &mdash; it is not a universal detector.</p></div></aside>
       </section>
@@ -1697,7 +1701,7 @@ scores = iso.decision_function(features)         # more negative = more anomalou
   /* ch04 — isolation forest, one cut at a time */
   (function () {
     var RED = "#A85C5C", BLU = "#6B8BA4", MUT = "#8C8580", TXT = "#3A3632", LINE = "#D5CEC7";
-    var W = 430, H = 330, PAD = 14;
+    var W = 430, H = 200, PAD = 14;
     var seed = 20260925, rng, pts = [], panels = [], timer = null;
 
     function mk(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; var t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -1775,7 +1779,59 @@ scores = iso.decision_function(features)         # more negative = more anomalou
         : P.n + (P.n === 1 ? ' cut' : ' cuts') + '&#8230;';
     }
 
-    function renderAll() { panels.forEach(render); }
+    function renderTree(P) {
+      var el = document.getElementById(P.id + "-tree"); if (!el) return;
+      var TW = 430, TH = 62, n = P.cuts.length;
+      var s = '<svg viewBox="0 0 ' + TW + ' ' + TH + '" style="width:100%">';
+      var x0 = 18, span = TW - 40, dx = n ? Math.min(52, span / n) : 52, y = 40;
+      s += '<circle cx="' + x0 + '" cy="' + y + '" r="6" fill="' + MUT + '"/>';
+      s += '<text x="' + x0 + '" y="' + (y + 20) + '" text-anchor="middle" font-size="10" fill="' + MUT + '">all 131</text>';
+      for (var i = 0; i < n; i++) {
+        var a = x0 + i * dx, b2 = x0 + (i + 1) * dx, last = (i === n - 1) && P.done;
+        s += '<line x1="' + a + '" y1="' + y + '" x2="' + b2 + '" y2="' + y + '" stroke="' + LINE + '" stroke-width="2"/>';
+        s += '<circle cx="' + b2 + '" cy="' + y + '" r="' + (last ? 8 : 5) + '" fill="' + (last ? P.color : MUT) + '"/>';
+        if (n <= 8) {
+          var c = P.cuts[i];
+          s += '<text x="' + b2 + '" y="' + (y - 12) + '" text-anchor="middle" font-size="10" fill="' + TXT + '">' +
+               (c.vert ? 'x' : 'y') + '&lt;' + c.v.toFixed(2) + '</text>';
+        }
+      }
+      if (P.done) s += '<text x="' + (x0 + n * dx + 12) + '" y="' + (y + 4) + '" font-size="12" font-weight="700" fill="' +
+                       P.color + '">alone</text>';
+      s += '</svg>';
+      el.innerHTML = s;
+    }
+
+    /* A whole tree with no drawing, on its own generator so the live demo's
+       sequence is untouched. This is the number the forest actually scores on:
+       one tree is noise, the average over many is the signal. */
+    function pathLen(ti, rnd) {
+      var b = { x0: 0, y0: 0, x1: 1, y1: 1 }, n = 0, t = pts[ti];
+      for (var g = 0; g < 80; g++) {
+        var inside = pts.filter(function (p) { return inBox(p, b); });
+        if (inside.length <= 1) break;
+        var xs = inside.map(function (p) { return p.x; }), ys = inside.map(function (p) { return p.y; });
+        var xr = Math.max.apply(null, xs) - Math.min.apply(null, xs);
+        var yr = Math.max.apply(null, ys) - Math.min.apply(null, ys);
+        var useX = (xr > 0 && yr > 0) ? rnd() < 0.5 : xr > 0, v;
+        if (useX) { v = Math.min.apply(null, xs) + rnd() * xr; if (t.x <= v) b.x1 = v; else b.x0 = v; }
+        else      { v = Math.min.apply(null, ys) + rnd() * yr; if (t.y <= v) b.y1 = v; else b.y0 = v; }
+        n++;
+      }
+      return n;
+    }
+
+    function hundred() {
+      var rnd = mk(Math.floor(Math.random() * 1e9)), sa = 0, sb = 0;
+      for (var i = 0; i < 100; i++) { sa += pathLen(panels[0].target, rnd); sb += pathLen(panels[1].target, rnd); }
+      var a = sa / 100, b2 = sb / 100, el = document.getElementById("if-avg");
+      if (el) el.innerHTML = 'Over <strong>100 random trees</strong>: the odd point is isolated in ' +
+        '<strong style="color:' + RED + '">' + a.toFixed(1) + '</strong> cuts on average, the crowd point in ' +
+        '<strong style="color:' + BLU + '">' + b2.toFixed(1) + '</strong>. ' +
+        '<strong>That ratio is the anomaly score.</strong>';
+    }
+
+    function renderAll() { panels.forEach(function (P) { render(P); renderTree(P); }); }
     function one() { var moved = false; panels.forEach(function (P) { if (step(P)) moved = true; }); renderAll(); return moved; }
     function run() {
       if (timer) { clearInterval(timer); timer = null; return; }
@@ -1785,6 +1841,8 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       if (timer) { clearInterval(timer); timer = null; }
       if (newSeed) seed = Math.floor(Math.random() * 1e9);
       build(); renderAll();
+      var el = document.getElementById("if-avg");
+      if (el) el.innerHTML = 'One tree is noise. <strong>Run 100 trees</strong> &mdash; the average path length is the anomaly score.';
     }
 
     function boot() {
@@ -1794,6 +1852,8 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       if (c) c.addEventListener("click", function () { one(); });
       if (r) r.addEventListener("click", run);
       if (z) z.addEventListener("click", function () { reset(true); });
+      var hn = document.getElementById("if-100");
+      if (hn) hn.addEventListener("click", hundred);
     }
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
   })();
