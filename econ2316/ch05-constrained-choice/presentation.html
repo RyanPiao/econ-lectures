@@ -4041,5 +4041,43 @@
   });
 })();
 </script>
+<!-- speaker-other-screen v1 -->
+<script>
+(function () {
+  // 29 Sep 2026, Ryan: the deck is dragged to the projector screen, then S opens
+  // speaker view -- on that same screen, so it had to be dragged back. Chrome's
+  // Window Management API lets this page place a window IT opened on another
+  // display. The speaker window is opened as before, then moved to whichever
+  // screen the projector is NOT on and sized to fill it. Needs a one-time
+  // "manage windows on all your displays" Allow; until then (or on one screen,
+  // or in another browser) nothing changes. The move happens after the window
+  // exists, so it never races the keypress's user activation.
+  var q = location.search;
+  if (!/[?&]presenter(&|=|$)/.test(q) || /[?&]receiver(&|$)/.test(q)) return;
+  if (!('getScreenDetails' in window)) return;
+  var details = null;
+  function load() { return window.getScreenDetails().then(function (d) { details = d; return d; }); }
+  try {
+    navigator.permissions.query({ name: 'window-management' })
+      .then(function (s) { if (s.state === 'granted') load().catch(function () {}); }, function () {});
+  } catch (e) {}
+  function place(w) {
+    var go = function (d) {
+      var cur = d.currentScreen;
+      var others = d.screens.filter(function (s) { return s.left !== cur.left || s.top !== cur.top; });
+      if (!others.length || !w || w.closed) return;             // one screen: leave it where it is
+      var t = others.filter(function (s) { return s.isPrimary; })[0] || others[0];
+      try { w.moveTo(t.availLeft, t.availTop); w.resizeTo(t.availWidth, t.availHeight); } catch (e) {}
+    };
+    if (details) go(details); else load().then(go, function () {});
+  }
+  var open = window.open;
+  window.open = function (url, name) {
+    var w = open.apply(window, arguments);
+    try { if (w && name === 'reveal.js - Notes') place(w); } catch (e) {}
+    return w;
+  };
+})();
+</script>
 </body>
 </html>
