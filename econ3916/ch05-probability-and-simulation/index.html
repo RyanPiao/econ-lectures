@@ -1233,7 +1233,194 @@ pi_hat = 4 * ((x**2 + y**2) &lt;= 1.0).mean()   # 3.14178</code></pre>
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var s=g.closest("section");if(s&&!s.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v20 -->
+  <script>
+  /* ch05 slide 17.1 — Bayes as area, live.
+     Ported from visual-ml-hub/bayes_belief_explorer.html, recoloured to match the
+     static square on 17 above it: green = the prior column, blue = fits the evidence,
+     grey = everyone else, terracotta = the posterior. Same diagram, now moving.
+     The geometry follows 3Blue1Brown, "Bayes theorem, the geometry of changing beliefs". */
+  (function () {
+    var GRN = "#6A8E6B", BLU = "#6B8BA4", MUT = "#8C8580", TXT = "#3A3632",
+        LINE = "#D5CEC7", ACC = "#C47B5A";
+
+    var PRESETS = {
+      husky: {
+        prior: 5, lh: 40, lnh: 10, n: 210,
+        story: '<strong>Riley</strong> is quiet and hyper-organised, colour-codes every set of notes, and would rather clean a ' +
+               'messy dataset all afternoon than run a meeting. Is Riley a <strong>data-science major</strong> or a ' +
+               '<strong>business major</strong>?',
+        gridTitle: "210 Huskies, a representative sample",
+        lPrior: "Data-science majors", lLh: "Of them, fit the description", lLnh: "Of business majors, fit it",
+        hName: "data-science majors", nhName: "business majors",
+        postLabel: "chance Riley is a data-science major"
+      },
+      fraud: {
+        prior: 0.1, lh: 99, lnh: 2, n: 1000,
+        story: 'The model flags a transaction. It catches <strong>99%</strong> of real fraud and falsely flags ' +
+               '<strong>2%</strong> of legitimate swipes. Fraud runs at <strong>0.1%</strong> of all swipes.',
+        gridTitle: "1,000 transactions",
+        lPrior: "Really fraud", lLh: "Of fraud, model catches", lLnh: "Of good swipes, flagged",
+        hName: "fraud", nhName: "legitimate",
+        postLabel: "chance a flagged swipe is really fraud"
+      },
+      nullev: {
+        prior: 30, lh: 45, lnh: 45, n: 210,
+        story: 'Both likelihoods are <strong>equal</strong> &mdash; the evidence is exactly as common inside the hypothesis as ' +
+               'outside it. Drag either one and watch. Keep them level and nothing moves.',
+        gridTitle: "210 cases",
+        lPrior: "Prior, P(H)", lLh: "P(E | H)", lLnh: "P(E | ¬H)",
+        hName: "cases where H is true", nhName: "the rest",
+        postLabel: "posterior, P(H | E)"
+      }
+    };
+
+    var cur = "husky";
+    function $(id) { return document.getElementById(id); }
+    function pct(x) { return (x >= 10 ? x.toFixed(1) : x.toFixed(2)).replace(/\.?0+$/, "") + "%"; }
+
+    function draw() {
+      var p = PRESETS[cur];
+      var prior = +$("bx-s-prior").value / 100,
+          lh    = +$("bx-s-lh").value / 100,
+          lnh   = +$("bx-s-lnh").value / 100;
+      $("bx-v-prior").textContent = pct(+$("bx-s-prior").value);
+      $("bx-v-lh").textContent    = pct(+$("bx-s-lh").value);
+      $("bx-v-lnh").textContent   = pct(+$("bx-s-lnh").value);
+
+      var num = prior * lh, den = num + (1 - prior) * lnh, post = den > 0 ? num / den : 0;
+      people(prior, lh, lnh, p);
+      area(prior, lh, lnh, post, p);
+
+      var delta = post - prior, mv = $("bx-move");
+      if (Math.abs(delta) < 0.0005) {
+        mv.innerHTML = 'The evidence moved your belief by <strong>nothing at all</strong>. ' +
+                       'The two likelihoods are equal, so it was never evidence about this question.';
+      } else {
+        var f = prior > 0 ? post / prior : 0;
+        mv.innerHTML = 'Belief moved from <strong>' + pct(prior * 100) + '</strong> to <strong style="color:' + ACC + '">' +
+          pct(post * 100) + '</strong> &mdash; ' + p.postLabel +
+          (delta > 0 && f > 1.05 ? ', a factor of <strong>' + f.toFixed(1) + '&times;</strong>' : '') + '.';
+      }
+    }
+
+    /* panel 1: a representative sample, COLUMN-MAJOR so the prior is a visible slab
+       of width rather than a scattering you would have to count. */
+    function people(prior, lh, lnh, p) {
+      var N = p.n, ROWS = N > 500 ? 20 : 10, COLS = Math.ceil(N / ROWS);
+      var W = 520, cell = W / COLS, R = Math.min(cell * 0.32, 7), TOP = 18;
+      var H = TOP + ROWS * cell + 22;
+      var nH = Math.round(prior * N), nHE = Math.round(nH * lh), nNHE = Math.round((N - nH) * lnh);
+      var o = "", iH = 0, iN = 0;
+      for (var i = 0; i < N; i++) {
+        var c = (i / ROWS) | 0, rw = i % ROWS;
+        var cx = c * cell + cell / 2, cy = TOP + rw * cell + cell / 2, fill, op;
+        if (i < nH) { iH++; if (iH <= nHE) { fill = BLU; op = 1; } else { fill = GRN; op = .5; } }
+        else        { iN++; if (iN <= nNHE) { fill = BLU; op = .45; } else { fill = MUT; op = .22; } }
+        o += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + R.toFixed(1) + '" fill="' + fill + '" opacity="' + op + '"/>';
+      }
+      var hw = Math.max((nH / ROWS) * cell, 12);   /* below ~12px the bracket reads as a letter H */
+      o += '<line x1="1" y1="10" x2="' + hw.toFixed(1) + '" y2="10" stroke="' + GRN + '" stroke-width="2.5"/>';
+      o += '<line x1="1" y1="6" x2="1" y2="14" stroke="' + GRN + '" stroke-width="2.5"/>';
+      o += '<line x1="' + hw.toFixed(1) + '" y1="6" x2="' + hw.toFixed(1) + '" y2="14" stroke="' + GRN + '" stroke-width="2.5"/>';
+      o += '<text x="' + Math.max(hw + 7, 14).toFixed(1) + '" y="14" font-size="11.5" fill="' + GRN + '" font-weight="700">' +
+           nH.toLocaleString() + ' ' + p.hName + '</text>';
+      /* people come in whole numbers, so the grid rounds; the posterior is computed
+         from the probabilities. "About" keeps the two from appearing to disagree. */
+      o += '<text x="' + (W / 2) + '" y="' + (H - 5) + '" text-anchor="middle" font-size="11.5" fill="' + BLU +
+           '" font-weight="600">about ' + (nHE + nNHE).toLocaleString() + ' fit the evidence &mdash; about ' +
+           nHE.toLocaleString() + ' of them on the left</text>';
+      $("bx-people").innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H.toFixed(0) + '" style="width:100%;display:block" role="img" ' +
+        'aria-label="A representative sample drawn as dots, the hypothesis filling the leftmost columns, with those fitting the evidence picked out in blue.">' + o + '</svg>';
+    }
+
+    /* panel 2: the unit square from slide 17, now driven by the sliders */
+    function area(prior, lh, lnh, post, p) {
+      var X0 = 46, Y0 = 12, S = 208, W = 400;
+      /* a 0.1% prior is a fifth of a pixel wide, so it gets a floor to stay visible.
+         Say so on the slide -- slide 17 above makes the same admission, and a student
+         who measures the column would otherwise catch us overstating the prior. */
+      var trueW = prior * S, wH = Math.max(trueW, 1.2), hH = lh * S, hN = lnh * S;
+      var o = "";
+      o += '<rect x="' + X0 + '" y="' + Y0 + '" width="' + S + '" height="' + S + '" fill="#fff" stroke="' + LINE + '"/>';
+      o += '<rect x="' + X0 + '" y="' + Y0 + '" width="' + wH.toFixed(1) + '" height="' + S + '" fill="' + GRN + '" opacity=".16"/>';
+      o += '<rect x="' + (X0 + wH).toFixed(1) + '" y="' + Y0 + '" width="' + (S - wH).toFixed(1) + '" height="' + S + '" fill="' + MUT + '" opacity=".09"/>';
+      o += '<rect x="' + X0 + '" y="' + (Y0 + S - hH).toFixed(1) + '" width="' + wH.toFixed(1) + '" height="' + hH.toFixed(1) + '" fill="' + BLU + '"/>';
+      o += '<rect x="' + (X0 + wH).toFixed(1) + '" y="' + (Y0 + S - hN).toFixed(1) + '" width="' + (S - wH).toFixed(1) + '" height="' + hN.toFixed(1) + '" fill="' + BLU + '" opacity=".45"/>';
+      o += '<line x1="' + (X0 + wH).toFixed(1) + '" y1="' + Y0 + '" x2="' + (X0 + wH).toFixed(1) + '" y2="' + (Y0 + S) + '" stroke="#fff" stroke-width="2"/>';
+      o += '<rect x="' + X0 + '" y="' + Y0 + '" width="' + S + '" height="' + S + '" fill="none" stroke="#3a3a38" stroke-width="1.3"/>';
+      o += '<text x="' + (X0 + wH / 2).toFixed(1) + '" y="' + (Y0 + S + 14) + '" text-anchor="middle" font-size="11.5" fill="' + GRN + '" font-weight="700">P(H)</text>';
+      if (trueW < 1.2)   /* clear of the P(H) label, which is centred on the hairline */
+        o += '<text x="' + (X0 + 36) + '" y="' + (Y0 + S + 14) + '" font-size="10.5" fill="#A85C5C">&larr; drawn thicker than it is</text>';
+      o += '<text x="' + (X0 - 6) + '" y="' + (Y0 + S - hH / 2).toFixed(1) + '" text-anchor="end" font-size="11" fill="' + BLU + '" font-weight="700">P(E|H)</text>';
+      o += '<text x="' + (X0 + S + 6) + '" y="' + (Y0 + S - hN / 2).toFixed(1) + '" font-size="11" fill="' + BLU + '" font-weight="700">P(E|&#172;H)</text>';
+      var BY = Y0 + S + 40, BH = 22, aH = prior * lh, aN = (1 - prior) * lnh, tot = aH + aN;
+      var wLeft = tot > 0 ? (aH / tot) * S : 0;
+      o += '<text x="' + X0 + '" y="' + (BY - 7) + '" font-size="11" fill="' + MUT + '">of everything that fits the evidence:</text>';
+      o += '<rect x="' + X0 + '" y="' + BY + '" width="' + S + '" height="' + BH + '" fill="' + BLU + '" opacity=".28" rx="4"/>';
+      o += '<rect x="' + X0 + '" y="' + BY + '" width="' + wLeft.toFixed(1) + '" height="' + BH + '" fill="' + ACC + '" rx="4"/>';
+      if (wLeft > 42)
+        o += '<text x="' + (X0 + wLeft / 2).toFixed(1) + '" y="' + (BY + 16) + '" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">' + (post * 100).toFixed(1) + '%</text>';
+      else
+        o += '<text x="' + (X0 + wLeft + 6).toFixed(1) + '" y="' + (BY + 16) + '" font-size="12.5" fill="' + ACC + '" font-weight="700">' + (post * 100).toFixed(1) + '%</text>';
+      $("bx-area").innerHTML = '<svg viewBox="0 0 ' + W + ' ' + (BY + BH + 8) + '" style="width:100%;display:block" role="img" ' +
+        'aria-label="The unit square: width is the prior, height is the likelihood, and the bar below shows what share of everything fitting the evidence sits on the left.">' + o + '</svg>';
+    }
+
+    function apply(name) {
+      cur = name;
+      var p = PRESETS[name];
+      $("bx-s-prior").value = p.prior; $("bx-s-lh").value = p.lh; $("bx-s-lnh").value = p.lnh;
+      $("bx-story").innerHTML = p.story;
+      $("bx-grid-title").textContent = p.gridTitle;
+      $("bx-l-prior").textContent = p.lPrior;
+      $("bx-l-lh").textContent = p.lLh;
+      $("bx-l-lnh").textContent = p.lLnh;
+      ["husky", "fraud", "nullev"].forEach(function (k) {
+        var b = $("bx-" + (k === "nullev" ? "null" : k));
+        b.style.borderColor = (k === name) ? ACC : LINE;
+        b.style.fontWeight  = (k === name) ? "700" : "400";
+      });
+      draw();
+    }
+
+    function boot() {
+      if (!$("bx-people")) return;
+      ["bx-s-prior", "bx-s-lh", "bx-s-lnh"].forEach(function (id) {
+        $(id).addEventListener("input", draw);
+      });
+      $("bx-husky").addEventListener("click", function () { apply("husky"); });
+      $("bx-fraud").addEventListener("click", function () { apply("fraud"); });
+      $("bx-null").addEventListener("click", function () { apply("nullev"); });
+      apply("husky");
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
+  })();
+  </script>
+
+<!-- speaker-upcoming-viewonly v1 -->
+<script>
+(function () {
+  // Speaker view's UPCOMING pane: reveal loads the deck in an iframe with
+  // ?receiver but WITHOUT postMessageEvents=true (that one is the current
+  // pane). It is a preview, so nothing in it should react: no clicks, no
+  // wheel, no keys -- a stray click or key used to move or change it.
+  // Added 29 Sep 2026 at Ryan's request, all 2316/3916/5200 decks.
+  var q = location.search;
+  if (!/[?&]receiver(&|$)/.test(q) || /postMessageEvents=true/.test(q)) return;
+  var s = document.createElement('style');
+  s.textContent = '.reveal,.reveal *{pointer-events:none!important}';
+  document.head.appendChild(s);
+  ['keydown', 'keypress', 'keyup', 'wheel', 'click', 'dblclick', 'mousedown', 'pointerdown', 'touchstart']
+    .forEach(function (t) {
+      window.addEventListener(t, function (e) { e.stopImmediatePropagation(); e.preventDefault(); },
+                              { capture: true, passive: false });
+    });
+  function lock() { try { Reveal.configure({ keyboard: false, touch: false, controls: false }); } catch (e) {} }
+  if (window.Reveal && Reveal.isReady && Reveal.isReady()) lock();
+  else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
+})();
+</script>
+<!-- presenter-gate v21 -->
 <script>
 (function () {
   var q = location.search;
@@ -1314,6 +1501,32 @@ pi_hat = 4 * ((x**2 + y**2) &lt;= 1.0).mean()   # 3.14178</code></pre>
     document.addEventListener('input', ctl, true);
     document.addEventListener('change', ctl, true);
     document.addEventListener('click', ctl, true);
+    // overview: reveal's notes plugin never syncs it, so "o" here opened it in this
+    // preview only. Cancel it here and toggle it on the projector instead. Arrows already
+    // relay, so the slide is picked in the projector's overview. Esc toggles it like o (reveal
+    // binds both to the same toggle, so it arrives through overviewshown); Enter closes it.
+    Reveal.on('overviewshown', function () { Reveal.toggleOverview(false); toMain({ bridge: 'nav', action: 'overview' }); });
+    document.addEventListener('keydown', function (e) {
+      if (!e.isTrusted || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      if (e.key === 'Enter') toMain({ bridge: 'nav', action: 'overview-off' });
+    }, true);
+    window.addEventListener('message', function (ev) {
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d && d.method === 'triggerKey' && d.args && d.args[0] === 13)
+        toMain({ bridge: 'nav', action: 'overview-off' });
+    });
+    // a poll option is a div, not a control, so the ctl relay never carried it: a click
+    // here voted in this PREVIEW (and asked for a NUID here) while the room saw nothing.
+    // Swallow it here and click the same option on the projector.
+    document.addEventListener('click', function (ev) {
+      var o = ev.target.closest && ev.target.closest('.poll-option'), sl = Reveal.getCurrentSlide();
+      if (!ev.isTrusted || !o || !sl || !sl.contains(o)) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var at = here();
+      toMain({ bridge: 'poll', h: at.h, v: at.v, idx: [].indexOf.call(sl.querySelectorAll('.poll-option'), o) });
+    }, true);
     // a video: play it on the projector, not in the preview
     document.addEventListener('click', function (ev) {
       var f = ev.target.closest && ev.target.closest('.yt-facade');
@@ -2002,6 +2215,15 @@ pi_hat = 4 * ((x**2 + y**2) &lt;= 1.0).mean()   # 3.14178</code></pre>
         else if (d.action === 'down') Reveal.down();
         else if (d.action === 'first') Reveal.slide(0, 0);
         else if (d.action === 'last') Reveal.slide(Reveal.getHorizontalSlides().length - 1, 0);
+        else if (d.action === 'overview') Reveal.toggleOverview();
+        else if (d.action === 'overview-off' && Reveal.isOverview()) Reveal.toggleOverview(false);
+        return;
+      }
+      if (d.bridge === 'poll') {
+        var pa = here(), ps = Reveal.getCurrentSlide();
+        if (!ps || pa.h !== d.h || pa.v !== d.v) return;      // the two windows are on different slides
+        var po = ps.querySelectorAll('.poll-option')[d.idx];
+        if (po) po.click();
         return;
       }
       if (d.bridge === 'ctl' || d.bridge === 'yt') {
@@ -2083,194 +2305,6 @@ pi_hat = 4 * ((x**2 + y**2) &lt;= 1.0).mean()   # 3.14178</code></pre>
     if (!receiver) wire();
   }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
-})();
-</script>
-
-  <script>
-  /* ch05 slide 17.1 — Bayes as area, live.
-     Ported from visual-ml-hub/bayes_belief_explorer.html, recoloured to match the
-     static square on 17 above it: green = the prior column, blue = fits the evidence,
-     grey = everyone else, terracotta = the posterior. Same diagram, now moving.
-     The geometry follows 3Blue1Brown, "Bayes theorem, the geometry of changing beliefs". */
-  (function () {
-    var GRN = "#6A8E6B", BLU = "#6B8BA4", MUT = "#8C8580", TXT = "#3A3632",
-        LINE = "#D5CEC7", ACC = "#C47B5A";
-
-    var PRESETS = {
-      husky: {
-        prior: 5, lh: 40, lnh: 10, n: 210,
-        story: '<strong>Riley</strong> is quiet and hyper-organised, colour-codes every set of notes, and would rather clean a ' +
-               'messy dataset all afternoon than run a meeting. Is Riley a <strong>data-science major</strong> or a ' +
-               '<strong>business major</strong>?',
-        gridTitle: "210 Huskies, a representative sample",
-        lPrior: "Data-science majors", lLh: "Of them, fit the description", lLnh: "Of business majors, fit it",
-        hName: "data-science majors", nhName: "business majors",
-        postLabel: "chance Riley is a data-science major"
-      },
-      fraud: {
-        prior: 0.1, lh: 99, lnh: 2, n: 1000,
-        story: 'The model flags a transaction. It catches <strong>99%</strong> of real fraud and falsely flags ' +
-               '<strong>2%</strong> of legitimate swipes. Fraud runs at <strong>0.1%</strong> of all swipes.',
-        gridTitle: "1,000 transactions",
-        lPrior: "Really fraud", lLh: "Of fraud, model catches", lLnh: "Of good swipes, flagged",
-        hName: "fraud", nhName: "legitimate",
-        postLabel: "chance a flagged swipe is really fraud"
-      },
-      nullev: {
-        prior: 30, lh: 45, lnh: 45, n: 210,
-        story: 'Both likelihoods are <strong>equal</strong> &mdash; the evidence is exactly as common inside the hypothesis as ' +
-               'outside it. Drag either one and watch. Keep them level and nothing moves.',
-        gridTitle: "210 cases",
-        lPrior: "Prior, P(H)", lLh: "P(E | H)", lLnh: "P(E | ¬H)",
-        hName: "cases where H is true", nhName: "the rest",
-        postLabel: "posterior, P(H | E)"
-      }
-    };
-
-    var cur = "husky";
-    function $(id) { return document.getElementById(id); }
-    function pct(x) { return (x >= 10 ? x.toFixed(1) : x.toFixed(2)).replace(/\.?0+$/, "") + "%"; }
-
-    function draw() {
-      var p = PRESETS[cur];
-      var prior = +$("bx-s-prior").value / 100,
-          lh    = +$("bx-s-lh").value / 100,
-          lnh   = +$("bx-s-lnh").value / 100;
-      $("bx-v-prior").textContent = pct(+$("bx-s-prior").value);
-      $("bx-v-lh").textContent    = pct(+$("bx-s-lh").value);
-      $("bx-v-lnh").textContent   = pct(+$("bx-s-lnh").value);
-
-      var num = prior * lh, den = num + (1 - prior) * lnh, post = den > 0 ? num / den : 0;
-      people(prior, lh, lnh, p);
-      area(prior, lh, lnh, post, p);
-
-      var delta = post - prior, mv = $("bx-move");
-      if (Math.abs(delta) < 0.0005) {
-        mv.innerHTML = 'The evidence moved your belief by <strong>nothing at all</strong>. ' +
-                       'The two likelihoods are equal, so it was never evidence about this question.';
-      } else {
-        var f = prior > 0 ? post / prior : 0;
-        mv.innerHTML = 'Belief moved from <strong>' + pct(prior * 100) + '</strong> to <strong style="color:' + ACC + '">' +
-          pct(post * 100) + '</strong> &mdash; ' + p.postLabel +
-          (delta > 0 && f > 1.05 ? ', a factor of <strong>' + f.toFixed(1) + '&times;</strong>' : '') + '.';
-      }
-    }
-
-    /* panel 1: a representative sample, COLUMN-MAJOR so the prior is a visible slab
-       of width rather than a scattering you would have to count. */
-    function people(prior, lh, lnh, p) {
-      var N = p.n, ROWS = N > 500 ? 20 : 10, COLS = Math.ceil(N / ROWS);
-      var W = 520, cell = W / COLS, R = Math.min(cell * 0.32, 7), TOP = 18;
-      var H = TOP + ROWS * cell + 22;
-      var nH = Math.round(prior * N), nHE = Math.round(nH * lh), nNHE = Math.round((N - nH) * lnh);
-      var o = "", iH = 0, iN = 0;
-      for (var i = 0; i < N; i++) {
-        var c = (i / ROWS) | 0, rw = i % ROWS;
-        var cx = c * cell + cell / 2, cy = TOP + rw * cell + cell / 2, fill, op;
-        if (i < nH) { iH++; if (iH <= nHE) { fill = BLU; op = 1; } else { fill = GRN; op = .5; } }
-        else        { iN++; if (iN <= nNHE) { fill = BLU; op = .45; } else { fill = MUT; op = .22; } }
-        o += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + R.toFixed(1) + '" fill="' + fill + '" opacity="' + op + '"/>';
-      }
-      var hw = Math.max((nH / ROWS) * cell, 12);   /* below ~12px the bracket reads as a letter H */
-      o += '<line x1="1" y1="10" x2="' + hw.toFixed(1) + '" y2="10" stroke="' + GRN + '" stroke-width="2.5"/>';
-      o += '<line x1="1" y1="6" x2="1" y2="14" stroke="' + GRN + '" stroke-width="2.5"/>';
-      o += '<line x1="' + hw.toFixed(1) + '" y1="6" x2="' + hw.toFixed(1) + '" y2="14" stroke="' + GRN + '" stroke-width="2.5"/>';
-      o += '<text x="' + Math.max(hw + 7, 14).toFixed(1) + '" y="14" font-size="11.5" fill="' + GRN + '" font-weight="700">' +
-           nH.toLocaleString() + ' ' + p.hName + '</text>';
-      /* people come in whole numbers, so the grid rounds; the posterior is computed
-         from the probabilities. "About" keeps the two from appearing to disagree. */
-      o += '<text x="' + (W / 2) + '" y="' + (H - 5) + '" text-anchor="middle" font-size="11.5" fill="' + BLU +
-           '" font-weight="600">about ' + (nHE + nNHE).toLocaleString() + ' fit the evidence &mdash; about ' +
-           nHE.toLocaleString() + ' of them on the left</text>';
-      $("bx-people").innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H.toFixed(0) + '" style="width:100%;display:block" role="img" ' +
-        'aria-label="A representative sample drawn as dots, the hypothesis filling the leftmost columns, with those fitting the evidence picked out in blue.">' + o + '</svg>';
-    }
-
-    /* panel 2: the unit square from slide 17, now driven by the sliders */
-    function area(prior, lh, lnh, post, p) {
-      var X0 = 46, Y0 = 12, S = 208, W = 400;
-      /* a 0.1% prior is a fifth of a pixel wide, so it gets a floor to stay visible.
-         Say so on the slide -- slide 17 above makes the same admission, and a student
-         who measures the column would otherwise catch us overstating the prior. */
-      var trueW = prior * S, wH = Math.max(trueW, 1.2), hH = lh * S, hN = lnh * S;
-      var o = "";
-      o += '<rect x="' + X0 + '" y="' + Y0 + '" width="' + S + '" height="' + S + '" fill="#fff" stroke="' + LINE + '"/>';
-      o += '<rect x="' + X0 + '" y="' + Y0 + '" width="' + wH.toFixed(1) + '" height="' + S + '" fill="' + GRN + '" opacity=".16"/>';
-      o += '<rect x="' + (X0 + wH).toFixed(1) + '" y="' + Y0 + '" width="' + (S - wH).toFixed(1) + '" height="' + S + '" fill="' + MUT + '" opacity=".09"/>';
-      o += '<rect x="' + X0 + '" y="' + (Y0 + S - hH).toFixed(1) + '" width="' + wH.toFixed(1) + '" height="' + hH.toFixed(1) + '" fill="' + BLU + '"/>';
-      o += '<rect x="' + (X0 + wH).toFixed(1) + '" y="' + (Y0 + S - hN).toFixed(1) + '" width="' + (S - wH).toFixed(1) + '" height="' + hN.toFixed(1) + '" fill="' + BLU + '" opacity=".45"/>';
-      o += '<line x1="' + (X0 + wH).toFixed(1) + '" y1="' + Y0 + '" x2="' + (X0 + wH).toFixed(1) + '" y2="' + (Y0 + S) + '" stroke="#fff" stroke-width="2"/>';
-      o += '<rect x="' + X0 + '" y="' + Y0 + '" width="' + S + '" height="' + S + '" fill="none" stroke="#3a3a38" stroke-width="1.3"/>';
-      o += '<text x="' + (X0 + wH / 2).toFixed(1) + '" y="' + (Y0 + S + 14) + '" text-anchor="middle" font-size="11.5" fill="' + GRN + '" font-weight="700">P(H)</text>';
-      if (trueW < 1.2)   /* clear of the P(H) label, which is centred on the hairline */
-        o += '<text x="' + (X0 + 36) + '" y="' + (Y0 + S + 14) + '" font-size="10.5" fill="#A85C5C">&larr; drawn thicker than it is</text>';
-      o += '<text x="' + (X0 - 6) + '" y="' + (Y0 + S - hH / 2).toFixed(1) + '" text-anchor="end" font-size="11" fill="' + BLU + '" font-weight="700">P(E|H)</text>';
-      o += '<text x="' + (X0 + S + 6) + '" y="' + (Y0 + S - hN / 2).toFixed(1) + '" font-size="11" fill="' + BLU + '" font-weight="700">P(E|&#172;H)</text>';
-      var BY = Y0 + S + 40, BH = 22, aH = prior * lh, aN = (1 - prior) * lnh, tot = aH + aN;
-      var wLeft = tot > 0 ? (aH / tot) * S : 0;
-      o += '<text x="' + X0 + '" y="' + (BY - 7) + '" font-size="11" fill="' + MUT + '">of everything that fits the evidence:</text>';
-      o += '<rect x="' + X0 + '" y="' + BY + '" width="' + S + '" height="' + BH + '" fill="' + BLU + '" opacity=".28" rx="4"/>';
-      o += '<rect x="' + X0 + '" y="' + BY + '" width="' + wLeft.toFixed(1) + '" height="' + BH + '" fill="' + ACC + '" rx="4"/>';
-      if (wLeft > 42)
-        o += '<text x="' + (X0 + wLeft / 2).toFixed(1) + '" y="' + (BY + 16) + '" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">' + (post * 100).toFixed(1) + '%</text>';
-      else
-        o += '<text x="' + (X0 + wLeft + 6).toFixed(1) + '" y="' + (BY + 16) + '" font-size="12.5" fill="' + ACC + '" font-weight="700">' + (post * 100).toFixed(1) + '%</text>';
-      $("bx-area").innerHTML = '<svg viewBox="0 0 ' + W + ' ' + (BY + BH + 8) + '" style="width:100%;display:block" role="img" ' +
-        'aria-label="The unit square: width is the prior, height is the likelihood, and the bar below shows what share of everything fitting the evidence sits on the left.">' + o + '</svg>';
-    }
-
-    function apply(name) {
-      cur = name;
-      var p = PRESETS[name];
-      $("bx-s-prior").value = p.prior; $("bx-s-lh").value = p.lh; $("bx-s-lnh").value = p.lnh;
-      $("bx-story").innerHTML = p.story;
-      $("bx-grid-title").textContent = p.gridTitle;
-      $("bx-l-prior").textContent = p.lPrior;
-      $("bx-l-lh").textContent = p.lLh;
-      $("bx-l-lnh").textContent = p.lLnh;
-      ["husky", "fraud", "nullev"].forEach(function (k) {
-        var b = $("bx-" + (k === "nullev" ? "null" : k));
-        b.style.borderColor = (k === name) ? ACC : LINE;
-        b.style.fontWeight  = (k === name) ? "700" : "400";
-      });
-      draw();
-    }
-
-    function boot() {
-      if (!$("bx-people")) return;
-      ["bx-s-prior", "bx-s-lh", "bx-s-lnh"].forEach(function (id) {
-        $(id).addEventListener("input", draw);
-      });
-      $("bx-husky").addEventListener("click", function () { apply("husky"); });
-      $("bx-fraud").addEventListener("click", function () { apply("fraud"); });
-      $("bx-null").addEventListener("click", function () { apply("nullev"); });
-      apply("husky");
-    }
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
-  })();
-  </script>
-
-<!-- speaker-upcoming-viewonly v1 -->
-<script>
-(function () {
-  // Speaker view's UPCOMING pane: reveal loads the deck in an iframe with
-  // ?receiver but WITHOUT postMessageEvents=true (that one is the current
-  // pane). It is a preview, so nothing in it should react: no clicks, no
-  // wheel, no keys -- a stray click or key used to move or change it.
-  // Added 29 Sep 2026 at Ryan's request, all 2316/3916/5200 decks.
-  var q = location.search;
-  if (!/[?&]receiver(&|$)/.test(q) || /postMessageEvents=true/.test(q)) return;
-  var s = document.createElement('style');
-  s.textContent = '.reveal,.reveal *{pointer-events:none!important}';
-  document.head.appendChild(s);
-  ['keydown', 'keypress', 'keyup', 'wheel', 'click', 'dblclick', 'mousedown', 'pointerdown', 'touchstart']
-    .forEach(function (t) {
-      window.addEventListener(t, function (e) { e.stopImmediatePropagation(); e.preventDefault(); },
-                              { capture: true, passive: false });
-    });
-  function lock() { try { Reveal.configure({ keyboard: false, touch: false, controls: false }); } catch (e) {} }
-  if (window.Reveal && Reveal.isReady && Reveal.isReady()) lock();
-  else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
 })();
 </script>
 </body>

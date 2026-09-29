@@ -1239,7 +1239,669 @@ scores = iso.decision_function(features)         # more negative = more anomalou
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var sec=g.closest("section");if(sec&&!sec.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v20 -->
+<!-- number-poll: ported from 3916 ch04, PID re-namespaced for 5200 -->
+<script>
+  /* ch04 live numeric poll — one fetch feeds slides 14.1, 14.2, 17.2, 18.2, 19.2, 20.2 */
+  (function () {
+    var PID = "ch04-econ5200-poll-6";
+    var SU  = "https://dpntbrsorgbivmntwmod.supabase.co";
+    var RED = "#A85C5C", GRN = "#6A8E6B", MUT = "#8C8580";
+    function anon() { return window.__POLL_ANON || null; }
+    function skey() { return (window.Poll && Poll.sessionKey) ? Poll.sessionKey() : "nosession"; }
+    function dev()  { return (window.Poll && Poll.deviceId)   ? Poll.deviceId()   : "d_anon"; }
+    function api(method, path, body) {
+      var k = anon(); if (!k) return Promise.reject(new Error("no key"));
+      return fetch(SU + "/rest/v1/" + path, {
+        method: method,
+        headers: { apikey: k, Authorization: "Bearer " + k, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: body ? JSON.stringify(body) : undefined
+      });
+    }
+
+    var dropLargest = false, typoOn = false, cache = [], gamma = 0;
+
+    function values() {
+      return api("GET", "poll_votes?poll_id=eq." + PID + "&select=choice&session_key=eq." + encodeURIComponent(skey()))
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          return rows.map(function (r) { return parseFloat(r.choice); })
+                     .filter(function (v) { return isFinite(v) && v >= 0; })
+                     .sort(function (a, b) { return a - b; });
+        });
+    }
+
+    /* ---- arithmetic ---- */
+    function mean(v) { return v.reduce(function (a, b) { return a + b; }, 0) / v.length; }
+    function median(v) { var n = v.length, m = Math.floor(n / 2); return n % 2 ? v[m] : (v[m - 1] + v[m]) / 2; }
+    function ss(v) { var m = mean(v); return v.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0); }
+    function sd(v) { return v.length < 2 ? 0 : Math.sqrt(ss(v) / (v.length - 1)); }
+    function quant(v, p) {                     /* linear interpolation, numpy default */
+      var n = v.length; if (!n) return NaN;
+      var h = (n - 1) * p, lo = Math.floor(h), hi = Math.min(lo + 1, n - 1);
+      return v[lo] + (h - lo) * (v[hi] - v[lo]);
+    }
+    function mad(v) {
+      var m = median(v);
+      var d = v.map(function (x) { return Math.abs(x - m); }).sort(function (a, b) { return a - b; });
+      return median(d);
+    }
+    function trimmed(v, g) {
+      var k = Math.floor(v.length * g);
+      var t = v.slice(k, v.length - k);
+      return t.length ? mean(t) : median(v);
+    }
+    function stats(v) {
+      if (!v.length) return null;
+      return { n: v.length, mean: mean(v), med: median(v), sd: sd(v), max: v[v.length - 1] };
+    }
+    function fmt(x) { return (!isFinite(x)) ? "&mdash;" : Math.round(x).toLocaleString(); }
+    function pct(a, b) { if (!isFinite(a) || !a) return "&mdash;"; var c = (b - a) / a * 100; return (c >= 0 ? "+" : "") + c.toFixed(0) + "%"; }
+
+    // the typo REPLACES the largest entry rather than adding one, so (M - x)/n is exact
+    function typoParts() {
+      if (!cache.length) return null;
+      var v = cache.slice().sort(function (a, b) { return a - b; });
+      return { replaced: v[v.length - 1], M: v[v.length - 1] * 1000 };
+    }
+    function shown() {
+      var v = cache.slice().sort(function (a, b) { return a - b; });
+      if (typoOn) { var t = typoParts(); if (t) v[v.length - 1] = t.M; }
+      if (dropLargest && v.length > 1) v = v.slice(0, -1);
+      return v;
+    }
+    function cut()   { return cache.length > 1 ? cache.slice(0, -1) : cache.slice(); }
+
+    function blank(box, need) {
+      box.innerHTML = '<p style="text-align:center;font-size:17pt;color:' + MUT + ';padding:40px 0">' +
+        'Waiting for the room &mdash; ' + need + '</p>';
+    }
+
+    /* ---- 14.2 histogram ---- */
+    function drawHist() {
+      var box = document.getElementById("np-chart"); if (!box) return;
+      var v = shown(), st = stats(v);
+      if (!st) { blank(box, "send a number from the previous slide."); return; }
+      var W = 1080, H = 262, L = 40, B = 232, lo = 0, hi = Math.max(st.max, 1);
+      var bins = Math.min(18, Math.max(6, Math.ceil(Math.sqrt(st.n))));
+      var w = (hi - lo) / bins, counts = new Array(bins).fill(0);
+      v.forEach(function (x) { counts[Math.min(bins - 1, Math.floor((x - lo) / w))]++; });
+      var mx = Math.max.apply(null, counts) || 1, bw = (W - L - 20) / bins, bars = "";
+      counts.forEach(function (c, i) {
+        var h = (B - 24) * c / mx;
+        bars += '<rect x="' + (L + i * bw + 2) + '" y="' + (B - h) + '" width="' + (bw - 4) + '" height="' + h + '" fill="' + MUT + '"/>';
+      });
+      function xp(val) { return L + (W - L - 20) * (val - lo) / (hi - lo || 1); }
+      function line(val, c) { var x = xp(val); return '<line x1="' + x + '" y1="10" x2="' + x + '" y2="' + B + '" stroke="' + c + '" stroke-width="3" stroke-dasharray="7 5"/>'; }
+      function key(c, label) {
+        return '<span style="white-space:nowrap"><span style="display:inline-block;width:28px;border-top:4px dashed ' + c +
+               ';vertical-align:.35em;margin-right:8px"></span><strong style="color:' + c + '">' + label + '</strong></span>';
+      }
+      box.innerHTML =
+        '<div style="display:flex;justify-content:center;gap:40px;font-size:17pt;margin-bottom:4px">' +
+          key(RED, "mean " + fmt(st.mean)) + key(GRN, "median " + fmt(st.med)) + '</div>' +
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:268px">' + bars +
+        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
+        line(st.mean, RED) + line(st.med, GRN) +
+        '<text x="' + L + '" y="' + (B + 24) + '" font-size="17" fill="' + MUT + '">0</text>' +
+        '<text x="' + (W - 20) + '" y="' + (B + 24) + '" font-size="17" text-anchor="end" fill="' + MUT + '">' + fmt(hi) + '</text>' +
+        '</svg>' +
+        '<p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + st.n +
+        ' &#183; mean ' + fmt(st.mean) + ' &#183; median ' + fmt(st.med) + ' &#183; SD ' + fmt(st.sd) +
+        (dropLargest ? ' &#183; <strong style="color:' + RED + '">largest value dropped</strong>' : '') + '</p>' +
+        (function () { if (!typoOn) return ''; var t = typoParts(); if (!t) return '';
+          var shift = (t.M - t.replaced) / cache.length;
+          return '<p style="text-align:center;font-size:16.5pt;margin:8px 0 0;color:#3A3632">'
+            + 'one entry mistyped ' + fmt(t.replaced) + ' &rarr; <strong style="color:' + RED + '">' + fmt(t.M) + '</strong>'
+            + ' &#183; formula says the mean moves (M &minus; x)/n = <strong style="color:' + RED + '">' + fmt(shift) + '</strong>'
+            + ' &#183; the median moved <strong style="color:' + GRN + '">' + fmt(median(shown()) - median(cache)) + '</strong></p>'; })();
+    }
+
+    /* ---- 20.2 the three locations, on the room's numbers ---- */
+    function drawLocations() {
+      var box = document.getElementById("loc-live"); if (!box) return;
+      var v = cache.slice(), BLU = "#6B8BA4";
+      if (v.length < 3) { blank(box, "send a number on slide 8 first."); return; }
+      var m = mean(v), md = median(v), tr = trimmed(v, 0.10);
+      var W = 1080, H = 268, L = 40, B = 236, lo = 0, hi = Math.max.apply(null, v) || 1;
+      var bins = Math.min(18, Math.max(6, Math.ceil(Math.sqrt(v.length))));
+      var w = (hi - lo) / bins, counts = new Array(bins).fill(0);
+      v.forEach(function (x) { counts[Math.min(bins - 1, Math.floor((x - lo) / w))]++; });
+      var mx = Math.max.apply(null, counts) || 1, bw = (W - L - 20) / bins, bars = "";
+      counts.forEach(function (c, i) {
+        var h = (B - 24) * c / mx;
+        bars += '<rect x="' + (L + i * bw + 2) + '" y="' + (B - h) + '" width="' + (bw - 4) + '" height="' + h + '" fill="' + MUT + '"/>';
+      });
+      function xp(val) { return L + (W - L - 20) * (val - lo) / (hi - lo || 1); }
+      function line(val, c) { var x = xp(val); return '<line x1="' + x + '" y1="10" x2="' + x + '" y2="' + B + '" stroke="' + c + '" stroke-width="3" stroke-dasharray="7 5"/>'; }
+      function key(c, label) {
+        return '<span style="white-space:nowrap"><span style="display:inline-block;width:28px;border-top:4px dashed ' + c +
+               ';vertical-align:.35em;margin-right:8px"></span><strong style="color:' + c + '">' + label + '</strong></span>';
+      }
+      box.innerHTML =
+        '<div style="display:flex;justify-content:center;gap:34px;font-size:16.5pt;margin-bottom:4px">' +
+          key(GRN, "median " + fmt(md)) + key(BLU, "10% trimmed " + fmt(tr)) + key(RED, "mean " + fmt(m)) + '</div>' +
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:272px">' + bars +
+        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
+        line(md, GRN) + line(tr, BLU) + line(m, RED) +
+        '<text x="' + L + '" y="' + (B + 24) + '" font-size="17" fill="' + MUT + '">0</text>' +
+        '<text x="' + (W - 20) + '" y="' + (B + 24) + '" font-size="17" text-anchor="end" fill="' + MUT + '">' + fmt(hi) + '</text>' +
+        '</svg>' +
+        '<p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + v.length +
+        ' &#183; mean &minus; median = <strong style="color:' + RED + '">' + fmt(m - md) + '</strong></p>';
+    }
+
+    /* ---- 27.2 Tukey fence on the room's numbers ---- */
+    function drawFence() {
+      var box = document.getElementById("fence-live"); if (!box) return;
+      var v = cache.slice().sort(function (a, b) { return a - b; }), BLU = "#6B8BA4";
+      if (v.length < 4) { blank(box, "send a number on slide 8 first."); return; }
+      var q1 = quant(v, 0.25), q3 = quant(v, 0.75), iq = q3 - q1;
+      var up = q3 + 1.5 * iq, lo = q1 - 1.5 * iq;
+      var flagged = v.filter(function (x) { return x > up || x < lo; });
+      // clip the axis just past the fence: one huge inbox otherwise squashes the box
+      // to a few pixels and the Q1/Q3 labels collide. Anything beyond is shown off-scale.
+      var W = 1080, H = 250, L = 40, B = 210, xlo = 0;
+      var top = v[v.length - 1], xhi = Math.max(Math.min(top, up * 1.6), up * 1.15, 1);
+      var beyond = v.filter(function (x) { return x > xhi; });
+      function xp(val) { return L + (W - L - 20) * (val - xlo) / (xhi - xlo || 1); }
+      var dots = v.filter(function (x) { return x <= xhi; }).map(function (x) {
+        var out = (x > up || x < lo);
+        return '<circle cx="' + xp(x) + '" cy="' + (out ? 108 : 150) + '" r="' + (out ? 7 : 5) +
+               '" fill="' + (out ? RED : MUT) + '" opacity="' + (out ? 0.95 : 0.55) + '"/>';
+      }).join("");
+      if (beyond.length) {
+        dots += '<line x1="' + (W - 40) + '" y1="108" x2="' + (W - 14) + '" y2="108" stroke="' + RED +
+                '" stroke-width="2.5" stroke-dasharray="5 4"/>' +
+                '<text x="' + (W - 20) + '" y="92" font-size="16" fill="' + RED + '" text-anchor="end">' +
+                beyond.length + ' further out, up to ' + fmt(top) + '</text>';
+      }
+      box.innerHTML =
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:256px">' +
+        '<rect x="' + xp(q1) + '" y="128" width="' + (xp(q3) - xp(q1)) + '" height="44" fill="' + BLU + '" opacity="0.18"/>' +
+        '<line x1="' + xp(q1) + '" y1="128" x2="' + xp(q1) + '" y2="172" stroke="' + BLU + '" stroke-width="2.5"/>' +
+        '<line x1="' + xp(q3) + '" y1="128" x2="' + xp(q3) + '" y2="172" stroke="' + BLU + '" stroke-width="2.5"/>' +
+        '<line x1="' + xp(up) + '" y1="70" x2="' + xp(up) + '" y2="185" stroke="' + RED + '" stroke-width="3" stroke-dasharray="7 5"/>' +
+        '<text x="' + xp(up) + '" y="60" font-size="17" fill="' + RED + '" text-anchor="middle">upper fence ' + fmt(up) + '</text>' +
+        '<text x="' + xp(q1) + '" y="196" font-size="16" fill="' + BLU + '" text-anchor="middle">Q1 ' + fmt(q1) + '</text>' +
+        '<text x="' + xp(q3) + '" y="122" font-size="16" fill="' + BLU + '" text-anchor="middle">Q3 ' + fmt(q3) + '</text>' +
+        dots +
+        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
+        '<text x="' + L + '" y="' + (B + 24) + '" font-size="17" fill="' + MUT + '">0</text>' +
+        '<text x="' + (W - 20) + '" y="' + (B + 24) + '" font-size="17" text-anchor="end" fill="' + MUT + '">' + fmt(xhi) + (beyond.length ? '+' : '') + '</text>' +
+        '</svg>' +
+        '<p style="text-align:center;font-size:16.5pt;margin:4px 0 0;color:#3A3632">' +
+        'Q1 ' + fmt(q1) + ' &#183; Q3 ' + fmt(q3) + ' &#183; IQR ' + fmt(iq) +
+        ' &#183; upper fence Q3 + 1.5&#215;IQR = <strong>' + fmt(up) + '</strong>' +
+        ' &#183; <strong style="color:' + RED + '">' + flagged.length + ' of ' + v.length + ' flagged</strong>' +
+        (lo < 0 ? ' &#183; lower fence ' + fmt(lo) + ', below zero, so it can never fire' : '') + '</p>';
+    }
+
+    /* ---- 28.2 where the flagged values actually sit ---- */
+    function drawCeiling() {
+      var box = document.getElementById("ceil-live"); if (!box) return;
+      var v = cache.slice().sort(function (a, b) { return a - b; });
+      if (v.length < 4) { blank(box, "send a number on slide 8 first."); return; }
+      var q1 = quant(v, 0.25), q3 = quant(v, 0.75), up = q3 + 1.5 * (q3 - q1);
+      var flag = v.filter(function (x) { return x > up; });
+      var uniq = {}; flag.forEach(function (x) { uniq[x] = (uniq[x] || 0) + 1; });
+      var keys = Object.keys(uniq), biggest = 0;
+      keys.forEach(function (k) { if (uniq[k] > biggest) biggest = uniq[k]; });
+      var share = flag.length ? Math.round(100 * biggest / flag.length) : 0;
+      var rows = flag.map(function (x) {
+        return '<div style="display:flex;justify-content:space-between;font-size:17pt;padding:4px 12px;border-bottom:1px solid #eee">' +
+               '<span>' + fmt(x) + '</span><span style="color:' + MUT + '">' + (x / up).toFixed(1) + '&#215; the fence</span></div>';
+      }).join("");
+      box.innerHTML = cols("YOUR FLAGGED INBOXES", "CALIFORNIA, FOR CONTRAST",
+        (flag.length ? rows : '<p style="font-size:17pt;text-align:center;color:' + MUT + '">nothing above the fence yet</p>') +
+        row("distinct values", keys.length + " of " + flag.length, flag.length && keys.length === flag.length ? GRN : RED, true) +
+        row("largest single pile", biggest + (flag.length ? " (" + share + "%)" : ""), MUT),
+        row("flagged by the fence", "1,071", "#3A3632") +
+        row("sitting at one ceiling value", "992", RED, true) +
+        row("share that is an artefact", "92.6%", RED) +
+        '<p style="font-size:15pt;color:' + MUT + ';margin:10px 0 0">965 at $500,001 plus 27 at $500,000 &mdash; censored, not extreme.</p>');
+    }
+
+    /* ---- 31.2 classical vs robust ruler, on the room ---- */
+    function drawMaskRoom() {
+      var box = document.getElementById("mask-live"); if (!box) return;
+      var v = cache.slice().sort(function (a, b) { return a - b; });
+      if (v.length < 4) { blank(box, "send a number on slide 8 first."); return; }
+      var m = mean(v), sdv = sd(v), md = median(v), mdv = mad(v);
+      var scaled = mdv / 0.6745;
+      var cutC = m + 3.5 * sdv, cutR = md + 3.5 * scaled;
+      var nC = v.filter(function (x) { return x > cutC; }).length;
+      var nR = v.filter(function (x) { return x > cutR; }).length;
+      var W = 1080, H = 190, L = 40, B = 150, hi = Math.max(cutC, cutR, v[v.length - 1]) * 1.05 || 1;
+      function xp(x) { return L + (W - L - 20) * x / hi; }
+      var dots = v.map(function (x) {
+        return '<circle cx="' + xp(x) + '" cy="96" r="5" fill="' + MUT + '" opacity="0.6"/>';
+      }).join("");
+      var band = (cutR < cutC)
+        ? '<rect x="' + xp(cutR) + '" y="40" width="' + (xp(cutC) - xp(cutR)) + '" height="' + (B - 40) + '" fill="' + RED + '" opacity="0.10"/>'
+        : "";
+      box.innerHTML =
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:196px">' + band + dots +
+        '<line x1="' + xp(cutR) + '" y1="34" x2="' + xp(cutR) + '" y2="' + B + '" stroke="' + GRN + '" stroke-width="3" stroke-dasharray="7 5"/>' +
+        '<line x1="' + xp(cutC) + '" y1="34" x2="' + xp(cutC) + '" y2="' + B + '" stroke="' + RED + '" stroke-width="3" stroke-dasharray="7 5"/>' +
+        '<text x="' + xp(cutR) + '" y="26" font-size="16" fill="' + GRN + '" text-anchor="middle">robust ' + fmt(cutR) + '</text>' +
+        '<text x="' + xp(cutC) + '" y="26" font-size="16" fill="' + RED + '" text-anchor="end">classical ' + fmt(cutC) + '</text>' +
+        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
+        '</svg>' +
+        cols("CLASSICAL RULER", "ROBUST RULER",
+          row("mean", fmt(m), RED) + row("SD s", fmt(sdv), RED) +
+          row("cut-off mean + 3.5s", fmt(cutC), RED, true) + row("flagged", nC + " of " + v.length, RED),
+          row("median", fmt(md), GRN) + row("MAD / 0.6745", fmt(scaled), GRN) +
+          row("cut-off med + 3.5&#215;MAD/.6745", fmt(cutR), GRN, true) + row("flagged", nR + " of " + v.length, GRN));
+    }
+
+    /* ---- 8.2 first look: the distribution and the two words ---- */
+    function drawFirst() {
+      var box = document.getElementById("first-live"); if (!box) return;
+      var v = cache.slice(); if (v.length < 2) { blank(box, "send a number above first."); return; }
+      var m = mean(v), md = median(v);
+      var W = 1080, H = 206, L = 40, B = 168, hi = Math.max.apply(null, v) || 1;
+      var bins = Math.min(16, Math.max(5, Math.ceil(Math.sqrt(v.length))));
+      var w = hi / bins, counts = new Array(bins).fill(0);
+      v.forEach(function (x) { counts[Math.min(bins - 1, Math.floor(x / w))]++; });
+      var mx = Math.max.apply(null, counts) || 1, bw = (W - L - 20) / bins, bars = "";
+      counts.forEach(function (c, i) { var h = (B - 22) * c / mx;
+        bars += '<rect x="' + (L + i * bw + 2) + '" y="' + (B - h) + '" width="' + (bw - 4) + '" height="' + h + '" fill="' + MUT + '"/>'; });
+      function xp(x) { return L + (W - L - 20) * x / hi; }
+      function ln(x, c) { return '<line x1="' + xp(x) + '" y1="12" x2="' + xp(x) + '" y2="' + B + '" stroke="' + c + '" stroke-width="3" stroke-dasharray="7 5"/>'; }
+      var far = Math.abs(xp(m) - xp(md)) > 150;
+      box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:212px">' + bars +
+        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
+        ln(md, GRN) + ln(m, RED) +
+        '<text x="' + xp(md) + '" y="' + (B + 24) + '" font-size="17" fill="' + GRN + '" text-anchor="middle">median ' + fmt(md) + '</text>' +
+        '<text x="' + xp(m) + '" y="' + (far ? B + 24 : 14) + '" font-size="17" fill="' + RED + '" text-anchor="middle">mean ' + fmt(m) + '</text>' +
+        '</svg><p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + v.length + '</p>';
+    }
+
+    /* ---- shared two-column shell ---- */
+    function cols(leftTitle, rightTitle, leftBody, rightBody) {
+      function pane(t, b, bg, bd) {
+        return '<div style="background:' + bg + ';border-top:5px solid ' + bd + ';border-radius:10px;padding:14px 20px">' +
+               '<p style="font-size:14pt;color:' + MUT + ';margin:0 0 8px;text-align:center;text-transform:uppercase;letter-spacing:.06em">' + t + '</p>' + b + '</div>';
+      }
+      return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">' +
+             pane(leftTitle, leftBody, "#FBF1EC", RED) + pane(rightTitle, rightBody, "#EFF4EF", GRN) + '</div>';
+    }
+    function row(label, val, color, big) {
+      return '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:5px 0">' +
+             '<span style="font-size:14.5pt;color:#3A3632">' + label + '</span>' +
+             '<strong style="font-size:' + (big ? 23 : 16) + 'pt;color:' + (color || "#3A3632") + '">' + val + '</strong></div>';
+    }
+
+    /* ---- 17.2 standard deviation, step by step ---- */
+    function drawSD() {
+      var box = document.getElementById("sd-live"); if (!box) return;
+      var all = cache.slice();
+      if (all.length < 3) { blank(box, "we need at least three numbers."); return; }
+      var wo = cut();
+      function pane(v, isAll) {
+        var m = mean(v), S = ss(v), big = (v[v.length - 1] - m) * (v[v.length - 1] - m);
+        var share = S ? (big / S * 100) : 0;
+        return row("\\(\\bar{x}\\)", fmt(m)) +
+               row("\\(\\sum (x_i-\\bar{x})^2\\)", fmt(S)) +
+               '<p style="font-size:13.5pt;margin:2px 0 6px;text-align:right;color:' + (isAll ? RED : 'transparent') + '">' + (isAll ? 'the single largest value supplies ' + share.toFixed(0) + '% of that sum' : '&#183;') + '</p>' +
+               row("\\(s^2 = \\sum/(n-1)\\)", fmt(S / (v.length - 1))) +
+               '<hr style="border:none;border-top:1px solid #D5CEC7;margin:8px 0">' +
+               row("\\(s\\)", fmt(Math.sqrt(S / (v.length - 1))), isAll ? RED : GRN, true);
+      }
+      var s1 = sd(all), s2 = sd(wo);
+      box.innerHTML = cols("All " + all.length + " numbers", "Largest one removed", pane(all, true), pane(wo, false)) +
+        '<p style="text-align:center;font-size:17pt;margin-top:14px">Removing <strong>one</strong> of ' + all.length +
+        ' numbers changed \\(s\\) by <strong style="color:' + RED + '">' + pct(s1, s2) + '</strong>.</p>';
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
+    }
+
+    /* ---- 18.2 median, step by step ---- */
+    function drawMed() {
+      var box = document.getElementById("med-live"); if (!box) return;
+      var v = cache.slice();
+      if (v.length < 3) { blank(box, "we need at least three numbers."); return; }
+      var n = v.length, mi = Math.floor(n / 2), even = n % 2 === 0;
+      var keep = {};
+      [0, 1, n - 1, n - 2, mi, mi - 1, mi + 1].forEach(function (i) { if (i >= 0 && i < n) keep[i] = 1; });
+      var chips = "", gap = false;
+      for (var i = 0; i < n; i++) {
+        var mid = even ? (i === mi - 1 || i === mi) : (i === mi);
+        if (n > 13 && !keep[i] && !mid) { if (!gap) { chips += '<span style="font-size:19pt;color:' + MUT + ';padding:0 4px">&#8230;</span>'; gap = true; } continue; }
+        gap = false;
+        chips += '<span style="display:inline-block;padding:7px 13px;margin:3px;border-radius:8px;font-size:17pt;' +
+                 (mid ? 'background:' + GRN + ';color:#fff;font-weight:700' : 'background:#f2efec;color:#3A3632') + '">' + fmt(v[i]) + '</span>';
+      }
+      var m1 = median(v), m2 = median(cut()), mn1 = mean(v), mn2 = mean(cut());
+      box.innerHTML =
+        '<div style="text-align:center;line-height:1.9;margin-bottom:12px">' + chips + '</div>' +
+        '<p style="text-align:center;font-size:15pt;color:' + MUT + ';margin:0 0 14px">n = ' + n + ', so the median is ' +
+        (even ? 'the average of positions ' + mi + ' and ' + (mi + 1) : 'position ' + (mi + 1)) + ' in the queue.</p>' +
+        cols("Mean", "Median",
+          row("all " + n, fmt(mn1)) + row("largest removed", fmt(mn2)) +
+            '<hr style="border:none;border-top:1px solid #D5CEC7;margin:8px 0">' + row("moved", pct(mn1, mn2), RED, true),
+          row("all " + n, fmt(m1)) + row("largest removed", fmt(m2)) +
+            '<hr style="border:none;border-top:1px solid #D5CEC7;margin:8px 0">' + row("moved", pct(m1, m2), GRN, true));
+    }
+
+    /* ---- 19.2 trimmed-mean dial ---- */
+    function drawTrim() {
+      var box = document.getElementById("trim-live"); if (!box) return;
+      var v = cache.slice();
+      if (v.length < 4) { blank(box, "we need at least four numbers."); return; }
+      var g = gamma, k = Math.floor(v.length * g), t = trimmed(v, g);
+      var m0 = mean(v), m5 = median(v);
+      var lo = Math.min(m0, m5), hi = Math.max(m0, m5), span = (hi - lo) || 1;
+      var posPct = Math.max(0, Math.min(100, (t - lo) / span * 100));
+      if (m0 > m5) posPct = 100 - posPct;
+      box.innerHTML =
+        '<div style="display:flex;justify-content:space-between;font-size:15pt;margin-bottom:4px">' +
+          '<span style="color:' + RED + '"><strong>\\(\\gamma=0\\)</strong> &mdash; the mean ' + fmt(m0) + '</span>' +
+          '<span style="color:' + GRN + '"><strong>\\(\\gamma=0.5\\)</strong> &mdash; the median ' + fmt(m5) + '</span></div>' +
+        '<div style="position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,' + RED + ',' + GRN + ');margin:0 18px 10px">' +
+          '<div style="position:absolute;top:-7px;left:calc(' + posPct.toFixed(1) + '% - 15px);width:30px;height:30px;border-radius:50%;background:#fff;border:5px solid #3A3632"></div></div>' +
+        '<p style="text-align:center;font-size:36pt;font-weight:700;margin:12px 0 2px;color:#3A3632">' + fmt(t) + '</p>' +
+        '<p style="text-align:center;font-size:16pt;color:' + MUT + ';margin:0">\\(\\gamma = ' + g.toFixed(2) + '\\) &mdash; trimming ' +
+          k + ' from each end, averaging the ' + (v.length - 2 * k) + ' in the middle</p>';
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
+    }
+
+    /* ---- 20.2 robust spread on the room ---- */
+    function drawSpread() {
+      var box = document.getElementById("rs-live"); if (!box) return;
+      var v = cache.slice();
+      if (v.length < 4) { blank(box, "we need at least four numbers."); return; }
+      var w = cut();
+      function iqr(a) { return quant(a, 0.75) - quant(a, 0.25); }
+      var rows = [
+        ["\\(s\\) (standard deviation)", sd(v), sd(w), RED],
+        ["IQR \\(= Q_3 - Q_1\\)", iqr(v), iqr(w), GRN],
+        ["MAD", mad(v), mad(w), GRN],
+        ["\\(1.4826 \\cdot\\) MAD", 1.4826 * mad(v), 1.4826 * mad(w), GRN]
+      ];
+      var html = '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px 16px;align-items:baseline">' +
+        '<span></span>' +
+        '<strong style="font-size:13.5pt;color:' + MUT + ';text-align:right;text-transform:uppercase;letter-spacing:.05em">All ' + v.length + '</strong>' +
+        '<strong style="font-size:13.5pt;color:' + MUT + ';text-align:right;text-transform:uppercase;letter-spacing:.05em">Largest gone</strong>' +
+        '<strong style="font-size:13.5pt;color:' + MUT + ';text-align:right;text-transform:uppercase;letter-spacing:.05em">Change</strong>';
+      rows.forEach(function (r) {
+        html += '<span style="font-size:16pt">' + r[0] + '</span>' +
+                '<span style="font-size:19pt;text-align:right;font-weight:700">' + fmt(r[1]) + '</span>' +
+                '<span style="font-size:19pt;text-align:right;font-weight:700">' + fmt(r[2]) + '</span>' +
+                '<span style="font-size:19pt;text-align:right;font-weight:700;color:' + r[3] + '">' + pct(r[1], r[2]) + '</span>';
+      });
+      html += '</div>';
+      box.innerHTML = html +
+        '<p style="text-align:center;font-size:16.5pt;margin-top:16px;color:#3A3632">One number left the room. ' +
+        '<strong style="color:' + RED + '">\\(s\\) moved ' + pct(sd(v), sd(w)) + '</strong>; ' +
+        '<strong style="color:' + GRN + '">the IQR moved ' + pct(iqr(v), iqr(w)) + '</strong>.</p>';
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
+    }
+
+    function renderAll() { drawFirst(); drawCeiling(); drawMaskRoom(); drawFence(); drawLocations(); drawHist(); drawSD(); drawMed(); drawTrim(); drawSpread(); }
+    function refresh() { return values().then(function (v) { cache = v; renderAll(); countLabel(); }).catch(function () {}); }
+    function countLabel() {
+      var s = document.getElementById("np-status"); if (!s) return;
+      if (!/Thanks|Already|Enter|Could/.test(s.textContent)) s.textContent = cache.length + (cache.length === 1 ? " response" : " responses");
+    }
+
+    function boot() {
+      var send = document.getElementById("np-send"), input = document.getElementById("np-input"),
+          status = document.getElementById("np-status");
+      if (send && input) {
+        var submit = function () {
+          var val = parseFloat(input.value);
+          if (!isFinite(val) || val < 0) { status.textContent = "Enter a number."; return; }
+          api("POST", "poll_votes", { poll_id: PID, choice: String(Math.round(val)), voter_id: dev(), session_key: skey() })
+            .then(function (r) {
+              status.textContent = r.ok ? "Thanks — your number is in." : "Already sent from this device.";
+              input.disabled = true; send.disabled = true; refresh();
+            })
+            .catch(function () { status.textContent = "Could not send — try again."; });
+        };
+        send.addEventListener("click", submit);
+        input.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+      }
+      var drop = document.getElementById("np-drop");
+      if (drop) drop.addEventListener("click", function () {
+        dropLargest = !dropLargest;
+        drop.textContent = dropLargest ? "Put it back" : "Drop the largest value";
+        renderAll();
+      });
+      var typo = document.getElementById("np-typo");
+      if (typo) typo.addEventListener("click", function () {
+        typoOn = !typoOn;
+        typo.textContent = typoOn ? "Undo the typo" : "Add three zeros to one entry";
+        renderAll();
+      });
+      var ref = document.getElementById("np-refresh");
+      if (ref) ref.addEventListener("click", refresh);
+      var dial = document.getElementById("trim-gamma");
+      if (dial) dial.addEventListener("input", function () { gamma = parseInt(dial.value, 10) / 100; drawTrim(); });
+
+      refresh();
+      setInterval(function () { if (!document.hidden) refresh(); }, 4000);
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
+  })();
+  </script>
+<!-- isolation-forest live widget: ported from 3916 ch04, self-contained -->
+<script>
+  /* ch04 — isolation forest, one cut at a time.
+     Ported from visual-ml-hub/isolation_forest_steps.html so the deck and the hub
+     page teach the same picture: ONE scatter, and you choose which home to isolate.
+     The data is deliberate — the odd home is inside the Tukey fence on bedrooms AND
+     on rooms, so a one-variable fence cannot see it. That is the whole point of 33.1. */
+  (function () {
+    var RED = "#A85C5C", GRN = "#6A8E6B", BLU = "#6B8BA4", MUT = "#8C8580",
+        TXT = "#3A3632", LINE = "#D5CEC7", HL = "#C47B5A";
+
+    var seed = 7;
+    function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+    function reseed(s) { seed = s; }
+
+    /* bedrooms (x) vs total rooms (y). Normal homes sit on a band because rooms grow
+       with bedrooms. The odd one has few bedrooms and many rooms: ordinary on each
+       axis, absurd as a pair. Seeded, so the same button gives the same picture twice. */
+    var PTS = [];
+    reseed(11);
+    for (var i = 0; i < 59; i++) {
+      var bed = 1 + rnd() * 5;
+      PTS.push({ x: bed, y: bed * 1.6 + 1.2 + (rnd() - 0.5) * 1.1, odd: false });
+    }
+    var ODD = { x: 2.0, y: 10.0, odd: true };
+    PTS.push(ODD);
+    var TYP = PTS[17];                       /* 2.8 bedrooms, 6.0 rooms — inside the crowd */
+
+    var XR = [0.5, 6.5], YR = [1, 11];
+    var target = ODD, cuts = [], box = null, finished = false;
+
+    var PW = 520, PH = 372, M = { l: 44, r: 12, t: 10, b: 32 };
+    function sx(v) { return M.l + (v - XR[0]) / (XR[1] - XR[0]) * (PW - M.l - M.r); }
+    function sy(v) { return PH - M.b - (v - YR[0]) / (YR[1] - YR[0]) * (PH - M.t - M.b); }
+    function $(id) { return document.getElementById(id); }
+
+    function inBox(p, b) { return p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1; }
+
+    function resetRun(keepSeed) {
+      if (!keepSeed) reseed(Math.floor(Math.random() * 1e6));
+      cuts = []; finished = false;
+      box = { x0: XR[0], x1: XR[1], y0: YR[0], y1: YR[1] };
+      draw();
+    }
+
+    /* One random axis-aligned cut. The split is drawn from the range of the homes
+       STILL IN THE BOX, not from the box itself — otherwise cuts land in empty space
+       (bed < 0.5, when the smallest home has 1 bedroom) and separate nothing.
+       That is what a real isolation tree does, and it means every cut you watch
+       actually throws some homes away. */
+    function span(inside) {
+      var xs = inside.map(function (p) { return p.x; }), ys = inside.map(function (p) { return p.y; });
+      return { x0: Math.min.apply(null, xs), x1: Math.max.apply(null, xs),
+               y0: Math.min.apply(null, ys), y1: Math.max.apply(null, ys) };
+    }
+
+    function oneCut() {
+      if (finished) return false;
+      var inside = PTS.filter(function (p) { return inBox(p, box); });
+      if (inside.length <= 1) { finished = true; return false; }
+      var sp = span(inside), w = sp.x1 - sp.x0, h = sp.y1 - sp.y0, c;
+      var useX = (w > 0 && h > 0) ? rnd() < 0.5 : w > 0;   /* pick a variable at random */
+      if (useX) {
+        c = sp.x0 + rnd() * w;
+        cuts.push({ axis: "x", at: c, box: { x0: box.x0, x1: box.x1, y0: box.y0, y1: box.y1 } });
+        if (target.x < c) box.x1 = c; else box.x0 = c;
+      } else {
+        c = sp.y0 + rnd() * h;
+        cuts.push({ axis: "y", at: c, box: { x0: box.x0, x1: box.x1, y0: box.y0, y1: box.y1 } });
+        if (target.y < c) box.y1 = c; else box.y0 = c;
+      }
+      if (PTS.filter(function (p) { return inBox(p, box); }).length <= 1) finished = true;
+      return true;
+    }
+
+    /* a whole tree with no drawing — the number the forest actually scores on.
+       It runs on the shared generator only between draws, never mid-animation. */
+    function pathLength(t) {
+      var b = { x0: XR[0], x1: XR[1], y0: YR[0], y1: YR[1] }, n = 0, c;
+      for (var g = 0; g < 60; g++) {
+        var inside = PTS.filter(function (p) { return inBox(p, b); });
+        if (inside.length <= 1) break;
+        var sp = span(inside), w = sp.x1 - sp.x0, h = sp.y1 - sp.y0;
+        var useX = (w > 0 && h > 0) ? rnd() < 0.5 : w > 0;
+        if (useX) { c = sp.x0 + rnd() * w; if (t.x < c) b.x1 = c; else b.x0 = c; }
+        else      { c = sp.y0 + rnd() * h; if (t.y < c) b.y1 = c; else b.y0 = c; }
+        n++;
+      }
+      return n;
+    }
+
+    function draw() {
+      var o = '<svg viewBox="0 0 ' + PW + ' ' + PH + '" style="width:100%;display:block" role="img" ' +
+              'aria-label="Sixty homes plotted as bedrooms against total rooms, with random axis-aligned cuts ' +
+              'shrinking the box that still contains the chosen home.">';
+      o += '<rect x="' + M.l + '" y="' + M.t + '" width="' + (PW - M.l - M.r) + '" height="' + (PH - M.t - M.b) +
+           '" fill="#FCFBF9" stroke="' + LINE + '" stroke-width="2" rx="5"/>';
+      /* the box still in the running */
+      o += '<rect x="' + sx(box.x0).toFixed(1) + '" y="' + sy(box.y1).toFixed(1) +
+           '" width="' + (sx(box.x1) - sx(box.x0)).toFixed(1) + '" height="' + (sy(box.y0) - sy(box.y1)).toFixed(1) +
+           '" fill="' + BLU + '" opacity=".12"/>';
+      cuts.forEach(function (c, i) {
+        var last = i === cuts.length - 1;
+        var col = last ? HL : MUT, wd = last ? 2.4 : 1.1, op = last ? 1 : 0.4;
+        if (c.axis === "x")
+          o += '<line x1="' + sx(c.at).toFixed(1) + '" y1="' + sy(c.box.y1).toFixed(1) + '" x2="' + sx(c.at).toFixed(1) +
+               '" y2="' + sy(c.box.y0).toFixed(1) + '" stroke="' + col + '" stroke-width="' + wd + '" opacity="' + op + '"/>';
+        else
+          o += '<line x1="' + sx(c.box.x0).toFixed(1) + '" y1="' + sy(c.at).toFixed(1) + '" x2="' + sx(c.box.x1).toFixed(1) +
+               '" y2="' + sy(c.at).toFixed(1) + '" stroke="' + col + '" stroke-width="' + wd + '" opacity="' + op + '"/>';
+      });
+      PTS.forEach(function (p) {
+        var isT = p === target, col = p.odd ? RED : (isT ? GRN : MUT);
+        var r = (p.odd || isT) ? 6 : 3.4;
+        o += '<circle cx="' + sx(p.x).toFixed(1) + '" cy="' + sy(p.y).toFixed(1) + '" r="' + r +
+             '" fill="' + col + '" opacity="' + ((p.odd || isT) ? 1 : 0.5) + '"/>';
+        if (isT) o += '<circle cx="' + sx(p.x).toFixed(1) + '" cy="' + sy(p.y).toFixed(1) + '" r="' + (r + 4.5) +
+                      '" fill="none" stroke="' + col + '" stroke-width="2"/>';
+      });
+      o += '<text x="' + ((PW + M.l) / 2) + '" y="' + (PH - 8) + '" text-anchor="middle" font-size="13" fill="' + TXT + '">bedrooms</text>';
+      var mid = (PH - M.b + M.t) / 2;
+      o += '<text x="14" y="' + mid + '" text-anchor="middle" font-size="13" fill="' + TXT +
+           '" transform="rotate(-90 14 ' + mid + ')">total rooms</text>';
+      o += '</svg>';
+      $("if-plot").innerHTML = o;
+
+      /* ---- the tree ---- */
+      var SHOW = 8, x = 178, y = 16, dx = 74, dy = 24, t = "";
+      t += '<circle cx="' + x + '" cy="' + y + '" r="7" fill="#2D2D2D"/>';
+      cuts.slice(0, SHOW).forEach(function (c, i) {
+        var ny = y + dy, nx = x + (i % 2 ? -dx : dx) * Math.pow(0.66, i);
+        t += '<line x1="' + x.toFixed(1) + '" y1="' + (y + 7) + '" x2="' + nx.toFixed(1) + '" y2="' + (ny - 7) +
+             '" stroke="' + MUT + '" stroke-width="1.3"/>';
+        if (cuts.length <= SHOW)
+          t += '<text x="' + ((x + nx) / 2 + 7).toFixed(1) + '" y="' + (y + dy / 2 + 3) + '" font-size="10" fill="' + MUT + '">' +
+               (c.axis === "x" ? "bed" : "rooms") + ' &lt; ' + c.at.toFixed(1) + '</text>';
+        var leaf = i === cuts.length - 1 && finished;
+        t += '<circle cx="' + nx.toFixed(1) + '" cy="' + ny + '" r="' + (leaf ? 8 : 6) + '" fill="' +
+             (leaf ? (target.odd ? RED : GRN) : "#2D2D2D") + '"/>';
+        if (leaf) t += '<text x="' + (nx + 13).toFixed(1) + '" y="' + (ny + 4) + '" font-size="11" font-weight="700" fill="' +
+                       (target.odd ? RED : GRN) + '">alone</text>';
+        x = nx; y = ny;
+      });
+      var TH = 30 + SHOW * dy;
+      if (cuts.length > SHOW)
+        t += '<text x="178" y="' + (TH - 6) + '" text-anchor="middle" font-size="11" fill="' + MUT + '">&hellip; and ' +
+             (cuts.length - SHOW) + ' more cut' + (cuts.length - SHOW === 1 ? "" : "s") + '</text>';
+      var ts = $("if-tree");
+      ts.innerHTML = '<svg viewBox="0 0 360 ' + TH + '" style="width:100%;display:block" role="img" ' +
+                     'aria-label="The sequence of random splits drawn as a path down a tree, one node per cut.">' + t + '</svg>';
+
+      $("if-depth").textContent = cuts.length;
+      var say = finished
+        ? '<strong>Isolated in ' + cuts.length + ' cut' + (cuts.length === 1 ? "" : "s") + '.</strong> ' +
+          (target.odd
+            ? 'Few cuts &mdash; that is what makes it an outlier. It is not extreme in bedrooms <em>or</em> in rooms; the <strong>pair</strong> is strange.'
+            : 'Many cuts, because it sits in the crowd. Every neighbour had to be sliced away first.')
+        : cuts.length === 0
+          ? 'Press <strong>Cut once</strong>. Each cut picks a variable at random and a split point at random &mdash; <strong>nothing is aimed at the home</strong>.'
+          : 'Cut ' + cuts.length + ': the box around the home shrank, but it is still sharing it. Keep going.';
+      $("if-say").innerHTML = say;
+    }
+
+    function runHundred() {
+      var so = 0, st = 0;
+      for (var i = 0; i < 100; i++) { so += pathLength(ODD); st += pathLength(TYP); }
+      $("if-avg-odd").textContent = (so / 100).toFixed(1);
+      $("if-avg-typ").textContent = (st / 100).toFixed(1);
+    }
+
+    function pick(t, isOdd) {
+      target = t;
+      $("if-odd").style.borderColor = isOdd ? RED : LINE;
+      $("if-odd").style.fontWeight = isOdd ? "700" : "400";
+      $("if-typ").style.borderColor = isOdd ? LINE : GRN;
+      $("if-typ").style.fontWeight = isOdd ? "400" : "700";
+      resetRun(false);
+    }
+
+    function boot() {
+      if (!$("if-plot")) return;
+      $("if-cut").addEventListener("click", function () { oneCut(); draw(); });
+      $("if-finish").addEventListener("click", function () { var g = 0; while (!finished && g++ < 60) oneCut(); draw(); });
+      $("if-reset").addEventListener("click", function () { resetRun(false); });
+      $("if-100").addEventListener("click", runHundred);
+      $("if-odd").addEventListener("click", function () { pick(ODD, true); });
+      $("if-typ").addEventListener("click", function () { pick(TYP, false); });
+      $("if-odd").style.borderColor = RED;
+      $("if-odd").style.fontWeight = "700";
+      resetRun(true);
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
+  })();
+  </script>
+<!-- speaker-upcoming-viewonly v1 -->
+<script>
+(function () {
+  // Speaker view's UPCOMING pane: reveal loads the deck in an iframe with
+  // ?receiver but WITHOUT postMessageEvents=true (that one is the current
+  // pane). It is a preview, so nothing in it should react: no clicks, no
+  // wheel, no keys -- a stray click or key used to move or change it.
+  // Added 29 Sep 2026 at Ryan's request, all 2316/3916/5200 decks.
+  var q = location.search;
+  if (!/[?&]receiver(&|$)/.test(q) || /postMessageEvents=true/.test(q)) return;
+  var s = document.createElement('style');
+  s.textContent = '.reveal,.reveal *{pointer-events:none!important}';
+  document.head.appendChild(s);
+  ['keydown', 'keypress', 'keyup', 'wheel', 'click', 'dblclick', 'mousedown', 'pointerdown', 'touchstart']
+    .forEach(function (t) {
+      window.addEventListener(t, function (e) { e.stopImmediatePropagation(); e.preventDefault(); },
+                              { capture: true, passive: false });
+    });
+  function lock() { try { Reveal.configure({ keyboard: false, touch: false, controls: false }); } catch (e) {} }
+  if (window.Reveal && Reveal.isReady && Reveal.isReady()) lock();
+  else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
+})();
+</script>
+<!-- presenter-gate v21 -->
 <script>
 (function () {
   var q = location.search;
@@ -1320,6 +1982,32 @@ scores = iso.decision_function(features)         # more negative = more anomalou
     document.addEventListener('input', ctl, true);
     document.addEventListener('change', ctl, true);
     document.addEventListener('click', ctl, true);
+    // overview: reveal's notes plugin never syncs it, so "o" here opened it in this
+    // preview only. Cancel it here and toggle it on the projector instead. Arrows already
+    // relay, so the slide is picked in the projector's overview. Esc toggles it like o (reveal
+    // binds both to the same toggle, so it arrives through overviewshown); Enter closes it.
+    Reveal.on('overviewshown', function () { Reveal.toggleOverview(false); toMain({ bridge: 'nav', action: 'overview' }); });
+    document.addEventListener('keydown', function (e) {
+      if (!e.isTrusted || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      if (e.key === 'Enter') toMain({ bridge: 'nav', action: 'overview-off' });
+    }, true);
+    window.addEventListener('message', function (ev) {
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d && d.method === 'triggerKey' && d.args && d.args[0] === 13)
+        toMain({ bridge: 'nav', action: 'overview-off' });
+    });
+    // a poll option is a div, not a control, so the ctl relay never carried it: a click
+    // here voted in this PREVIEW (and asked for a NUID here) while the room saw nothing.
+    // Swallow it here and click the same option on the projector.
+    document.addEventListener('click', function (ev) {
+      var o = ev.target.closest && ev.target.closest('.poll-option'), sl = Reveal.getCurrentSlide();
+      if (!ev.isTrusted || !o || !sl || !sl.contains(o)) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var at = here();
+      toMain({ bridge: 'poll', h: at.h, v: at.v, idx: [].indexOf.call(sl.querySelectorAll('.poll-option'), o) });
+    }, true);
     // a video: play it on the projector, not in the preview
     document.addEventListener('click', function (ev) {
       var f = ev.target.closest && ev.target.closest('.yt-facade');
@@ -2008,6 +2696,15 @@ scores = iso.decision_function(features)         # more negative = more anomalou
         else if (d.action === 'down') Reveal.down();
         else if (d.action === 'first') Reveal.slide(0, 0);
         else if (d.action === 'last') Reveal.slide(Reveal.getHorizontalSlides().length - 1, 0);
+        else if (d.action === 'overview') Reveal.toggleOverview();
+        else if (d.action === 'overview-off' && Reveal.isOverview()) Reveal.toggleOverview(false);
+        return;
+      }
+      if (d.bridge === 'poll') {
+        var pa = here(), ps = Reveal.getCurrentSlide();
+        if (!ps || pa.h !== d.h || pa.v !== d.v) return;      // the two windows are on different slides
+        var po = ps.querySelectorAll('.poll-option')[d.idx];
+        if (po) po.click();
         return;
       }
       if (d.bridge === 'ctl' || d.bridge === 'yt') {
@@ -2089,668 +2786,6 @@ scores = iso.decision_function(features)         # more negative = more anomalou
     if (!receiver) wire();
   }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
-})();
-</script>
-<!-- number-poll: ported from 3916 ch04, PID re-namespaced for 5200 -->
-<script>
-  /* ch04 live numeric poll — one fetch feeds slides 14.1, 14.2, 17.2, 18.2, 19.2, 20.2 */
-  (function () {
-    var PID = "ch04-econ5200-poll-6";
-    var SU  = "https://dpntbrsorgbivmntwmod.supabase.co";
-    var RED = "#A85C5C", GRN = "#6A8E6B", MUT = "#8C8580";
-    function anon() { return window.__POLL_ANON || null; }
-    function skey() { return (window.Poll && Poll.sessionKey) ? Poll.sessionKey() : "nosession"; }
-    function dev()  { return (window.Poll && Poll.deviceId)   ? Poll.deviceId()   : "d_anon"; }
-    function api(method, path, body) {
-      var k = anon(); if (!k) return Promise.reject(new Error("no key"));
-      return fetch(SU + "/rest/v1/" + path, {
-        method: method,
-        headers: { apikey: k, Authorization: "Bearer " + k, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: body ? JSON.stringify(body) : undefined
-      });
-    }
-
-    var dropLargest = false, typoOn = false, cache = [], gamma = 0;
-
-    function values() {
-      return api("GET", "poll_votes?poll_id=eq." + PID + "&select=choice&session_key=eq." + encodeURIComponent(skey()))
-        .then(function (r) { return r.json(); })
-        .then(function (rows) {
-          return rows.map(function (r) { return parseFloat(r.choice); })
-                     .filter(function (v) { return isFinite(v) && v >= 0; })
-                     .sort(function (a, b) { return a - b; });
-        });
-    }
-
-    /* ---- arithmetic ---- */
-    function mean(v) { return v.reduce(function (a, b) { return a + b; }, 0) / v.length; }
-    function median(v) { var n = v.length, m = Math.floor(n / 2); return n % 2 ? v[m] : (v[m - 1] + v[m]) / 2; }
-    function ss(v) { var m = mean(v); return v.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0); }
-    function sd(v) { return v.length < 2 ? 0 : Math.sqrt(ss(v) / (v.length - 1)); }
-    function quant(v, p) {                     /* linear interpolation, numpy default */
-      var n = v.length; if (!n) return NaN;
-      var h = (n - 1) * p, lo = Math.floor(h), hi = Math.min(lo + 1, n - 1);
-      return v[lo] + (h - lo) * (v[hi] - v[lo]);
-    }
-    function mad(v) {
-      var m = median(v);
-      var d = v.map(function (x) { return Math.abs(x - m); }).sort(function (a, b) { return a - b; });
-      return median(d);
-    }
-    function trimmed(v, g) {
-      var k = Math.floor(v.length * g);
-      var t = v.slice(k, v.length - k);
-      return t.length ? mean(t) : median(v);
-    }
-    function stats(v) {
-      if (!v.length) return null;
-      return { n: v.length, mean: mean(v), med: median(v), sd: sd(v), max: v[v.length - 1] };
-    }
-    function fmt(x) { return (!isFinite(x)) ? "&mdash;" : Math.round(x).toLocaleString(); }
-    function pct(a, b) { if (!isFinite(a) || !a) return "&mdash;"; var c = (b - a) / a * 100; return (c >= 0 ? "+" : "") + c.toFixed(0) + "%"; }
-
-    // the typo REPLACES the largest entry rather than adding one, so (M - x)/n is exact
-    function typoParts() {
-      if (!cache.length) return null;
-      var v = cache.slice().sort(function (a, b) { return a - b; });
-      return { replaced: v[v.length - 1], M: v[v.length - 1] * 1000 };
-    }
-    function shown() {
-      var v = cache.slice().sort(function (a, b) { return a - b; });
-      if (typoOn) { var t = typoParts(); if (t) v[v.length - 1] = t.M; }
-      if (dropLargest && v.length > 1) v = v.slice(0, -1);
-      return v;
-    }
-    function cut()   { return cache.length > 1 ? cache.slice(0, -1) : cache.slice(); }
-
-    function blank(box, need) {
-      box.innerHTML = '<p style="text-align:center;font-size:17pt;color:' + MUT + ';padding:40px 0">' +
-        'Waiting for the room &mdash; ' + need + '</p>';
-    }
-
-    /* ---- 14.2 histogram ---- */
-    function drawHist() {
-      var box = document.getElementById("np-chart"); if (!box) return;
-      var v = shown(), st = stats(v);
-      if (!st) { blank(box, "send a number from the previous slide."); return; }
-      var W = 1080, H = 262, L = 40, B = 232, lo = 0, hi = Math.max(st.max, 1);
-      var bins = Math.min(18, Math.max(6, Math.ceil(Math.sqrt(st.n))));
-      var w = (hi - lo) / bins, counts = new Array(bins).fill(0);
-      v.forEach(function (x) { counts[Math.min(bins - 1, Math.floor((x - lo) / w))]++; });
-      var mx = Math.max.apply(null, counts) || 1, bw = (W - L - 20) / bins, bars = "";
-      counts.forEach(function (c, i) {
-        var h = (B - 24) * c / mx;
-        bars += '<rect x="' + (L + i * bw + 2) + '" y="' + (B - h) + '" width="' + (bw - 4) + '" height="' + h + '" fill="' + MUT + '"/>';
-      });
-      function xp(val) { return L + (W - L - 20) * (val - lo) / (hi - lo || 1); }
-      function line(val, c) { var x = xp(val); return '<line x1="' + x + '" y1="10" x2="' + x + '" y2="' + B + '" stroke="' + c + '" stroke-width="3" stroke-dasharray="7 5"/>'; }
-      function key(c, label) {
-        return '<span style="white-space:nowrap"><span style="display:inline-block;width:28px;border-top:4px dashed ' + c +
-               ';vertical-align:.35em;margin-right:8px"></span><strong style="color:' + c + '">' + label + '</strong></span>';
-      }
-      box.innerHTML =
-        '<div style="display:flex;justify-content:center;gap:40px;font-size:17pt;margin-bottom:4px">' +
-          key(RED, "mean " + fmt(st.mean)) + key(GRN, "median " + fmt(st.med)) + '</div>' +
-        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:268px">' + bars +
-        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
-        line(st.mean, RED) + line(st.med, GRN) +
-        '<text x="' + L + '" y="' + (B + 24) + '" font-size="17" fill="' + MUT + '">0</text>' +
-        '<text x="' + (W - 20) + '" y="' + (B + 24) + '" font-size="17" text-anchor="end" fill="' + MUT + '">' + fmt(hi) + '</text>' +
-        '</svg>' +
-        '<p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + st.n +
-        ' &#183; mean ' + fmt(st.mean) + ' &#183; median ' + fmt(st.med) + ' &#183; SD ' + fmt(st.sd) +
-        (dropLargest ? ' &#183; <strong style="color:' + RED + '">largest value dropped</strong>' : '') + '</p>' +
-        (function () { if (!typoOn) return ''; var t = typoParts(); if (!t) return '';
-          var shift = (t.M - t.replaced) / cache.length;
-          return '<p style="text-align:center;font-size:16.5pt;margin:8px 0 0;color:#3A3632">'
-            + 'one entry mistyped ' + fmt(t.replaced) + ' &rarr; <strong style="color:' + RED + '">' + fmt(t.M) + '</strong>'
-            + ' &#183; formula says the mean moves (M &minus; x)/n = <strong style="color:' + RED + '">' + fmt(shift) + '</strong>'
-            + ' &#183; the median moved <strong style="color:' + GRN + '">' + fmt(median(shown()) - median(cache)) + '</strong></p>'; })();
-    }
-
-    /* ---- 20.2 the three locations, on the room's numbers ---- */
-    function drawLocations() {
-      var box = document.getElementById("loc-live"); if (!box) return;
-      var v = cache.slice(), BLU = "#6B8BA4";
-      if (v.length < 3) { blank(box, "send a number on slide 8 first."); return; }
-      var m = mean(v), md = median(v), tr = trimmed(v, 0.10);
-      var W = 1080, H = 268, L = 40, B = 236, lo = 0, hi = Math.max.apply(null, v) || 1;
-      var bins = Math.min(18, Math.max(6, Math.ceil(Math.sqrt(v.length))));
-      var w = (hi - lo) / bins, counts = new Array(bins).fill(0);
-      v.forEach(function (x) { counts[Math.min(bins - 1, Math.floor((x - lo) / w))]++; });
-      var mx = Math.max.apply(null, counts) || 1, bw = (W - L - 20) / bins, bars = "";
-      counts.forEach(function (c, i) {
-        var h = (B - 24) * c / mx;
-        bars += '<rect x="' + (L + i * bw + 2) + '" y="' + (B - h) + '" width="' + (bw - 4) + '" height="' + h + '" fill="' + MUT + '"/>';
-      });
-      function xp(val) { return L + (W - L - 20) * (val - lo) / (hi - lo || 1); }
-      function line(val, c) { var x = xp(val); return '<line x1="' + x + '" y1="10" x2="' + x + '" y2="' + B + '" stroke="' + c + '" stroke-width="3" stroke-dasharray="7 5"/>'; }
-      function key(c, label) {
-        return '<span style="white-space:nowrap"><span style="display:inline-block;width:28px;border-top:4px dashed ' + c +
-               ';vertical-align:.35em;margin-right:8px"></span><strong style="color:' + c + '">' + label + '</strong></span>';
-      }
-      box.innerHTML =
-        '<div style="display:flex;justify-content:center;gap:34px;font-size:16.5pt;margin-bottom:4px">' +
-          key(GRN, "median " + fmt(md)) + key(BLU, "10% trimmed " + fmt(tr)) + key(RED, "mean " + fmt(m)) + '</div>' +
-        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:272px">' + bars +
-        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
-        line(md, GRN) + line(tr, BLU) + line(m, RED) +
-        '<text x="' + L + '" y="' + (B + 24) + '" font-size="17" fill="' + MUT + '">0</text>' +
-        '<text x="' + (W - 20) + '" y="' + (B + 24) + '" font-size="17" text-anchor="end" fill="' + MUT + '">' + fmt(hi) + '</text>' +
-        '</svg>' +
-        '<p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + v.length +
-        ' &#183; mean &minus; median = <strong style="color:' + RED + '">' + fmt(m - md) + '</strong></p>';
-    }
-
-    /* ---- 27.2 Tukey fence on the room's numbers ---- */
-    function drawFence() {
-      var box = document.getElementById("fence-live"); if (!box) return;
-      var v = cache.slice().sort(function (a, b) { return a - b; }), BLU = "#6B8BA4";
-      if (v.length < 4) { blank(box, "send a number on slide 8 first."); return; }
-      var q1 = quant(v, 0.25), q3 = quant(v, 0.75), iq = q3 - q1;
-      var up = q3 + 1.5 * iq, lo = q1 - 1.5 * iq;
-      var flagged = v.filter(function (x) { return x > up || x < lo; });
-      // clip the axis just past the fence: one huge inbox otherwise squashes the box
-      // to a few pixels and the Q1/Q3 labels collide. Anything beyond is shown off-scale.
-      var W = 1080, H = 250, L = 40, B = 210, xlo = 0;
-      var top = v[v.length - 1], xhi = Math.max(Math.min(top, up * 1.6), up * 1.15, 1);
-      var beyond = v.filter(function (x) { return x > xhi; });
-      function xp(val) { return L + (W - L - 20) * (val - xlo) / (xhi - xlo || 1); }
-      var dots = v.filter(function (x) { return x <= xhi; }).map(function (x) {
-        var out = (x > up || x < lo);
-        return '<circle cx="' + xp(x) + '" cy="' + (out ? 108 : 150) + '" r="' + (out ? 7 : 5) +
-               '" fill="' + (out ? RED : MUT) + '" opacity="' + (out ? 0.95 : 0.55) + '"/>';
-      }).join("");
-      if (beyond.length) {
-        dots += '<line x1="' + (W - 40) + '" y1="108" x2="' + (W - 14) + '" y2="108" stroke="' + RED +
-                '" stroke-width="2.5" stroke-dasharray="5 4"/>' +
-                '<text x="' + (W - 20) + '" y="92" font-size="16" fill="' + RED + '" text-anchor="end">' +
-                beyond.length + ' further out, up to ' + fmt(top) + '</text>';
-      }
-      box.innerHTML =
-        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:256px">' +
-        '<rect x="' + xp(q1) + '" y="128" width="' + (xp(q3) - xp(q1)) + '" height="44" fill="' + BLU + '" opacity="0.18"/>' +
-        '<line x1="' + xp(q1) + '" y1="128" x2="' + xp(q1) + '" y2="172" stroke="' + BLU + '" stroke-width="2.5"/>' +
-        '<line x1="' + xp(q3) + '" y1="128" x2="' + xp(q3) + '" y2="172" stroke="' + BLU + '" stroke-width="2.5"/>' +
-        '<line x1="' + xp(up) + '" y1="70" x2="' + xp(up) + '" y2="185" stroke="' + RED + '" stroke-width="3" stroke-dasharray="7 5"/>' +
-        '<text x="' + xp(up) + '" y="60" font-size="17" fill="' + RED + '" text-anchor="middle">upper fence ' + fmt(up) + '</text>' +
-        '<text x="' + xp(q1) + '" y="196" font-size="16" fill="' + BLU + '" text-anchor="middle">Q1 ' + fmt(q1) + '</text>' +
-        '<text x="' + xp(q3) + '" y="122" font-size="16" fill="' + BLU + '" text-anchor="middle">Q3 ' + fmt(q3) + '</text>' +
-        dots +
-        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
-        '<text x="' + L + '" y="' + (B + 24) + '" font-size="17" fill="' + MUT + '">0</text>' +
-        '<text x="' + (W - 20) + '" y="' + (B + 24) + '" font-size="17" text-anchor="end" fill="' + MUT + '">' + fmt(xhi) + (beyond.length ? '+' : '') + '</text>' +
-        '</svg>' +
-        '<p style="text-align:center;font-size:16.5pt;margin:4px 0 0;color:#3A3632">' +
-        'Q1 ' + fmt(q1) + ' &#183; Q3 ' + fmt(q3) + ' &#183; IQR ' + fmt(iq) +
-        ' &#183; upper fence Q3 + 1.5&#215;IQR = <strong>' + fmt(up) + '</strong>' +
-        ' &#183; <strong style="color:' + RED + '">' + flagged.length + ' of ' + v.length + ' flagged</strong>' +
-        (lo < 0 ? ' &#183; lower fence ' + fmt(lo) + ', below zero, so it can never fire' : '') + '</p>';
-    }
-
-    /* ---- 28.2 where the flagged values actually sit ---- */
-    function drawCeiling() {
-      var box = document.getElementById("ceil-live"); if (!box) return;
-      var v = cache.slice().sort(function (a, b) { return a - b; });
-      if (v.length < 4) { blank(box, "send a number on slide 8 first."); return; }
-      var q1 = quant(v, 0.25), q3 = quant(v, 0.75), up = q3 + 1.5 * (q3 - q1);
-      var flag = v.filter(function (x) { return x > up; });
-      var uniq = {}; flag.forEach(function (x) { uniq[x] = (uniq[x] || 0) + 1; });
-      var keys = Object.keys(uniq), biggest = 0;
-      keys.forEach(function (k) { if (uniq[k] > biggest) biggest = uniq[k]; });
-      var share = flag.length ? Math.round(100 * biggest / flag.length) : 0;
-      var rows = flag.map(function (x) {
-        return '<div style="display:flex;justify-content:space-between;font-size:17pt;padding:4px 12px;border-bottom:1px solid #eee">' +
-               '<span>' + fmt(x) + '</span><span style="color:' + MUT + '">' + (x / up).toFixed(1) + '&#215; the fence</span></div>';
-      }).join("");
-      box.innerHTML = cols("YOUR FLAGGED INBOXES", "CALIFORNIA, FOR CONTRAST",
-        (flag.length ? rows : '<p style="font-size:17pt;text-align:center;color:' + MUT + '">nothing above the fence yet</p>') +
-        row("distinct values", keys.length + " of " + flag.length, flag.length && keys.length === flag.length ? GRN : RED, true) +
-        row("largest single pile", biggest + (flag.length ? " (" + share + "%)" : ""), MUT),
-        row("flagged by the fence", "1,071", "#3A3632") +
-        row("sitting at one ceiling value", "992", RED, true) +
-        row("share that is an artefact", "92.6%", RED) +
-        '<p style="font-size:15pt;color:' + MUT + ';margin:10px 0 0">965 at $500,001 plus 27 at $500,000 &mdash; censored, not extreme.</p>');
-    }
-
-    /* ---- 31.2 classical vs robust ruler, on the room ---- */
-    function drawMaskRoom() {
-      var box = document.getElementById("mask-live"); if (!box) return;
-      var v = cache.slice().sort(function (a, b) { return a - b; });
-      if (v.length < 4) { blank(box, "send a number on slide 8 first."); return; }
-      var m = mean(v), sdv = sd(v), md = median(v), mdv = mad(v);
-      var scaled = mdv / 0.6745;
-      var cutC = m + 3.5 * sdv, cutR = md + 3.5 * scaled;
-      var nC = v.filter(function (x) { return x > cutC; }).length;
-      var nR = v.filter(function (x) { return x > cutR; }).length;
-      var W = 1080, H = 190, L = 40, B = 150, hi = Math.max(cutC, cutR, v[v.length - 1]) * 1.05 || 1;
-      function xp(x) { return L + (W - L - 20) * x / hi; }
-      var dots = v.map(function (x) {
-        return '<circle cx="' + xp(x) + '" cy="96" r="5" fill="' + MUT + '" opacity="0.6"/>';
-      }).join("");
-      var band = (cutR < cutC)
-        ? '<rect x="' + xp(cutR) + '" y="40" width="' + (xp(cutC) - xp(cutR)) + '" height="' + (B - 40) + '" fill="' + RED + '" opacity="0.10"/>'
-        : "";
-      box.innerHTML =
-        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:196px">' + band + dots +
-        '<line x1="' + xp(cutR) + '" y1="34" x2="' + xp(cutR) + '" y2="' + B + '" stroke="' + GRN + '" stroke-width="3" stroke-dasharray="7 5"/>' +
-        '<line x1="' + xp(cutC) + '" y1="34" x2="' + xp(cutC) + '" y2="' + B + '" stroke="' + RED + '" stroke-width="3" stroke-dasharray="7 5"/>' +
-        '<text x="' + xp(cutR) + '" y="26" font-size="16" fill="' + GRN + '" text-anchor="middle">robust ' + fmt(cutR) + '</text>' +
-        '<text x="' + xp(cutC) + '" y="26" font-size="16" fill="' + RED + '" text-anchor="end">classical ' + fmt(cutC) + '</text>' +
-        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
-        '</svg>' +
-        cols("CLASSICAL RULER", "ROBUST RULER",
-          row("mean", fmt(m), RED) + row("SD s", fmt(sdv), RED) +
-          row("cut-off mean + 3.5s", fmt(cutC), RED, true) + row("flagged", nC + " of " + v.length, RED),
-          row("median", fmt(md), GRN) + row("MAD / 0.6745", fmt(scaled), GRN) +
-          row("cut-off med + 3.5&#215;MAD/.6745", fmt(cutR), GRN, true) + row("flagged", nR + " of " + v.length, GRN));
-    }
-
-    /* ---- 8.2 first look: the distribution and the two words ---- */
-    function drawFirst() {
-      var box = document.getElementById("first-live"); if (!box) return;
-      var v = cache.slice(); if (v.length < 2) { blank(box, "send a number above first."); return; }
-      var m = mean(v), md = median(v);
-      var W = 1080, H = 206, L = 40, B = 168, hi = Math.max.apply(null, v) || 1;
-      var bins = Math.min(16, Math.max(5, Math.ceil(Math.sqrt(v.length))));
-      var w = hi / bins, counts = new Array(bins).fill(0);
-      v.forEach(function (x) { counts[Math.min(bins - 1, Math.floor(x / w))]++; });
-      var mx = Math.max.apply(null, counts) || 1, bw = (W - L - 20) / bins, bars = "";
-      counts.forEach(function (c, i) { var h = (B - 22) * c / mx;
-        bars += '<rect x="' + (L + i * bw + 2) + '" y="' + (B - h) + '" width="' + (bw - 4) + '" height="' + h + '" fill="' + MUT + '"/>'; });
-      function xp(x) { return L + (W - L - 20) * x / hi; }
-      function ln(x, c) { return '<line x1="' + xp(x) + '" y1="12" x2="' + xp(x) + '" y2="' + B + '" stroke="' + c + '" stroke-width="3" stroke-dasharray="7 5"/>'; }
-      var far = Math.abs(xp(m) - xp(md)) > 150;
-      box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:212px">' + bars +
-        '<line x1="' + L + '" y1="' + B + '" x2="' + (W - 20) + '" y2="' + B + '" stroke="#3A3632" stroke-width="2"/>' +
-        ln(md, GRN) + ln(m, RED) +
-        '<text x="' + xp(md) + '" y="' + (B + 24) + '" font-size="17" fill="' + GRN + '" text-anchor="middle">median ' + fmt(md) + '</text>' +
-        '<text x="' + xp(m) + '" y="' + (far ? B + 24 : 14) + '" font-size="17" fill="' + RED + '" text-anchor="middle">mean ' + fmt(m) + '</text>' +
-        '</svg><p style="text-align:center;font-size:16pt;margin:2px 0 0;color:#3A3632">n = ' + v.length + '</p>';
-    }
-
-    /* ---- shared two-column shell ---- */
-    function cols(leftTitle, rightTitle, leftBody, rightBody) {
-      function pane(t, b, bg, bd) {
-        return '<div style="background:' + bg + ';border-top:5px solid ' + bd + ';border-radius:10px;padding:14px 20px">' +
-               '<p style="font-size:14pt;color:' + MUT + ';margin:0 0 8px;text-align:center;text-transform:uppercase;letter-spacing:.06em">' + t + '</p>' + b + '</div>';
-      }
-      return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">' +
-             pane(leftTitle, leftBody, "#FBF1EC", RED) + pane(rightTitle, rightBody, "#EFF4EF", GRN) + '</div>';
-    }
-    function row(label, val, color, big) {
-      return '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:5px 0">' +
-             '<span style="font-size:14.5pt;color:#3A3632">' + label + '</span>' +
-             '<strong style="font-size:' + (big ? 23 : 16) + 'pt;color:' + (color || "#3A3632") + '">' + val + '</strong></div>';
-    }
-
-    /* ---- 17.2 standard deviation, step by step ---- */
-    function drawSD() {
-      var box = document.getElementById("sd-live"); if (!box) return;
-      var all = cache.slice();
-      if (all.length < 3) { blank(box, "we need at least three numbers."); return; }
-      var wo = cut();
-      function pane(v, isAll) {
-        var m = mean(v), S = ss(v), big = (v[v.length - 1] - m) * (v[v.length - 1] - m);
-        var share = S ? (big / S * 100) : 0;
-        return row("\\(\\bar{x}\\)", fmt(m)) +
-               row("\\(\\sum (x_i-\\bar{x})^2\\)", fmt(S)) +
-               '<p style="font-size:13.5pt;margin:2px 0 6px;text-align:right;color:' + (isAll ? RED : 'transparent') + '">' + (isAll ? 'the single largest value supplies ' + share.toFixed(0) + '% of that sum' : '&#183;') + '</p>' +
-               row("\\(s^2 = \\sum/(n-1)\\)", fmt(S / (v.length - 1))) +
-               '<hr style="border:none;border-top:1px solid #D5CEC7;margin:8px 0">' +
-               row("\\(s\\)", fmt(Math.sqrt(S / (v.length - 1))), isAll ? RED : GRN, true);
-      }
-      var s1 = sd(all), s2 = sd(wo);
-      box.innerHTML = cols("All " + all.length + " numbers", "Largest one removed", pane(all, true), pane(wo, false)) +
-        '<p style="text-align:center;font-size:17pt;margin-top:14px">Removing <strong>one</strong> of ' + all.length +
-        ' numbers changed \\(s\\) by <strong style="color:' + RED + '">' + pct(s1, s2) + '</strong>.</p>';
-      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
-    }
-
-    /* ---- 18.2 median, step by step ---- */
-    function drawMed() {
-      var box = document.getElementById("med-live"); if (!box) return;
-      var v = cache.slice();
-      if (v.length < 3) { blank(box, "we need at least three numbers."); return; }
-      var n = v.length, mi = Math.floor(n / 2), even = n % 2 === 0;
-      var keep = {};
-      [0, 1, n - 1, n - 2, mi, mi - 1, mi + 1].forEach(function (i) { if (i >= 0 && i < n) keep[i] = 1; });
-      var chips = "", gap = false;
-      for (var i = 0; i < n; i++) {
-        var mid = even ? (i === mi - 1 || i === mi) : (i === mi);
-        if (n > 13 && !keep[i] && !mid) { if (!gap) { chips += '<span style="font-size:19pt;color:' + MUT + ';padding:0 4px">&#8230;</span>'; gap = true; } continue; }
-        gap = false;
-        chips += '<span style="display:inline-block;padding:7px 13px;margin:3px;border-radius:8px;font-size:17pt;' +
-                 (mid ? 'background:' + GRN + ';color:#fff;font-weight:700' : 'background:#f2efec;color:#3A3632') + '">' + fmt(v[i]) + '</span>';
-      }
-      var m1 = median(v), m2 = median(cut()), mn1 = mean(v), mn2 = mean(cut());
-      box.innerHTML =
-        '<div style="text-align:center;line-height:1.9;margin-bottom:12px">' + chips + '</div>' +
-        '<p style="text-align:center;font-size:15pt;color:' + MUT + ';margin:0 0 14px">n = ' + n + ', so the median is ' +
-        (even ? 'the average of positions ' + mi + ' and ' + (mi + 1) : 'position ' + (mi + 1)) + ' in the queue.</p>' +
-        cols("Mean", "Median",
-          row("all " + n, fmt(mn1)) + row("largest removed", fmt(mn2)) +
-            '<hr style="border:none;border-top:1px solid #D5CEC7;margin:8px 0">' + row("moved", pct(mn1, mn2), RED, true),
-          row("all " + n, fmt(m1)) + row("largest removed", fmt(m2)) +
-            '<hr style="border:none;border-top:1px solid #D5CEC7;margin:8px 0">' + row("moved", pct(m1, m2), GRN, true));
-    }
-
-    /* ---- 19.2 trimmed-mean dial ---- */
-    function drawTrim() {
-      var box = document.getElementById("trim-live"); if (!box) return;
-      var v = cache.slice();
-      if (v.length < 4) { blank(box, "we need at least four numbers."); return; }
-      var g = gamma, k = Math.floor(v.length * g), t = trimmed(v, g);
-      var m0 = mean(v), m5 = median(v);
-      var lo = Math.min(m0, m5), hi = Math.max(m0, m5), span = (hi - lo) || 1;
-      var posPct = Math.max(0, Math.min(100, (t - lo) / span * 100));
-      if (m0 > m5) posPct = 100 - posPct;
-      box.innerHTML =
-        '<div style="display:flex;justify-content:space-between;font-size:15pt;margin-bottom:4px">' +
-          '<span style="color:' + RED + '"><strong>\\(\\gamma=0\\)</strong> &mdash; the mean ' + fmt(m0) + '</span>' +
-          '<span style="color:' + GRN + '"><strong>\\(\\gamma=0.5\\)</strong> &mdash; the median ' + fmt(m5) + '</span></div>' +
-        '<div style="position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,' + RED + ',' + GRN + ');margin:0 18px 10px">' +
-          '<div style="position:absolute;top:-7px;left:calc(' + posPct.toFixed(1) + '% - 15px);width:30px;height:30px;border-radius:50%;background:#fff;border:5px solid #3A3632"></div></div>' +
-        '<p style="text-align:center;font-size:36pt;font-weight:700;margin:12px 0 2px;color:#3A3632">' + fmt(t) + '</p>' +
-        '<p style="text-align:center;font-size:16pt;color:' + MUT + ';margin:0">\\(\\gamma = ' + g.toFixed(2) + '\\) &mdash; trimming ' +
-          k + ' from each end, averaging the ' + (v.length - 2 * k) + ' in the middle</p>';
-      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
-    }
-
-    /* ---- 20.2 robust spread on the room ---- */
-    function drawSpread() {
-      var box = document.getElementById("rs-live"); if (!box) return;
-      var v = cache.slice();
-      if (v.length < 4) { blank(box, "we need at least four numbers."); return; }
-      var w = cut();
-      function iqr(a) { return quant(a, 0.75) - quant(a, 0.25); }
-      var rows = [
-        ["\\(s\\) (standard deviation)", sd(v), sd(w), RED],
-        ["IQR \\(= Q_3 - Q_1\\)", iqr(v), iqr(w), GRN],
-        ["MAD", mad(v), mad(w), GRN],
-        ["\\(1.4826 \\cdot\\) MAD", 1.4826 * mad(v), 1.4826 * mad(w), GRN]
-      ];
-      var html = '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px 16px;align-items:baseline">' +
-        '<span></span>' +
-        '<strong style="font-size:13.5pt;color:' + MUT + ';text-align:right;text-transform:uppercase;letter-spacing:.05em">All ' + v.length + '</strong>' +
-        '<strong style="font-size:13.5pt;color:' + MUT + ';text-align:right;text-transform:uppercase;letter-spacing:.05em">Largest gone</strong>' +
-        '<strong style="font-size:13.5pt;color:' + MUT + ';text-align:right;text-transform:uppercase;letter-spacing:.05em">Change</strong>';
-      rows.forEach(function (r) {
-        html += '<span style="font-size:16pt">' + r[0] + '</span>' +
-                '<span style="font-size:19pt;text-align:right;font-weight:700">' + fmt(r[1]) + '</span>' +
-                '<span style="font-size:19pt;text-align:right;font-weight:700">' + fmt(r[2]) + '</span>' +
-                '<span style="font-size:19pt;text-align:right;font-weight:700;color:' + r[3] + '">' + pct(r[1], r[2]) + '</span>';
-      });
-      html += '</div>';
-      box.innerHTML = html +
-        '<p style="text-align:center;font-size:16.5pt;margin-top:16px;color:#3A3632">One number left the room. ' +
-        '<strong style="color:' + RED + '">\\(s\\) moved ' + pct(sd(v), sd(w)) + '</strong>; ' +
-        '<strong style="color:' + GRN + '">the IQR moved ' + pct(iqr(v), iqr(w)) + '</strong>.</p>';
-      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
-    }
-
-    function renderAll() { drawFirst(); drawCeiling(); drawMaskRoom(); drawFence(); drawLocations(); drawHist(); drawSD(); drawMed(); drawTrim(); drawSpread(); }
-    function refresh() { return values().then(function (v) { cache = v; renderAll(); countLabel(); }).catch(function () {}); }
-    function countLabel() {
-      var s = document.getElementById("np-status"); if (!s) return;
-      if (!/Thanks|Already|Enter|Could/.test(s.textContent)) s.textContent = cache.length + (cache.length === 1 ? " response" : " responses");
-    }
-
-    function boot() {
-      var send = document.getElementById("np-send"), input = document.getElementById("np-input"),
-          status = document.getElementById("np-status");
-      if (send && input) {
-        var submit = function () {
-          var val = parseFloat(input.value);
-          if (!isFinite(val) || val < 0) { status.textContent = "Enter a number."; return; }
-          api("POST", "poll_votes", { poll_id: PID, choice: String(Math.round(val)), voter_id: dev(), session_key: skey() })
-            .then(function (r) {
-              status.textContent = r.ok ? "Thanks — your number is in." : "Already sent from this device.";
-              input.disabled = true; send.disabled = true; refresh();
-            })
-            .catch(function () { status.textContent = "Could not send — try again."; });
-        };
-        send.addEventListener("click", submit);
-        input.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
-      }
-      var drop = document.getElementById("np-drop");
-      if (drop) drop.addEventListener("click", function () {
-        dropLargest = !dropLargest;
-        drop.textContent = dropLargest ? "Put it back" : "Drop the largest value";
-        renderAll();
-      });
-      var typo = document.getElementById("np-typo");
-      if (typo) typo.addEventListener("click", function () {
-        typoOn = !typoOn;
-        typo.textContent = typoOn ? "Undo the typo" : "Add three zeros to one entry";
-        renderAll();
-      });
-      var ref = document.getElementById("np-refresh");
-      if (ref) ref.addEventListener("click", refresh);
-      var dial = document.getElementById("trim-gamma");
-      if (dial) dial.addEventListener("input", function () { gamma = parseInt(dial.value, 10) / 100; drawTrim(); });
-
-      refresh();
-      setInterval(function () { if (!document.hidden) refresh(); }, 4000);
-    }
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
-  })();
-  </script>
-<!-- isolation-forest live widget: ported from 3916 ch04, self-contained -->
-<script>
-  /* ch04 — isolation forest, one cut at a time.
-     Ported from visual-ml-hub/isolation_forest_steps.html so the deck and the hub
-     page teach the same picture: ONE scatter, and you choose which home to isolate.
-     The data is deliberate — the odd home is inside the Tukey fence on bedrooms AND
-     on rooms, so a one-variable fence cannot see it. That is the whole point of 33.1. */
-  (function () {
-    var RED = "#A85C5C", GRN = "#6A8E6B", BLU = "#6B8BA4", MUT = "#8C8580",
-        TXT = "#3A3632", LINE = "#D5CEC7", HL = "#C47B5A";
-
-    var seed = 7;
-    function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
-    function reseed(s) { seed = s; }
-
-    /* bedrooms (x) vs total rooms (y). Normal homes sit on a band because rooms grow
-       with bedrooms. The odd one has few bedrooms and many rooms: ordinary on each
-       axis, absurd as a pair. Seeded, so the same button gives the same picture twice. */
-    var PTS = [];
-    reseed(11);
-    for (var i = 0; i < 59; i++) {
-      var bed = 1 + rnd() * 5;
-      PTS.push({ x: bed, y: bed * 1.6 + 1.2 + (rnd() - 0.5) * 1.1, odd: false });
-    }
-    var ODD = { x: 2.0, y: 10.0, odd: true };
-    PTS.push(ODD);
-    var TYP = PTS[17];                       /* 2.8 bedrooms, 6.0 rooms — inside the crowd */
-
-    var XR = [0.5, 6.5], YR = [1, 11];
-    var target = ODD, cuts = [], box = null, finished = false;
-
-    var PW = 520, PH = 372, M = { l: 44, r: 12, t: 10, b: 32 };
-    function sx(v) { return M.l + (v - XR[0]) / (XR[1] - XR[0]) * (PW - M.l - M.r); }
-    function sy(v) { return PH - M.b - (v - YR[0]) / (YR[1] - YR[0]) * (PH - M.t - M.b); }
-    function $(id) { return document.getElementById(id); }
-
-    function inBox(p, b) { return p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1; }
-
-    function resetRun(keepSeed) {
-      if (!keepSeed) reseed(Math.floor(Math.random() * 1e6));
-      cuts = []; finished = false;
-      box = { x0: XR[0], x1: XR[1], y0: YR[0], y1: YR[1] };
-      draw();
-    }
-
-    /* One random axis-aligned cut. The split is drawn from the range of the homes
-       STILL IN THE BOX, not from the box itself — otherwise cuts land in empty space
-       (bed < 0.5, when the smallest home has 1 bedroom) and separate nothing.
-       That is what a real isolation tree does, and it means every cut you watch
-       actually throws some homes away. */
-    function span(inside) {
-      var xs = inside.map(function (p) { return p.x; }), ys = inside.map(function (p) { return p.y; });
-      return { x0: Math.min.apply(null, xs), x1: Math.max.apply(null, xs),
-               y0: Math.min.apply(null, ys), y1: Math.max.apply(null, ys) };
-    }
-
-    function oneCut() {
-      if (finished) return false;
-      var inside = PTS.filter(function (p) { return inBox(p, box); });
-      if (inside.length <= 1) { finished = true; return false; }
-      var sp = span(inside), w = sp.x1 - sp.x0, h = sp.y1 - sp.y0, c;
-      var useX = (w > 0 && h > 0) ? rnd() < 0.5 : w > 0;   /* pick a variable at random */
-      if (useX) {
-        c = sp.x0 + rnd() * w;
-        cuts.push({ axis: "x", at: c, box: { x0: box.x0, x1: box.x1, y0: box.y0, y1: box.y1 } });
-        if (target.x < c) box.x1 = c; else box.x0 = c;
-      } else {
-        c = sp.y0 + rnd() * h;
-        cuts.push({ axis: "y", at: c, box: { x0: box.x0, x1: box.x1, y0: box.y0, y1: box.y1 } });
-        if (target.y < c) box.y1 = c; else box.y0 = c;
-      }
-      if (PTS.filter(function (p) { return inBox(p, box); }).length <= 1) finished = true;
-      return true;
-    }
-
-    /* a whole tree with no drawing — the number the forest actually scores on.
-       It runs on the shared generator only between draws, never mid-animation. */
-    function pathLength(t) {
-      var b = { x0: XR[0], x1: XR[1], y0: YR[0], y1: YR[1] }, n = 0, c;
-      for (var g = 0; g < 60; g++) {
-        var inside = PTS.filter(function (p) { return inBox(p, b); });
-        if (inside.length <= 1) break;
-        var sp = span(inside), w = sp.x1 - sp.x0, h = sp.y1 - sp.y0;
-        var useX = (w > 0 && h > 0) ? rnd() < 0.5 : w > 0;
-        if (useX) { c = sp.x0 + rnd() * w; if (t.x < c) b.x1 = c; else b.x0 = c; }
-        else      { c = sp.y0 + rnd() * h; if (t.y < c) b.y1 = c; else b.y0 = c; }
-        n++;
-      }
-      return n;
-    }
-
-    function draw() {
-      var o = '<svg viewBox="0 0 ' + PW + ' ' + PH + '" style="width:100%;display:block" role="img" ' +
-              'aria-label="Sixty homes plotted as bedrooms against total rooms, with random axis-aligned cuts ' +
-              'shrinking the box that still contains the chosen home.">';
-      o += '<rect x="' + M.l + '" y="' + M.t + '" width="' + (PW - M.l - M.r) + '" height="' + (PH - M.t - M.b) +
-           '" fill="#FCFBF9" stroke="' + LINE + '" stroke-width="2" rx="5"/>';
-      /* the box still in the running */
-      o += '<rect x="' + sx(box.x0).toFixed(1) + '" y="' + sy(box.y1).toFixed(1) +
-           '" width="' + (sx(box.x1) - sx(box.x0)).toFixed(1) + '" height="' + (sy(box.y0) - sy(box.y1)).toFixed(1) +
-           '" fill="' + BLU + '" opacity=".12"/>';
-      cuts.forEach(function (c, i) {
-        var last = i === cuts.length - 1;
-        var col = last ? HL : MUT, wd = last ? 2.4 : 1.1, op = last ? 1 : 0.4;
-        if (c.axis === "x")
-          o += '<line x1="' + sx(c.at).toFixed(1) + '" y1="' + sy(c.box.y1).toFixed(1) + '" x2="' + sx(c.at).toFixed(1) +
-               '" y2="' + sy(c.box.y0).toFixed(1) + '" stroke="' + col + '" stroke-width="' + wd + '" opacity="' + op + '"/>';
-        else
-          o += '<line x1="' + sx(c.box.x0).toFixed(1) + '" y1="' + sy(c.at).toFixed(1) + '" x2="' + sx(c.box.x1).toFixed(1) +
-               '" y2="' + sy(c.at).toFixed(1) + '" stroke="' + col + '" stroke-width="' + wd + '" opacity="' + op + '"/>';
-      });
-      PTS.forEach(function (p) {
-        var isT = p === target, col = p.odd ? RED : (isT ? GRN : MUT);
-        var r = (p.odd || isT) ? 6 : 3.4;
-        o += '<circle cx="' + sx(p.x).toFixed(1) + '" cy="' + sy(p.y).toFixed(1) + '" r="' + r +
-             '" fill="' + col + '" opacity="' + ((p.odd || isT) ? 1 : 0.5) + '"/>';
-        if (isT) o += '<circle cx="' + sx(p.x).toFixed(1) + '" cy="' + sy(p.y).toFixed(1) + '" r="' + (r + 4.5) +
-                      '" fill="none" stroke="' + col + '" stroke-width="2"/>';
-      });
-      o += '<text x="' + ((PW + M.l) / 2) + '" y="' + (PH - 8) + '" text-anchor="middle" font-size="13" fill="' + TXT + '">bedrooms</text>';
-      var mid = (PH - M.b + M.t) / 2;
-      o += '<text x="14" y="' + mid + '" text-anchor="middle" font-size="13" fill="' + TXT +
-           '" transform="rotate(-90 14 ' + mid + ')">total rooms</text>';
-      o += '</svg>';
-      $("if-plot").innerHTML = o;
-
-      /* ---- the tree ---- */
-      var SHOW = 8, x = 178, y = 16, dx = 74, dy = 24, t = "";
-      t += '<circle cx="' + x + '" cy="' + y + '" r="7" fill="#2D2D2D"/>';
-      cuts.slice(0, SHOW).forEach(function (c, i) {
-        var ny = y + dy, nx = x + (i % 2 ? -dx : dx) * Math.pow(0.66, i);
-        t += '<line x1="' + x.toFixed(1) + '" y1="' + (y + 7) + '" x2="' + nx.toFixed(1) + '" y2="' + (ny - 7) +
-             '" stroke="' + MUT + '" stroke-width="1.3"/>';
-        if (cuts.length <= SHOW)
-          t += '<text x="' + ((x + nx) / 2 + 7).toFixed(1) + '" y="' + (y + dy / 2 + 3) + '" font-size="10" fill="' + MUT + '">' +
-               (c.axis === "x" ? "bed" : "rooms") + ' &lt; ' + c.at.toFixed(1) + '</text>';
-        var leaf = i === cuts.length - 1 && finished;
-        t += '<circle cx="' + nx.toFixed(1) + '" cy="' + ny + '" r="' + (leaf ? 8 : 6) + '" fill="' +
-             (leaf ? (target.odd ? RED : GRN) : "#2D2D2D") + '"/>';
-        if (leaf) t += '<text x="' + (nx + 13).toFixed(1) + '" y="' + (ny + 4) + '" font-size="11" font-weight="700" fill="' +
-                       (target.odd ? RED : GRN) + '">alone</text>';
-        x = nx; y = ny;
-      });
-      var TH = 30 + SHOW * dy;
-      if (cuts.length > SHOW)
-        t += '<text x="178" y="' + (TH - 6) + '" text-anchor="middle" font-size="11" fill="' + MUT + '">&hellip; and ' +
-             (cuts.length - SHOW) + ' more cut' + (cuts.length - SHOW === 1 ? "" : "s") + '</text>';
-      var ts = $("if-tree");
-      ts.innerHTML = '<svg viewBox="0 0 360 ' + TH + '" style="width:100%;display:block" role="img" ' +
-                     'aria-label="The sequence of random splits drawn as a path down a tree, one node per cut.">' + t + '</svg>';
-
-      $("if-depth").textContent = cuts.length;
-      var say = finished
-        ? '<strong>Isolated in ' + cuts.length + ' cut' + (cuts.length === 1 ? "" : "s") + '.</strong> ' +
-          (target.odd
-            ? 'Few cuts &mdash; that is what makes it an outlier. It is not extreme in bedrooms <em>or</em> in rooms; the <strong>pair</strong> is strange.'
-            : 'Many cuts, because it sits in the crowd. Every neighbour had to be sliced away first.')
-        : cuts.length === 0
-          ? 'Press <strong>Cut once</strong>. Each cut picks a variable at random and a split point at random &mdash; <strong>nothing is aimed at the home</strong>.'
-          : 'Cut ' + cuts.length + ': the box around the home shrank, but it is still sharing it. Keep going.';
-      $("if-say").innerHTML = say;
-    }
-
-    function runHundred() {
-      var so = 0, st = 0;
-      for (var i = 0; i < 100; i++) { so += pathLength(ODD); st += pathLength(TYP); }
-      $("if-avg-odd").textContent = (so / 100).toFixed(1);
-      $("if-avg-typ").textContent = (st / 100).toFixed(1);
-    }
-
-    function pick(t, isOdd) {
-      target = t;
-      $("if-odd").style.borderColor = isOdd ? RED : LINE;
-      $("if-odd").style.fontWeight = isOdd ? "700" : "400";
-      $("if-typ").style.borderColor = isOdd ? LINE : GRN;
-      $("if-typ").style.fontWeight = isOdd ? "400" : "700";
-      resetRun(false);
-    }
-
-    function boot() {
-      if (!$("if-plot")) return;
-      $("if-cut").addEventListener("click", function () { oneCut(); draw(); });
-      $("if-finish").addEventListener("click", function () { var g = 0; while (!finished && g++ < 60) oneCut(); draw(); });
-      $("if-reset").addEventListener("click", function () { resetRun(false); });
-      $("if-100").addEventListener("click", runHundred);
-      $("if-odd").addEventListener("click", function () { pick(ODD, true); });
-      $("if-typ").addEventListener("click", function () { pick(TYP, false); });
-      $("if-odd").style.borderColor = RED;
-      $("if-odd").style.fontWeight = "700";
-      resetRun(true);
-    }
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
-  })();
-  </script>
-<!-- speaker-upcoming-viewonly v1 -->
-<script>
-(function () {
-  // Speaker view's UPCOMING pane: reveal loads the deck in an iframe with
-  // ?receiver but WITHOUT postMessageEvents=true (that one is the current
-  // pane). It is a preview, so nothing in it should react: no clicks, no
-  // wheel, no keys -- a stray click or key used to move or change it.
-  // Added 29 Sep 2026 at Ryan's request, all 2316/3916/5200 decks.
-  var q = location.search;
-  if (!/[?&]receiver(&|$)/.test(q) || /postMessageEvents=true/.test(q)) return;
-  var s = document.createElement('style');
-  s.textContent = '.reveal,.reveal *{pointer-events:none!important}';
-  document.head.appendChild(s);
-  ['keydown', 'keypress', 'keyup', 'wheel', 'click', 'dblclick', 'mousedown', 'pointerdown', 'touchstart']
-    .forEach(function (t) {
-      window.addEventListener(t, function (e) { e.stopImmediatePropagation(); e.preventDefault(); },
-                              { capture: true, passive: false });
-    });
-  function lock() { try { Reveal.configure({ keyboard: false, touch: false, controls: false }); } catch (e) {} }
-  if (window.Reveal && Reveal.isReady && Reveal.isReady()) lock();
-  else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
 })();
 </script>
 </body>

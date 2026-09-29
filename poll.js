@@ -593,7 +593,11 @@
         go();
       });
     };
-    if (!CHECKIN || nuid()) { proceed(); return; }
+    // Never on the instructor's own windows. A vote clicked in speaker view is
+    // replayed on the projector (presenter gate v21), and a 9-digit prompt there
+    // would be typed into a window the keyboard is not in, in front of the room.
+    // The instructor's own vote needs no participation credit.
+    if (!CHECKIN || nuid() || PROJECTOR || SPEAKER) { proceed(); return; }
     modal(function () { proceed(); });   // skipping still votes, just uncredited
   }
 

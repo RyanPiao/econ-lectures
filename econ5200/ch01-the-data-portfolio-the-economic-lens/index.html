@@ -1777,7 +1777,30 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
     document.querySelectorAll(".poll-grid").forEach(function(g){var pid=g.dataset.pollId;g.querySelectorAll(".poll-option").forEach(function(o){o.addEventListener("click",function(){var go=function(){vote(pid,o.dataset.choice);};if(window.Poll){Poll.ready(pid,go);}else{go();}});});if(!g.parentNode.querySelector(".poll-vote-count")){var ce=document.createElement("div");ce.className="poll-vote-count";ce.dataset.pollId=pid;g.parentNode.insertBefore(ce,g.nextSibling);}fetchR(pid);setInterval(function(){if(document.hidden)return;var sec=g.closest("section");if(sec&&!sec.classList.contains("present"))return;fetchR(pid);},2000);});
   })();
   </script>
-<!-- presenter-gate v20 -->
+<!-- speaker-upcoming-viewonly v1 -->
+<script>
+(function () {
+  // Speaker view's UPCOMING pane: reveal loads the deck in an iframe with
+  // ?receiver but WITHOUT postMessageEvents=true (that one is the current
+  // pane). It is a preview, so nothing in it should react: no clicks, no
+  // wheel, no keys -- a stray click or key used to move or change it.
+  // Added 29 Sep 2026 at Ryan's request, all 2316/3916/5200 decks.
+  var q = location.search;
+  if (!/[?&]receiver(&|$)/.test(q) || /postMessageEvents=true/.test(q)) return;
+  var s = document.createElement('style');
+  s.textContent = '.reveal,.reveal *{pointer-events:none!important}';
+  document.head.appendChild(s);
+  ['keydown', 'keypress', 'keyup', 'wheel', 'click', 'dblclick', 'mousedown', 'pointerdown', 'touchstart']
+    .forEach(function (t) {
+      window.addEventListener(t, function (e) { e.stopImmediatePropagation(); e.preventDefault(); },
+                              { capture: true, passive: false });
+    });
+  function lock() { try { Reveal.configure({ keyboard: false, touch: false, controls: false }); } catch (e) {} }
+  if (window.Reveal && Reveal.isReady && Reveal.isReady()) lock();
+  else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
+})();
+</script>
+<!-- presenter-gate v21 -->
 <script>
 (function () {
   var q = location.search;
@@ -1858,6 +1881,32 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
     document.addEventListener('input', ctl, true);
     document.addEventListener('change', ctl, true);
     document.addEventListener('click', ctl, true);
+    // overview: reveal's notes plugin never syncs it, so "o" here opened it in this
+    // preview only. Cancel it here and toggle it on the projector instead. Arrows already
+    // relay, so the slide is picked in the projector's overview. Esc toggles it like o (reveal
+    // binds both to the same toggle, so it arrives through overviewshown); Enter closes it.
+    Reveal.on('overviewshown', function () { Reveal.toggleOverview(false); toMain({ bridge: 'nav', action: 'overview' }); });
+    document.addEventListener('keydown', function (e) {
+      if (!e.isTrusted || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      if (e.key === 'Enter') toMain({ bridge: 'nav', action: 'overview-off' });
+    }, true);
+    window.addEventListener('message', function (ev) {
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d && d.method === 'triggerKey' && d.args && d.args[0] === 13)
+        toMain({ bridge: 'nav', action: 'overview-off' });
+    });
+    // a poll option is a div, not a control, so the ctl relay never carried it: a click
+    // here voted in this PREVIEW (and asked for a NUID here) while the room saw nothing.
+    // Swallow it here and click the same option on the projector.
+    document.addEventListener('click', function (ev) {
+      var o = ev.target.closest && ev.target.closest('.poll-option'), sl = Reveal.getCurrentSlide();
+      if (!ev.isTrusted || !o || !sl || !sl.contains(o)) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var at = here();
+      toMain({ bridge: 'poll', h: at.h, v: at.v, idx: [].indexOf.call(sl.querySelectorAll('.poll-option'), o) });
+    }, true);
     // a video: play it on the projector, not in the preview
     document.addEventListener('click', function (ev) {
       var f = ev.target.closest && ev.target.closest('.yt-facade');
@@ -2546,6 +2595,15 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
         else if (d.action === 'down') Reveal.down();
         else if (d.action === 'first') Reveal.slide(0, 0);
         else if (d.action === 'last') Reveal.slide(Reveal.getHorizontalSlides().length - 1, 0);
+        else if (d.action === 'overview') Reveal.toggleOverview();
+        else if (d.action === 'overview-off' && Reveal.isOverview()) Reveal.toggleOverview(false);
+        return;
+      }
+      if (d.bridge === 'poll') {
+        var pa = here(), ps = Reveal.getCurrentSlide();
+        if (!ps || pa.h !== d.h || pa.v !== d.v) return;      // the two windows are on different slides
+        var po = ps.querySelectorAll('.poll-option')[d.idx];
+        if (po) po.click();
         return;
       }
       if (d.bridge === 'ctl' || d.bridge === 'yt') {
@@ -2627,29 +2685,6 @@ incomplete  = counts[counts &lt; max_periods]         # 32 of 57 countries</code
     if (!receiver) wire();
   }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
-})();
-</script>
-<!-- speaker-upcoming-viewonly v1 -->
-<script>
-(function () {
-  // Speaker view's UPCOMING pane: reveal loads the deck in an iframe with
-  // ?receiver but WITHOUT postMessageEvents=true (that one is the current
-  // pane). It is a preview, so nothing in it should react: no clicks, no
-  // wheel, no keys -- a stray click or key used to move or change it.
-  // Added 29 Sep 2026 at Ryan's request, all 2316/3916/5200 decks.
-  var q = location.search;
-  if (!/[?&]receiver(&|$)/.test(q) || /postMessageEvents=true/.test(q)) return;
-  var s = document.createElement('style');
-  s.textContent = '.reveal,.reveal *{pointer-events:none!important}';
-  document.head.appendChild(s);
-  ['keydown', 'keypress', 'keyup', 'wheel', 'click', 'dblclick', 'mousedown', 'pointerdown', 'touchstart']
-    .forEach(function (t) {
-      window.addEventListener(t, function (e) { e.stopImmediatePropagation(); e.preventDefault(); },
-                              { capture: true, passive: false });
-    });
-  function lock() { try { Reveal.configure({ keyboard: false, touch: false, controls: false }); } catch (e) {} }
-  if (window.Reveal && Reveal.isReady && Reveal.isReady()) lock();
-  else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
 })();
 </script>
 </body>
