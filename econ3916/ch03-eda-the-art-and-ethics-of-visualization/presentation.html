@@ -2442,5 +2442,88 @@
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
 })();
 </script>
+<!-- fs-delegate-experiment v1 -->
+<script>
+(function () {
+  // 29 Sep 2026: tried on 2316 Ch 5, confirmed working by Ryan, then all decks. F pressed in speaker view used to
+  // full-screen the speaker window (or its preview), never the projector:
+  // requestFullscreen needs a key or click IN the window going full screen
+  // (measured 24 Sep). Chrome's capability delegation lets the window that just
+  // got the keypress hand that right on: postMessage(msg, {targetOrigin,
+  // delegate:'fullscreen'}). Untested between a popup and its opener, so every
+  // press REPORTS the projector's answer -- a silent relay cannot be told from
+  // a broken one. No button: the key is the whole interface.
+  var q = location.search;
+  var receiver = /[?&]receiver(&|$)/.test(q), current = receiver && /postMessageEvents=true/.test(q);
+  var projector = /[?&]presenter(&|=|$)/.test(q) && !receiver;
+
+  // Runs in whichever window got the keypress: the speaker window itself
+  // (injected there, so it belongs to that realm and carries its activation)
+  // or the current-slide preview. TARGET is how that window reaches the projector.
+  function sender(TARGET) {
+    return '(function(){if(window.__tiFsd)return;window.__tiFsd=1;' +
+      'var O=(location.protocol==="file:"||location.origin==="null")?"*":location.origin,W=null;' +
+      'function say(m,bad){var b=document.getElementById("ti-fsd-say");if(!b){b=document.createElement("div");b.id="ti-fsd-say";' +
+      'b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:99999;max-width:80%;color:#fff;' +
+      'font:600 13px system-ui,sans-serif;padding:7px 14px;border-radius:10px;pointer-events:none;text-align:center";document.body.appendChild(b);}' +
+      'b.style.background=bad?"rgba(185,28,28,.95)":"rgba(21,128,61,.95)";b.textContent=m;b.style.display="block";' +
+      'clearTimeout(b.__t);b.__t=setTimeout(function(){b.style.display="none";},bad?7000:2500);}' +
+      'window.addEventListener("message",function(ev){var d;try{d=JSON.parse(ev.data);}catch(e){return;}' +
+      'if(!d||d.bridge!=="fs-deleg-ack")return;clearTimeout(W);W=null;' +
+      'if(d.ok)say(d.why==="exited"?"Projector left full screen":"Projector is full screen");' +
+      'else say("Projector refused ("+d.why+"). Use Cmd-` then F.",true);});' +
+      'window.addEventListener("keydown",function(e){if(e.key!=="f"&&e.key!=="F")return;' +
+      'if(e.metaKey||e.ctrlKey||e.altKey||e.shiftKey)return;var t=e.target,g=t&&t.tagName;' +
+      'if(g==="INPUT"||g==="TEXTAREA"||g==="SELECT"||(t&&t.isContentEditable))return;' +
+      'e.preventDefault();e.stopImmediatePropagation();' +
+      'var o=null;try{o=' + TARGET + ';}catch(_){}' +
+      'if(!o||o.closed){say("No link to the projector window. Use Cmd-` then F.",true);return;}' +
+      'try{o.postMessage(JSON.stringify({bridge:"fs-deleg"}),{targetOrigin:O,delegate:"fullscreen"});}' +
+      'catch(err){say(err.name==="NotAllowedError"?"That F did not count as a key press here. Click this window once, then press F again.":"This Chrome cannot hand over full screen ("+err.name+"). Use Cmd-` then F.",true);return;}' +
+      'clearTimeout(W);W=setTimeout(function(){say("Projector did not answer. Hard-reload it, or use Cmd-` then F.",true);},1500);' +
+      '},true);})();';
+  }
+
+  if (current) {                          // the preview is our own document: just run it
+    var s = document.createElement('script');
+    s.textContent = sender('window.parent.opener');
+    document.head.appendChild(s);
+    return;
+  }
+  if (!projector) return;
+
+  window.addEventListener('message', function (ev) {
+    if (ev.origin !== location.origin && location.protocol !== 'file:') return;
+    var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+    // reveal's notes window heartbeats to us once a second; that is the handle
+    // we use to install the F handler INTO it (its realm, its activation)
+    if (d && d.namespace === 'reveal-notes' && ev.source) {
+      try {
+        var sd = ev.source.document;
+        if (sd && sd.head && !sd.__tiFsdWired) {
+          sd.__tiFsdWired = 1;
+          var sc = sd.createElement('script');
+          sc.textContent = sender('window.opener');
+          sd.head.appendChild(sc);
+        }
+      } catch (e) {}
+    }
+    if (!d || d.bridge !== 'fs-deleg') return;
+    var reply = function (ok, why) {
+      try { ev.source.postMessage(JSON.stringify({ bridge: 'fs-deleg-ack', ok: ok, why: why || '' }),
+                                  location.protocol === 'file:' ? '*' : location.origin); } catch (e) {}
+    };
+    if (document.fullscreenElement) {
+      document.exitFullscreen().then(function () { reply(true, 'exited'); }, function (e) { reply(false, e.name); });
+      return;
+    }
+    try {
+      document.documentElement.requestFullscreen()
+        .then(function () { reply(true, 'entered'); },
+              function (e) { reply(false, (e && e.message) || 'refused'); });
+    } catch (e) { reply(false, e.message || e.name); }
+  });
+})();
+</script>
 </body>
 </html>
