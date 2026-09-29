@@ -1175,7 +1175,10 @@
           <span id="cu-pylab">price of y</span><input id="cu-py" type="range" min="2" max="8" step="0.5" value="4" style="accent-color:#6B8BA4;"><span id="cu-pyv" style="font-weight:700;">$4</span>
           <span>income</span><input id="cu-i" type="range" min="8" max="24" step="2" value="16" style="accent-color:#6B8BA4;"><span id="cu-iv" style="font-weight:700;">$16</span>
         </div>
-        <button type="button" id="cu-go" class="cu-b" style="width:100%;margin-top:7px;">Find the best she can do</button>
+        <div style="display:flex;gap:6px;margin-top:7px;">
+          <button type="button" id="cu-go" class="cu-b" style="flex:3;">Find the best they can do</button>
+          <button type="button" id="cu-reset" class="cu-b" style="flex:1;">Reset</button>
+        </div>
       </div>
 
       <div id="cu-read" style="background:#f8f6f3;border-radius:10px;padding:8px 13px;margin-top:8px;font-size:12pt;line-height:1.45;min-height:64px;"></div>
@@ -1272,7 +1275,7 @@
       [0.4,0.7,1.0,1.3].forEach(function(f){
         curve(p,us*f,X,Y,Xm,Ym,{stroke:'#c9c4bf','stroke-width':1.6});
       });
-      // the one she is standing on
+      // the one they are standing on
       var reach = u<=us*1.0001;
       curve(p,u,X,Y,Xm,Ym,{stroke:reach?'#C47B5A':'#A85C5C','stroke-width':3.4,
                             'stroke-dasharray':reach?'':'8,5'});
@@ -1320,16 +1323,16 @@
       var r=us>0?u/us:0, e, msg;
       if(!budgetOn){
         e = r<0.45?'😐' : r<0.75?'🙂' : r<1.05?'😀' : '🤩';
-        msg='Higher curve, happier consumer. Nothing here says she can <em>reach</em> it.';
+        msg='Higher curve, happier consumer. Nothing here says they can <em>reach</em> it.';
       } else if(!reach){
         e='💔';
-        msg='<strong>She cannot afford this curve.</strong> Every bundle on it costs more than $'+p.I.toFixed(0)+'. Wanting it is free; buying it is not.';
+        msg='<strong>They cannot afford this curve.</strong> Every bundle on it costs more than $'+p.I.toFixed(0)+'. Wanting it is free; buying it is not.';
       } else if(r>0.995){
         e='🤩';
-        msg='<strong>This is the best she can do.</strong> The curve just touches the line &mdash; one bundle, no better one affordable.';
+        msg='<strong>This is the best they can do.</strong> The curve just touches the line &mdash; one bundle, no better one affordable.';
       } else {
         e = r<0.45?'😐' : r<0.75?'🙂' : '😀';
-        msg='Affordable, but she is leaving happiness on the table &mdash; she can climb higher without spending more.';
+        msg='Affordable, but they are leaving happiness on the table &mdash; they can climb higher without spending more.';
       }
       emo.textContent=e;
       ulab.innerHTML='U = '+(u).toFixed(2)+(budgetOn?' &nbsp;<span style="color:var(--muted-color);font-weight:400">of '+us.toFixed(2)+' possible</span>':'');
@@ -1341,6 +1344,19 @@
                   document.getElementById('cu-pyv').textContent='$'+(+pyR.value).toFixed(2).replace(/\.00$/,'');
                   document.getElementById('cu-iv').textContent='$'+iR.value; }
       anim=null; render(); }); });
+
+    // back to the deck's own calibration, keeping the drawn student --
+    // redrawing is what the two buttons at the top are for
+    document.getElementById('cu-reset').addEventListener('click',function(e){
+      e.preventDefault();
+      if(anim){cancelAnimationFrame(anim);anim=null;}
+      clearTimeout(window.__cuLand);
+      pxR.value='1'; pyR.value='4'; iR.value='16'; uR.value='45';
+      document.getElementById('cu-pxv').textContent='$1';
+      document.getElementById('cu-pyv').textContent='$4';
+      document.getElementById('cu-iv').textContent='$16';
+      render();
+    });
 
     document.getElementById('cu-go').addEventListener('click',function(e){
       e.preventDefault();
@@ -1378,7 +1394,7 @@
   })();
   </script>
 
-  <aside class="notes"><p style="margin:0 0 0.8em;font-size:1.25em;font-weight:700;line-height:1.35;border-left:5px solid #1F7A5A;padding-left:.5em"><strong style="color:#1F7A5A;letter-spacing:.4px">SAY:</strong> These are your own answers from last week. Let us take one of you and find the best you can do. &#9208;</p><p style="margin:0 0 0.7em"><strong style="color:#A85C5C;letter-spacing:.4px">DON'T SAY:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Reading anyone's full name. The poll collected initials only, on purpose.</li><li style="margin:0 0 0.35em">&ldquo;The broken heart means she is irrational.&rdquo; It means the curve is unaffordable &mdash; a fact about prices, not about her.</li></ul><p style="margin:0 0 0.7em;font-size:.8em;color:#6B645E"><strong style="color:#8C8580;letter-spacing:.4px">BACKGROUND:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0;font-size:.8em;color:#6B645E"><li style="margin:0 0 0.35em">Step 1 is the map alone: drag and the face gets happier the higher she climbs. Say out loud that nothing on screen yet stops her &mdash; that is the point of withholding the line.</li><li style="margin:0 0 0.35em">Step 2 drops the budget in. Now drag ABOVE the line: the curve goes dashed red and the face breaks. Wanting is free, buying is not.</li><li style="margin:0 0 0.35em">&ldquo;Find the best she can do&rdquo; animates the curve down to the tangency and drops the dot at x* = &alpha;I/p&#8321;, y* = (1&minus;&alpha;)I/p&#8322;.</li><li style="margin:0 0 0.35em">Draw several students. The class ranges from &alpha; = 0.05 to &alpha; = 1.00, so you will get lopsided maps; &alpha; = 1 is a genuine corner &mdash; she spends everything on one good and the curves go vertical. Worth drawing on purpose after two interior ones.</li><li style="margin:0 0 0.35em">Prices default to the deck's own calibration ($1, $4, I = $16) so this lines up with Maya on the previous slide.</li></ul><p style="margin:.9em 0 0.7em"><strong style="color:#6B645E;letter-spacing:.4px">TIME:</strong> ~5 min. Two clicks, then drive it from the panel.</p></aside>
+  <aside class="notes"><p style="margin:0 0 0.8em;font-size:1.25em;font-weight:700;line-height:1.35;border-left:5px solid #1F7A5A;padding-left:.5em"><strong style="color:#1F7A5A;letter-spacing:.4px">SAY:</strong> These are your own answers from last week. Let us take one of you and find the best you can do. &#9208;</p><p style="margin:0 0 0.7em"><strong style="color:#A85C5C;letter-spacing:.4px">DON'T SAY:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Reading anyone's full name. The poll collected initials only, on purpose.</li><li style="margin:0 0 0.35em">&ldquo;The broken heart means they are irrational.&rdquo; It means the curve is unaffordable &mdash; a fact about prices, not about them.</li></ul><p style="margin:0 0 0.7em;font-size:.8em;color:#6B645E"><strong style="color:#8C8580;letter-spacing:.4px">BACKGROUND:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0;font-size:.8em;color:#6B645E"><li style="margin:0 0 0.35em">Step 1 is the map alone: drag and the face gets happier the higher they climb. Say out loud that nothing on screen yet stops them &mdash; that is the point of withholding the line.</li><li style="margin:0 0 0.35em">Step 2 drops the budget in. Now drag ABOVE the line: the curve goes dashed red and the face breaks. Wanting is free, buying is not.</li><li style="margin:0 0 0.35em">&ldquo;Find the best they can do&rdquo; animates the curve down to the tangency and drops the dot at x* = &alpha;I/p&#8321;, y* = (1&minus;&alpha;)I/p&#8322;.</li><li style="margin:0 0 0.35em">Draw several students. The class ranges from &alpha; = 0.05 to &alpha; = 1.00, so you will get lopsided maps; &alpha; = 1 is a genuine corner &mdash; they spend everything on one good and the curves go vertical. Worth drawing on purpose after two interior ones.</li><li style="margin:0 0 0.35em">Prices default to the deck's own calibration ($1, $4, I = $16) so this lines up with Maya on the previous slide.</li></ul><p style="margin:.9em 0 0.7em"><strong style="color:#6B645E;letter-spacing:.4px">TIME:</strong> ~5 min. Two clicks, then drive it from the panel.</p></aside>
 </section>
 
 <!-- ===== Slide 12b — What will the consumer consume? (max_u.png motivation) ===== -->
