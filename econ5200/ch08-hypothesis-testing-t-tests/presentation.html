@@ -2088,5 +2088,28 @@
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
 })();
 </script>
+<!-- speaker-upcoming-viewonly v1 -->
+<script>
+(function () {
+  // Speaker view's UPCOMING pane: reveal loads the deck in an iframe with
+  // ?receiver but WITHOUT postMessageEvents=true (that one is the current
+  // pane). It is a preview, so nothing in it should react: no clicks, no
+  // wheel, no keys -- a stray click or key used to move or change it.
+  // Added 29 Sep 2026 at Ryan's request, all 2316/3916/5200 decks.
+  var q = location.search;
+  if (!/[?&]receiver(&|$)/.test(q) || /postMessageEvents=true/.test(q)) return;
+  var s = document.createElement('style');
+  s.textContent = '.reveal,.reveal *{pointer-events:none!important}';
+  document.head.appendChild(s);
+  ['keydown', 'keypress', 'keyup', 'wheel', 'click', 'dblclick', 'mousedown', 'pointerdown', 'touchstart']
+    .forEach(function (t) {
+      window.addEventListener(t, function (e) { e.stopImmediatePropagation(); e.preventDefault(); },
+                              { capture: true, passive: false });
+    });
+  function lock() { try { Reveal.configure({ keyboard: false, touch: false, controls: false }); } catch (e) {} }
+  if (window.Reveal && Reveal.isReady && Reveal.isReady()) lock();
+  else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
+})();
+</script>
 </body>
 </html>
