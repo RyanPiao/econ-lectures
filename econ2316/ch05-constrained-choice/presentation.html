@@ -1171,9 +1171,9 @@
       <div id="cu-step2" class="fragment fade-up" style="background:#f0f5f8;border-radius:10px;padding:8px 13px;margin-top:8px;border-left:4px solid var(--secondary-color);">
         <p style="font-size:10.5pt;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--secondary-color);margin:0 0 3px;">2 &middot; Now reality</p>
         <div style="display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;font-size:11pt;">
-          <span id="cu-pxlab">price of x</span><input id="cu-px" type="range" min="0.5" max="4" step="0.5" value="1" style="accent-color:#6B8BA4;"><span id="cu-pxv" style="font-weight:700;">$1</span>
-          <span id="cu-pylab">price of y</span><input id="cu-py" type="range" min="1" max="8" step="0.5" value="4" style="accent-color:#6B8BA4;"><span id="cu-pyv" style="font-weight:700;">$4</span>
-          <span>income</span><input id="cu-i" type="range" min="8" max="40" step="2" value="16" style="accent-color:#6B8BA4;"><span id="cu-iv" style="font-weight:700;">$16</span>
+          <span id="cu-pxlab">price of x</span><input id="cu-px" type="range" min="1" max="3" step="0.5" value="1" style="accent-color:#6B8BA4;"><span id="cu-pxv" style="font-weight:700;">$1</span>
+          <span id="cu-pylab">price of y</span><input id="cu-py" type="range" min="2" max="8" step="0.5" value="4" style="accent-color:#6B8BA4;"><span id="cu-pyv" style="font-weight:700;">$4</span>
+          <span>income</span><input id="cu-i" type="range" min="8" max="24" step="2" value="16" style="accent-color:#6B8BA4;"><span id="cu-iv" style="font-weight:700;">$16</span>
         </div>
         <button type="button" id="cu-go" class="cu-b" style="width:100%;margin-top:7px;">Find the best she can do</button>
       </div>
@@ -1254,7 +1254,12 @@
 
     function render(){
       while(svg.firstChild) svg.removeChild(svg.firstChild);
-      var p=P(), Xm=(p.I/p.px)*1.18, Ym=(p.I/p.py)*1.18;
+      // FIXED frame. Scaling the axes by I/p kept both intercepts pinned to the
+      // same screen position, so changing income or a price rescaled the picture
+      // and the budget line never appeared to move -- the one thing step 2 is
+      // for. The slider ranges below are chosen so the line always lands inside
+      // this frame.
+      var p=P(), Xm=24, Ym=12;
       var X=function(v){return ox+W*v/Xm;}, Y=function(v){return oy-H*v/Ym;};
       var us=Ustar(p), u=us*(+uR.value/100);
 
@@ -1275,6 +1280,10 @@
       // axes last, so they sit on top
       el('line',{x1:ox,y1:oy,x2:ox+W+14,y2:oy,stroke:'#6b7280','stroke-width':1.6});
       el('line',{x1:ox,y1:oy,x2:ox,y2:oy-H-14,stroke:'#6b7280','stroke-width':1.6});
+      for(var t=4;t<=24;t+=4){ el('line',{x1:X(t),y1:oy,x2:X(t),y2:oy+5,stroke:'#9ca3af','stroke-width':1.2});
+        tx(X(t),oy+19,String(t),{size:11,w:500,anchor:'middle',fill:'#8C8580'}); }
+      for(var q=2;q<=12;q+=2){ el('line',{x1:ox,y1:Y(q),x2:ox-5,y2:Y(q),stroke:'#9ca3af','stroke-width':1.2});
+        tx(ox-9,Y(q)+4,String(q),{size:11,w:500,anchor:'end',fill:'#8C8580'}); }
       tx(ox+W+14,oy+26,cur.gx.slice(0,22),{anchor:'end',size:14});
       // rotate about the axis MIDPOINT with a centred anchor; rotating about a
       // point near the top ran the label off the viewBox
@@ -1299,7 +1308,7 @@
       for(var i=0;i<=n;i++){
         var x=Xm*(0.02+0.98*i/n), y=yOf(p,u,x);
         if(!isFinite(y)||y<0) continue;
-        if(y>Ym*1.3) continue;
+        if(y>Ym) continue;
         pts.push(X(x).toFixed(1)+','+Y(y).toFixed(1));
       }
       if(pts.length<2) return;
