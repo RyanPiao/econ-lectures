@@ -1910,7 +1910,7 @@ rf.fit(X_train, y_train)
   else if (window.Reveal && Reveal.on) Reveal.on('ready', lock);
 })();
 </script>
-<!-- presenter-gate v21 -->
+<!-- presenter-gate v22 -->
 <script>
 (function () {
   var q = location.search;
@@ -1992,21 +1992,11 @@ rf.fit(X_train, y_train)
     document.addEventListener('change', ctl, true);
     document.addEventListener('click', ctl, true);
     // overview: reveal's notes plugin never syncs it, so "o" here opened it in this
-    // preview only. Cancel it here and toggle it on the projector instead. Arrows already
-    // relay, so the slide is picked in the projector's overview. Esc toggles it like o (reveal
-    // binds both to the same toggle, so it arrives through overviewshown); Enter closes it.
-    Reveal.on('overviewshown', function () { Reveal.toggleOverview(false); toMain({ bridge: 'nav', action: 'overview' }); });
-    document.addEventListener('keydown', function (e) {
-      if (!e.isTrusted || e.metaKey || e.ctrlKey || e.altKey) return;
-      var t = e.target, tag = t && t.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
-      if (e.key === 'Enter') toMain({ bridge: 'nav', action: 'overview-off' });
-    }, true);
-    window.addEventListener('message', function (ev) {
-      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
-      if (d && d.method === 'triggerKey' && d.args && d.args[0] === 13)
-        toMain({ bridge: 'nav', action: 'overview-off' });
-    });
+    // preview only. Mirror it instead: whenever this preview's overview opens or
+    // closes -- o, Esc, Enter, or a click on a thumbnail -- the projector does the
+    // same. Both stay in overview together, and slide moves already sync both ways.
+    Reveal.on('overviewshown', function () { toMain({ bridge: 'nav', action: 'overview-on' }); });
+    Reveal.on('overviewhidden', function () { toMain({ bridge: 'nav', action: 'overview-off' }); });
     // a poll option is a div, not a control, so the ctl relay never carried it: a click
     // here voted in this PREVIEW (and asked for a NUID here) while the room saw nothing.
     // Swallow it here and click the same option on the projector.
@@ -2705,7 +2695,7 @@ rf.fit(X_train, y_train)
         else if (d.action === 'down') Reveal.down();
         else if (d.action === 'first') Reveal.slide(0, 0);
         else if (d.action === 'last') Reveal.slide(Reveal.getHorizontalSlides().length - 1, 0);
-        else if (d.action === 'overview') Reveal.toggleOverview();
+        else if (d.action === 'overview-on' && !Reveal.isOverview()) Reveal.toggleOverview(true);
         else if (d.action === 'overview-off' && Reveal.isOverview()) Reveal.toggleOverview(false);
         return;
       }
