@@ -69,6 +69,47 @@
 
   var GRACE_MS = 20000;   // keep a poll open this long after leaving its slide
 
+  // ---------- Results-refresh throttle (2026-09-29) ----------
+  // Every deck re-GETs poll_votes every 5 s per device while a poll slide is
+  // on screen: ~35 student devices = ~420 requests/min, each one egress AND a
+  // log line against the Supabase free tier (egress hit 113% in Sep 2026).
+  // Student devices now reuse a result for STUDENT_RESULTS_MS; the projector
+  // and speaker view (INSTRUCTOR) stay live at 5 s, so the room's chart is
+  // unchanged. Any non-GET to poll_votes (this device voting) drops the cache,
+  // so a voter sees their own vote at once. Fails open: on any error the real
+  // fetch runs. Done here, once, instead of editing the loop in ~90 decks.
+  var STUDENT_RESULTS_MS = 20000;
+  if (!INSTRUCTOR && !IS_FILE && window.fetch && window.Response &&
+      !window.__pollFetchThrottled) {
+    window.__pollFetchThrottled = true;
+    var realFetch = window.fetch.bind(window);
+    var resultCache = {};   // url -> {at, status, body, ctype}
+    window.fetch = function (input, init) {
+      try {
+        var url = typeof input === "string" ? input : (input && input.url) || "";
+        if (url.indexOf("/rest/v1/poll_votes") !== -1) {
+          var method = ((init && init.method) || (input && input.method) || "GET").toUpperCase();
+          if (method !== "GET") { resultCache = {}; return realFetch(input, init); }
+          var hit = resultCache[url];
+          if (hit && Date.now() - hit.at < STUDENT_RESULTS_MS) {
+            return Promise.resolve(new Response(hit.body,
+              { status: hit.status, headers: { "Content-Type": hit.ctype } }));
+          }
+          return realFetch(input, init).then(function (r) {
+            if (r.ok) {
+              r.clone().text().then(function (b) {
+                resultCache[url] = { at: Date.now(), status: r.status, body: b,
+                  ctype: r.headers.get("Content-Type") || "application/json" };
+              }).catch(function () {});
+            }
+            return r;
+          });
+        }
+      } catch (e) { /* fall through to the real fetch */ }
+      return realFetch(input, init);
+    };
+  }
+
   // Feature probes — resolved once, then cached for the session.
   var hasSessionKey = null;   // null = unknown, true/false once probed
   var windowCache   = {};     // pollId -> {open:bool, at:ms}
