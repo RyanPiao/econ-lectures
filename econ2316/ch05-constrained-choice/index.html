@@ -1190,7 +1190,16 @@
     function el(t,at,parent){var n=document.createElementNS(NS,t);for(var k in at)n.setAttribute(k,at[k]);(parent||svg).appendChild(n);return n;}
     function tx(x,y,s,o){o=o||{};var n=el('text',{x:x,y:y,'font-size':o.size||13,'font-weight':o.w||600,'text-anchor':o.anchor||'start',fill:o.fill||'#3A3632'});n.textContent=s;return n;}
 
+    // Derived at paint time, never cached from an event. Reveal restores a
+    // slide's fragment visibility when you navigate BACK to it WITHOUT firing
+    // fragmentshown, so event-driven state went stale and the budget line
+    // vanished until a reload. Asking the DOM cannot go stale.
+    function isStep2(){
+      var f=document.getElementById('cu-step2');
+      return !!(f && f.classList.contains('visible'));
+    }
     function render(){
+      budgetOn=isStep2();
       while(svg.firstChild) svg.removeChild(svg.firstChild);
       // FIXED frame. Scaling the axes by I/p kept both intercepts pinned to the
       // same screen position, so changing income or a price rescaled the picture
@@ -1318,12 +1327,12 @@
 
     // the budget only exists once the second step is on screen
     var sec=svg.closest('section');
-    function sync(){
-      // by id, not by index: reveal renumbers data-fragment-index on load, so
-      // a selector on "1" silently matched nothing and the budget never appeared
-      var f=document.getElementById('cu-step2');
-      var on=!!(f&&f.classList.contains('visible'));
-      if(on!==budgetOn){ budgetOn=on; render(); }
+    function sync(){ render(); }
+    // and catch the case no reveal event covers: the class changing on its own
+    var stepEl=document.getElementById('cu-step2');
+    if(stepEl && window.MutationObserver){
+      new MutationObserver(function(){ render(); })
+        .observe(stepEl,{attributes:true,attributeFilter:['class']});
     }
     if(window.Reveal&&Reveal.addEventListener){
       ['fragmentshown','fragmenthidden','slidechanged','ready'].forEach(function(ev){Reveal.addEventListener(ev,sync);});
