@@ -563,7 +563,11 @@
       // dead centre at the bottom and costs more to cover (1620px) than
       // clipping a corner of text (608px). Rather than pick the least-bad
       // collision, drop the "press G" hint and keep the number: the compact
-      // badge is 142x43 instead of 226x59 and fits where the full one cannot.
+      // badge drops the hint line and fits where the full one cannot. (Sizes
+      // shift with the label -- the full badge was 226x59 before it carried a
+      // "Ch 5" / "Topic 6" prefix and is 218-258x59 now, the compact one 142x43
+      // before. Everything here scores the badge as measured, so the numbers
+      // are context, not thresholds.)
       // The number is the part the room needs; the hint is a courtesy.
       el.className = "compact";
       var cw = el.offsetWidth, ch2 = el.offsetHeight;
@@ -785,6 +789,27 @@
     setTimeout(paintChip, 530);
   }
 
+  // Which deck, not just which slide. The jump hint alone is ambiguous in a
+  // week where the same room sees three courses: "type 5" means a different
+  // picture in each. The number is in the folder name, so read it off the path
+  // rather than the deck body -- only SOME 3916/5200 decks carry "Topic N" in
+  // <title>, so the body is not a reliable source. Both layouts are covered:
+  // econ2316/ch05-... in the clone that Pages serves, and
+  // econ2316-micro-theory/ch05-econ2316-... in the authoring copy Ryan views
+  // over file://. 2316 calls these chapters; 3916 and 5200 call the same
+  // ch05 folder Topic 5 -- no offset, verified against "ECON 3916 Topic 5" and
+  // "ECON 5200 Topic 6" in those decks' own titles. 1116 does not load this
+  // file today, but would be a chapter if it ever did. An unrecognised course
+  // or an unnumbered folder degrades to no prefix, never to a wrong number.
+  function deckLabel() {
+    var p = location.pathname;
+    var c = p.match(/econ(1116|2316|3916|5200)/);
+    var n = p.match(/\/ch0*(\d+)/);
+    if (!c || !n) return "";
+    var word = (c[1] === "3916" || c[1] === "5200") ? "Topic " : "Ch ";
+    return word + n[1] + " \u00b7 ";
+  }
+
   function paintPageNo() {
     var el = document.getElementById("ec-pageno");
     var src = document.querySelector(".reveal .slide-number");
@@ -820,7 +845,7 @@
     }
     // Verified against reveal 5.1.0: "g" opens .jump-to-slide-input and "28"
     // lands on 28.1. The hint is only printed because that was tested.
-    el.innerHTML = '<b>Slide ' + txt + '</b>' +
+    el.innerHTML = '<b>' + deckLabel() + 'Slide ' + txt + '</b>' +
                    '<i>press <kbd>G</kbd> \u2192 type <kbd>' + txt + '</kbd> \u2192 Enter</i>';
     el.style.display = "block";
     placePageNo(el);
@@ -1061,7 +1086,7 @@
     "#ec-pageno{position:fixed;top:8px;left:0;z-index:9997;" +
     "display:none;text-align:center;background:rgba(30,58,138,.93);color:#fff;" +
     "border-radius:14px;padding:7px 20px 8px;font-family:system-ui,sans-serif;" +
-    "pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.3)}" +
+    "pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3)}" +
     "#ec-pageno b{display:block;font-size:27px;font-weight:700;line-height:1.05;" +
     "letter-spacing:.01em}" +
     "#ec-pageno i{display:block;font-style:normal;font-size:13px;font-weight:500;" +
