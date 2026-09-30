@@ -2477,91 +2477,77 @@
   <h2><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i> Walkthrough 5.3 &mdash; Avery's map: ride the ridge to the budget</h2>
   <div style="display: grid; grid-template-columns: 1.42fr 1fr; gap: 18px; align-items: center;">
     <div class="mathjax_ignore tex2jax_ignore">
-      <svg id="rw-svg" viewBox="0 6 620 372" style="width:100%;display:block;" aria-label="Avery's perfect-complements map: L-shaped indifference curves with kinks on the ridge, and a budget line that rotates as prices change while the other intercept stays put"></svg>
+      <svg id="rw-svg" viewBox="0 6 620 350" style="width:100%;display:block;" aria-label="Avery's budget line with a bundle you can slide along it; the L-curve through the bundle shows how much of one good is wasted, and the marginal rate of substitution is infinite, undefined, or zero but never the price ratio"></svg>
 
-      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;margin-top:6px;font-size:11pt;">
-        <span>oat milk&nbsp;&nbsp;p&#8321;</span><input id="rw-p1" type="range" min="3" max="8" step="0.5" value="4" style="accent-color:#4A6B84;"><span id="rw-p1v" style="font-weight:700;">$4</span>
-        <span>matcha&nbsp;&nbsp;p&#8322;</span><input id="rw-p2" type="range" min="4" max="10" step="0.5" value="6" style="accent-color:#4A6B84;"><span id="rw-p2v" style="font-weight:700;">$6</span>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:center;margin-top:5px;font-size:11pt;">
+        <span>walk along the $48 line</span><input id="rw-x" type="range" min="0.6" max="11.4" step="0.2" value="2.6" style="accent-color:#4A6B84;">
       </div>
-      <div id="rw-read" style="background:#f8f6f3;border-radius:10px;padding:7px 12px;margin-top:6px;font-size:11.5pt;line-height:1.4;min-height:38px;"></div>
-      <div style="display:flex;gap:6px;margin-top:6px;">
-        <button type="button" id="rw-reset" class="rw-b">Back to Avery&rsquo;s prices</button>
+      <div id="rw-read" style="background:#f8f6f3;border-radius:10px;padding:6px 11px;margin-top:5px;font-size:11pt;line-height:1.38;min-height:46px;"></div>
+      <div style="display:flex;gap:6px;margin-top:5px;">
+        <button type="button" id="rw-best" class="rw-b" style="flex:2;">Stop wasting money</button>
+        <button type="button" id="rw-reset" class="rw-b" style="flex:1;">Reset</button>
       </div>
     </div>
 
     <style>
       .reveal #w53-perfect-complements-figure .rw-b{font:600 10.5pt var(--body-font,"Source Sans 3",sans-serif);padding:4px 10px;border-radius:8px;border:2px solid #d6d3d1;background:#fff;color:#2d2d2d;cursor:pointer;}
       .reveal #w53-perfect-complements-figure .rw-b:hover{border-color:#6d28d9;}
+      .reveal #w53-perfect-complements-figure #rw-best{background:#6d28d9;border-color:#6d28d9;color:#fff;}
     </style>
 
     <script>
     (function(){
-      var I=48, Xm=17, Ym=13, A=2, B=3;            // U = min(2 x1, 3 x2) -> ridge 2 x1 = 3 x2
-      var ox=62, oy=340, W=520, H=292, NS='http://www.w3.org/2000/svg';
+      var I=48, p1=4, p2=6, A=2, B=3, Xm=13, Ym=9;   // U = min(2 x1, 3 x2); prices are GIVEN
+      var ox=58, oy=300, W=520, H=258, NS='http://www.w3.org/2000/svg';
       var svg=document.getElementById('rw-svg'); if(!svg) return;
-      var p1R=document.getElementById('rw-p1'), p2R=document.getElementById('rw-p2');
-      function X(v){ return ox+W*v/Xm; }
-      function Y(v){ return oy-H*v/Ym; }
+      var xR=document.getElementById('rw-x');
+      function X(v){ return ox+W*v/Xm; } function Y(v){ return oy-H*v/Ym; }
       function el(t,at){ var n=document.createElementNS(NS,t); for(var k in at) n.setAttribute(k,at[k]); svg.appendChild(n); return n; }
       function tx(x,y,s,o){ o=o||{}; var n=el('text',{x:x,y:y,'font-size':o.size||12.5,'font-weight':o.w||400,'text-anchor':o.anchor||'start',fill:o.fill||'#2d2d2d'}); n.textContent=s; return n; }
-      // the kink of the L at utility u sits at (u/A, u/B); the arms run out from it
-      function ell(u,at){
-        var kx=u/A, ky=u/B;
+      function ell(u,at){ var kx=u/A, ky=u/B;
         el('polyline',{points:X(kx)+','+Y(Ym)+' '+X(kx)+','+Y(ky)+' '+X(Xm)+','+Y(ky),fill:'none',
-                       stroke:at.stroke,'stroke-width':at.w,'stroke-dasharray':at.dash||''});
-        return {kx:kx,ky:ky};
-      }
-      function best(p1,p2){ var x1=I/(p1+(A/B)*p2); return {x1:x1, x2:(A/B)*x1, u:A*x1}; }
+                       stroke:at.stroke,'stroke-width':at.w,'stroke-dasharray':at.dash||''}); return {kx:kx,ky:ky}; }
 
       function render(){
-        var p1=+p1R.value, p2=+p2R.value, b=best(p1,p2);
+        var x1=+xR.value, x2=(I-p1*x1)/p2, u=Math.min(A*x1,B*x2);
+        var d=A*x1-B*x2, kink=Math.abs(d)<0.18;
         while(svg.firstChild) svg.removeChild(svg.firstChild);
 
         el('line',{x1:ox,y1:oy,x2:ox+W+12,y2:oy,stroke:'#2d2d2d','stroke-width':2.2});
         el('line',{x1:ox,y1:oy,x2:ox,y2:oy-H-12,stroke:'#2d2d2d','stroke-width':2.2});
-        for(var t=3;t<=15;t+=3){ el('line',{x1:X(t),y1:oy,x2:X(t),y2:oy+5,stroke:'#9ca3af','stroke-width':1.2});
-          tx(X(t),oy+19,String(t),{size:12,anchor:'middle',fill:'#6B645E'}); }
-        for(var q=2;q<=12;q+=2){ el('line',{x1:ox,y1:Y(q),x2:ox-5,y2:Y(q),stroke:'#9ca3af','stroke-width':1.2});
-          tx(ox-9,Y(q)+4,String(q),{size:12,anchor:'end',fill:'#6B645E'}); }
-        tx(ox+W+12,oy+20,'oat milk  x₁  (quarts)',{size:13,anchor:'end',fill:'#2d2d2d'});
-        var yl=tx(20,oy-H/2,'matcha  x₂  (pouches)',{size:13,anchor:'middle',fill:'#2d2d2d'});
-        yl.setAttribute('transform','rotate(-90 20 '+(oy-H/2)+')');
+        for(var t=2;t<=12;t+=2){ el('line',{x1:X(t),y1:oy,x2:X(t),y2:oy+5,stroke:'#9ca3af','stroke-width':1.2});
+          tx(X(t),oy+18,String(t),{size:11.5,anchor:'middle',fill:'#6B645E'}); }
+        for(var q=2;q<=8;q+=2){ el('line',{x1:ox,y1:Y(q),x2:ox-5,y2:Y(q),stroke:'#9ca3af','stroke-width':1.2});
+          tx(ox-8,Y(q)+4,String(q),{size:11.5,anchor:'end',fill:'#6B645E'}); }
+        tx(ox+W+12,oy+18,'oat milk x₁',{size:12.5,anchor:'end'});
+        var yl=tx(18,oy-H/2,'matcha x₂',{size:12.5,anchor:'middle'}); yl.setAttribute('transform','rotate(-90 18 '+(oy-H/2)+')');
 
-        // preferences do not move when prices do
-        [6,12,18].forEach(function(u){ ell(u,{stroke:'#c4bdb6',w:2.2}); });
-        el('line',{x1:X(0),y1:Y(0),x2:X(Xm),y2:Y((A/B)*Xm),stroke:'#2E7D57','stroke-width':2.6,'stroke-dasharray':'8 5'});
-        tx(X(Xm)-4,Y((A/B)*Xm)-10,'ridge  2x₁ = 3x₂',{size:13,w:700,anchor:'end',fill:'#2E7D57'});
-
-        // where the line started, so the rotation is visible
-        el('line',{x1:X(0),y1:Y(48/6),x2:X(48/4),y2:Y(0),stroke:'#c9c4bf','stroke-width':2,'stroke-dasharray':'5 5'});
-
-        // the L she actually reaches, then the line itself
-        ell(b.u,{stroke:'#C47B5A',w:4});
-        tx(X(Xm)-4,Y(b.x2)-9,'U = '+b.u.toFixed(2),{size:13.5,w:700,anchor:'end',fill:'#C47B5A'});
+        el('line',{x1:X(0),y1:Y(0),x2:X(Xm),y2:Y((A/B)*Xm),stroke:'#2E7D57','stroke-width':2.4,'stroke-dasharray':'8 5'});
+        tx(X(Xm)-4,Y((A/B)*Xm)-9,'ridge',{size:12.5,w:700,anchor:'end',fill:'#2E7D57'});
         el('line',{x1:X(0),y1:Y(I/p2),x2:X(I/p1),y2:Y(0),stroke:'#4A6B84','stroke-width':4});
+        tx(X(I/p1)-4,oy-9,'\$48 budget',{size:12,w:700,anchor:'end',fill:'#4A6B84'});
 
-        // both intercepts, so it is clear which one the rotation pivots on
-        el('circle',{cx:X(0),cy:Y(I/p2),r:5.5,fill:'#4A6B84'});
-        tx(X(0)+9,Y(I/p2)-8,'I/p₂ = '+(I/p2).toFixed(1),{size:12,w:700,fill:'#4A6B84'});
-        el('circle',{cx:X(I/p1),cy:Y(0),r:5.5,fill:'#4A6B84'});
-        tx(X(I/p1),oy-12,'I/p₁ = '+(I/p1).toFixed(1),{size:12,w:700,anchor:'middle',fill:'#4A6B84'});
+        var k=ell(u,{stroke:'#C47B5A',w:3.6});
+        // the wasted good, drawn as the gap between the bundle and the corner of its own L
+        if(!kink){
+          if(d<0) el('line',{x1:X(x1),y1:Y(k.ky),x2:X(x1),y2:Y(x2),stroke:'#8a3a3a','stroke-width':3.4,'stroke-dasharray':'4 4'});
+          else    el('line',{x1:X(k.kx),y1:Y(x2),x2:X(x1),y2:Y(x2),stroke:'#8a3a3a','stroke-width':3.4,'stroke-dasharray':'4 4'});
+        }
+        el('circle',{cx:X(x1),cy:Y(x2),r:7.5,fill:kink?'#6d28d9':'#8a3a3a'});
+        if(kink){ el('circle',{cx:X(6),cy:Y(4),r:13,fill:'none',stroke:'#6d28d9','stroke-width':2.4});
+                  tx(X(6)+17,Y(4)-11,'(6, 4)  U = 12',{size:13.5,w:700,fill:'#6d28d9'}); }
 
-        el('circle',{cx:X(b.x1),cy:Y(b.x2),r:8.5,fill:'#C47B5A'});
-        tx(X(b.x1)+13,Y(b.x2)-10,'('+b.x1.toFixed(2)+', '+b.x2.toFixed(2)+')',{size:13.5,w:700,fill:'#C47B5A'});
-
-        document.getElementById('rw-p1v').textContent='$'+p1.toFixed(2).replace(/\.00$/,'').replace(/0$/,'');
-        document.getElementById('rw-p2v').textContent='$'+p2.toFixed(2).replace(/\.00$/,'').replace(/0$/,'');
-        var same = (Math.abs(p1-4)<0.01 && Math.abs(p2-6)<0.01);
-        document.getElementById('rw-read').innerHTML =
-          '<strong>Still a kink, never a tangency.</strong> The optimum is where the ridge meets the line: ' +
-          'x₁ = <strong>'+b.x1.toFixed(2)+'</strong>, x₂ = <strong>'+b.x2.toFixed(2)+'</strong>, U = <strong>'+b.u.toFixed(2)+'</strong>.' +
-          (same ? ' &nbsp;These are the book&rsquo;s numbers.'
-                : ' &nbsp;Move p₁ and the line pivots on the x₂ intercept; move p₂ and it pivots on the x₁ one. The pivot never moves — only the slope.');
+        var mrs = kink ? 'undefined' : (d<0 ? '∞ (vertical arm)' : '0 (horizontal arm)');
+        var lost = kink ? 0 : (d<0 ? p2*(x2-k.ky) : p1*(x1-k.kx));
+        document.getElementById('rw-read').innerHTML = kink
+          ? '<strong style="color:#6d28d9;">Nothing wasted — U = 12, the best she can do.</strong> And here MRS is <strong>undefined</strong>: the curve has a corner, not a slope. That is why you cannot solve MRS = p₁/p₂ — there is no point on this line where MRS equals 0.67.'
+          : '<strong>MRS here = ' + mrs + '</strong>, and p₁/p₂ = 0.67 — <strong>they are not equal, and never will be.</strong> U = ' + u.toFixed(2) +
+            '. She is throwing away <strong>\$' + lost.toFixed(2) + '</strong> of ' + (d<0?'matcha':'oat milk') + ' that adds no utility at all.';
       }
 
-      p1R.addEventListener('input',render); p2R.addEventListener('input',render);
-      document.getElementById('rw-reset').addEventListener('click',function(e){
-        e.preventDefault(); p1R.value='4'; p2R.value='6'; render(); });
+      xR.addEventListener('input',render);
+      document.getElementById('rw-best').addEventListener('click',function(e){ e.preventDefault(); xR.value='6'; render(); });
+      document.getElementById('rw-reset').addEventListener('click',function(e){ e.preventDefault(); xR.value='2.6'; render(); });
       render();
       if(window.Reveal&&Reveal.on) Reveal.on('slidechanged',render);
       setTimeout(render,120);
@@ -2582,7 +2568,7 @@
       </div>
       <div class="fragment fade-up key-result" style="margin: 0;" data-notes="The ridge meets the budget at 6 and 4, the kink of the highest reachable L, utility 12. No tangency needed.">
         <p style="font-size: 11.5pt; line-height: 1.45; margin: 0;">
-          At Avery&rsquo;s prices the ridge crosses the \$48 budget at <strong>\((6,\,4)\)</strong> &mdash; the kink of the highest L she can reach, \(U^* = 12\). <strong>Rotate the line and the answer slides along the ridge</strong>, still a kink. No tangency, ever.
+          At Avery&rsquo;s prices the ridge crosses the \$48 budget at <strong>\((6,\,4)\)</strong> &mdash; the kink of the highest L she can reach, \(U^* = 12\). <strong>Walk the line and MRS is only ever \(\infty\), \(0\), or undefined</strong> &mdash; never \(p_1/p_2\). That is why there is no tangency to solve for.
         </p>
       </div>
     </div>
@@ -2626,10 +2612,100 @@
         Tangency fails &mdash; the model isn't broken, the optimum is on the boundary.
       </p>
     </div>
-    <div style="text-align: center;">
-      <img alt="Perfect substitutes with parallel indifference curves and budget line; optimum at x1-axis corner" class="figure" src="figures/figure_004_corner_perfect_substitutes.png" style="max-width: 100%; max-height: 440px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-radius: 6px;">
-      <p style="font-size: 11pt; color: var(--muted-color); margin-top: 4px; font-style: italic;">Figure 5.4 &mdash; corner at \(x_2 = 0\); knife-edge case (MRS = p ratio) yields a continuum of optima.</p>
+    <div class="mathjax_ignore tex2jax_ignore">
+      <svg id="ps-svg" viewBox="0 6 620 366" style="width:100%;display:block;" aria-label="Skylar's budget set with a straight indifference line that slides outward; the last line that still touches the budget touches it at a corner, not a tangency"></svg>
+
+      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;margin-top:5px;font-size:10.5pt;">
+        <span>slide the line out&nbsp;&nbsp;U</span><input id="ps-u" type="range" min="8" max="28" step="0.5" value="14" style="accent-color:#C47B5A;"><span id="ps-uv" style="font-weight:700;">14</span>
+        <span>espresso&nbsp;&nbsp;p&#8322;</span><input id="ps-p2" type="range" min="1.2" max="3" step="0.1" value="2" style="accent-color:#4A6B84;"><span id="ps-p2v" style="font-weight:700;">$2</span>
+      </div>
+      <div id="ps-read" style="background:#f8f6f3;border-radius:10px;padding:6px 11px;margin-top:5px;font-size:11pt;line-height:1.35;min-height:32px;"></div>
+      <div style="display:flex;gap:6px;margin-top:5px;">
+        <button type="button" id="ps-best" class="ps-b" style="flex:2;">Push it as far as it goes</button>
+        <button type="button" id="ps-reset" class="ps-b" style="flex:1;">Reset</button>
+      </div>
     </div>
+
+    <style>
+      .reveal #w54-perfect-substitutes-corner .ps-b{font:600 10.5pt var(--body-font,"Source Sans 3",sans-serif);padding:4px 10px;border-radius:8px;border:2px solid #d6d3d1;background:#fff;color:#2d2d2d;cursor:pointer;}
+      .reveal #w54-perfect-substitutes-corner .ps-b:hover{border-color:#6d28d9;}
+      .reveal #w54-perfect-substitutes-corner #ps-best{background:#6d28d9;border-color:#6d28d9;color:#fff;}
+    </style>
+
+    <script>
+    (function(){
+      var I=10, p1=1, A=2, B=3, Xm=12, Ym=9;           // U = 2 x1 + 3 x2
+      var ox=62, oy=330, W=510, H=280, NS='http://www.w3.org/2000/svg';
+      var svg=document.getElementById('ps-svg'); if(!svg) return;
+      var uR=document.getElementById('ps-u'), p2R=document.getElementById('ps-p2');
+      function X(v){ return ox+W*v/Xm; } function Y(v){ return oy-H*v/Ym; }
+      function el(t,at){ var n=document.createElementNS(NS,t); for(var k in at) n.setAttribute(k,at[k]); svg.appendChild(n); return n; }
+      function tx(x,y,s,o){ o=o||{}; var n=el('text',{x:x,y:y,'font-size':o.size||12.5,'font-weight':o.w||400,'text-anchor':o.anchor||'start',fill:o.fill||'#2d2d2d'}); n.textContent=s; return n; }
+      // the indifference line 2x1 + 3x2 = u, clipped to the frame
+      function iso(u){
+        var pts=[];
+        for(var i=0;i<=60;i++){ var x=Xm*i/60, y=(u-A*x)/B; if(y<0||y>Ym) continue; pts.push(X(x).toFixed(1)+','+Y(y).toFixed(1)); }
+        return pts.join(' ');
+      }
+      function bestOf(p2){
+        var m1=A/p1, m2=B/p2;
+        if(Math.abs(m1-m2)<1e-9) return {tie:true, u:A*I/p1};
+        return m1>m2 ? {x:I/p1, y:0, u:A*I/p1, which:'cold brew'} : {x:0, y:I/p2, u:B*I/p2, which:'espresso'};
+      }
+
+      function render(){
+        var u=+uR.value, p2=+p2R.value, best=bestOf(p2);
+        while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+        el('polygon',{points:X(0)+','+Y(0)+' '+X(I/p1)+','+Y(0)+' '+X(0)+','+Y(I/p2),fill:'#4A6B84','fill-opacity':0.09});
+        el('line',{x1:ox,y1:oy,x2:ox+W+12,y2:oy,stroke:'#2d2d2d','stroke-width':2.2});
+        el('line',{x1:ox,y1:oy,x2:ox,y2:oy-H-12,stroke:'#2d2d2d','stroke-width':2.2});
+        for(var t=2;t<=12;t+=2){ el('line',{x1:X(t),y1:oy,x2:X(t),y2:oy+5,stroke:'#9ca3af','stroke-width':1.2});
+          tx(X(t),oy+19,String(t),{size:12,anchor:'middle',fill:'#6B645E'}); }
+        for(var q=2;q<=8;q+=2){ el('line',{x1:ox,y1:Y(q),x2:ox-5,y2:Y(q),stroke:'#9ca3af','stroke-width':1.2});
+          tx(ox-9,Y(q)+4,String(q),{size:12,anchor:'end',fill:'#6B645E'}); }
+        tx(ox+W+12,oy+20,'cold brew  x₁',{size:13,anchor:'end'});
+        var yl=tx(20,oy-H/2,'espresso  x₂',{size:13,anchor:'middle'}); yl.setAttribute('transform','rotate(-90 20 '+(oy-H/2)+')');
+
+        [8,14,20].forEach(function(v){ if(Math.abs(v-u)>0.6) el('polyline',{points:iso(v),fill:'none',stroke:'#ded8d2','stroke-width':2}); });
+        el('line',{x1:X(0),y1:Y(I/p2),x2:X(I/p1),y2:Y(0),stroke:'#4A6B84','stroke-width':4});
+        tx(X(I/p1)-6,oy-10,'budget $10',{size:12.5,w:700,anchor:'end',fill:'#4A6B84'});
+
+        var reach = u <= best.u + 1e-9, at = Math.abs(u-best.u) < 0.26;
+        el('polyline',{points:iso(u),fill:'none',stroke:at?'#6d28d9':(reach?'#C47B5A':'#A85C5C'),
+                       'stroke-width':at?5:3.6,'stroke-dasharray':reach?'':'8 5'});
+        tx(X(0)+8,Y(u/B)-9,'U = '+u.toFixed(1),{size:13.5,w:700,fill:at?'#6d28d9':(reach?'#C47B5A':'#A85C5C')});
+
+        if(best.tie){
+          el('line',{x1:X(0),y1:Y(I/p2),x2:X(I/p1),y2:Y(0),stroke:'#6d28d9','stroke-width':5,'stroke-dasharray':'2 6'});
+        } else {
+          el('circle',{cx:X(best.x),cy:Y(best.y),r:8.5,fill:'#6d28d9'});
+          tx(X(best.x)+ (best.x>0?-13:13), Y(best.y)+(best.y>0?-14:-16),
+             '('+best.x.toFixed(2)+', '+best.y.toFixed(2)+')',{size:13,w:700,anchor:best.x>0?'end':'start',fill:'#6d28d9'});
+        }
+
+        document.getElementById('ps-uv').textContent=u.toFixed(1);
+        document.getElementById('ps-p2v').textContent='$'+p2.toFixed(2).replace(/0$/,'').replace(/\.$/,'');
+        var m1=(A/p1).toFixed(2), m2=(B/p2).toFixed(2);
+        var head = best.tie
+          ? '<strong>A dead heat.</strong> Both buy ' + m1 + ' alertness per dollar, so every bundle on the line is optimal.'
+          : '<strong>All ' + best.which + '.</strong> Cold brew buys ' + m1 + ' per dollar, espresso ' + m2 + ' &mdash; so spend it all on the winner.';
+        document.getElementById('ps-read').innerHTML = head + ' ' +
+          (at ? '<strong>This is the last line that still touches the budget</strong> &mdash; and it touches at a <strong>corner</strong>, not a tangency.'
+              : (reach ? 'U = ' + u.toFixed(1) + ' is affordable, but the line can slide further out.'
+                       : 'U = ' + u.toFixed(1) + ' clears the budget set entirely &mdash; nothing on this line is affordable.'));
+      }
+
+      uR.addEventListener('input',render); p2R.addEventListener('input',render);
+      document.getElementById('ps-best').addEventListener('click',function(e){
+        e.preventDefault(); uR.value=bestOf(+p2R.value).u.toFixed(1); render(); });
+      document.getElementById('ps-reset').addEventListener('click',function(e){
+        e.preventDefault(); uR.value='14'; p2R.value='2'; render(); });
+      render();
+      if(window.Reveal&&Reveal.on) Reveal.on('slidechanged',render);
+      setTimeout(render,120);
+    })();
+    </script>
   </div>
   <div class="terms">knife-edge</div>
   <aside class="notes"><p style="margin:0 0 0.8em;font-size:1.25em;font-weight:700;line-height:1.35;border-left:5px solid #1F7A5A;padding-left:.5em"><strong style="color:#1F7A5A;letter-spacing:.4px">SAY:</strong> Perfect substitutes: spend everything on the good with the higher marginal utility per dollar. ⏸ 3 s. Here that is cold brew, 2 utils per dollar against 1.5.</p><p style="margin:0 0 0.7em"><strong style="color:#A85C5C;letter-spacing:.4px">DON&rsquo;T SAY:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">&ldquo;Buy the good with the higher marginal utility.&rdquo; (Espresso has the higher MU, 3 against 2, and still loses: what counts is utility per dollar, 2 against 1.5.)</li><li style="margin:0 0 0.35em">&ldquo;Tangency fails, so the model breaks here.&rdquo; (The model still gives a unique optimum; it is on the boundary, at \(x_2 = 0\).)</li></ul><p style="margin:0 0 0.7em;font-size:.8em;color:#6B645E"><strong style="color:#8C8580;letter-spacing:.4px">BACKGROUND:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0;font-size:.8em;color:#6B645E"><li style="margin:0 0 0.35em">The cleanest corner example. Diagnostic: compare \(MU/p\) across goods; the good with more utility per dollar gets the whole budget.</li><li style="margin:0 0 0.35em">Knife-edge case (\(\mathrm{MRS} = p_1/p_2\) exactly): the whole budget line is optimal. The model cannot pick a unique bundle, but welfare is not indeterminate.</li><li style="margin:0 0 0.35em">Use this slide to motivate the corner-solution diagnostic coming up.</li><li style="margin:0 0 0.35em">Same numbers as MC bank q_021; HW Problem 2 is the graded version (\(U = 5x_1 + 2x_2\), \(p = (4, 3)\), \(I = 24\)).</li><li style="margin:0 0 0.35em">Deep Dive framing (≈28:26): &rsquo;bang for your buck&rsquo;; the better deal never gets boring, so she buys only that.</li></ul><p style="margin:0 0 0.7em"><strong style="color:#2E6DB4;letter-spacing:.4px">IF ASKED:</strong> </p><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">&ldquo;What if the price ratio exactly equals the MRS, 2/3?&rdquo; &rarr; Knife-edge: every bundle on the budget line gives the same utility, so any split is optimal.</li><li style="margin:0 0 0.35em">&ldquo;Why not check the other corner?&rdquo; &rarr; All espresso buys 5 shots, utility 15, which is less than 20.</li><li style="margin:0 0 0.35em">&ldquo;Anything else&rdquo; &rarr; Good question. I&rsquo;ll confirm and open next class with it.</li></ul><p style="margin:.9em 0 0.7em"><strong style="color:#6B645E;letter-spacing:.4px">TIME:</strong> ~3 min</p></aside>
