@@ -1089,7 +1089,7 @@
 
       <div style="background:#fef9f3;border-radius:10px;padding:8px 13px;margin-top:8px;border-left:4px solid var(--accent-color);">
         <p style="font-size:10.5pt;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent-color);margin:0 0 3px;">1 &middot; Climb the map</p>
-        <input id="cu-u" type="range" min="5" max="100" step="1" value="45" style="width:100%;accent-color:#C47B5A;">
+        <input id="cu-u" type="range" min="5" max="100" step="0.5" value="45" style="width:100%;accent-color:#C47B5A;">
         <div id="cu-face" style="display:flex;align-items:center;gap:10px;margin-top:2px;">
           <span id="cu-emoji" style="font-size:30px;line-height:1;">&#128578;</span>
           <span id="cu-ulab" style="font-size:12pt;font-weight:600;"></span>
@@ -1194,6 +1194,11 @@
     // slide's fragment visibility when you navigate BACK to it WITHOUT firing
     // fragmentshown, so event-driven state went stale and the budget line
     // vanished until a reload. Asking the DOM cannot go stale.
+    // The slider's steps cannot land on U* exactly, so "find the best they can
+    // do" used to overshoot it by one step and report the optimum as
+    // unaffordable -- a broken heart at the tangency. When the search lands,
+    // pin u to U* itself; any slider touch hands control back.
+    var atOpt=false;
     function isStep2(){
       var f=document.getElementById('cu-step2');
       return !!(f && f.classList.contains('visible'));
@@ -1208,7 +1213,7 @@
       // this frame.
       var p=P(), Xm=24, Ym=12;
       var X=function(v){return ox+W*v/Xm;}, Y=function(v){return oy-H*v/Ym;};
-      var us=Ustar(p), uref=Uref(), u=uref*(+uR.value/100);
+      var us=Ustar(p), uref=Uref(), u=atOpt?us:uref*(+uR.value/100);
 
       // affordable region, then the budget line
       if(budgetOn){
@@ -1288,7 +1293,7 @@
       if(s!==uR){ document.getElementById('cu-pxv').textContent='$'+(+pxR.value).toFixed(2).replace(/\.00$/,'');
                   document.getElementById('cu-pyv').textContent='$'+(+pyR.value).toFixed(2).replace(/\.00$/,'');
                   document.getElementById('cu-iv').textContent='$'+iR.value; }
-      anim=null; render(); }); });
+      anim=null; atOpt=false; render(); }); });
 
     // back to the deck's own calibration, keeping the drawn student --
     // redrawing is what the two buttons at the top are for
@@ -1296,6 +1301,7 @@
       e.preventDefault();
       if(anim){cancelAnimationFrame(anim);anim=null;}
       clearTimeout(window.__cuLand);
+      atOpt=false;
       pxR.value='1'; pyR.value='4'; iR.value='16'; uR.value='45';
       document.getElementById('cu-pxv').textContent='$1';
       document.getElementById('cu-pyv').textContent='$4';
@@ -1313,6 +1319,7 @@
         var k=Math.min(1,(t-t0)/750), ease=1-Math.pow(1-k,3);
         uR.value=String(from+(to-from)*ease);
         anim=k<1?requestAnimationFrame(step):null;
+        atOpt=(k>=1);
         render();
       })(t0);
       // requestAnimationFrame does not run while the tab is hidden, and a deck
@@ -1321,7 +1328,7 @@
       clearTimeout(window.__cuLand);
       window.__cuLand=setTimeout(function(){
         if(anim){cancelAnimationFrame(anim);anim=null;}
-        uR.value=String(to); render();
+        uR.value=String(to); atOpt=true; render();
       },820);
     });
 
