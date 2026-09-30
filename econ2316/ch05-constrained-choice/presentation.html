@@ -2476,9 +2476,97 @@
 <section id="w53-perfect-complements-figure">
   <h2><i class="fa-solid fa-chart-line" style="color: var(--accent-color);"></i> Walkthrough 5.3 &mdash; Avery's map: ride the ridge to the budget</h2>
   <div style="display: grid; grid-template-columns: 1.42fr 1fr; gap: 18px; align-items: center;">
-    <div class="figure">
-      <img src="figures/figure_w53_perfect_complements.png" alt="Perfect-complements indifference map for U = min(2x1, 3x2): L-shaped curves for U = 6, 12, 18 with kinks on the ridge 2x1 = 3x2; budget line 4x1 + 6x2 = 48 from (0,8) to (12,0); optimum at the U = 12 kink (6, 4)." style="width: 100%;">
+    <div class="mathjax_ignore tex2jax_ignore">
+      <svg id="rw-svg" viewBox="0 6 620 372" style="width:100%;display:block;" aria-label="Avery's perfect-complements map: L-shaped indifference curves with kinks on the ridge, and a budget line that rotates as prices change while the other intercept stays put"></svg>
+
+      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;margin-top:6px;font-size:11pt;">
+        <span>oat milk&nbsp;&nbsp;p&#8321;</span><input id="rw-p1" type="range" min="3" max="8" step="0.5" value="4" style="accent-color:#4A6B84;"><span id="rw-p1v" style="font-weight:700;">$4</span>
+        <span>matcha&nbsp;&nbsp;p&#8322;</span><input id="rw-p2" type="range" min="4" max="10" step="0.5" value="6" style="accent-color:#4A6B84;"><span id="rw-p2v" style="font-weight:700;">$6</span>
+      </div>
+      <div id="rw-read" style="background:#f8f6f3;border-radius:10px;padding:7px 12px;margin-top:6px;font-size:11.5pt;line-height:1.4;min-height:38px;"></div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button type="button" id="rw-reset" class="rw-b">Back to Avery&rsquo;s prices</button>
+      </div>
     </div>
+
+    <style>
+      .reveal #w53-perfect-complements-figure .rw-b{font:600 10.5pt var(--body-font,"Source Sans 3",sans-serif);padding:4px 10px;border-radius:8px;border:2px solid #d6d3d1;background:#fff;color:#2d2d2d;cursor:pointer;}
+      .reveal #w53-perfect-complements-figure .rw-b:hover{border-color:#6d28d9;}
+    </style>
+
+    <script>
+    (function(){
+      var I=48, Xm=17, Ym=13, A=2, B=3;            // U = min(2 x1, 3 x2) -> ridge 2 x1 = 3 x2
+      var ox=62, oy=340, W=520, H=292, NS='http://www.w3.org/2000/svg';
+      var svg=document.getElementById('rw-svg'); if(!svg) return;
+      var p1R=document.getElementById('rw-p1'), p2R=document.getElementById('rw-p2');
+      function X(v){ return ox+W*v/Xm; }
+      function Y(v){ return oy-H*v/Ym; }
+      function el(t,at){ var n=document.createElementNS(NS,t); for(var k in at) n.setAttribute(k,at[k]); svg.appendChild(n); return n; }
+      function tx(x,y,s,o){ o=o||{}; var n=el('text',{x:x,y:y,'font-size':o.size||12.5,'font-weight':o.w||400,'text-anchor':o.anchor||'start',fill:o.fill||'#2d2d2d'}); n.textContent=s; return n; }
+      // the kink of the L at utility u sits at (u/A, u/B); the arms run out from it
+      function ell(u,at){
+        var kx=u/A, ky=u/B;
+        el('polyline',{points:X(kx)+','+Y(Ym)+' '+X(kx)+','+Y(ky)+' '+X(Xm)+','+Y(ky),fill:'none',
+                       stroke:at.stroke,'stroke-width':at.w,'stroke-dasharray':at.dash||''});
+        return {kx:kx,ky:ky};
+      }
+      function best(p1,p2){ var x1=I/(p1+(A/B)*p2); return {x1:x1, x2:(A/B)*x1, u:A*x1}; }
+
+      function render(){
+        var p1=+p1R.value, p2=+p2R.value, b=best(p1,p2);
+        while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+        el('line',{x1:ox,y1:oy,x2:ox+W+12,y2:oy,stroke:'#2d2d2d','stroke-width':2.2});
+        el('line',{x1:ox,y1:oy,x2:ox,y2:oy-H-12,stroke:'#2d2d2d','stroke-width':2.2});
+        for(var t=3;t<=15;t+=3){ el('line',{x1:X(t),y1:oy,x2:X(t),y2:oy+5,stroke:'#9ca3af','stroke-width':1.2});
+          tx(X(t),oy+19,String(t),{size:12,anchor:'middle',fill:'#6B645E'}); }
+        for(var q=2;q<=12;q+=2){ el('line',{x1:ox,y1:Y(q),x2:ox-5,y2:Y(q),stroke:'#9ca3af','stroke-width':1.2});
+          tx(ox-9,Y(q)+4,String(q),{size:12,anchor:'end',fill:'#6B645E'}); }
+        tx(ox+W+12,oy+20,'oat milk  x₁  (quarts)',{size:13,anchor:'end',fill:'#2d2d2d'});
+        var yl=tx(20,oy-H/2,'matcha  x₂  (pouches)',{size:13,anchor:'middle',fill:'#2d2d2d'});
+        yl.setAttribute('transform','rotate(-90 20 '+(oy-H/2)+')');
+
+        // preferences do not move when prices do
+        [6,12,18].forEach(function(u){ ell(u,{stroke:'#c4bdb6',w:2.2}); });
+        el('line',{x1:X(0),y1:Y(0),x2:X(Xm),y2:Y((A/B)*Xm),stroke:'#2E7D57','stroke-width':2.6,'stroke-dasharray':'8 5'});
+        tx(X(Xm)-4,Y((A/B)*Xm)-10,'ridge  2x₁ = 3x₂',{size:13,w:700,anchor:'end',fill:'#2E7D57'});
+
+        // where the line started, so the rotation is visible
+        el('line',{x1:X(0),y1:Y(48/6),x2:X(48/4),y2:Y(0),stroke:'#c9c4bf','stroke-width':2,'stroke-dasharray':'5 5'});
+
+        // the L she actually reaches, then the line itself
+        ell(b.u,{stroke:'#C47B5A',w:4});
+        tx(X(Xm)-4,Y(b.x2)-9,'U = '+b.u.toFixed(2),{size:13.5,w:700,anchor:'end',fill:'#C47B5A'});
+        el('line',{x1:X(0),y1:Y(I/p2),x2:X(I/p1),y2:Y(0),stroke:'#4A6B84','stroke-width':4});
+
+        // both intercepts, so it is clear which one the rotation pivots on
+        el('circle',{cx:X(0),cy:Y(I/p2),r:5.5,fill:'#4A6B84'});
+        tx(X(0)+9,Y(I/p2)-8,'I/p₂ = '+(I/p2).toFixed(1),{size:12,w:700,fill:'#4A6B84'});
+        el('circle',{cx:X(I/p1),cy:Y(0),r:5.5,fill:'#4A6B84'});
+        tx(X(I/p1),oy-12,'I/p₁ = '+(I/p1).toFixed(1),{size:12,w:700,anchor:'middle',fill:'#4A6B84'});
+
+        el('circle',{cx:X(b.x1),cy:Y(b.x2),r:8.5,fill:'#C47B5A'});
+        tx(X(b.x1)+13,Y(b.x2)-10,'('+b.x1.toFixed(2)+', '+b.x2.toFixed(2)+')',{size:13.5,w:700,fill:'#C47B5A'});
+
+        document.getElementById('rw-p1v').textContent='$'+p1.toFixed(2).replace(/\.00$/,'').replace(/0$/,'');
+        document.getElementById('rw-p2v').textContent='$'+p2.toFixed(2).replace(/\.00$/,'').replace(/0$/,'');
+        var same = (Math.abs(p1-4)<0.01 && Math.abs(p2-6)<0.01);
+        document.getElementById('rw-read').innerHTML =
+          '<strong>Still a kink, never a tangency.</strong> The optimum is where the ridge meets the line: ' +
+          'x₁ = <strong>'+b.x1.toFixed(2)+'</strong>, x₂ = <strong>'+b.x2.toFixed(2)+'</strong>, U = <strong>'+b.u.toFixed(2)+'</strong>.' +
+          (same ? ' &nbsp;These are the book&rsquo;s numbers.'
+                : ' &nbsp;Move p₁ and the line pivots on the x₂ intercept; move p₂ and it pivots on the x₁ one. The pivot never moves — only the slope.');
+      }
+
+      p1R.addEventListener('input',render); p2R.addEventListener('input',render);
+      document.getElementById('rw-reset').addEventListener('click',function(e){
+        e.preventDefault(); p1R.value='4'; p2R.value='6'; render(); });
+      render();
+      if(window.Reveal&&Reveal.on) Reveal.on('slidechanged',render);
+      setTimeout(render,120);
+    })();
+    </script>
     <div>
       <div style="background: #f8f6f3; padding: 10px 14px; border-radius: 10px; border-left: 4px solid var(--secondary-color); margin-bottom: 8px;">
         <p style="font-size: 11.5pt; color: var(--secondary-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px;">What the picture shows</p>
@@ -2494,7 +2582,7 @@
       </div>
       <div class="fragment fade-up key-result" style="margin: 0;" data-notes="The ridge meets the budget at 6 and 4, the kink of the highest reachable L, utility 12. No tangency needed.">
         <p style="font-size: 11.5pt; line-height: 1.45; margin: 0;">
-          The ridge crosses the \$48 budget at <strong>\((6,\,4)\)</strong> &mdash; the kink of the highest L the budget can reach, \(U^* = 12\). No tangency needed; the geometry hands you the answer.
+          At Avery&rsquo;s prices the ridge crosses the \$48 budget at <strong>\((6,\,4)\)</strong> &mdash; the kink of the highest L she can reach, \(U^* = 12\). <strong>Rotate the line and the answer slides along the ridge</strong>, still a kink. No tangency, ever.
         </p>
       </div>
     </div>
