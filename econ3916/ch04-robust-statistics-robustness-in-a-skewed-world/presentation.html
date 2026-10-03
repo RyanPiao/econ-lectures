@@ -550,6 +550,7 @@
 
     <!-- SLIDE 21: IQR and MAD -->
     <section>
+<section>
       <section id="iqr-mad" style="padding: 32px 55px;">
       <h2><i class="fa-solid fa-arrows-left-right" style="color: var(--success-color);"></i> Robust Spread: IQR and MAD</h2>
       <div class="claim"><i class="fa-solid fa-pen"></i>IQR is the width of the middle half. MAD is the median distance from the median.</div>
@@ -584,6 +585,27 @@
         <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Four measures of spread, one number removed. Read down the Change column.</p></div><p style="margin:0 0 .3em;font-size:.82em;color:#777"><strong>TIME:</strong> Thu 24 &mdash; ~75 s &mdash; this is the summary slide for the whole robust-statistics block</p><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Do not read the table across. Read the <strong>Change</strong> column down &mdash; that single column is the argument of the entire topic.</li><li style="margin:0 0 0.35em">s is in red and moves a lot. IQR and MAD are green and barely move. Same data, same deletion.</li><li style="margin:0 0 0.35em">The last row shows 1.4826&nbsp;&#183;&nbsp;MAD sitting near where s was <em>before</em> the extreme value &mdash; that is what "robust stand-in for s" means, made concrete.</li><li style="margin:0 0 0.35em">If the room's numbers happen to be tame, say so out loud: "no one here broke the sample, so nothing moved" is a real result, not a failed demo.</li></ul><p><strong>IF ASKED:</strong> &ldquo;Why doesn't the IQR move?&rdquo; &rarr; Q1 and Q3 are positions in the queue. Deleting the last value shifts them by a fraction of a position, never by its size.</p></div></aside>
       </section>
     </section>
+<section id="robust-code-walk" style="padding: 26px 55px;">
+      <h2>Six Measures, One Cell</h2>
+      <div class="content">
+        <div class="fragment fade-up" data-notes="Lab 4 Step 2. The 1.4826 is just 1 / 0.6745 — do not let anyone memorise it as magic. Say what it is for: it puts MAD on the same scale as s so the two can be compared at all.">
+          <pre style="font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 15px 20px; border-radius: 10px; overflow: hidden; line-height: 1.45;"><code>mad = median_abs_deviation(prices)   # the median distance from the median
+
+# MAD is about 0.6745 standard deviations on normal data,
+# so MAD x 1.4826 estimates the same spread as s
+scaled_mad = mad * 1.4826</code></pre>
+        </div>
+        <div class="fragment fade-up" data-notes="The last line is the argument of the whole topic. Same data, same prices — and s is 14% larger than the robust estimate of the same spread. That gap IS the skew, measured." style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 13px 20px; margin-top: 14px;"><p style="font-size: 12pt; margin: 0 0 7px; color: #6B6B6B; font-weight: 600;">What it prints</p><pre style="font-size: 11.5pt; margin: 0; background: none; color: #2D2D2D; line-height: 1.4;">Mean:   2.0686
+Median: 1.7970
+Gap:    0.2716, or $27,156
+
+Scaled MAD: 1.0141, or $101,410
+Std dev s:  1.1540, or $115,396
+s is 14% larger</pre></div>
+      </div>
+      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>1 min. Where the 14% on the previous slide comes from, in the code that produces it.</p></div></aside>
+    </section>
+</section>
 
     <!-- SLIDE 22: Breakdown point -->
     <section id="breakdown" style="padding: 32px 55px;">

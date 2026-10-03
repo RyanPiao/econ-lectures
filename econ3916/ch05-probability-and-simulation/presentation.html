@@ -1010,7 +1010,8 @@ pi_hat = 4 * ((x**2 + y**2) &lt;= 1).mean()   # 3.14178</code></pre>
     </section>
 
     <!-- SLIDE: lab results -->
-    <section id="lab-results" style="padding: 30px 55px;">
+    <section>
+<section id="lab-results" style="padding: 30px 55px;">
       <h2><i class="fa-solid fa-file-invoice" style="color: var(--accent-color);"></i> Lab 5, Part 4 &mdash; What Your Own Screen Will Say</h2>
       <div class="content">
         <p style="font-size: 14pt; color: var(--muted-color);">10,000 simulated days &bull; $1,000,000 portfolio &bull; seed 42</p>
@@ -1027,8 +1028,29 @@ pi_hat = 4 * ((x**2 + y**2) &lt;= 1).mean()   # 3.14178</code></pre>
         </table>
         <p style="font-size: 14.5pt; margin-top: 12px; color: var(--primary-color);">Notice ES is larger than VaR on both rows. That is not a coincidence &mdash; it is a theorem.</p>
       </div>
-      <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">2 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Say these are <strong>close to</strong> what their notebook prints &mdash; near enough to check against, not identical. <strong>Do not promise exactness.</strong> Recomputed 25 Sep: the lab's own <code>default_rng(seed=42)</code> gives a 95% VaR of 1.9689% ($19,689) against this slide's $19,494, a $195 gap. G 53 exists to explain that mismatch; promising exactness here is what sends a student hunting for a bug that is not there.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Then ask the question the next slide answers: 19,494 against 19,338 &mdash; did we just learn something?</li></ul></div></aside>
+      <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">2 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Say these are <strong>close to</strong> what their notebook prints &mdash; near enough to check against, not identical. <strong>Do not promise exactness.</strong> Re-checked 3 Oct: run the lab top to bottom and it prints <b>exactly this slide's $19,494</b> &mdash; the solution notebook confirms it. The earlier note here claimed $19,689; that figure only appears if Part 4 is run from a fresh kernel, because <code>rng</code> is created once and then consumed by Parts 1&ndash;3 before the VaR cell. So the slide agrees with their screen in the normal case. Still do not promise exactness: the number moves with how much of the stream has been drawn, which is what G 53 is for.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Then ask the question the next slide answers: 19,494 against 19,338 &mdash; did we just learn something?</li></ul></div></aside>
     </section>
+<section id="var-code-walk" style="padding: 26px 55px;">
+      <h2>The Four Numbers, In Code</h2>
+      <div class="content">
+        <div class="fragment fade-up" data-notes="Lab 5 Part 4 — and these are the blanks they fill, so do not read the answers out before they have tried. The minus signs are the whole difficulty: a percentile of returns is negative, and VaR is quoted as a positive loss.">
+          <pre style="font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 15px 20px; border-radius: 10px; overflow: hidden; line-height: 1.45;"><code># 95% VaR is exceeded on 5% of days, 99% VaR on 1%
+var_95 = -np.percentile(daily_returns, 5)
+var_99 = -np.percentile(daily_returns, 1)
+
+# VaR is a positive loss, so the cutoff on returns is its negative
+tail_95 = daily_returns[daily_returns &lt;= -var_95]
+es_95 = -tail_95.mean()</code></pre>
+        </div>
+        <div class="fragment fade-up" data-notes="These are the numbers on the previous slide, now with the code that made them. ES is larger than VaR on both rows — that is a theorem, not a coincidence, and the next slides prove it." style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 13px 20px; margin-top: 14px;"><p style="font-size: 12pt; margin: 0 0 7px; color: #6B6B6B; font-weight: 600;">What it prints</p><pre style="font-size: 11.5pt; margin: 0; background: none; color: #2D2D2D; line-height: 1.4;">Risk measures, one day, $1,000,000 portfolio
+95% VaR: 1.9494%   $19,494
+95% ES:  2.4230%   $24,230
+99% VaR: 2.7046%   $27,046
+99% ES:  3.1221%   $31,221</pre></div>
+      </div>
+      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>1 min. The previous slide showed the table; this is the cell that prints it.</p></div></aside>
+    </section>
+</section>
 
     <!-- SLIDE: var vs es figure -->
     <section id="var-es-figure" style="padding: 24px 45px;">
