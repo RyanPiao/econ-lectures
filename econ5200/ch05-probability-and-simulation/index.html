@@ -630,7 +630,7 @@ print(4 * np.mean(x**2 + y**2 &lt;= 1))</code></pre>
         </style>
         <script>
         (function () {
-          var cv, ctx, n = 0, inside = 0, R = 210, running = false;
+          var cv, ctx, n = 0, inside = 0, R = 210, running = false, gen = 0;
           function frame() {
             ctx.clearRect(0, 0, 420, 420);
             ctx.strokeStyle = "#D5CEC7"; ctx.lineWidth = 2; ctx.strokeRect(1, 1, 418, 418);
@@ -649,8 +649,9 @@ print(4 * np.mean(x**2 + y**2 &lt;= 1))</code></pre>
           }
           function throwDarts(k) {
             if (running) return; running = true;
-            var left = k, per = Math.max(1, Math.floor(k / 60));
+            var left = k, per = Math.max(1, Math.floor(k / 60)), g = gen;
             (function step() {
+              if (g !== gen) { running = false; return; }   // Reset pressed mid-throw
               var batch = Math.min(per, left);
               for (var i = 0; i < batch; i++) {
                 var x = Math.random() * 2 - 1, y = Math.random() * 2 - 1;
@@ -670,7 +671,7 @@ print(4 * np.mean(x**2 + y**2 &lt;= 1))</code></pre>
             document.getElementById("pi-100").onclick = function () { throwDarts(100); };
             document.getElementById("pi-1k").onclick = function () { throwDarts(1000); };
             document.getElementById("pi-10k").onclick = function () { throwDarts(10000); };
-            document.getElementById("pi-reset").onclick = function () { n = 0; inside = 0; frame(); paint(); };
+            document.getElementById("pi-reset").onclick = function () { gen++; running = false; n = 0; inside = 0; frame(); paint(); };
           }
           if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
         })();
