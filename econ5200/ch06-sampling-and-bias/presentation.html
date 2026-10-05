@@ -725,6 +725,28 @@
 </div>
 <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777"><strong>TIME:</strong> 3 min</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Land the result, then immediately spend the caveat.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">This is where a graduate audience needs the honesty most: an IPW demo on simulated data always works, because the person who wrote the simulation also wrote the propensity model.</li><li style="margin:0 0 0.35em">What it demonstrates is that the estimator is not broken, not that your study will be fine.</li></ul></div></aside>
 </section>
+<!-- SLIDE 34b: IPW code walk -->
+<section id="ipw-code-walk" style="padding: 26px 55px;">
+      <h2>The Weights, In Four Lines</h2>
+      <div class="content">
+        <div class="fragment fade-up" data-notes="Lab 6 Step 9, the cell students fill in. Read np.where aloud as an if-else down the column: a participant gets one over their propensity, a non-participant one over one minus it. Then the two weighted means, and their difference is the estimate.">
+          <pre style="font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 15px 20px; border-radius: 10px; overflow: hidden; line-height: 1.45;"><code># a participant stands in for 1/e people; a non-participant for 1/(1 - e)
+df[&quot;ipw_weight&quot;] = np.where(df[&quot;treatment&quot;] == 1,
+                            1 / df[&quot;propensity&quot;],
+                            1 / (1 - df[&quot;propensity&quot;]))
+
+weighted_mean_treated = np.average(treated[&quot;costs&quot;], weights=treated[&quot;ipw_weight&quot;])
+weighted_mean_untreated = np.average(untreated[&quot;costs&quot;], weights=untreated[&quot;ipw_weight&quot;])
+ipw_effect = weighted_mean_treated - weighted_mean_untreated</code></pre>
+        </div>
+        <div class="fragment fade-up" data-notes="The three estimates are the previous slide's numbers, now with the code that made them. Then point at the weights line before the poll: the largest weight is 8.41, five times the median. That is the number the next question is about." style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 13px 20px; margin-top: 14px;"><p style="font-size: 12pt; margin: 0 0 7px; color: #6B6B6B; font-weight: 600;">What it prints</p><pre style="font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 11.5pt; margin: 0; background: none; color: #2D2D2D; line-height: 1.4;">True effect:    $   -500.00
+Naive effect:   $ -1,396.06
+IPW effect:     $   -521.96
+
+weights: min 1.07  median 1.65  max 8.41</pre></div>
+      </div>
+      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>1 min. The estimator behind the $22: two weights and two weighted means.</p></div></aside>
+</section>
 <!-- SLIDE 35: POLL 3 -->
 <section>
 <section id="poll-3" style="padding: 34px 50px;">
@@ -957,7 +979,26 @@
 <div class="content">
 <p style="font-size: 14.5pt;">Leakage is information flowing from the test set into training. It is a survey where the pollster already knows the answers.</p>
 <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 12px;">
-<div style="background: #f8f6f3; border-radius: 8px; padding: 12px 17px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14pt;"><strong>Preprocessing leakage.</strong> Fitting a scaler or imputer on all the data before splitting — the training set now knows the test set's mean and variance.</p></div>
+<div class="mathjax_ignore tex2jax_ignore" style="margin: 2px 0 2px;"><svg viewBox="0 0 1160 166" style="width:100%;display:block" role="img" aria-label="Preprocessing leakage. Left, the wrong way: fit the scaler on all the data, then split, and the training mean is a perfect zero that is a lie because the scaler saw the test rows. Right, the correct way: split first, then fit the scaler on train only, and the test mean comes out messy, which is correct.">
+<defs><marker id="lk5arrow" markerWidth="7" markerHeight="7" refX="5" refY="3.2" orient="auto"><path d="M0,0 L6,3.2 L0,6.4 z" fill="#8C8580"/></marker></defs>
+<text x="290" y="18" text-anchor="middle" font-size="17" font-weight="700" fill="#A85C5C">PREPROCESSING LEAKAGE &#8212; the wrong way</text>
+<rect x="140" y="32" width="300" height="30" rx="7" fill="#FFFFFF" stroke="#A85C5C" stroke-width="1.6"/>
+<text x="290" y="52" text-anchor="middle" font-size="16" fill="#3A3632">Fit scaler on ALL the data</text>
+<line x1="290" y1="62" x2="290" y2="74" stroke="#A85C5C" stroke-width="2" marker-end="url(#lk5arrow)"/>
+<rect x="140" y="76" width="300" height="30" rx="7" fill="#FFFFFF" stroke="#A85C5C" stroke-width="1.6"/>
+<text x="290" y="96" text-anchor="middle" font-size="16" fill="#3A3632">Split into train and test</text>
+<text x="290" y="126" text-anchor="middle" font-size="15.5" font-style="italic" fill="#A85C5C">train mean is a perfect 0.0 &#8212; and it is a lie</text>
+<text x="290" y="150" text-anchor="middle" font-size="15" fill="#8C8580">the scaler saw the test rows</text>
+<line x1="580" y1="8" x2="580" y2="158" stroke="#D5CEC7" stroke-width="1.4"/>
+<text x="870" y="18" text-anchor="middle" font-size="17" font-weight="700" fill="#6A8E6B">the right way</text>
+<rect x="720" y="32" width="300" height="30" rx="7" fill="#FFFFFF" stroke="#6A8E6B" stroke-width="1.6"/>
+<text x="870" y="52" text-anchor="middle" font-size="16" fill="#3A3632">Split into train and test</text>
+<line x1="870" y1="62" x2="870" y2="74" stroke="#6A8E6B" stroke-width="2" marker-end="url(#lk5arrow)"/>
+<rect x="720" y="76" width="300" height="30" rx="7" fill="#FFFFFF" stroke="#6A8E6B" stroke-width="1.6"/>
+<text x="870" y="96" text-anchor="middle" font-size="16" fill="#3A3632">Fit scaler on TRAIN only</text>
+<text x="870" y="126" text-anchor="middle" font-size="15.5" font-style="italic" fill="#6A8E6B">test mean comes out messy &#8212; that is correct</text>
+<text x="870" y="150" text-anchor="middle" font-size="15" fill="#8C8580">the test set stays unseen</text>
+</svg></div>
 <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 17px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14pt;"><strong>Feature leakage.</strong> Using a variable that is a <em>consequence</em> of the outcome. Predicting loan default from <code>total_payments</code>: defaulted loans have fewer payments by definition.</p></div>
 <div style="background: #f8f6f3; border-radius: 8px; padding: 12px 17px; border-left: 4px solid var(--danger-color);"><p style="font-size: 14pt;"><strong>Temporal leakage.</strong> Training on 2020–2024 to predict 2019.</p></div>
 </div>
