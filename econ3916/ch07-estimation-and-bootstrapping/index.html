@@ -478,9 +478,25 @@ True population mean: 38.58   <span style="color: var(--success-color);">&larr; 
         <div style="background: #f8f6f3; border-radius: 10px; padding: 12px 24px; text-align: center; margin-top: 14px;">
           <p style="font-size: 20pt;">$$\text{SE}(\text{median}) = \frac{1}{2\, f(\text{median})} \cdot \frac{1}{\sqrt{n}}$$</p>
         </div>
-        <div style="background: #fdf0ea; border-left: 4px solid var(--accent-color); border-radius: 10px; padding: 16px 22px; margin-top: 14px;">
-          <p style="font-size: 16pt; line-height: 1.6;"><strong>In plain language:</strong> the median's precision depends on how densely observations pile up <em>right at the median</em>. A tall narrow peak there means nudging the data barely moves it. A flat region there means it swings.</p>
-        </div>
+        <div class="mathjax_ignore tex2jax_ignore" style="margin-top:8px;"><svg viewBox="0 0 1160 180" style="width:100%;display:block" role="img"
+ aria-label="Two densities on the same axis. On the left a tall narrow peak at the median gives a short error bar; on the right a flat region at the median gives a wide one. The median's precision depends on how densely the data piles up at the median itself.">
+<path d="M70 126 C 150 126 190 36 250 36 C 310 36 350 126 430 126" fill="none" stroke="#6B8BA4" stroke-width="3"/>
+<line x1="250" y1="36" x2="250" y2="126" stroke="#2D2D2D" stroke-width="1.6" stroke-dasharray="4 4"/>
+<line x1="70" y1="126" x2="430" y2="126" stroke="#D8D2CA" stroke-width="1.6"/>
+<text x="250" y="24" text-anchor="middle" font-size="19" font-weight="700" fill="#6B8BA4">dense at the median</text>
+<line x1="236" y1="146" x2="264" y2="146" stroke="#6A8E6B" stroke-width="4"/>
+<text x="250" y="164" text-anchor="middle" font-size="17" font-weight="700" fill="#6A8E6B">small SE</text>
+<text x="595" y="60" text-anchor="middle" font-size="26" font-weight="700" fill="#2D2D2D">f(median)</text>
+<text x="595" y="90" text-anchor="middle" font-size="17" fill="#6B6B6B">the height of the curve</text>
+<text x="595" y="116" text-anchor="middle" font-size="17" fill="#6B6B6B">right at the median</text>
+<text x="595" y="146" text-anchor="middle" font-size="17" font-weight="700" fill="#C47B5A">big f &#8594; small SE</text>
+<path d="M760 126 C 820 126 830 74 900 74 C 970 74 980 126 1050 126" fill="none" stroke="#C47B5A" stroke-width="3"/>
+<line x1="900" y1="74" x2="900" y2="126" stroke="#2D2D2D" stroke-width="1.6" stroke-dasharray="4 4"/>
+<line x1="760" y1="126" x2="1120" y2="126" stroke="#D8D2CA" stroke-width="1.6"/>
+<text x="930" y="24" text-anchor="middle" font-size="19" font-weight="700" fill="#C47B5A">flat at the median</text>
+<line x1="848" y1="146" x2="1012" y2="146" stroke="#B3493F" stroke-width="4"/>
+<text x="930" y="164" text-anchor="middle" font-size="17" font-weight="700" fill="#B3493F">large SE</text>
+</svg></div>
         <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 10px; padding: 16px 22px; margin-top: 14px;">
           <p style="font-size: 16.5pt;">To use it you need $f(\text{median})$ &mdash; the <strong>population density</strong> at the median. If you knew the population, you would not be estimating anything. <strong>This formula exists and is unusable.</strong></p>
         </div>
@@ -498,28 +514,19 @@ True population mean: 38.58   <span style="color: var(--success-color);">&larr; 
     <section id="bootstrap-algorithm" style="padding: 34px 60px;">
       <h2><i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i> The Algorithm, in English Before Any Code</h2>
       <div class="content">
-        <div style="display: flex; flex-direction: column; gap: 9px;">
-          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
-            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">1</p>
-            <p style="font-size: 15pt;">Start with your sample of $n$ observations.</p>
-          </div>
-          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--secondary-color);">
-            <p style="font-size: 17pt; font-weight: 700; color: var(--secondary-color);">2</p>
-            <p style="font-size: 15pt;">Draw $n$ observations from it <strong>with replacement</strong> &mdash; that is one <em>bootstrap sample</em>.</p>
-          </div>
-          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
-            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">3</p>
-            <p style="font-size: 15pt;">Compute your statistic on it. <em>Any</em> statistic.</p>
-          </div>
-          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #f8f6f3; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--accent-color);">
-            <p style="font-size: 17pt; font-weight: 700; color: var(--accent-color);">4</p>
-            <p style="font-size: 15pt;">Repeat $B$ times &mdash; 200 for a standard error, 2,000&ndash;10,000 for an interval.</p>
-          </div>
-          <div style="display: grid; grid-template-columns: 44px 1fr; align-items: center; background: #eef5ee; border-radius: 8px; padding: 11px 18px; border-left: 4px solid var(--success-color);">
-            <p style="font-size: 17pt; font-weight: 700; color: var(--success-color);">5</p>
-            <p style="font-size: 15pt;">The spread of those $B$ values <strong>is</strong> your estimate of the sampling distribution.</p>
-          </div>
-        </div>
+        <div class="mathjax_ignore tex2jax_ignore" style="margin-top:8px;"><svg viewBox="0 0 1160 196" style="width:100%;display:block" role="img"
+ aria-label="The original sample 15, 22, 22, 35, 86 is drawn from three times with replacement. The three resamples give medians of 22, 35 and 15 — the same procedure, a different answer each time.">
+<text x="0" y="22" font-size="19" font-weight="700" fill="#2D2D2D">YOUR SAMPLE</text>
+<g><rect x="0" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#2D2D2D" stroke-width="2"/><text x="23" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">15</text><rect x="52" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#2D2D2D" stroke-width="2"/><text x="75" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">22</text><rect x="104" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#2D2D2D" stroke-width="2"/><text x="127" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">22</text><rect x="156" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#2D2D2D" stroke-width="2"/><text x="179" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">35</text><rect x="208" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#2D2D2D" stroke-width="2"/><text x="231" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">86</text><text x="130" y="120" text-anchor="middle" font-size="17" fill="#6B6B6B">median</text><text x="130" y="160" text-anchor="middle" font-size="28" font-weight="700" fill="#2D2D2D">22</text></g>
+<text x="300" y="86" font-size="30" fill="#6B6B6B">&#8594;</text>
+<text x="300" y="114" font-size="15" fill="#6B6B6B">draw n, with</text>
+<text x="300" y="138" font-size="15" fill="#6B6B6B">replacement</text>
+<text x="392" y="22" font-size="19" font-weight="700" fill="#C47B5A">THREE RESAMPLES</text>
+<g><rect x="392" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="415" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">22</text><rect x="444" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="467" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">15</text><rect x="496" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="519" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">22</text><rect x="548" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="571" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">22</text><rect x="600" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="623" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">35</text><text x="522" y="120" text-anchor="middle" font-size="17" fill="#6B6B6B">median</text><text x="522" y="160" text-anchor="middle" font-size="28" font-weight="700" fill="#C47B5A">22</text></g>
+<g><rect x="652" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="675" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">35</text><rect x="704" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="727" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">86</text><rect x="756" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="779" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">35</text><rect x="808" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="831" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">22</text><rect x="860" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="883" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">15</text><text x="782" y="120" text-anchor="middle" font-size="17" fill="#6B6B6B">median</text><text x="782" y="160" text-anchor="middle" font-size="28" font-weight="700" fill="#C47B5A">35</text></g>
+<g><rect x="912" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="935" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">15</text><rect x="964" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="987" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">15</text><rect x="1016" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="1039" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">22</text><rect x="1068" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="1091" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">86</text><rect x="1120" y="58" width="46" height="38" rx="5" fill="#FFFFFF" stroke="#C47B5A" stroke-width="2"/><text x="1143" y="84" text-anchor="middle" font-size="19" fill="#2D2D2D">15</text><text x="1042" y="120" text-anchor="middle" font-size="17" fill="#6B6B6B">median</text><text x="1042" y="160" text-anchor="middle" font-size="28" font-weight="700" fill="#C47B5A">15</text></g>
+<text x="0" y="190" font-size="17" fill="#6B6B6B">Same procedure, a different median each time &#8212; and that spread <tspan font-weight="700" fill="#2D2D2D">is</tspan> the standard error.</text>
+</svg></div>
         <div class="fragment fade-up" style="background: #f0f5f8; border-radius: 8px; padding: 14px 20px; margin-top: 14px;">
           <p style="font-size: 15.5pt;"><strong>Why with replacement?</strong> Without it you would draw the same $n$ observations every time, just shuffled &mdash; zero variability. With replacement, each resample holds about <strong>63.2%</strong> unique observations. That is the engine.</p>
         </div>
