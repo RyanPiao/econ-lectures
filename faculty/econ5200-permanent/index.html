@@ -176,9 +176,9 @@
     <tr><th>Design</th><th>Paper</th><th>What makes it worth refereeing</th></tr>
     <tr><td>Difference-in-differences</td><td><strong>Cheng &amp; Hoekstra (2013)</strong> &mdash; castle doctrine laws and homicide</td><td class="small">Staggered adoption; the original uses two-way fixed effects</td></tr>
     <tr><td>Instrumental variables</td><td><strong>Card (1995)</strong> &mdash; college proximity and returns to schooling</td><td class="small">The canonical distance instrument, with a large critical literature</td></tr>
-    <tr><td>Regression discontinuity</td><td><strong>Lee (2008)</strong> &mdash; incumbency advantage in US House elections</td><td class="small">The reference RD design in political economy</td></tr>
+    <tr><td>Regression discontinuity</td><td><strong>Meyersson (2014)</strong> &mdash; Islamic rule and female education</td><td class="small">The reference RD application in Cattaneo, Idrobo &amp; Titiunik (2020); fifteen covariates, so the balance and placebo checks are available</td></tr>
   </table>
-  <aside class="notes" data-sv="1"><div class="sv-lead"><p>&ldquo;The midterm is a referee report on a published paper &mdash; Cheng and Hoekstra, Card, or Lee. They replicate it, then ask whether the result survives choices the authors did not make.&rdquo;</p></div>
+  <aside class="notes" data-sv="1"><div class="sv-lead"><p>&ldquo;The midterm is a referee report on a published paper &mdash; Cheng and Hoekstra, Card, or Meyersson. They replicate it, then ask whether the result survives choices the authors did not make.&rdquo;</p></div>
   <p class="sv-time"><strong>TIME:</strong> 60 sec</p>
   <div class="sv-rest"><p style="margin:0 0 .5em;color:#8a6d1f"><b>DO:</b> Name the three papers out loud.</p>
   
@@ -1365,20 +1365,22 @@
 </script>
 
 <script>
-  // Single-window pointer (press L). The shared laser only travels
-  // speaker-view -> projector: its sender is a mousemove handler in the
-  // speaker window that postMessages a dot onto the OTHER window. Present
-  // from one screen and there is no pointer at all. This drives the same
-  // red dot from the mouse in THIS window.
+  // Single-window pointer (press L).
+  // The shared laser only travels speaker-view -> projector: its sender is a
+  // mousemove handler in the speaker window that postMessages a dot onto the
+  // OTHER window. Presenting from one screen there is no pointer at all, which
+  // is how a faculty meeting is run. This drives the same red dot from the
+  // mouse in THIS window.
   (function () {
     if (/[?&]receiver(&|=|$)/.test(location.search)) return;
     var dot = document.createElement('div');
     dot.style.cssText = 'position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;' +
-      'border-radius:50%;background:rgba(220,38,38,.85);' +
-      'box-shadow:0 0 12px 4px rgba(220,38,38,.55);pointer-events:none;' +
+      'border-radius:50%;background:rgba(220,38,38,.9);' +
+      'box-shadow:0 0 14px 5px rgba(220,38,38,.5);pointer-events:none;' +
       'z-index:10001;display:none';
     document.body.appendChild(dot);
-    var on = false, idle = null, toast = null;
+    var on = false, toast = null, mx = null, my = null;
+
     function say(msg) {
       if (!toast) {
         toast = document.createElement('div');
@@ -1389,15 +1391,21 @@
       }
       toast.textContent = msg; toast.style.opacity = '1';
       clearTimeout(say._t);
-      say._t = setTimeout(function () { toast.style.opacity = '0'; }, 1100);
+      say._t = setTimeout(function () { toast.style.opacity = '0'; }, 1200);
     }
-    document.addEventListener('mousemove', function (ev) {
-      if (!on) return;
-      dot.style.left = ev.clientX + 'px'; dot.style.top = ev.clientY + 'px';
+    function place() {
+      if (mx === null) { dot.style.display = 'none'; return; }
+      dot.style.left = mx + 'px'; dot.style.top = my + 'px';
       dot.style.display = 'block';
-      clearTimeout(idle);
-      idle = setTimeout(function () { dot.style.display = 'none'; }, 2500);
-    });
+    }
+    // Track the cursor even while off, so toggling on shows the dot at once
+    // rather than waiting for the next movement.
+    document.addEventListener('mousemove', function (ev) {
+      mx = ev.clientX; my = ev.clientY;
+      if (on) place();
+    }, true);
+    // Deliberately NO idle fade. You point at a thing and hold still; a dot
+    // that disappeared after a couple of seconds would fail exactly then.
     document.addEventListener('keydown', function (e) {
       if (!e.isTrusted || e.metaKey || e.ctrlKey || e.altKey) return;
       var t = e.target, g = t && t.tagName;
@@ -1405,10 +1413,14 @@
       if (e.key !== 'l' && e.key !== 'L') return;
       e.preventDefault(); e.stopPropagation();
       on = !on;
-      if (!on) { dot.style.display = 'none'; clearTimeout(idle); }
-      say(on ? 'Pointer on — move the mouse' : 'Pointer off');
+      try {
+        // reveal hides the cursor after inactivity, which would also strand the dot
+        if (window.Reveal && Reveal.configure) Reveal.configure({ hideInactiveCursor: !on });
+      } catch (err) {}
+      if (on) { place(); say(mx === null ? 'Pointer on — move the mouse once' : 'Pointer on'); }
+      else    { dot.style.display = 'none'; say('Pointer off'); }
     }, true);
-    window.__tiPointer = function () { return on; };
+    window.__tiPointer = function () { return { on: on, visible: dot.style.display === 'block' }; };
   })();
 </script>
 </body></html>
