@@ -1622,9 +1622,15 @@ Observed difference: 6.02 hours
       gB += '<rect x="' + (xb0 + i * bw) + '" y="' + (yb - hb) + '" width="' + (bw - 1.2) +
         '" height="' + hb + '" fill="#2563eb" opacity="0.5"/>';
     }
+    /* Draw the curve only where it has density. Sampled across the whole fixed
+       axis it flattened onto the baseline at large n -- at n=200 the density is
+       nil beyond a few minutes either side, so the polyline read as a stray
+       horizontal rule spanning the panel. The axis itself still never rescales:
+       it is the CURVE that is clipped, not the scale. */
     var pts = [], peak = 1 / (se * Math.sqrt(2 * Math.PI));
+    var lo = Math.max(0, ST.mean - 4 * se), hi = Math.min(XMAX, ST.mean + 4 * se);
     for (i = 0; i <= 260; i++) {
-      var xv = (i / 260) * XMAX,
+      var xv = lo + (i / 260) * (hi - lo),
           d = Math.exp(-Math.pow(xv - ST.mean, 2) / (2 * se * se)) / (se * Math.sqrt(2 * Math.PI));
       pts.push(sb(xv).toFixed(1) + "," + (yb - (d / peak) * BARH).toFixed(1));
     }
@@ -1645,8 +1651,12 @@ Observed difference: 6.02 hours
       '<text x="' + xb0 + '" y="20" font-size="19" font-weight="700" fill="#2563eb">2,000 AVERAGES of ' + nVal + (nVal === 1 ? ' person' : ' people') + '</text>' +
       '<line x1="' + xa0 + '" y1="' + yb + '" x2="' + xa1 + '" y2="' + yb + '" stroke="#333" stroke-width="2"/>' +
       '<line x1="' + xb0 + '" y1="' + yb + '" x2="' + xb1 + '" y2="' + yb + '" stroke="#333" stroke-width="2"/>' +
-      ticks(sa) + ticks(sb) + gA + gB +
+      /* markers BEFORE the bars: drawn last, the dashed median line ran straight
+         through the tallest bar's count label. The text-vs-text collision check
+         cannot see a line crossing a glyph, so draw order is the fix. */
+      ticks(sa) + ticks(sb) +
       mk(sa(ST.mean), "#16a34a", 62) + mk(sa(ST.med.mid), "#b45309", 62) +
+      gA + gB +
       key(xa0, "#16a34a", "mean " + esc(ST.mean, 1)) +
       key(xa0 + 190, "#b45309", "median " + ST.med.mid) +
       '<polyline points="' + pts.join(" ") + '" fill="none" stroke="#dc2626" stroke-width="3.5"/>' +
