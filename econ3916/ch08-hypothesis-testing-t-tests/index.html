@@ -382,13 +382,38 @@ P-value:     0.0665</code></pre>
       <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">3 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>The distinction between "the data is normal" and "the sampling distribution of the mean is normal" is the single most valuable sentence in this section &mdash; say it twice.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Point at the box plot medians ($4,232 and $3,139) sitting well below both means: that is the skew, visible.</li></ul></div></aside>
     </section>
 
+    <!-- SLIDE 21b: Welch code walk -->
+    <section id="welch-code-walk" style="padding: 26px 55px;">
+      <h2>The Test, In One Call</h2>
+      <div class="content">
+        <div class="fragment fade-up" data-notes="Lab 8 Step 6, given code. equal_var=False is the whole of Welch: it tells scipy not to pool the two variances. Treated comes first, so a positive t means trainees earned more. The next slide is what this cell prints.">
+          <pre style="font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 12.5pt; background: #1e1e1e; color: #d4d4d4; padding: 15px 20px; border-radius: 10px; overflow: hidden; line-height: 1.45;"><code># equal_var=False picks Welch&#x27;s test. treated comes first, so a positive t means trainees earned more
+t_stat_2, p_value_2 = stats.ttest_ind(
+    treated, control,
+    equal_var=False,
+    alternative=&quot;two-sided&quot;
+)
+
+mean_diff = np.mean(treated) - np.mean(control)</code></pre>
+        </div>
+        <div class="fragment fade-up" data-notes="Do not write the body on the board. The formula is two slides on, and turning it into code is tonight&#x27;s required task. What they need now: six numbers in, one number out, and it has to match scipy&#x27;s 2.6741 to four decimals or the check cell says why not." style="background: #f8f6f3; border-left: 4px solid var(--secondary-color); border-radius: 8px; padding: 13px 20px; margin-top: 14px;"><p style="font-size: 12pt; margin: 0 0 7px; color: #6B6B6B; font-weight: 600;">Write it yourself (required): the same number, from six summary numbers</p><pre style="font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 11.5pt; margin: 0; background: none; color: #2D2D2D; line-height: 1.4;">def welch_t(mean_1, sd_1, n_1, mean_2, sd_2, n_2):
+    ...    # yours: Welch&#x27;s formula, no scipy
+
+By hand: 2.6741   scipy (Step 6): 2.6741</pre></div>
+      </div>
+      <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">1 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>The one call behind the next slide&#x27;s printout, and the function they write tonight.</p></div></aside>
+    </section>
+
     <!-- SLIDE 22: lab output -->
     <section id="lalonde-result" style="padding: 36px 55px;">
       <h2><i class="fa-solid fa-terminal" style="color: var(--accent-color);"></i> What the Lab Prints</h2>
       <div class="content">
-        <pre style="margin-top: 4px;"><code class="language-text" data-trim data-noescape>=== Two-Sample Welch's T-Test ===
-Treatment mean: $6,349.14      (n = 185, sd $7,867.40)
-Control mean:   $4,554.80      (n = 260, sd $5,483.84)
+        <pre style="font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 14pt; line-height: 1.4; margin-top: 4px;"><code class="language-text" data-trim data-noescape>Two-sample Welch's t-test
+H0: Treatment earnings = Control earnings (no training effect)
+H1: Treatment earnings != Control earnings
+
+Treatment mean: $6,349.14
+Control mean:   $4,554.80
 Difference:     $1,794.34
 
 T-statistic:  2.6741
