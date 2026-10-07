@@ -1478,9 +1478,9 @@ Observed difference: 6.02 hours
 (function () {
   "use strict";
   /* The ONE place to change if the poll question changes: these midpoints are
-     what every number on 13.2 and 14.2 is computed from, and they are also the
+     what every number on room-four-numbers and room-clt is computed from, and they are also the
      four values the CLT simulation samples. Grouped data, so the mean is an
-     approximation of the room's true commute times -- 13.2's note says so. */
+     approximation of the room's true commute times -- room-four-numbers' note says so. */
   var PID = "ch07-econ3916-poll-6";
   var B = [ {k:"A", lab:"under 10", mid: 5},
             {k:"B", lab:"10-24",    mid:17},
@@ -1509,18 +1509,55 @@ Observed difference: 6.02 hours
     return { n:n, mean:m, s:s, se: n ? s / Math.sqrt(n) : 0, med:med, ct:ct };
   }
 
+  /* Which votes this slide shows. poll.js learns whether poll_votes has a
+     session_key column from an async probe, and until it answers Poll.q()
+     returns "" -- so the first read here was UNFILTERED (every vote ever cast
+     on this poll) and the read five seconds later was filtered to the current
+     session, which is empty on any day the poll was not run. Monday's 22 votes
+     showed for five seconds, then vanished. Probe once here, read nothing until
+     it answers, and filter the same way on every read.
+     If this session has no votes yet, show the latest session that has, with
+     its date on the slide, and switch to the room's own votes as soon as one
+     lands. A failed read keeps what is on screen instead of blanking it. */
+  var SKCOL = null, FROM = null;
+  var HDR = { headers: { apikey: SK, Authorization: "Bearer " + SK,
+                         "Cache-Control": "no-cache, no-store" } };
+  function probe() {
+    if (SKCOL !== null) return Promise.resolve(SKCOL);
+    return fetch(SU + "/rest/v1/poll_votes?select=session_key&limit=1", HDR)
+      .then(function (r) { SKCOL = r.ok; return SKCOL; })
+      .catch(function () { SKCOL = false; return false; });
+  }
+  function dayLabel(key) {
+    var m = /^(\d{4})-(\d\d)-(\d\d)-/.exec(key || "");
+    if (!m) return null;
+    return new Date(+m[1], +m[2] - 1, +m[3])
+      .toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  }
   function fetchCounts() {
-    var q = (window.Poll && Poll.q) ? Poll.q() : "";
-    return fetch(SU + "/rest/v1/poll_votes?poll_id=eq." + PID + "&select=choice" + q,
-                 { headers: { apikey: SK, Authorization: "Bearer " + SK,
-                              "Cache-Control": "no-cache, no-store" } })
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (rows) {
-        var ct = {};
-        (rows || []).forEach(function (r) { ct[r.choice] = (ct[r.choice] || 0) + 1; });
-        ST = stats(ct); sims = null; paint();
-      })
-      .catch(function () {});
+    return probe().then(function (hasKey) {
+      return fetch(SU + "/rest/v1/poll_votes?poll_id=eq." + PID +
+                   "&select=choice" + (hasKey ? ",session_key" : ""), HDR)
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          if (rows === null) return;
+          var use = rows, from = null;
+          if (hasKey) {
+            var key = (window.Poll && Poll.sessionKey) ? Poll.sessionKey() : null;
+            var mine = rows.filter(function (r) { return r.session_key === key; });
+            if (mine.length) use = mine;
+            else {
+              var keys = rows.map(function (r) { return r.session_key; }).filter(Boolean).sort();
+              var last = keys.length ? keys[keys.length - 1] : null;
+              use = last ? rows.filter(function (r) { return r.session_key === last; }) : [];
+              from = last ? dayLabel(last) : null;
+            }
+          }
+          var ct = {};
+          use.forEach(function (r) { ct[r.choice] = (ct[r.choice] || 0) + 1; });
+          FROM = from; ST = stats(ct); sims = null; paint();
+        });
+    }).catch(function () {});
   }
 
 
@@ -1543,13 +1580,13 @@ Observed difference: 6.02 hours
       return;
     }
     el.innerHTML =
-      CARD("votes in", ST.n, "n", "#3b82f6") +
+      CARD("votes in", ST.n, FROM ? '<span style="color:#b45309;font-weight:600;">from ' + FROM + '</span>' : "n", "#3b82f6") +
       CARD("sample mean", esc(ST.mean, 1), "minutes", "#22c55e") +
       CARD("SD of people <i>s</i>", esc(ST.s, 1), "how much you differ", "#f97316") +
       CARD("SE of the mean", esc(ST.se, 2), "s &divide; &radic;" + ST.n, "#a855f7", true);
   }
 
-  /* ---------- 14.2 the two number lines, echoing G8 ---------- */
+  /* ---------- room-four-numbers: the two number lines, echoing sd-vs-se ---------- */
   function paintLines() {
     var el = document.getElementById("ch07-recall-lines");
     if (!el) return;
@@ -1590,7 +1627,7 @@ Observed difference: 6.02 hours
     return out;
   }
 
-  /* ---------- 14.2 formula + both panels on one shared axis ---------- */
+  /* ---------- room-clt: formula + both panels on one shared axis ---------- */
   function paintCombo() {
     var fm = document.getElementById("ch07-clt-formula"),
         ch = document.getElementById("ch07-combo"),
@@ -1598,7 +1635,7 @@ Observed difference: 6.02 hours
     if (!fm || !ch) return;
     var rd = document.getElementById("ch07-n-read"); if (rd) rd.textContent = nVal;
     if (!ST) {
-      fm.innerHTML = '<p style="font-size:15pt;color:#888;margin:0;">Waiting for the poll on 13.1 &mdash; this slide runs on the room’s own numbers.</p>';
+      fm.innerHTML = '<p style="font-size:15pt;color:#888;margin:0;">Waiting for the commute poll &mdash; this slide runs on the room’s own numbers.</p>';
       ch.innerHTML = ""; if (vd) vd.innerHTML = ""; return;
     }
     var se = ST.s / Math.sqrt(nVal);
@@ -1701,7 +1738,7 @@ Observed difference: 6.02 hours
 
     ch.innerHTML = '<div class="mathjax_ignore tex2jax_ignore">' +
       '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;max-height:452px;">' +
-      '<text x="' + xa0 + '" y="20" font-size="19" font-weight="700" fill="#555">THE ROOM &mdash; ' + ST.n + ' people</text>' +
+      '<text x="' + xa0 + '" y="20" font-size="19" font-weight="700" fill="' + (FROM ? '#b45309' : '#555') + '">' + (FROM ? FROM.toUpperCase() : 'THE ROOM') + ' &mdash; ' + ST.n + ' people</text>' +
       '<text x="' + xb0 + '" y="20" font-size="19" font-weight="700" fill="#2563eb">2,000 AVERAGES of ' + nVal + (nVal === 1 ? ' person' : ' people') + '</text>' +
       '<line x1="' + xa0 + '" y1="' + yb + '" x2="' + xa1 + '" y2="' + yb + '" stroke="#333" stroke-width="2"/>' +
       '<line x1="' + xb0 + '" y1="' + yb + '" x2="' + xb1 + '" y2="' + yb + '" stroke="#333" stroke-width="2"/>' +
