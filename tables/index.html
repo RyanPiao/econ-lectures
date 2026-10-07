@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Normal and t Tables</title>
+<style>
+:root{--ink:#1f2328;--muted:#5b6470;--line:#e3ded5;--paper:#fbfaf7;--card:#ffffff;--blue:#2563eb;--blue-soft:#dbe7fd;--amber:#b45309;--amber-soft:#fdf0dc;--hl:#fff3c4;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+header{padding:22px 24px 10px;max-width:1180px;margin:0 auto}
+h1{font-size:30px;margin:0 0 4px} .sub{color:var(--muted);margin:0}
+nav{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+nav .in{max-width:1180px;margin:0 auto;display:flex;gap:6px;padding:8px 16px;flex-wrap:wrap}
+nav a{color:var(--ink);text-decoration:none;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:15px}
+nav a.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+main{max-width:1180px;margin:0 auto;padding:6px 16px 60px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:18px 0;scroll-margin-top:64px}
+h2{font-size:24px;margin:0 0 4px} .lede{color:var(--muted);margin:0 0 14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+.btn{font:inherit;font-size:15px;font-weight:600;padding:7px 14px;border-radius:9px;border:1.5px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+.btn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.q{border-color:var(--blue);color:var(--blue)} .btn.q.on{color:#fff}
+label{font-size:15px;color:var(--muted);font-weight:600}
+input[type=number]{font:inherit;font-size:18px;width:110px;padding:5px 8px;border:1.5px solid var(--line);border-radius:8px}
+input[type=range]{width:min(420px,100%)}
+.readout{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 4px}
+.big{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 18px;min-width:180px}
+.big .k{font-size:14px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.big .v{font-size:38px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.big.a .v{color:var(--blue)}
+.say{font-size:19px;margin:8px 0 0}
+svg{width:100%;height:auto;display:block}
+.note{color:var(--muted);font-size:15px;margin:10px 0 0}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%}
+.tw{overflow-x:auto}
+th,td{border:1px solid var(--line);padding:4px 6px;text-align:center;font-size:15px}
+th{background:#f3f0ea;font-weight:700}
+td.rh,th.rh{background:#f3f0ea;font-weight:700}
+tr:hover td{background:#f7f9ff} td.cur{background:var(--hl)!important;outline:2px solid var(--amber)}
+td.key{background:var(--amber-soft)}
+.zgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.zgrid{grid-template-columns:1fr}.big .v{font-size:30px}h1{font-size:24px}}
+.pin{font-size:20px;font-weight:700;min-height:30px;margin:6px 0}
+@media print{nav,#z,#t,.noprint{display:none!important}section{break-inside:avoid;border:none}body{background:#fff}}
+</style></head><body>
+<header><h1>Normal and t Tables</h1>
+<p class="sub">ECON 3916 / 5200 &middot; the curve version for class, the classic tables for practice and print</p></header>
+<nav><div class="in">
+<a href="#z" data-s="z">The normal curve (z)</a><a href="#t" data-s="t">The t curve</a>
+<a href="#ztable" data-s="ztable">z table</a><a href="#ttable" data-s="ttable">t table</a></div></nav>
+<main>
+
+<section id="z">
+<h2>The normal curve: from z to area, and back</h2>
+<p class="lede">Pick what you want shaded, then move z &mdash; or type an area and get z.</p>
+<div class="row">
+ <button class="btn on" data-mode="middle">Middle (two-sided)</button>
+ <button class="btn" data-mode="left">Left of z</button>
+ <button class="btn" data-mode="right">Right of z</button>
+ <span style="width:12px"></span>
+ <button class="btn q" data-conf="90">90%</button><button class="btn q on" data-conf="95">95%</button><button class="btn q" data-conf="99">99%</button>
+</div>
+<div class="row"><label for="zr">z</label><input id="zr" type="range" min="-4" max="4" step="0.01" value="1.96">
+ <input id="zn" type="number" step="0.01" min="-4" max="4" value="1.96">
+ <label for="za" style="margin-left:14px">or type an area</label><input id="za" type="number" step="0.001" min="0.001" max="0.999" value="0.95"></div>
+<div class="readout"><div class="big"><div class="k">z</div><div class="v" id="zv">1.96</div></div>
+ <div class="big a"><div class="k" id="zk">shaded area</div><div class="v" id="zarea">0.9500</div></div></div>
+<p class="say" id="zsay"></p>
+<svg id="zsvg" viewBox="0 0 1000 330" role="img" aria-label="Standard normal curve with the selected area shaded"></svg>
+<p class="note">Exact to four decimals. The three values worth knowing by heart: 1.645 (90%), <b>1.96 (95%)</b>, 2.576 (99%).</p>
+</section>
+
+<section id="t">
+<h2>The t curve: what changes when &sigma; is estimated</h2>
+<p class="lede">With s in place of &sigma; the curve has fatter tails, so the multiplier is bigger than z. It shrinks toward z as the degrees of freedom grow.</p>
+<div class="row"><label for="dfr">degrees of freedom (n &minus; 1)</label><input id="dfr" type="range" min="1" max="120" step="1" value="29">
+ <input id="dfn" type="number" min="1" max="1000" step="1" value="29">
+ <span style="width:12px"></span>
+ <button class="btn q" data-tconf="90">90%</button><button class="btn q on" data-tconf="95">95%</button><button class="btn q" data-tconf="99">99%</button></div>
+<div class="readout"><div class="big a"><div class="k" id="tk">t*</div><div class="v" id="tv">2.045</div></div>
+ <div class="big"><div class="k" id="zk2">z* (same confidence)</div><div class="v" id="zv2">1.960</div></div></div>
+<p class="say" id="tsay"></p>
+<svg id="tsvg" viewBox="0 0 1000 330" role="img" aria-label="t curve against the normal curve with the central area marked"></svg>
+</section>
+
+<section id="ztable">
+<h2>z table: P(Z &le; z)</h2>
+<p class="lede">Row = z to one decimal, column = the second decimal. Click a cell to read it out.</p>
+<div class="pin" id="zpin">&nbsp;</div>
+<div class="zgrid"><div class="tw"><table id="zneg"></table></div><div class="tw"><table id="zpos"></table></div></div>
+<p class="note">Shaded cells are the ones a 90%, 95% or 99% interval uses.</p>
+</section>
+
+<section id="ttable">
+<h2>t table: critical values t*</h2>
+<p class="lede">Find your degrees of freedom on the left and your confidence level on top. The last row, &infin;, is z.</p>
+<div class="pin" id="tpin">&nbsp;</div>
+<div class="tw"><table id="ttab"></table></div>
+</section>
+</main>
+
+<script>
+/* MATH-BEGIN */
+var Stat = (function () {
+  /* Phi through the regularized incomplete gamma: series near the centre, continued
+     fraction in the tails, so neither tail loses digits to 1 - p. ~1e-15. An
+     earlier A&S 7.1.26 erf was good to 1.5e-7, but Phi^-1 inherited that divided by
+     a tiny density and was 3e-5 out in the tails. */
+  function gser(a, x) { var ap = a, del = 1 / a, sum = del;
+    for (var n = 1; n < 500; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-16) break; }
+    return sum * Math.exp(-x + a * Math.log(x) - lgamma(a)); }
+  function gcf(a, x) { var b = x + 1 - a, c = 1e300, d = 1 / b, h = d;
+    for (var i = 1; i < 500; i++) { var an = -i * (i - a); b += 2; d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
+      c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300; d = 1 / d; var del = d * c; h *= del; if (Math.abs(del - 1) < 1e-16) break; }
+    return Math.exp(-x + a * Math.log(x) - lgamma(a)) * h; }
+  function phi(z) { if (z === 0) return 0.5; var x = z * z / 2;
+    if (x < 1.5) { var p = gser(0.5, x); return z < 0 ? 0.5 * (1 - p) : 0.5 * (1 + p); }
+    var q = gcf(0.5, x); return z < 0 ? 0.5 * q : 1 - 0.5 * q; }
+  function npdf(z) { return Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI); }
+  function phiInv(p) {                   /* Acklam, then one Newton step on phi */
+    var a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239],
+        b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572],
+        c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783],
+        d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416], pl = 0.02425, q, r, x;
+    if (p <= 0) return -Infinity; if (p >= 1) return Infinity;
+    if (p < pl) { q = Math.sqrt(-2 * Math.log(p)); x = (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    else if (p <= 1 - pl) { q = p - 0.5; r = q * q; x = (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+    else { q = Math.sqrt(-2 * Math.log(1 - p)); x = -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    return x - (phi(x) - p) / npdf(x);
+  }
+  function lgamma(x) {                   /* Lanczos, g = 7 */
+    var g = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059,
+             12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x);
+    x -= 1; var s = g[0]; for (var i = 1; i < 9; i++) s += g[i] / (x + i);
+    var t = x + 7.5; return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(s);
+  }
+  function betacf(a, b, x) {             /* Lentz continued fraction for the incomplete beta */
+    var qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap, m, m2, aa, del, h;
+    if (Math.abs(d) < 1e-300) d = 1e-300; d = 1 / d; h = d;
+    for (m = 1; m <= 300; m++) {
+      m2 = 2 * m; aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < 1e-300) d = 1e-300; c = 1 + aa / c; if (Math.abs(c) < 1e-300) c = 1e-300; d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < 1e-300) d = 1e-300; c = 1 + aa / c; if (Math.abs(c) < 1e-300) c = 1e-300; d = 1 / d;
+      del = d * c; h *= del; if (Math.abs(del - 1) < 3e-15) break;
+    }
+    return h;
+  }
+  function ibeta(x, a, b) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    var bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+  }
+  function tcdf(t, df) {
+    if (!isFinite(df)) return phi(t);
+    var ib = ibeta(df / (df + t * t), df / 2, 0.5);
+    return t >= 0 ? 1 - 0.5 * ib : 0.5 * ib;
+  }
+  function tpdf(t, df) {
+    if (!isFinite(df)) return npdf(t);
+    return Math.exp(lgamma((df + 1) / 2) - lgamma(df / 2) - 0.5 * Math.log(df * Math.PI) - (df + 1) / 2 * Math.log(1 + t * t / df));
+  }
+  function tInv(p, df) {                 /* bisection: the cdf is monotone, so this cannot fail */
+    if (!isFinite(df)) return phiInv(p);
+    var lo = -1e4, hi = 1e4;
+    for (var i = 0; i < 200; i++) { var mid = (lo + hi) / 2; if (tcdf(mid, df) < p) lo = mid; else hi = mid; }
+    return (lo + hi) / 2;
+  }
+  return { phi: phi, phiInv: phiInv, npdf: npdf, tcdf: tcdf, tInv: tInv, tpdf: tpdf };
+})();
+if (typeof module !== "undefined") module.exports = Stat;
+/* MATH-END */
+
+var TABLES = {"z":{"-3.4":[0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0002],"-3.3":[0.0005,0.0005,0.0005,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0003],"-3.2":[0.0007,0.0007,0.0006,0.0006,0.0006,0.0006,0.0006,0.0005,0.0005,0.0005],"-3.1":[0.001,0.0009,0.0009,0.0009,0.0008,0.0008,0.0008,0.0008,0.0007,0.0007],"-3.0":[0.0013,0.0013,0.0013,0.0012,0.0012,0.0011,0.0011,0.0011,0.001,0.001],"-2.9":[0.0019,0.0018,0.0018,0.0017,0.0016,0.0016,0.0015,0.0015,0.0014,0.0014],"-2.8":[0.0026,0.0025,0.0024,0.0023,0.0023,0.0022,0.0021,0.0021,0.002,0.0019],"-2.7":[0.0035,0.0034,0.0033,0.0032,0.0031,0.003,0.0029,0.0028,0.0027,0.0026],"-2.6":[0.0047,0.0045,0.0044,0.0043,0.0041,0.004,0.0039,0.0038,0.0037,0.0036],"-2.5":[0.0062,0.006,0.0059,0.0057,0.0055,0.0054,0.0052,0.0051,0.0049,0.0048],"-2.4":[0.0082,0.008,0.0078,0.0075,0.0073,0.0071,0.0069,0.0068,0.0066,0.0064],"-2.3":[0.0107,0.0104,0.0102,0.0099,0.0096,0.0094,0.0091,0.0089,0.0087,0.0084],"-2.2":[0.0139,0.0136,0.0132,0.0129,0.0125,0.0122,0.0119,0.0116,0.0113,0.011],"-2.1":[0.0179,0.0174,0.017,0.0166,0.0162,0.0158,0.0154,0.015,0.0146,0.0143],"-2.0":[0.0228,0.0222,0.0217,0.0212,0.0207,0.0202,0.0197,0.0192,0.0188,0.0183],"-1.9":[0.0287,0.0281,0.0274,0.0268,0.0262,0.0256,0.025,0.0244,0.0239,0.0233],"-1.8":[0.0359,0.0351,0.0344,0.0336,0.0329,0.0322,0.0314,0.0307,0.0301,0.0294],"-1.7":[0.0446,0.0436,0.0427,0.0418,0.0409,0.0401,0.0392,0.0384,0.0375,0.0367],"-1.6":[0.0548,0.0537,0.0526,0.0516,0.0505,0.0495,0.0485,0.0475,0.0465,0.0455],"-1.5":[0.0668,0.0655,0.0643,0.063,0.0618,0.0606,0.0594,0.0582,0.0571,0.0559],"-1.4":[0.0808,0.0793,0.0778,0.0764,0.0749,0.0735,0.0721,0.0708,0.0694,0.0681],"-1.3":[0.0968,0.0951,0.0934,0.0918,0.0901,0.0885,0.0869,0.0853,0.0838,0.0823],"-1.2":[0.1151,0.1131,0.1112,0.1093,0.1075,0.1056,0.1038,0.102,0.1003,0.0985],"-1.1":[0.1357,0.1335,0.1314,0.1292,0.1271,0.1251,0.123,0.121,0.119,0.117],"-1.0":[0.1587,0.1562,0.1539,0.1515,0.1492,0.1469,0.1446,0.1423,0.1401,0.1379],"-0.9":[0.1841,0.1814,0.1788,0.1762,0.1736,0.1711,0.1685,0.166,0.1635,0.1611],"-0.8":[0.2119,0.209,0.2061,0.2033,0.2005,0.1977,0.1949,0.1922,0.1894,0.1867],"-0.7":[0.242,0.2389,0.2358,0.2327,0.2296,0.2266,0.2236,0.2206,0.2177,0.2148],"-0.6":[0.2743,0.2709,0.2676,0.2643,0.2611,0.2578,0.2546,0.2514,0.2483,0.2451],"-0.5":[0.3085,0.305,0.3015,0.2981,0.2946,0.2912,0.2877,0.2843,0.281,0.2776],"-0.4":[0.3446,0.3409,0.3372,0.3336,0.33,0.3264,0.3228,0.3192,0.3156,0.3121],"-0.3":[0.3821,0.3783,0.3745,0.3707,0.3669,0.3632,0.3594,0.3557,0.352,0.3483],"-0.2":[0.4207,0.4168,0.4129,0.409,0.4052,0.4013,0.3974,0.3936,0.3897,0.3859],"-0.1":[0.4602,0.4562,0.4522,0.4483,0.4443,0.4404,0.4364,0.4325,0.4286,0.4247],"-0.0":[0.5,0.496,0.492,0.488,0.484,0.4801,0.4761,0.4721,0.4681,0.4641],"0.0":[0.5,0.504,0.508,0.512,0.516,0.5199,0.5239,0.5279,0.5319,0.5359],"0.1":[0.5398,0.5438,0.5478,0.5517,0.5557,0.5596,0.5636,0.5675,0.5714,0.5753],"0.2":[0.5793,0.5832,0.5871,0.591,0.5948,0.5987,0.6026,0.6064,0.6103,0.6141],"0.3":[0.6179,0.6217,0.6255,0.6293,0.6331,0.6368,0.6406,0.6443,0.648,0.6517],"0.4":[0.6554,0.6591,0.6628,0.6664,0.67,0.6736,0.6772,0.6808,0.6844,0.6879],"0.5":[0.6915,0.695,0.6985,0.7019,0.7054,0.7088,0.7123,0.7157,0.719,0.7224],"0.6":[0.7257,0.7291,0.7324,0.7357,0.7389,0.7422,0.7454,0.7486,0.7517,0.7549],"0.7":[0.758,0.7611,0.7642,0.7673,0.7704,0.7734,0.7764,0.7794,0.7823,0.7852],"0.8":[0.7881,0.791,0.7939,0.7967,0.7995,0.8023,0.8051,0.8078,0.8106,0.8133],"0.9":[0.8159,0.8186,0.8212,0.8238,0.8264,0.8289,0.8315,0.834,0.8365,0.8389],"1.0":[0.8413,0.8438,0.8461,0.8485,0.8508,0.8531,0.8554,0.8577,0.8599,0.8621],"1.1":[0.8643,0.8665,0.8686,0.8708,0.8729,0.8749,0.877,0.879,0.881,0.883],"1.2":[0.8849,0.8869,0.8888,0.8907,0.8925,0.8944,0.8962,0.898,0.8997,0.9015],"1.3":[0.9032,0.9049,0.9066,0.9082,0.9099,0.9115,0.9131,0.9147,0.9162,0.9177],"1.4":[0.9192,0.9207,0.9222,0.9236,0.9251,0.9265,0.9279,0.9292,0.9306,0.9319],"1.5":[0.9332,0.9345,0.9357,0.937,0.9382,0.9394,0.9406,0.9418,0.9429,0.9441],"1.6":[0.9452,0.9463,0.9474,0.9484,0.9495,0.9505,0.9515,0.9525,0.9535,0.9545],"1.7":[0.9554,0.9564,0.9573,0.9582,0.9591,0.9599,0.9608,0.9616,0.9625,0.9633],"1.8":[0.9641,0.9649,0.9656,0.9664,0.9671,0.9678,0.9686,0.9693,0.9699,0.9706],"1.9":[0.9713,0.9719,0.9726,0.9732,0.9738,0.9744,0.975,0.9756,0.9761,0.9767],"2.0":[0.9772,0.9778,0.9783,0.9788,0.9793,0.9798,0.9803,0.9808,0.9812,0.9817],"2.1":[0.9821,0.9826,0.983,0.9834,0.9838,0.9842,0.9846,0.985,0.9854,0.9857],"2.2":[0.9861,0.9864,0.9868,0.9871,0.9875,0.9878,0.9881,0.9884,0.9887,0.989],"2.3":[0.9893,0.9896,0.9898,0.9901,0.9904,0.9906,0.9909,0.9911,0.9913,0.9916],"2.4":[0.9918,0.992,0.9922,0.9925,0.9927,0.9929,0.9931,0.9932,0.9934,0.9936],"2.5":[0.9938,0.994,0.9941,0.9943,0.9945,0.9946,0.9948,0.9949,0.9951,0.9952],"2.6":[0.9953,0.9955,0.9956,0.9957,0.9959,0.996,0.9961,0.9962,0.9963,0.9964],"2.7":[0.9965,0.9966,0.9967,0.9968,0.9969,0.997,0.9971,0.9972,0.9973,0.9974],"2.8":[0.9974,0.9975,0.9976,0.9977,0.9977,0.9978,0.9979,0.9979,0.998,0.9981],"2.9":[0.9981,0.9982,0.9982,0.9983,0.9984,0.9984,0.9985,0.9985,0.9986,0.9986],"3.0":[0.9987,0.9987,0.9987,0.9988,0.9988,0.9989,0.9989,0.9989,0.999,0.999],"3.1":[0.999,0.9991,0.9991,0.9991,0.9992,0.9992,0.9992,0.9992,0.9993,0.9993],"3.2":[0.9993,0.9993,0.9994,0.9994,0.9994,0.9994,0.9994,0.9995,0.9995,0.9995],"3.3":[0.9995,0.9995,0.9995,0.9996,0.9996,0.9996,0.9996,0.9996,0.9996,0.9997],"3.4":[0.9997,0.9997,0.9997,0.9997,0.9997,0.9997,0.9997,0.9997,0.9997,0.9998]},"zrows":["-3.4","-3.3","-3.2","-3.1","-3.0","-2.9","-2.8","-2.7","-2.6","-2.5","-2.4","-2.3","-2.2","-2.1","-2.0","-1.9","-1.8","-1.7","-1.6","-1.5","-1.4","-1.3","-1.2","-1.1","-1.0","-0.9","-0.8","-0.7","-0.6","-0.5","-0.4","-0.3","-0.2","-0.1","-0.0","0.0","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0","1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.1","2.2","2.3","2.4","2.5","2.6","2.7","2.8","2.9","3.0","3.1","3.2","3.3","3.4"],"t":{"1":[3.078,6.314,12.706,31.821,63.657],"2":[1.886,2.92,4.303,6.965,9.925],"3":[1.638,2.353,3.182,4.541,5.841],"4":[1.533,2.132,2.776,3.747,4.604],"5":[1.476,2.015,2.571,3.365,4.032],"6":[1.44,1.943,2.447,3.143,3.707],"7":[1.415,1.895,2.365,2.998,3.499],"8":[1.397,1.86,2.306,2.896,3.355],"9":[1.383,1.833,2.262,2.821,3.25],"10":[1.372,1.812,2.228,2.764,3.169],"11":[1.363,1.796,2.201,2.718,3.106],"12":[1.356,1.782,2.179,2.681,3.055],"13":[1.35,1.771,2.16,2.65,3.012],"14":[1.345,1.761,2.145,2.624,2.977],"15":[1.341,1.753,2.131,2.602,2.947],"16":[1.337,1.746,2.12,2.583,2.921],"17":[1.333,1.74,2.11,2.567,2.898],"18":[1.33,1.734,2.101,2.552,2.878],"19":[1.328,1.729,2.093,2.539,2.861],"20":[1.325,1.725,2.086,2.528,2.845],"21":[1.323,1.721,2.08,2.518,2.831],"22":[1.321,1.717,2.074,2.508,2.819],"23":[1.319,1.714,2.069,2.5,2.807],"24":[1.318,1.711,2.064,2.492,2.797],"25":[1.316,1.708,2.06,2.485,2.787],"26":[1.315,1.706,2.056,2.479,2.779],"27":[1.314,1.703,2.052,2.473,2.771],"28":[1.313,1.701,2.048,2.467,2.763],"29":[1.311,1.699,2.045,2.462,2.756],"30":[1.31,1.697,2.042,2.457,2.75],"40":[1.303,1.684,2.021,2.423,2.704],"50":[1.299,1.676,2.009,2.403,2.678],"60":[1.296,1.671,2.0,2.39,2.66],"80":[1.292,1.664,1.99,2.374,2.639],"100":[1.29,1.66,1.984,2.364,2.626],"120":[1.289,1.658,1.98,2.358,2.617],"inf":[1.282,1.645,1.96,2.326,2.576]},"tdfs":["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","40","50","60","80","100","120","inf"],"alphas":[0.1,0.05,0.025,0.01,0.005]};
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var BLUE = "#2563eb", INK = "#1f2328", MUTED = "#5b6470";
+  var X0 = 60, X1 = 960, YB = 270, YT = 30, LO = -4, HI = 4;
+  var sx = function (z) { return X0 + (z - LO) / (HI - LO) * (X1 - X0); };
+  function curve(pdf, peak, lo, hi) {
+    var pts = []; for (var i = 0; i <= 400; i++) { var z = lo + (hi - lo) * i / 400; pts.push(sx(z).toFixed(1) + "," + (YB - pdf(z) / peak * (YB - YT)).toFixed(1)); }
+    return pts;
+  }
+  function axis() {
+    var o = '<line x1="' + X0 + '" y1="' + YB + '" x2="' + X1 + '" y2="' + YB + '" stroke="#999" stroke-width="1.5"/>';
+    for (var k = -4; k <= 4; k++) o += '<line x1="' + sx(k) + '" y1="' + YB + '" x2="' + sx(k) + '" y2="' + (YB + 7) + '" stroke="#999"/>' +
+      '<text x="' + sx(k) + '" y="' + (YB + 28) + '" text-anchor="middle" font-size="18" fill="' + MUTED + '">' + k + '</text>';
+    return o;
+  }
+  function shade(pdf, peak, a, b) {
+    var p = curve(pdf, peak, a, b); return '<polygon points="' + sx(a).toFixed(1) + ',' + YB + ' ' + p.join(" ") + ' ' + sx(b).toFixed(1) + ',' + YB + '" fill="' + BLUE + '" opacity="0.28"/>';
+  }
+  function mark(z, lab) {
+    return '<line x1="' + sx(z) + '" y1="' + (YT - 6) + '" x2="' + sx(z) + '" y2="' + YB + '" stroke="' + INK + '" stroke-width="2" stroke-dasharray="6 5"/>' +
+      '<text x="' + sx(z) + '" y="' + (YT - 10) + '" text-anchor="middle" font-size="19" font-weight="700" fill="' + INK + '">' + lab + '</text>';
+  }
+
+  /* ---------------- z ---------------- */
+  var zs = { mode: "middle", z: 1.96 };
+  function zArea() { var z = Math.abs(zs.z);
+    return zs.mode === "middle" ? Stat.phi(z) - Stat.phi(-z) : zs.mode === "left" ? Stat.phi(zs.z) : 1 - Stat.phi(zs.z); }
+  function drawZ() {
+    var peak = Stat.npdf(0), z = zs.z, a = Math.abs(z), o = axis(), A = zArea();
+    if (zs.mode === "middle") o += shade(Stat.npdf, peak, -a, a) + mark(-a, "&minus;" + a.toFixed(3)) + mark(a, a.toFixed(3));
+    else if (zs.mode === "left") o += shade(Stat.npdf, peak, LO, z) + mark(z, z.toFixed(3));
+    else o += shade(Stat.npdf, peak, z, HI) + mark(z, z.toFixed(3));
+    o += '<polyline points="' + curve(Stat.npdf, peak, LO, HI).join(" ") + '" fill="none" stroke="' + INK + '" stroke-width="2.5"/>';
+    o += '<text x="' + sx(0) + '" y="' + (YB - 70) + '" text-anchor="middle" font-size="30" font-weight="800" fill="' + BLUE + '">' + (A * 100).toFixed(2) + '%</text>';
+    $("zsvg").innerHTML = o;
+    $("zv").textContent = (zs.mode === "middle" ? "±" + a.toFixed(3) : z.toFixed(3));
+    $("zk").textContent = zs.mode === "middle" ? "area between −z and z" : zs.mode === "left" ? "area left of z" : "area right of z";
+    $("zarea").textContent = A.toFixed(4);
+    $("zsay").innerHTML = zs.mode === "middle"
+      ? "The middle <b>" + (A * 100).toFixed(1) + "%</b> of a normal curve lies within <b>" + a.toFixed(3) + "</b> standard errors of the centre; <b>" + ((1 - A) / 2 * 100).toFixed(2) + "%</b> sits in each tail."
+      : "<b>" + (A * 100).toFixed(2) + "%</b> of a normal curve lies " + (zs.mode === "left" ? "below" : "above") + " z = <b>" + z.toFixed(3) + "</b>.";
+    $("zr").value = z; $("zn").value = (zs.mode === "middle" ? a : z).toFixed(2);
+    $("za").value = A.toFixed(4);
+    [].forEach.call(document.querySelectorAll("[data-conf]"), function (b) {
+      var c = +b.dataset.conf / 100; b.classList.toggle("on", zs.mode === "middle" && Math.abs(A - c) < 5e-4); });
+    [].forEach.call(document.querySelectorAll("[data-mode]"), function (b) { b.classList.toggle("on", b.dataset.mode === zs.mode); });
+  }
+  function setZ(v) { zs.z = Math.max(-4, Math.min(4, v)); drawZ(); }
+  [].forEach.call(document.querySelectorAll("[data-mode]"), function (b) { b.onclick = function () { zs.mode = b.dataset.mode; if (zs.mode === "middle") zs.z = Math.abs(zs.z); drawZ(); }; });
+  [].forEach.call(document.querySelectorAll("[data-conf]"), function (b) { b.onclick = function () { zs.mode = "middle"; setZ(Stat.phiInv(0.5 + b.dataset.conf / 200)); }; });
+  $("zr").oninput = function () { setZ(+this.value); };
+  $("zn").onchange = function () { setZ(+this.value); };
+  $("za").onchange = function () { var A = Math.min(0.9999, Math.max(0.0001, +this.value));
+    setZ(zs.mode === "middle" ? Stat.phiInv(0.5 + A / 2) : zs.mode === "left" ? Stat.phiInv(A) : Stat.phiInv(1 - A)); };
+
+  /* ---------------- t ---------------- */
+  var ts = { df: 29, conf: 95 };
+  function drawT() {
+    var df = ts.df, p = 0.5 + ts.conf / 200, t = Stat.tInv(p, df), z = Stat.phiInv(p);
+    var pk = Stat.npdf(0), o = axis(), tp = function (x) { return Stat.tpdf(x, df); };
+    o += shade(tp, pk, -t, t);
+    o += '<polyline points="' + curve(Stat.npdf, pk, LO, HI).join(" ") + '" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="7 6"/>';
+    o += '<polyline points="' + curve(tp, pk, LO, HI).join(" ") + '" fill="none" stroke="' + INK + '" stroke-width="2.5"/>';
+    o += mark(-t, "&minus;" + t.toFixed(3)) + mark(t, t.toFixed(3));
+    o += '<text x="' + (X1 - 6) + '" y="' + (YT + 24) + '" text-anchor="end" font-size="17" fill="' + MUTED + '">dashed: normal &nbsp; solid: t with df = ' + df + '</text>';
+    $("tsvg").innerHTML = o;
+    $("tv").textContent = t.toFixed(3); $("tk").textContent = "t* for " + ts.conf + "%, df = " + df;
+    $("zv2").textContent = z.toFixed(3); $("zk2").textContent = "z* for " + ts.conf + "%";
+    $("tsay").innerHTML = "With df = <b>" + df + "</b>, a " + ts.conf + "% interval walks out <b>" + t.toFixed(3) + "</b> standard errors instead of " + z.toFixed(3) +
+      " &mdash; <b>" + ((t / z - 1) * 100).toFixed(1) + "% wider</b>.";
+    $("dfr").value = Math.min(df, 120); $("dfn").value = df;
+    [].forEach.call(document.querySelectorAll("[data-tconf]"), function (b) { b.classList.toggle("on", +b.dataset.tconf === ts.conf); });
+  }
+  $("dfr").oninput = function () { ts.df = +this.value; drawT(); };
+  $("dfn").onchange = function () { ts.df = Math.max(1, Math.min(1000, Math.round(+this.value) || 1)); drawT(); };
+  [].forEach.call(document.querySelectorAll("[data-tconf]"), function (b) { b.onclick = function () { ts.conf = +b.dataset.tconf; drawT(); }; });
+
+  /* ---------------- classic tables, values computed with scipy ---------------- */
+  var KEY = { "1.6": [4, 5], "-1.6": [4, 5], "1.9": [6], "-1.9": [6], "2.5": [7, 8], "-2.5": [7, 8] };
+  function zTable(el, rows) {
+    var h = '<tr><th class="rh">z</th>'; for (var c = 0; c < 10; c++) h += '<th>.0' + c + '</th>'; h += '</tr>';
+    rows.forEach(function (r) {
+      h += '<tr><td class="rh">' + r + '</td>';
+      TABLES.z[r].forEach(function (v, c) { var key = KEY[r] && KEY[r].indexOf(c) !== -1;
+        h += '<td' + (key ? ' class="key"' : '') + ' data-z="' + r + '" data-c="' + c + '">' + v.toFixed(4).replace(/^0/, "") + '</td>'; });
+      h += '</tr>';
+    });
+    el.innerHTML = h;
+  }
+  zTable($("zneg"), TABLES.zrows.filter(function (r) { return r[0] === "-"; }));
+  zTable($("zpos"), TABLES.zrows.filter(function (r) { return r[0] !== "-"; }));
+  function zcell(td) {
+    [].forEach.call(document.querySelectorAll("td.cur"), function (x) { x.classList.remove("cur"); });
+    td.classList.add("cur");
+    var r = td.dataset.z, c = +td.dataset.c, zz = (r[0] === "-" ? "−" : "") + (Math.abs(parseFloat(r)) + c / 100).toFixed(2);
+    $("zpin").innerHTML = "P(Z &le; " + zz + ") = <span style='color:#2563eb'>" + TABLES.z[r][c].toFixed(4) + "</span>";
+  }
+  [].forEach.call(document.querySelectorAll("#zneg td[data-z], #zpos td[data-z]"), function (td) { td.onclick = function () { zcell(td); }; });
+
+  (function tTable() {
+    var A = TABLES.alphas, h = '<tr><th class="rh" rowspan="2">df</th>';
+    A.forEach(function (a) { h += '<th>' + Math.round((1 - 2 * a) * 100) + '%</th>'; });
+    h += '</tr><tr>'; A.forEach(function (a) { h += '<th style="font-weight:600;color:#5b6470">one tail ' + a + '</th>'; }); h += '</tr>';
+    TABLES.tdfs.forEach(function (d) {
+      h += '<tr><td class="rh">' + (d === "inf" ? "&infin; (z)" : d) + '</td>';
+      TABLES.t[d].forEach(function (v, j) { h += '<td' + (j === 2 ? ' class="key"' : '') + ' data-df="' + d + '" data-j="' + j + '">' + v.toFixed(3) + '</td>'; });
+      h += '</tr>';
+    });
+    $("ttab").innerHTML = h;
+    [].forEach.call(document.querySelectorAll("#ttab td[data-df]"), function (td) { td.onclick = function () {
+      [].forEach.call(document.querySelectorAll("td.cur"), function (x) { x.classList.remove("cur"); }); td.classList.add("cur");
+      var d = td.dataset.df, j = +td.dataset.j;
+      $("tpin").innerHTML = "t* = <span style='color:#2563eb'>" + TABLES.t[d][j].toFixed(3) + "</span> for a " + Math.round((1 - 2 * A[j]) * 100) + "% interval with " + (d === "inf" ? "df = &infin; (this is z)" : "df = " + d);
+    }; });
+  })();
+
+  /* ---------------- links in: #z?mode=middle&conf=95  #t?df=29&conf=95 ---------------- */
+  function route() {
+    var h = location.hash.replace(/^#/, ""), name = h.split("?")[0] || "z", q = {};
+    (h.split("?")[1] || "").split("&").forEach(function (kv) { var p = kv.split("="); if (p[0]) q[p[0]] = decodeURIComponent(p[1] || ""); });
+    if (name === "z") { if (q.mode) zs.mode = q.mode; if (q.conf) zs.z = Stat.phiInv(0.5 + q.conf / 200); else if (q.z) zs.z = +q.z; drawZ(); }
+    if (name === "t") { if (q.df) ts.df = q.df === "inf" ? 1000 : +q.df; if (q.conf) ts.conf = +q.conf; drawT(); }
+    [].forEach.call(document.querySelectorAll("nav a"), function (a) { a.classList.toggle("on", a.dataset.s === name); });
+    var el = document.getElementById(name); if (el && h) el.scrollIntoView();
+  }
+  drawZ(); drawT(); window.addEventListener("hashchange", route); route();
+})();
+</script>
+</body></html>
