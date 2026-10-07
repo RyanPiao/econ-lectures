@@ -2132,5 +2132,32 @@
   else if (window.Reveal && Reveal.on) Reveal.on('ready', go);
 })();
 </script>
+<!-- speaker-split-layout v2 -->
+<script>
+(function () {
+  // v2 (same day): previews sized to the deck's 16:9, notes take the space saved.
+  // 7 Oct 2026, Ryan's drawing: speaker view as current slide (left half) | notes (right),
+  // with the upcoming slide shrunk into a strip of three previews under the notes --
+  // next, +2, +3, whole slides (fragments off), all view-only (the speaker-upcoming-
+  // viewonly block locks them, since they load as ?receiver without postMessageEvents).
+  // Offered as "Split + previews" in the speaker view's own Layout menu and selected by
+  // default; picking another layout there sticks. Installed INTO the speaker window from
+  // here, on reveal's notes heartbeat, as a script element so it runs in that realm.
+  var q = location.search;
+  if (!/[?&]presenter(&|=|$)/.test(q) || /[?&]receiver(&|$)/.test(q)) return;
+  var SRC = '(function(){if(window.__tiSplit)return;window.__tiSplit=1;\nvar d=document,B=d.body,LS=window.localStorage;\nvar css=d.createElement(\'style\');\nvar S=\'body[data-speaker-layout="split"] \',PH=\'calc((100vw / 6 - 8px) * 0.5625 + 8px)\';\ncss.textContent=\n S+\'#current-slide{left:0!important;top:0!important;width:50%!important;height:100%!important;padding:6px!important;}\'+\n S+\'#speaker-controls{left:50%!important;right:auto!important;top:0!important;width:50%!important;height:calc(100vh - \'+PH+\')!important;padding:42px 14px 6px!important;font-size:1.25em!important;}\'+\n S+\'#upcoming-slide,\'+S+\'.ti-prev{position:absolute!important;top:calc(100vh - \'+PH+\')!important;width:16.666%!important;height:\'+PH+\'!important;padding:4px!important;box-sizing:border-box;}\'+\n S+\'#upcoming-slide{left:50%!important;right:auto!important;}\'+\n S+\'#ti-prev2{left:66.666%!important;}\'+S+\'#ti-prev3{left:83.333%!important;}\'+\n \'.ti-prev{display:none;}\'+S+\'.ti-prev{display:block;}\'+\n \'.ti-prev iframe{width:100%;height:100%;border:1px solid #ddd;}\'+\n \'.ti-prev .label{position:absolute;top:8px;left:8px;z-index:2;}\'+\n S+\'#upcoming-slide .label,\'+S+\'.ti-prev .label{font-size:12px;height:24px;line-height:24px;padding:0 7px;}\';\nd.head.appendChild(css);\n// the layout menu: add the option, and make it the default until another is picked\nvar dd=d.querySelector(\'.speaker-layout-dropdown\');\nfunction setSplit(on){ if(on){B.setAttribute(\'data-speaker-layout\',\'split\'); if(dd) dd.value=\'split\'; var l=d.querySelector(\'.speaker-layout-label\'); if(l) l.textContent=\'Layout: Split + previews\';} }\nif(dd&&!dd.querySelector(\'option[value="split"]\')){var o=d.createElement(\'option\');o.value=\'split\';o.textContent=\'Split + previews\';dd.insertBefore(o,dd.firstChild);\n dd.addEventListener(\'change\',function(){try{LS.setItem(\'ti-split\',dd.value===\'split\'?\'1\':\'0\');}catch(e){} setSplit(dd.value===\'split\');});}\nvar want=true; try{want=LS.getItem(\'ti-split\')!==\'0\';}catch(e){}\nsetSplit(want);\n// two more previews beside the native "Upcoming" one; all three show whole slides\nfunction frame(sel){var c=d.querySelector(sel);return c&&c.querySelector(\'iframe\');}\nvar p2=null,p3=null,last=\'\';\nfunction mk(id,label){var w=d.createElement(\'div\');w.id=id;w.className=\'ti-prev\';\n w.innerHTML=\'<div class="label overlay-element">\'+label+\'</div>\';var f=d.createElement(\'iframe\');w.appendChild(f);B.appendChild(w);return f;}\nfunction R(f){try{return f&&f.contentWindow&&f.contentWindow.Reveal&&f.contentWindow.Reveal.isReady&&f.contentWindow.Reveal.isReady()?f.contentWindow.Reveal:null;}catch(e){return null;}}\nfunction tick(){\n var cur=frame(\'#current-slide\'),up=frame(\'#upcoming-slide\'); if(!cur||!up)return;\n if(!p2){p2=mk(\'ti-prev2\',\'+2\');p3=mk(\'ti-prev3\',\'+3\');p2.src=up.src;p3.src=up.src;var ul=d.querySelector(\'#upcoming-slide .label\');if(ul)ul.textContent=\'Next\';}\n var rc=R(cur); if(!rc)return;\n var st=rc.getState(); delete st.overview; st.fragment=-1;\n var key=JSON.stringify(st);\n [up,p2,p3].forEach(function(f){var r=R(f); if(r&&r.getConfig().fragments!==false){r.configure({fragments:false}); f.__tiKey=\'\';}});\n [[p2,2],[p3,3]].forEach(function(a){var r=R(a[0]); if(!r||a[0].__tiKey===key)return;\n   r.setState(st); for(var i=0;i<a[1];i++) r.next(); a[0].__tiKey=key;});\n last=key;\n}\nsetInterval(tick,400);\n})();';
+  window.addEventListener('message', function (ev) {
+    var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+    if (!d || d.namespace !== 'reveal-notes' || !ev.source) return;
+    try {
+      var sd = ev.source.document;
+      if (!sd || !sd.body || sd.__tiSplitWired) return;
+      if (!sd.querySelector('.speaker-layout-dropdown')) return;   // not built yet
+      sd.__tiSplitWired = 1;
+      var s = sd.createElement('script'); s.textContent = SRC; sd.body.appendChild(s);
+    } catch (e) {}
+  });
+})();
+</script>
 </body>
 </html>
