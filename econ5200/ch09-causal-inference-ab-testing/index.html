@@ -2291,42 +2291,6 @@
   else if (window.Reveal && Reveal.on) Reveal.on('ready', go);
 })();
 </script>
-<!-- speaker-split-layout v7 -->
-<script>
-(function () {
-  // v7 (7 Oct): the timer moves into the band under the previews; notes start at the top.
-  // v6 (7 Oct): exactly half and half, slide column 50% / notes 50%.
-  // v5 (7 Oct): current slide at exact 16:9, two 16:9 previews (Next, +2) under it, the left
-  // column sized from the window height so nothing is letterboxed; notes take the rest.
-  // Previews hide the student 'press G' page badge, which covered half a thumbnail.
-  // v4 (7 Oct, last): back to three previews, all under the current slide on the left, so the
-  // notes get the full height of the right half.
-  // v3 (7 Oct, later): six previews across the WHOLE bottom (Next, +2 ... +6); the current slide
-  // gets an outline in speaker view so the drawable area is visible.
-  // v2 (same day): previews sized to the deck's 16:9, notes take the space saved.
-  // 7 Oct 2026, Ryan's drawing: speaker view as current slide (left half) | notes (right),
-  // with the upcoming slide shrunk into a strip of three previews under the notes --
-  // next, +2, +3, whole slides (fragments off), all view-only (the speaker-upcoming-
-  // viewonly block locks them, since they load as ?receiver without postMessageEvents).
-  // Offered as "Split + previews" in the speaker view's own Layout menu and selected by
-  // default; picking another layout there sticks. Installed INTO the speaker window from
-  // here, on reveal's notes heartbeat, as a script element so it runs in that realm.
-  var q = location.search;
-  if (!/[?&]presenter(&|=|$)/.test(q) || /[?&]receiver(&|$)/.test(q)) return;
-  var SRC = '(function(){if(window.__tiSplit)return;window.__tiSplit=1;\nvar d=document,B=d.body,LS=window.localStorage,N=2;\nvar css=d.createElement(\'style\');\n// Left column = current slide at 16:9 on top, two 16:9 previews side by side under it.\n// Ryan\'s call (v6): exactly half and half -- left column 50% wide, notes 50%. The column is\n// L*27/32 tall, so on a 16:10 screen a band is left under the previews; that is the price of wide notes.\nvar S=\'body[data-speaker-layout="split"] \',L=\'50vw\',\n    CH=\'calc(\'+L+\' * 0.5625)\', PW=\'calc(\'+L+\' / 2)\', PH=\'calc(\'+L+\' / 2 * 0.5625)\';\nvar t=S+\'#current-slide{left:0!important;top:0!important;width:\'+L+\'!important;height:\'+CH+\'!important;padding:4px!important;}\'+\n S+\'#speaker-controls{left:\'+L+\'!important;right:auto!important;top:0!important;width:calc(100vw - \'+L+\')!important;height:100vh!important;padding:42px 16px 6px!important;font-size:1.25em!important;}\'+\n S+\'#upcoming-slide,\'+S+\'.ti-prev{position:absolute!important;top:\'+CH+\'!important;width:\'+PW+\'!important;height:\'+PH+\'!important;padding:4px!important;box-sizing:border-box;}\'+\n S+\'#upcoming-slide{left:0!important;right:auto!important;}\'+\n S+\'#ti-prev2{left:\'+PW+\'!important;}\'+\n \'.ti-prev{display:none;}\'+S+\'.ti-prev{display:block;}\'+\n \'.ti-prev iframe{width:100%;height:100%;border:1px solid #ddd;}\'+\n \'.ti-prev .label{position:absolute;top:8px;left:8px;z-index:2;}\'+\n S+\'#upcoming-slide .label,\'+S+\'.ti-prev .label{font-size:12px;height:22px;line-height:22px;padding:0 7px;}\'+\n // the band under the previews holds the timer, so the notes start at the top of the right half\n \'#ti-time-band{display:none;}\'+S+\'#ti-time-band{display:block;position:absolute;left:0;top:calc(\'+L+\' * 27 / 32);width:\'+L+\';bottom:0;padding:14px 22px 6px;box-sizing:border-box;overflow:hidden;font-size:1.25em;}\'+\n S+\'#ti-time-band .speaker-controls-time{border-bottom:0!important;margin:0!important;padding:0!important;}\';\ncss.textContent=t; d.head.appendChild(css);\nvar dd=d.querySelector(\'.speaker-layout-dropdown\');\nfunction setSplit(on){ if(on){B.setAttribute(\'data-speaker-layout\',\'split\'); if(dd) dd.value=\'split\'; var l=d.querySelector(\'.speaker-layout-label\'); if(l) l.textContent=\'Layout: Split + previews\';} }\nif(dd&&!dd.querySelector(\'option[value="split"]\')){var o=d.createElement(\'option\');o.value=\'split\';o.textContent=\'Split + previews\';dd.insertBefore(o,dd.firstChild);\n dd.addEventListener(\'change\',function(){try{LS.setItem(\'ti-split\',dd.value===\'split\'?\'1\':\'0\');}catch(e){} setSplit(dd.value===\'split\');});}\nvar want=true; try{want=LS.getItem(\'ti-split\')!==\'0\';}catch(e){}\nsetSplit(want);\nfunction frame(sel){var c=d.querySelector(sel);return c&&c.querySelector(\'iframe\');}\nvar P=[];\nfunction mk(k){var w=d.createElement(\'div\');w.id=\'ti-prev\'+k;w.className=\'ti-prev\';\n w.innerHTML=\'<div class="label overlay-element">+\'+k+\'</div>\';var f=d.createElement(\'iframe\');w.appendChild(f);B.appendChild(w);return f;}\nfunction R(f){try{return f&&f.contentWindow&&f.contentWindow.Reveal&&f.contentWindow.Reveal.isReady&&f.contentWindow.Reveal.isReady()?f.contentWindow.Reveal:null;}catch(e){return null;}}\nfunction style(f,id,txt){try{var fd=f.contentDocument; if(!fd||!fd.head||fd.getElementById(id))return;\n var st=fd.createElement(\'style\');st.id=id;st.textContent=txt;fd.head.appendChild(st);}catch(e){}}\nvar band=d.createElement(\'div\');band.id=\'ti-time-band\';B.appendChild(band);\nfunction placeTime(){var te=d.querySelector(\'.speaker-controls-time\'),sc=d.querySelector(\'#speaker-controls\'); if(!te||!sc)return;\n var split=B.getAttribute(\'data-speaker-layout\')===\'split\';\n if(split&&te.parentNode!==band) band.appendChild(te);\n else if(!split&&te.parentNode===band) sc.insertBefore(te,sc.firstChild);}\nfunction tick(){\n placeTime();\n var cur=frame(\'#current-slide\'),up=frame(\'#upcoming-slide\'); if(!cur||!up)return;\n // outline the drawable slide area in the current-slide panel\n style(cur,\'ti-slide-edge\',\'.reveal .slides{outline:2px solid rgba(37,99,235,.55);outline-offset:0;}\');\n if(!P.length){for(var k=2;k<=N;k++){var f=mk(k);f.src=up.src;P.push([f,k]);} var ul=d.querySelector(\'#upcoming-slide .label\');if(ul)ul.textContent=\'Next\';}\n // previews: no student "press G" page badge or check-in chip -- at thumbnail size they cover the slide\n [up].concat(P.map(function(a){return a[0];})).forEach(function(f){style(f,\'ti-prev-clean\',\'#ec-pageno,#ec-chip{display:none!important;}\');});\n var rc=R(cur); if(!rc)return;\n var st=rc.getState(); delete st.overview; st.fragment=-1;\n var key=JSON.stringify(st);\n [up].concat(P.map(function(a){return a[0];})).forEach(function(f){var r=R(f); if(r&&r.getConfig().fragments!==false){r.configure({fragments:false}); f.__tiKey=\'\';}});\n P.forEach(function(a){var r=R(a[0]); if(!r||a[0].__tiKey===key)return;\n   r.setState(st); for(var i=0;i<a[1];i++) r.next(); a[0].__tiKey=key;});\n}\nsetInterval(tick,400);\n})();';
-  window.addEventListener('message', function (ev) {
-    var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
-    if (!d || d.namespace !== 'reveal-notes' || !ev.source) return;
-    try {
-      var sd = ev.source.document;
-      if (!sd || !sd.body || sd.__tiSplitWired) return;
-      if (!sd.querySelector('.speaker-layout-dropdown')) return;   // not built yet
-      sd.__tiSplitWired = 1;
-      var s = sd.createElement('script'); s.textContent = SRC; sd.body.appendChild(s);
-    } catch (e) {}
-  });
-})();
-</script>
 <!-- speaker-other-screen v2 -->
 <script>
 (function () {
@@ -2398,6 +2362,53 @@
     try { if (w && name === 'reveal.js - Notes') { spk = w; place(w); } } catch (e) {}
     return w;
   };
+})();
+</script>
+<!-- speaker-split-layout v8 -->
+<script>
+(function () {
+  // v8 (8 Oct): previews driven by postMessage and frames style themselves, so it all works
+  // from the local file:// copy too (Chrome blocks frame-to-frame access between files).
+  // v7 (7 Oct): the timer moves into the band under the previews; notes start at the top.
+  // v6 (7 Oct): exactly half and half, slide column 50% / notes 50%.
+  // v5 (7 Oct): current slide at exact 16:9, two 16:9 previews (Next, +2) under it, the left
+  // column sized from the window height so nothing is letterboxed; notes take the rest.
+  // Previews hide the student 'press G' page badge, which covered half a thumbnail.
+  // v4 (7 Oct, last): back to three previews, all under the current slide on the left, so the
+  // notes get the full height of the right half.
+  // v3 (7 Oct, later): six previews across the WHOLE bottom (Next, +2 ... +6); the current slide
+  // gets an outline in speaker view so the drawable area is visible.
+  // v2 (same day): previews sized to the deck's 16:9, notes take the space saved.
+  // 7 Oct 2026, Ryan's drawing: speaker view as current slide (left half) | notes (right),
+  // with the upcoming slide shrunk into a strip of three previews under the notes --
+  // next, +2, +3, whole slides (fragments off), all view-only (the speaker-upcoming-
+  // viewonly block locks them, since they load as ?receiver without postMessageEvents).
+  // Offered as "Split + previews" in the speaker view's own Layout menu and selected by
+  // default; picking another layout there sticks. Installed INTO the speaker window from
+  // here, on reveal's notes heartbeat, as a script element so it runs in that realm.
+  var q = location.search;
+  // inside speaker view's frames, each deck styles ITSELF (v8: works from file:// too)
+  if (/[?&]receiver(&|$)/.test(q)) {
+    var css = document.createElement('style');
+    css.textContent = /postMessageEvents=true/.test(q)
+      ? '.reveal .slides{outline:2px solid rgba(37,99,235,.55);outline-offset:0;}'   // current slide: drawable area
+      : '#ec-pageno,#ec-chip{display:none!important;}';                              // previews: no student badge
+    document.head.appendChild(css);
+    return;
+  }
+  if (!/[?&]presenter(&|=|$)/.test(q)) return;
+  var SRC = '(function(){if(window.__tiSplit)return;window.__tiSplit=1;\nvar d=document,B=d.body,LS=window.localStorage,N=2;\nvar css=d.createElement(\'style\');\n// Left column = current slide at 16:9 on top, two 16:9 previews side by side under it.\n// Ryan\'s call (v6): exactly half and half -- left column 50% wide, notes 50%. The column is\n// L*27/32 tall, so on a 16:10 screen a band is left under the previews; that is the price of wide notes.\nvar S=\'body[data-speaker-layout="split"] \',L=\'50vw\',\n    CH=\'calc(\'+L+\' * 0.5625)\', PW=\'calc(\'+L+\' / 2)\', PH=\'calc(\'+L+\' / 2 * 0.5625)\';\nvar t=S+\'#current-slide{left:0!important;top:0!important;width:\'+L+\'!important;height:\'+CH+\'!important;padding:4px!important;}\'+\n S+\'#speaker-controls{left:\'+L+\'!important;right:auto!important;top:0!important;width:calc(100vw - \'+L+\')!important;height:100vh!important;padding:42px 16px 6px!important;font-size:1.25em!important;}\'+\n S+\'#upcoming-slide,\'+S+\'.ti-prev{position:absolute!important;top:\'+CH+\'!important;width:\'+PW+\'!important;height:\'+PH+\'!important;padding:4px!important;box-sizing:border-box;}\'+\n S+\'#upcoming-slide{left:0!important;right:auto!important;}\'+\n S+\'#ti-prev2{left:\'+PW+\'!important;}\'+\n \'.ti-prev{display:none;}\'+S+\'.ti-prev{display:block;}\'+\n \'.ti-prev iframe{width:100%;height:100%;border:1px solid #ddd;}\'+\n \'.ti-prev .label{position:absolute;top:8px;left:8px;z-index:2;}\'+\n S+\'#upcoming-slide .label,\'+S+\'.ti-prev .label{font-size:12px;height:22px;line-height:22px;padding:0 7px;}\'+\n // the band under the previews holds the timer, so the notes start at the top of the right half\n \'#ti-time-band{display:none;}\'+S+\'#ti-time-band{display:block;position:absolute;left:0;top:calc(\'+L+\' * 27 / 32);width:\'+L+\';bottom:0;padding:14px 22px 6px;box-sizing:border-box;overflow:hidden;font-size:1.25em;}\'+\n S+\'#ti-time-band .speaker-controls-time{border-bottom:0!important;margin:0!important;padding:0!important;}\';\ncss.textContent=t; d.head.appendChild(css);\nvar dd=d.querySelector(\'.speaker-layout-dropdown\');\nfunction setSplit(on){ if(on){B.setAttribute(\'data-speaker-layout\',\'split\'); if(dd) dd.value=\'split\'; var l=d.querySelector(\'.speaker-layout-label\'); if(l) l.textContent=\'Layout: Split + previews\';} }\nif(dd&&!dd.querySelector(\'option[value="split"]\')){var o=d.createElement(\'option\');o.value=\'split\';o.textContent=\'Split + previews\';dd.insertBefore(o,dd.firstChild);\n dd.addEventListener(\'change\',function(){try{LS.setItem(\'ti-split\',dd.value===\'split\'?\'1\':\'0\');}catch(e){} setSplit(dd.value===\'split\');});}\nvar want=true; try{want=LS.getItem(\'ti-split\')!==\'0\';}catch(e){}\nsetSplit(want);\nfunction frame(sel){var c=d.querySelector(sel);return c&&c.querySelector(\'iframe\');}\nvar P=[];\nfunction mk(k){var w=d.createElement(\'div\');w.id=\'ti-prev\'+k;w.className=\'ti-prev\';\n w.innerHTML=\'<div class="label overlay-element">+\'+k+\'</div>\';var f=d.createElement(\'iframe\');w.appendChild(f);B.appendChild(w);return f;}\nvar band=d.createElement(\'div\');band.id=\'ti-time-band\';B.appendChild(band);\nfunction placeTime(){var te=d.querySelector(\'.speaker-controls-time\'),sc=d.querySelector(\'#speaker-controls\'); if(!te||!sc)return;\n var split=B.getAttribute(\'data-speaker-layout\')===\'split\';\n if(split&&te.parentNode!==band) band.appendChild(te);\n else if(!split&&te.parentNode===band) sc.insertBefore(te,sc.firstChild);}\n// v8: everything below talks to the preview frames by postMessage only. v1-v7 reached\n// into each frame\'s own Reveal object directly, which Chrome forbids between file:// pages,\n// so from the local Resilio copy "+2" sat on slide 1 for the whole class.\nfunction post(f,method,args){try{f.contentWindow.postMessage(JSON.stringify({method:method,args:args||[]}),\'*\');}catch(e){}}\nvar last=null;\nfunction drive(){ if(!last)return; var up=frame(\'#upcoming-slide\');\n if(up) post(up,\'configure\',[{fragments:false}]);\n P.forEach(function(a){var f=a[0]; post(f,\'configure\',[{fragments:false}]); post(f,\'setState\',[last]); for(var i=0;i<a[1];i++) post(f,\'next\');});}\n// the current-slide frame reports every move to this window (postMessageEvents=true)\nwindow.addEventListener(\'message\',function(ev){var cur=frame(\'#current-slide\'); if(!cur||ev.source!==cur.contentWindow)return;\n var m; try{m=JSON.parse(ev.data);}catch(e){return;} if(!m||m.namespace!==\'reveal\'||!m.state)return;\n var st=JSON.parse(JSON.stringify(m.state)); delete st.overview; st.indexf=-1;\n if(JSON.stringify(st)===JSON.stringify(last))return; last=st; drive();});\nfunction tick(){\n placeTime();\n var up=frame(\'#upcoming-slide\'); if(!up)return;\n if(!P.length){for(var k=2;k<=N;k++){var f=mk(k);f.src=up.src;f.addEventListener(\'load\',function(){setTimeout(drive,800);});P.push([f,k]);} var ul=d.querySelector(\'#upcoming-slide .label\');if(ul)ul.textContent=\'Next\';}\n}\nsetInterval(tick,400);\nsetInterval(drive,3000);   // a frame that loaded late, or reloaded, catches up\n})();';
+  window.addEventListener('message', function (ev) {
+    var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+    if (!d || d.namespace !== 'reveal-notes' || !ev.source) return;
+    try {
+      var sd = ev.source.document;
+      if (!sd || !sd.body || sd.__tiSplitWired) return;
+      if (!sd.querySelector('.speaker-layout-dropdown')) return;   // not built yet
+      sd.__tiSplitWired = 1;
+      var s = sd.createElement('script'); s.textContent = SRC; sd.body.appendChild(s);
+    } catch (e) {}
+  });
 })();
 </script>
 </body>
