@@ -2170,7 +2170,7 @@ Conventional Wald CI:  [0.1926, 0.3248]</code></pre>
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
 })();
 </script>
-<!-- speaker-other-screen v5 -->
+<!-- speaker-other-screen v6 -->
 <script>
 (function () {
   // 29 Sep 2026 (tried on 2316 Ch 5, confirmed by Ryan, then all decks). Ryan: the deck is dragged to the projector screen, then S opens
@@ -2234,8 +2234,19 @@ Conventional Wald CI:  [0.1926, 0.3248]</code></pre>
     if ((e.key !== 's' && e.key !== 'S') || e.metaKey || e.ctrlKey || e.altKey) return;
     var t = e.target, g = t && t.tagName;
     if (g === 'INPUT' || g === 'TEXTAREA' || g === 'SELECT' || (t && t.isContentEditable)) return;
-    if (HAS && !details) load().then(function () { if (spk) place(spk); }, function () {});
+    if (!HAS || details) return;
+    // v6: the screen list arrives a moment AFTER the keypress, but reveal opens speaker view
+    // during it -- so v5 opened it here before it knew where "there" was, and a second S only
+    // focused that window. Hold this S, get the list (at most 2.5 s, well inside the
+    // keypress's activation), then open speaker view straight onto the other screen.
+    var n = window.Reveal && Reveal.getPlugin && Reveal.getPlugin('notes');
+    if (!n || !n.open) { load().then(function () { if (spk) place(spk); }, function () {}); return; }
+    e.preventDefault(); e.stopImmediatePropagation();
+    var opened = false, go = function () { if (opened) return; opened = true; n.open(); };
+    load().then(go, go); setTimeout(go, 2500);
   }, true);
+  // v6 (8 Oct): an S pressed before the screen list is known waits for it, so the FIRST S
+  // works; speaker view says what the open did.
   // v5 (8 Oct): ask Chrome to OPEN speaker view on the other screen, instead of opening it
   // here and moving it afterwards. From the local file:// copy the move never happened even
   // after "Allow": the speaker window is about:blank, which Chrome does not count as the
@@ -2252,6 +2263,12 @@ Conventional Wald CI:  [0.1926, 0.3248]</code></pre>
     if (name === 'reveal.js - Notes' && t)
       args[2] = 'left=' + t.availLeft + ',top=' + t.availTop + ',width=' + t.availWidth + ',height=' + t.availHeight;
     var w = open.apply(window, args);
+    if (name === 'reveal.js - Notes' && w) {
+      var why = t ? 'opened on the other screen at ' + t.availLeft + ',' + t.availTop
+                  : (!HAS ? 'this browser cannot place windows'
+                     : details ? 'Chrome sees only one screen' : 'screen list not ready yet (permission not granted?)');
+      setTimeout(function () { say(w, 'Other screen: ' + why, !t); }, 400);
+    }
     try { if (w && name === 'reveal.js - Notes') { spk = w; place(w); } } catch (e) {}
     return w;
   };
