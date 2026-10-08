@@ -1226,7 +1226,67 @@ cost at default 0.5 0.9437</code></pre>
   };
 })();
 </script>
-<!-- presenter-gate v26 -->
+<!-- help-shortcuts v3 -->
+<script>
+(function () {
+  // 29 Sep 2026, Ryan: reveal's "?" panel only knew reveal's own keys. Every
+  // key the decks add (pen, timers, poll, speaker-view relays) is registered
+  // here so the panel is the one place to look. Rows depend on the window: the
+  // projector and speaker view get the instructor keys; a student's copy gets
+  // only what works for a student. Rows for features a deck lacks are skipped.
+  var q = location.search;
+  var receiver = /[?&]receiver(&|$)/.test(q), current = receiver && /postMessageEvents=true/.test(q);
+  var projector = /[?&]presenter(&|=|$)/.test(q) && !receiver;
+  if (receiver && !current) return;                         // the Upcoming pane is view-only
+  var inst = projector || current || /[?&]instructor(&|=|$)/.test(q);
+  // twice as many rows as reveal's own list: wider and tighter so it fits one screen
+  var css = document.createElement('style');
+  var H = '.reveal .overlay.overlay-help .viewport .viewport-inner';
+  css.textContent = H + '{width:min(1000px,94vw)!important;max-width:none!important;}' +
+    H + ' table{width:100%!important;}' +
+    H + ' table th,' + H + ' table td{padding:4px 12px!important;font-size:13px!important;line-height:1.3!important;}' +
+    H + ' table td:last-child{text-align:left!important;}' +
+    H + ' table th:first-child,' + H + ' table td:first-child{width:24%!important;}' +
+    H + ' .title{margin:0!important;}' + H + ' br{display:none;}' +
+    '.reveal .overlay.overlay-help .viewport{padding-top:0!important;}' + H + '{padding-top:18px!important;}';
+  document.head.appendChild(css);
+  function go() {
+    if (!Reveal.registerKeyboardShortcut) return;
+    var K = function (k, d) { Reveal.registerKeyboardShortcut(k, d); };
+    var hasTimer = !!document.getElementById('cd-wrap');
+    var hasPoll = !!document.querySelector('.poll-grid, [data-poll-voting]');
+    if (inst) {
+      K('F', 'Fullscreen &mdash; pressed in speaker view, it full-screens the <b>projector</b>');
+      K('ESC, O', 'Slide overview &mdash; from speaker view, on <b>both</b> screens (Enter or a click picks a slide)');
+      K('M', 'Move keyboard focus between the projector and speaker view (Cmd-` brings a window forward)');
+      if (hasTimer) K('1 &ndash; 9', 'Countdown timer for that many minutes (same number again hides it); starts on both screens');
+      if (hasPoll) K('T', 'Poll slide: open / close voting. In speaker view, clicking an option votes on the projector');
+    }
+    K('D', 'Pen on / off (Esc also leaves it)');
+    K('Pen: F L A R S Y', 'Free draw &middot; line &middot; arrow &middot; box &middot; shade &middot; triangle');
+    K('Pen: G N H E', 'Axis guides &middot; curve label &middot; shifted copy &middot; eraser');
+    K('Pen: [ ] Z X C P', 'Thinner &middot; thicker &middot; undo &middot; redo &middot; clear slide &middot; save as PNG');
+    K('?', 'This list');
+    // S is registered by reveal's notes plugin as a key BINDING ("Speaker notes
+    // view"), which the panel lists after these rows; a second S row would be a
+    // duplicate. Its description is not reachable through the API, so the row is
+    // amended when the panel is drawn.
+    if (inst) {
+      var wrap = document.querySelector('.reveal');
+      if (wrap && window.MutationObserver) new MutationObserver(function () {
+        var o = wrap.querySelector('.overlay-help');
+        if (!o || o.__tiS) return; o.__tiS = 1;
+        [].forEach.call(o.querySelectorAll('td'), function (td) {
+          if (td.textContent === 'Speaker notes view' && td.parentNode) td.parentNode.remove();   // v3: Ryan does not want the S row
+        });
+      }).observe(wrap, { childList: true });
+    }
+  }
+  if (window.Reveal && Reveal.isReady && Reveal.isReady()) go();
+  else if (window.Reveal && Reveal.on) Reveal.on('ready', go);
+})();
+</script>
+<!-- presenter-gate v27 -->
 <script>
 (function () {
   var q = location.search;
@@ -1584,6 +1644,15 @@ cost at default 0.5 0.9437</code></pre>
         'px Georgia,serif;color:' + PENS[pi].c + ';background:rgba(255,255,255,.92);border:2px solid ' +
         PENS[pi].c + ';border-radius:6px;padding:1px 5px;outline:none';
       document.body.appendChild(inp);
+      // v27: the box grows with the text. At 130px fixed, a large italic label scrolled its
+      // start out of sight after four characters and Ryan could not see what he typed.
+      var meas = document.createElement('canvas').getContext('2d');
+      meas.font = 'italic 700 ' + Math.round(size * k) + 'px Georgia,serif';
+      var grow = function () {
+        var w = meas.measureText(inp.value || inp.placeholder).width;
+        inp.style.width = Math.max(60, Math.ceil(w + size * k * 0.9 + 14)) + 'px';
+      };
+      inp.addEventListener('input', grow); grow();
       inp.focus();
       var done = function (commit) {
         var txt = inp.value.trim();
@@ -1946,7 +2015,7 @@ cost at default 0.5 0.9437</code></pre>
   // old gate for the rest of the session. The speaker window is about:blank
   // written by this one, so it is same-origin and writable, and reveal's notes
   // plugin heartbeats us a live handle to it every second.
-  var spkWin = null, SPK = 'v26', GATE = 'presenter-gate v26';
+  var spkWin = null, SPK = 'v27', GATE = 'presenter-gate v27';
   // The SAME handler has to go in every document that can hold the keyboard.
   // Clicking the speaker view's slide preview puts focus INSIDE that iframe,
   // which is its own document -- keydowns there never reach the speaker
@@ -2176,66 +2245,6 @@ cost at default 0.5 0.9437</code></pre>
     if (!receiver) wire();
   }
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
-})();
-</script>
-<!-- help-shortcuts v3 -->
-<script>
-(function () {
-  // 29 Sep 2026, Ryan: reveal's "?" panel only knew reveal's own keys. Every
-  // key the decks add (pen, timers, poll, speaker-view relays) is registered
-  // here so the panel is the one place to look. Rows depend on the window: the
-  // projector and speaker view get the instructor keys; a student's copy gets
-  // only what works for a student. Rows for features a deck lacks are skipped.
-  var q = location.search;
-  var receiver = /[?&]receiver(&|$)/.test(q), current = receiver && /postMessageEvents=true/.test(q);
-  var projector = /[?&]presenter(&|=|$)/.test(q) && !receiver;
-  if (receiver && !current) return;                         // the Upcoming pane is view-only
-  var inst = projector || current || /[?&]instructor(&|=|$)/.test(q);
-  // twice as many rows as reveal's own list: wider and tighter so it fits one screen
-  var css = document.createElement('style');
-  var H = '.reveal .overlay.overlay-help .viewport .viewport-inner';
-  css.textContent = H + '{width:min(1000px,94vw)!important;max-width:none!important;}' +
-    H + ' table{width:100%!important;}' +
-    H + ' table th,' + H + ' table td{padding:4px 12px!important;font-size:13px!important;line-height:1.3!important;}' +
-    H + ' table td:last-child{text-align:left!important;}' +
-    H + ' table th:first-child,' + H + ' table td:first-child{width:24%!important;}' +
-    H + ' .title{margin:0!important;}' + H + ' br{display:none;}' +
-    '.reveal .overlay.overlay-help .viewport{padding-top:0!important;}' + H + '{padding-top:18px!important;}';
-  document.head.appendChild(css);
-  function go() {
-    if (!Reveal.registerKeyboardShortcut) return;
-    var K = function (k, d) { Reveal.registerKeyboardShortcut(k, d); };
-    var hasTimer = !!document.getElementById('cd-wrap');
-    var hasPoll = !!document.querySelector('.poll-grid, [data-poll-voting]');
-    if (inst) {
-      K('F', 'Fullscreen &mdash; pressed in speaker view, it full-screens the <b>projector</b>');
-      K('ESC, O', 'Slide overview &mdash; from speaker view, on <b>both</b> screens (Enter or a click picks a slide)');
-      K('M', 'Move keyboard focus between the projector and speaker view (Cmd-` brings a window forward)');
-      if (hasTimer) K('1 &ndash; 9', 'Countdown timer for that many minutes (same number again hides it); starts on both screens');
-      if (hasPoll) K('T', 'Poll slide: open / close voting. In speaker view, clicking an option votes on the projector');
-    }
-    K('D', 'Pen on / off (Esc also leaves it)');
-    K('Pen: F L A R S Y', 'Free draw &middot; line &middot; arrow &middot; box &middot; shade &middot; triangle');
-    K('Pen: G N H E', 'Axis guides &middot; curve label &middot; shifted copy &middot; eraser');
-    K('Pen: [ ] Z X C P', 'Thinner &middot; thicker &middot; undo &middot; redo &middot; clear slide &middot; save as PNG');
-    K('?', 'This list');
-    // S is registered by reveal's notes plugin as a key BINDING ("Speaker notes
-    // view"), which the panel lists after these rows; a second S row would be a
-    // duplicate. Its description is not reachable through the API, so the row is
-    // amended when the panel is drawn.
-    if (inst) {
-      var wrap = document.querySelector('.reveal');
-      if (wrap && window.MutationObserver) new MutationObserver(function () {
-        var o = wrap.querySelector('.overlay-help');
-        if (!o || o.__tiS) return; o.__tiS = 1;
-        [].forEach.call(o.querySelectorAll('td'), function (td) {
-          if (td.textContent === 'Speaker notes view' && td.parentNode) td.parentNode.remove();   // v3: Ryan does not want the S row
-        });
-      }).observe(wrap, { childList: true });
-    }
-  }
-  if (window.Reveal && Reveal.isReady && Reveal.isReady()) go();
-  else if (window.Reveal && Reveal.on) Reveal.on('ready', go);
 })();
 </script>
 </body>
