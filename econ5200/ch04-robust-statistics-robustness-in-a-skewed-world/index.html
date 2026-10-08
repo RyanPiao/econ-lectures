@@ -2957,7 +2957,7 @@ scores = iso.decision_function(features)         # more negative = more anomalou
   });
 })();
 </script>
-<!-- speaker-other-screen v4 -->
+<!-- speaker-other-screen v2 -->
 <script>
 (function () {
   // 29 Sep 2026 (tried on 2316 Ch 5, confirmed by Ryan, then all decks). Ryan: the deck is dragged to the projector screen, then S opens
@@ -2965,9 +2965,6 @@ scores = iso.decision_function(features)         # more negative = more anomalou
   // Window Management API lets this page place a window IT opened on another
   // display: the speaker window opens as before, then moves to whichever screen
   // the projector is NOT on and fills it.
-  // v4 (8 Oct): a fresh window name per speaker view, so Chrome never reuses an old TAB.
-  // v3 (8 Oct): the double-click on the name asks early too, and the message no longer says
-  // "blocked" when Chrome merely needs a fresh click to ask.
   // v2: v1 asked for the permission AFTER window.open, which had already used up
   // the keypress -- and Chrome only shows the "manage windows on all your
   // displays" prompt on a fresh keypress, so Ryan never saw it. The request now
@@ -3013,17 +3010,8 @@ scores = iso.decision_function(features)         # more negative = more anomalou
       try { w.moveTo(t.availLeft, t.availTop); w.resizeTo(t.availWidth, t.availHeight); } catch (e) {}
       say(w, 'Speaker view moved to the other screen');
     }, function (e) {
-      // NotAllowedError means EITHER "denied in site settings" OR "Chrome would have asked,
-      // but not without a fresh click/key" -- v2 called both "blocked", which was wrong.
-      // Ask the permission API which one it is before saying anything.
-      var fresh = 'Other screen: Chrome needs to ask you first. Close this window, then press S in the deck and click Allow when Chrome asks to manage windows.';
-      try {
-        navigator.permissions.query({ name: 'window-management' }).then(function (st) {
-          say(w, st.state === 'denied'
-            ? 'Other screen: turned off for this site. Allow "Window management" (lock icon in the address bar), then press S again.'
-            : fresh, true);
-        }, function () { say(w, fresh, true); });
-      } catch (_) { say(w, fresh, true); }
+      say(w, 'Other screen: permission ' + (e && e.name === 'NotAllowedError' ? 'blocked' : 'not given') +
+        '. Allow "Window management" for this site (lock icon in the address bar), then press S again.', true);
     });
   }
   // the permission request must ride the keypress, so it goes out here, BEFORE
@@ -3034,19 +3022,10 @@ scores = iso.decision_function(features)         # more negative = more anomalou
     if (g === 'INPUT' || g === 'TEXTAREA' || g === 'SELECT' || (t && t.isContentEditable)) return;
     if (HAS && !details) load().then(function () { if (spk) place(spk); }, function () {});
   }, true);
-  // v3: the double-click on the name opens speaker view too, so it needs the same early ask
-  window.addEventListener('dblclick', function () {
-    if (HAS && !details) load().then(function () { if (spk) place(spk); }, function () {});
-  }, true);
   var open = window.open;
-  window.open = function (url, name, features) {
-    var notes = (name === 'reveal.js - Notes');
-    // v4: reveal always names the speaker window "reveal.js - Notes". If one of those ever
-    // ends up as a TAB (dragged into the deck's window), Chrome REUSES that tab by name on
-    // every later S -- features ignored, and a tab cannot be moved to another screen. A
-    // fresh name per open always gives a real popup window.
-    var w = notes ? open.call(window, url, name + ' ' + Date.now(), features) : open.apply(window, arguments);
-    try { if (w && notes) { spk = w; place(w); } } catch (e) {}
+  window.open = function (url, name) {
+    var w = open.apply(window, arguments);
+    try { if (w && name === 'reveal.js - Notes') { spk = w; place(w); } } catch (e) {}
     return w;
   };
 })();
