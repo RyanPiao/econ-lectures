@@ -1284,66 +1284,6 @@
   });
 })();
 </script>
-<!-- help-shortcuts v1 -->
-<script>
-(function () {
-  // 29 Sep 2026, Ryan: reveal's "?" panel only knew reveal's own keys. Every
-  // key the decks add (pen, timers, poll, speaker-view relays) is registered
-  // here so the panel is the one place to look. Rows depend on the window: the
-  // projector and speaker view get the instructor keys; a student's copy gets
-  // only what works for a student. Rows for features a deck lacks are skipped.
-  var q = location.search;
-  var receiver = /[?&]receiver(&|$)/.test(q), current = receiver && /postMessageEvents=true/.test(q);
-  var projector = /[?&]presenter(&|=|$)/.test(q) && !receiver;
-  if (receiver && !current) return;                         // the Upcoming pane is view-only
-  var inst = projector || current || /[?&]instructor(&|=|$)/.test(q);
-  // twice as many rows as reveal's own list: wider and tighter so it fits one screen
-  var css = document.createElement('style');
-  var H = '.reveal .overlay.overlay-help .viewport .viewport-inner';
-  css.textContent = H + '{width:min(1000px,94vw)!important;max-width:none!important;}' +
-    H + ' table{width:100%!important;}' +
-    H + ' table th,' + H + ' table td{padding:4px 12px!important;font-size:13px!important;line-height:1.3!important;}' +
-    H + ' table td:last-child{text-align:left!important;}' +
-    H + ' table th:first-child,' + H + ' table td:first-child{width:24%!important;}' +
-    H + ' .title{margin:0!important;}' + H + ' br{display:none;}' +
-    '.reveal .overlay.overlay-help .viewport{padding-top:0!important;}' + H + '{padding-top:18px!important;}';
-  document.head.appendChild(css);
-  function go() {
-    if (!Reveal.registerKeyboardShortcut) return;
-    var K = function (k, d) { Reveal.registerKeyboardShortcut(k, d); };
-    var hasTimer = !!document.getElementById('cd-wrap');
-    var hasPoll = !!document.querySelector('.poll-grid, [data-poll-voting]');
-    if (inst) {
-      K('F', 'Fullscreen &mdash; pressed in speaker view, it full-screens the <b>projector</b>');
-      K('ESC, O', 'Slide overview &mdash; from speaker view, on <b>both</b> screens (Enter or a click picks a slide)');
-      K('M', 'Move keyboard focus between the projector and speaker view (Cmd-` brings a window forward)');
-      if (hasTimer) K('1 &ndash; 9', 'Countdown timer for that many minutes (same number again hides it); starts on both screens');
-      if (hasPoll) K('T', 'Poll slide: open / close voting. In speaker view, clicking an option votes on the projector');
-    }
-    K('D', 'Pen on / off (Esc also leaves it)');
-    K('Pen: F L A R S Y', 'Free draw &middot; line &middot; arrow &middot; box &middot; shade &middot; triangle');
-    K('Pen: G N H E', 'Axis guides &middot; curve label &middot; shifted copy &middot; eraser');
-    K('Pen: [ ] Z X C P', 'Thinner &middot; thicker &middot; undo &middot; redo &middot; clear slide &middot; save as PNG');
-    K('?', 'This list');
-    // S is registered by reveal's notes plugin as a key BINDING ("Speaker notes
-    // view"), which the panel lists after these rows; a second S row would be a
-    // duplicate. Its description is not reachable through the API, so the row is
-    // amended when the panel is drawn.
-    if (inst) {
-      var wrap = document.querySelector('.reveal');
-      if (wrap && window.MutationObserver) new MutationObserver(function () {
-        var o = wrap.querySelector('.overlay-help');
-        if (!o || o.__tiS) return; o.__tiS = 1;
-        [].forEach.call(o.querySelectorAll('td'), function (td) {
-          if (td.textContent === 'Speaker notes view') td.innerHTML = 'Speaker view &mdash; opens on the <b>other</b> screen';
-        });
-      }).observe(wrap, { childList: true });
-    }
-  }
-  if (window.Reveal && Reveal.isReady && Reveal.isReady()) go();
-  else if (window.Reveal && Reveal.on) Reveal.on('ready', go);
-})();
-</script>
 <!-- speaker-split-layout v8 -->
 <script>
 (function () {
@@ -1391,7 +1331,111 @@
   });
 })();
 </script>
-<!-- presenter-gate v25 -->
+<!-- speaker-other-screen v6 -->
+<script>
+(function () {
+  // 29 Sep 2026 (tried on 2316 Ch 5, confirmed by Ryan, then all decks). Ryan: the deck is dragged to the projector screen, then S opens
+  // speaker view -- on that same screen, so it had to be dragged back. Chrome's
+  // Window Management API lets this page place a window IT opened on another
+  // display: the speaker window opens as before, then moves to whichever screen
+  // the projector is NOT on and fills it.
+  // v2: v1 asked for the permission AFTER window.open, which had already used up
+  // the keypress -- and Chrome only shows the "manage windows on all your
+  // displays" prompt on a fresh keypress, so Ryan never saw it. The request now
+  // goes out on the S keydown itself (capture phase, before reveal opens the
+  // window), and the window is moved whenever the answer arrives. Every attempt
+  // reports its outcome INSIDE speaker view, never on the projector.
+  var q = location.search;
+  if (!/[?&]presenter(&|=|$)/.test(q) || /[?&]receiver(&|$)/.test(q)) return;
+  var HAS = ('getScreenDetails' in window);
+  var details = null, pending = null, spk = null;
+  function load() {
+    if (details) return Promise.resolve(details);
+    if (!pending) pending = window.getScreenDetails().then(function (d) { details = d; return d; },
+                                                          function (e) { pending = null; throw e; });
+    return pending;
+  }
+  try {
+    navigator.permissions.query({ name: 'window-management' })
+      .then(function (s) { if (s.state === 'granted') load().catch(function () {}); }, function () {});
+  } catch (e) {}
+  function say(w, msg, bad) {
+    try {
+      var d = w.document; if (!d || !d.body) return;
+      var b = d.getElementById('ti-scr-say');
+      if (!b) { b = d.createElement('div'); b.id = 'ti-scr-say';
+        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:10px;z-index:99999;max-width:80%;' +
+          'color:#fff;font:600 13px system-ui,sans-serif;padding:7px 14px;border-radius:10px;pointer-events:none;text-align:center';
+        d.body.appendChild(b); }
+      b.style.background = bad ? 'rgba(185,28,28,.95)' : 'rgba(21,128,61,.95)';
+      b.textContent = msg; b.style.display = 'block';
+      clearTimeout(b.__t); b.__t = setTimeout(function () { b.style.display = 'none'; }, bad ? 9000 : 2500);
+    } catch (e) {}
+  }
+  function place(w) {
+    if (!w || w.closed) return;
+    if (!HAS) { say(w, 'Other screen: this browser cannot place windows (needs Chrome).', true); return; }
+    load().then(function (d) {
+      if (w.closed) return;
+      var cur = d.currentScreen;
+      var others = d.screens.filter(function (s) { return s.left !== cur.left || s.top !== cur.top; });
+      if (!others.length) { say(w, 'Other screen: Chrome sees only one screen.', true); return; }
+      var t = others.filter(function (s) { return s.isPrimary; })[0] || others[0];
+      try { w.moveTo(t.availLeft, t.availTop); w.resizeTo(t.availWidth, t.availHeight); } catch (e) {}
+      say(w, 'Speaker view moved to the other screen');
+    }, function (e) {
+      say(w, 'Other screen: permission ' + (e && e.name === 'NotAllowedError' ? 'blocked' : 'not given') +
+        '. Allow "Window management" for this site (lock icon in the address bar), then press S again.', true);
+    });
+  }
+  // v5: on the website a moveTo after opening also works, so place() still runs as a second try
+  // the permission request must ride the keypress, so it goes out here, BEFORE
+  // reveal's own S handler spends the activation on window.open
+  window.addEventListener('keydown', function (e) {
+    if ((e.key !== 's' && e.key !== 'S') || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target, g = t && t.tagName;
+    if (g === 'INPUT' || g === 'TEXTAREA' || g === 'SELECT' || (t && t.isContentEditable)) return;
+    if (!HAS || details) return;
+    // v6: the screen list arrives a moment AFTER the keypress, but reveal opens speaker view
+    // during it -- so v5 opened it here before it knew where "there" was, and a second S only
+    // focused that window. Hold this S, get the list (at most 2.5 s, well inside the
+    // keypress's activation), then open speaker view straight onto the other screen.
+    var n = window.Reveal && Reveal.getPlugin && Reveal.getPlugin('notes');
+    if (!n || !n.open) { load().then(function () { if (spk) place(spk); }, function () {}); return; }
+    e.preventDefault(); e.stopImmediatePropagation();
+    var opened = false, go = function () { if (opened) return; opened = true; n.open(); };
+    load().then(go, go); setTimeout(go, 2500);
+  }, true);
+  // v6 (8 Oct): an S pressed before the screen list is known waits for it, so the FIRST S
+  // works; speaker view says what the open did.
+  // v5 (8 Oct): ask Chrome to OPEN speaker view on the other screen, instead of opening it
+  // here and moving it afterwards. From the local file:// copy the move never happened even
+  // after "Allow": the speaker window is about:blank, which Chrome does not count as the
+  // permitted file, so its moveTo is clamped to this screen. The open itself is the deck
+  // window's own call, on the S keypress, so the permission it holds applies.
+  function target(d) {
+    var cur = d.currentScreen;
+    var others = d.screens.filter(function (s) { return s.left !== cur.left || s.top !== cur.top; });
+    return others.filter(function (s) { return s.isPrimary; })[0] || others[0] || null;
+  }
+  var open = window.open;
+  window.open = function (url, name) {
+    var args = Array.prototype.slice.call(arguments), t = details && target(details);
+    if (name === 'reveal.js - Notes' && t)
+      args[2] = 'left=' + t.availLeft + ',top=' + t.availTop + ',width=' + t.availWidth + ',height=' + t.availHeight;
+    var w = open.apply(window, args);
+    if (name === 'reveal.js - Notes' && w) {
+      var why = t ? 'opened on the other screen at ' + t.availLeft + ',' + t.availTop
+                  : (!HAS ? 'this browser cannot place windows'
+                     : details ? 'Chrome sees only one screen' : 'screen list not ready yet (permission not granted?)');
+      setTimeout(function () { say(w, 'Other screen: ' + why, !t); }, 400);
+    }
+    try { if (w && name === 'reveal.js - Notes') { spk = w; place(w); } } catch (e) {}
+    return w;
+  };
+})();
+</script>
+<!-- presenter-gate v26 -->
 <script>
 (function () {
   var q = location.search;
@@ -2023,6 +2067,16 @@
     }
 
     function keys(e) {
+      // v26: the system shortcuts too, while the pen is on -- Cmd/Ctrl-Z undo,
+      // Cmd/Ctrl-Shift-Z or Ctrl-Y redo. With the pen off they pass through untouched.
+      if (active && (e.metaKey || e.ctrlKey) && !e.altKey) {
+        var kk = (e.key || '').toLowerCase();
+        if (kk === 'z' || kk === 'y') {
+          e.preventDefault(); e.stopPropagation();
+          if (kk === 'y' || e.shiftKey) redo(); else undo();
+          return;
+        }
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       var t = e.target, tag = t && t.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
@@ -2101,7 +2155,7 @@
   // old gate for the rest of the session. The speaker window is about:blank
   // written by this one, so it is same-origin and writable, and reveal's notes
   // plugin heartbeats us a live handle to it every second.
-  var spkWin = null, SPK = 'v25', GATE = 'presenter-gate v25';
+  var spkWin = null, SPK = 'v26', GATE = 'presenter-gate v26';
   // The SAME handler has to go in every document that can hold the keyboard.
   // Clicking the speaker view's slide preview puts focus INSIDE that iframe,
   // which is its own document -- keydowns there never reach the speaker
@@ -2333,108 +2387,65 @@
   if (Reveal.isReady()) start(); else Reveal.on('ready', start);
 })();
 </script>
-<!-- speaker-other-screen v6 -->
+<!-- help-shortcuts v2 -->
 <script>
 (function () {
-  // 29 Sep 2026 (tried on 2316 Ch 5, confirmed by Ryan, then all decks). Ryan: the deck is dragged to the projector screen, then S opens
-  // speaker view -- on that same screen, so it had to be dragged back. Chrome's
-  // Window Management API lets this page place a window IT opened on another
-  // display: the speaker window opens as before, then moves to whichever screen
-  // the projector is NOT on and fills it.
-  // v2: v1 asked for the permission AFTER window.open, which had already used up
-  // the keypress -- and Chrome only shows the "manage windows on all your
-  // displays" prompt on a fresh keypress, so Ryan never saw it. The request now
-  // goes out on the S keydown itself (capture phase, before reveal opens the
-  // window), and the window is moved whenever the answer arrives. Every attempt
-  // reports its outcome INSIDE speaker view, never on the projector.
+  // 29 Sep 2026, Ryan: reveal's "?" panel only knew reveal's own keys. Every
+  // key the decks add (pen, timers, poll, speaker-view relays) is registered
+  // here so the panel is the one place to look. Rows depend on the window: the
+  // projector and speaker view get the instructor keys; a student's copy gets
+  // only what works for a student. Rows for features a deck lacks are skipped.
   var q = location.search;
-  if (!/[?&]presenter(&|=|$)/.test(q) || /[?&]receiver(&|$)/.test(q)) return;
-  var HAS = ('getScreenDetails' in window);
-  var details = null, pending = null, spk = null;
-  function load() {
-    if (details) return Promise.resolve(details);
-    if (!pending) pending = window.getScreenDetails().then(function (d) { details = d; return d; },
-                                                          function (e) { pending = null; throw e; });
-    return pending;
-  }
-  try {
-    navigator.permissions.query({ name: 'window-management' })
-      .then(function (s) { if (s.state === 'granted') load().catch(function () {}); }, function () {});
-  } catch (e) {}
-  function say(w, msg, bad) {
-    try {
-      var d = w.document; if (!d || !d.body) return;
-      var b = d.getElementById('ti-scr-say');
-      if (!b) { b = d.createElement('div'); b.id = 'ti-scr-say';
-        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:10px;z-index:99999;max-width:80%;' +
-          'color:#fff;font:600 13px system-ui,sans-serif;padding:7px 14px;border-radius:10px;pointer-events:none;text-align:center';
-        d.body.appendChild(b); }
-      b.style.background = bad ? 'rgba(185,28,28,.95)' : 'rgba(21,128,61,.95)';
-      b.textContent = msg; b.style.display = 'block';
-      clearTimeout(b.__t); b.__t = setTimeout(function () { b.style.display = 'none'; }, bad ? 9000 : 2500);
-    } catch (e) {}
-  }
-  function place(w) {
-    if (!w || w.closed) return;
-    if (!HAS) { say(w, 'Other screen: this browser cannot place windows (needs Chrome).', true); return; }
-    load().then(function (d) {
-      if (w.closed) return;
-      var cur = d.currentScreen;
-      var others = d.screens.filter(function (s) { return s.left !== cur.left || s.top !== cur.top; });
-      if (!others.length) { say(w, 'Other screen: Chrome sees only one screen.', true); return; }
-      var t = others.filter(function (s) { return s.isPrimary; })[0] || others[0];
-      try { w.moveTo(t.availLeft, t.availTop); w.resizeTo(t.availWidth, t.availHeight); } catch (e) {}
-      say(w, 'Speaker view moved to the other screen');
-    }, function (e) {
-      say(w, 'Other screen: permission ' + (e && e.name === 'NotAllowedError' ? 'blocked' : 'not given') +
-        '. Allow "Window management" for this site (lock icon in the address bar), then press S again.', true);
-    });
-  }
-  // v5: on the website a moveTo after opening also works, so place() still runs as a second try
-  // the permission request must ride the keypress, so it goes out here, BEFORE
-  // reveal's own S handler spends the activation on window.open
-  window.addEventListener('keydown', function (e) {
-    if ((e.key !== 's' && e.key !== 'S') || e.metaKey || e.ctrlKey || e.altKey) return;
-    var t = e.target, g = t && t.tagName;
-    if (g === 'INPUT' || g === 'TEXTAREA' || g === 'SELECT' || (t && t.isContentEditable)) return;
-    if (!HAS || details) return;
-    // v6: the screen list arrives a moment AFTER the keypress, but reveal opens speaker view
-    // during it -- so v5 opened it here before it knew where "there" was, and a second S only
-    // focused that window. Hold this S, get the list (at most 2.5 s, well inside the
-    // keypress's activation), then open speaker view straight onto the other screen.
-    var n = window.Reveal && Reveal.getPlugin && Reveal.getPlugin('notes');
-    if (!n || !n.open) { load().then(function () { if (spk) place(spk); }, function () {}); return; }
-    e.preventDefault(); e.stopImmediatePropagation();
-    var opened = false, go = function () { if (opened) return; opened = true; n.open(); };
-    load().then(go, go); setTimeout(go, 2500);
-  }, true);
-  // v6 (8 Oct): an S pressed before the screen list is known waits for it, so the FIRST S
-  // works; speaker view says what the open did.
-  // v5 (8 Oct): ask Chrome to OPEN speaker view on the other screen, instead of opening it
-  // here and moving it afterwards. From the local file:// copy the move never happened even
-  // after "Allow": the speaker window is about:blank, which Chrome does not count as the
-  // permitted file, so its moveTo is clamped to this screen. The open itself is the deck
-  // window's own call, on the S keypress, so the permission it holds applies.
-  function target(d) {
-    var cur = d.currentScreen;
-    var others = d.screens.filter(function (s) { return s.left !== cur.left || s.top !== cur.top; });
-    return others.filter(function (s) { return s.isPrimary; })[0] || others[0] || null;
-  }
-  var open = window.open;
-  window.open = function (url, name) {
-    var args = Array.prototype.slice.call(arguments), t = details && target(details);
-    if (name === 'reveal.js - Notes' && t)
-      args[2] = 'left=' + t.availLeft + ',top=' + t.availTop + ',width=' + t.availWidth + ',height=' + t.availHeight;
-    var w = open.apply(window, args);
-    if (name === 'reveal.js - Notes' && w) {
-      var why = t ? 'opened on the other screen at ' + t.availLeft + ',' + t.availTop
-                  : (!HAS ? 'this browser cannot place windows'
-                     : details ? 'Chrome sees only one screen' : 'screen list not ready yet (permission not granted?)');
-      setTimeout(function () { say(w, 'Other screen: ' + why, !t); }, 400);
+  var receiver = /[?&]receiver(&|$)/.test(q), current = receiver && /postMessageEvents=true/.test(q);
+  var projector = /[?&]presenter(&|=|$)/.test(q) && !receiver;
+  if (receiver && !current) return;                         // the Upcoming pane is view-only
+  var inst = projector || current || /[?&]instructor(&|=|$)/.test(q);
+  // twice as many rows as reveal's own list: wider and tighter so it fits one screen
+  var css = document.createElement('style');
+  var H = '.reveal .overlay.overlay-help .viewport .viewport-inner';
+  css.textContent = H + '{width:min(1000px,94vw)!important;max-width:none!important;}' +
+    H + ' table{width:100%!important;}' +
+    H + ' table th,' + H + ' table td{padding:4px 12px!important;font-size:13px!important;line-height:1.3!important;}' +
+    H + ' table td:last-child{text-align:left!important;}' +
+    H + ' table th:first-child,' + H + ' table td:first-child{width:24%!important;}' +
+    H + ' .title{margin:0!important;}' + H + ' br{display:none;}' +
+    '.reveal .overlay.overlay-help .viewport{padding-top:0!important;}' + H + '{padding-top:18px!important;}';
+  document.head.appendChild(css);
+  function go() {
+    if (!Reveal.registerKeyboardShortcut) return;
+    var K = function (k, d) { Reveal.registerKeyboardShortcut(k, d); };
+    var hasTimer = !!document.getElementById('cd-wrap');
+    var hasPoll = !!document.querySelector('.poll-grid, [data-poll-voting]');
+    if (inst) {
+      K('F', 'Fullscreen &mdash; pressed in speaker view, it full-screens the <b>projector</b>');
+      K('ESC, O', 'Slide overview &mdash; from speaker view, on <b>both</b> screens (Enter or a click picks a slide)');
+      K('M', 'Move keyboard focus between the projector and speaker view (Cmd-` brings a window forward)');
+      if (hasTimer) K('1 &ndash; 9', 'Countdown timer for that many minutes (same number again hides it); starts on both screens');
+      if (hasPoll) K('T', 'Poll slide: open / close voting. In speaker view, clicking an option votes on the projector');
     }
-    try { if (w && name === 'reveal.js - Notes') { spk = w; place(w); } } catch (e) {}
-    return w;
-  };
+    K('D', 'Pen on / off (Esc also leaves it)');
+    K('Pen: F L A R S Y', 'Free draw &middot; line &middot; arrow &middot; box &middot; shade &middot; triangle');
+    K('Pen: G N H E', 'Axis guides &middot; curve label &middot; shifted copy &middot; eraser');
+    K('Pen: [ ] Z X C P', 'Thinner &middot; thicker &middot; undo &middot; redo &middot; clear slide &middot; save as PNG');
+    K('Pen: Cmd-Z, Cmd-Shift-Z', 'Undo, redo (Ctrl-Z / Ctrl-Y on Windows), only while the pen is on');
+    K('?', 'This list');
+    // S is registered by reveal's notes plugin as a key BINDING ("Speaker notes
+    // view"), which the panel lists after these rows; a second S row would be a
+    // duplicate. Its description is not reachable through the API, so the row is
+    // amended when the panel is drawn.
+    if (inst) {
+      var wrap = document.querySelector('.reveal');
+      if (wrap && window.MutationObserver) new MutationObserver(function () {
+        var o = wrap.querySelector('.overlay-help');
+        if (!o || o.__tiS) return; o.__tiS = 1;
+        [].forEach.call(o.querySelectorAll('td'), function (td) {
+          if (td.textContent === 'Speaker notes view') td.innerHTML = 'Speaker view &mdash; opens on the <b>other</b> screen';
+        });
+      }).observe(wrap, { childList: true });
+    }
+  }
+  if (window.Reveal && Reveal.isReady && Reveal.isReady()) go();
+  else if (window.Reveal && Reveal.on) Reveal.on('ready', go);
 })();
 </script>
 </body>
