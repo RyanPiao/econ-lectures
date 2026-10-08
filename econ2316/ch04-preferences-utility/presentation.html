@@ -5263,79 +5263,6 @@
   });
 })();
 </script>
-<!-- speaker-other-screen v2 -->
-<script>
-(function () {
-  // 29 Sep 2026 (tried on 2316 Ch 5, confirmed by Ryan, then all decks). Ryan: the deck is dragged to the projector screen, then S opens
-  // speaker view -- on that same screen, so it had to be dragged back. Chrome's
-  // Window Management API lets this page place a window IT opened on another
-  // display: the speaker window opens as before, then moves to whichever screen
-  // the projector is NOT on and fills it.
-  // v2: v1 asked for the permission AFTER window.open, which had already used up
-  // the keypress -- and Chrome only shows the "manage windows on all your
-  // displays" prompt on a fresh keypress, so Ryan never saw it. The request now
-  // goes out on the S keydown itself (capture phase, before reveal opens the
-  // window), and the window is moved whenever the answer arrives. Every attempt
-  // reports its outcome INSIDE speaker view, never on the projector.
-  var q = location.search;
-  if (!/[?&]presenter(&|=|$)/.test(q) || /[?&]receiver(&|$)/.test(q)) return;
-  var HAS = ('getScreenDetails' in window);
-  var details = null, pending = null, spk = null;
-  function load() {
-    if (details) return Promise.resolve(details);
-    if (!pending) pending = window.getScreenDetails().then(function (d) { details = d; return d; },
-                                                          function (e) { pending = null; throw e; });
-    return pending;
-  }
-  try {
-    navigator.permissions.query({ name: 'window-management' })
-      .then(function (s) { if (s.state === 'granted') load().catch(function () {}); }, function () {});
-  } catch (e) {}
-  function say(w, msg, bad) {
-    try {
-      var d = w.document; if (!d || !d.body) return;
-      var b = d.getElementById('ti-scr-say');
-      if (!b) { b = d.createElement('div'); b.id = 'ti-scr-say';
-        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:10px;z-index:99999;max-width:80%;' +
-          'color:#fff;font:600 13px system-ui,sans-serif;padding:7px 14px;border-radius:10px;pointer-events:none;text-align:center';
-        d.body.appendChild(b); }
-      b.style.background = bad ? 'rgba(185,28,28,.95)' : 'rgba(21,128,61,.95)';
-      b.textContent = msg; b.style.display = 'block';
-      clearTimeout(b.__t); b.__t = setTimeout(function () { b.style.display = 'none'; }, bad ? 9000 : 2500);
-    } catch (e) {}
-  }
-  function place(w) {
-    if (!w || w.closed) return;
-    if (!HAS) { say(w, 'Other screen: this browser cannot place windows (needs Chrome).', true); return; }
-    load().then(function (d) {
-      if (w.closed) return;
-      var cur = d.currentScreen;
-      var others = d.screens.filter(function (s) { return s.left !== cur.left || s.top !== cur.top; });
-      if (!others.length) { say(w, 'Other screen: Chrome sees only one screen.', true); return; }
-      var t = others.filter(function (s) { return s.isPrimary; })[0] || others[0];
-      try { w.moveTo(t.availLeft, t.availTop); w.resizeTo(t.availWidth, t.availHeight); } catch (e) {}
-      say(w, 'Speaker view moved to the other screen');
-    }, function (e) {
-      say(w, 'Other screen: permission ' + (e && e.name === 'NotAllowedError' ? 'blocked' : 'not given') +
-        '. Allow "Window management" for this site (lock icon in the address bar), then press S again.', true);
-    });
-  }
-  // the permission request must ride the keypress, so it goes out here, BEFORE
-  // reveal's own S handler spends the activation on window.open
-  window.addEventListener('keydown', function (e) {
-    if ((e.key !== 's' && e.key !== 'S') || e.metaKey || e.ctrlKey || e.altKey) return;
-    var t = e.target, g = t && t.tagName;
-    if (g === 'INPUT' || g === 'TEXTAREA' || g === 'SELECT' || (t && t.isContentEditable)) return;
-    if (HAS && !details) load().then(function () { if (spk) place(spk); }, function () {});
-  }, true);
-  var open = window.open;
-  window.open = function (url, name) {
-    var w = open.apply(window, arguments);
-    try { if (w && name === 'reveal.js - Notes') { spk = w; place(w); } } catch (e) {}
-    return w;
-  };
-})();
-</script>
 <!-- help-shortcuts v1 -->
 <script>
 (function () {
@@ -5430,6 +5357,94 @@
       var s = sd.createElement('script'); s.textContent = SRC; sd.body.appendChild(s);
     } catch (e) {}
   });
+})();
+</script>
+<!-- speaker-other-screen v3 -->
+<script>
+(function () {
+  // 29 Sep 2026 (tried on 2316 Ch 5, confirmed by Ryan, then all decks). Ryan: the deck is dragged to the projector screen, then S opens
+  // speaker view -- on that same screen, so it had to be dragged back. Chrome's
+  // Window Management API lets this page place a window IT opened on another
+  // display: the speaker window opens as before, then moves to whichever screen
+  // the projector is NOT on and fills it.
+  // v3 (8 Oct): the double-click on the name asks early too, and the message no longer says
+  // "blocked" when Chrome merely needs a fresh click to ask.
+  // v2: v1 asked for the permission AFTER window.open, which had already used up
+  // the keypress -- and Chrome only shows the "manage windows on all your
+  // displays" prompt on a fresh keypress, so Ryan never saw it. The request now
+  // goes out on the S keydown itself (capture phase, before reveal opens the
+  // window), and the window is moved whenever the answer arrives. Every attempt
+  // reports its outcome INSIDE speaker view, never on the projector.
+  var q = location.search;
+  if (!/[?&]presenter(&|=|$)/.test(q) || /[?&]receiver(&|$)/.test(q)) return;
+  var HAS = ('getScreenDetails' in window);
+  var details = null, pending = null, spk = null;
+  function load() {
+    if (details) return Promise.resolve(details);
+    if (!pending) pending = window.getScreenDetails().then(function (d) { details = d; return d; },
+                                                          function (e) { pending = null; throw e; });
+    return pending;
+  }
+  try {
+    navigator.permissions.query({ name: 'window-management' })
+      .then(function (s) { if (s.state === 'granted') load().catch(function () {}); }, function () {});
+  } catch (e) {}
+  function say(w, msg, bad) {
+    try {
+      var d = w.document; if (!d || !d.body) return;
+      var b = d.getElementById('ti-scr-say');
+      if (!b) { b = d.createElement('div'); b.id = 'ti-scr-say';
+        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:10px;z-index:99999;max-width:80%;' +
+          'color:#fff;font:600 13px system-ui,sans-serif;padding:7px 14px;border-radius:10px;pointer-events:none;text-align:center';
+        d.body.appendChild(b); }
+      b.style.background = bad ? 'rgba(185,28,28,.95)' : 'rgba(21,128,61,.95)';
+      b.textContent = msg; b.style.display = 'block';
+      clearTimeout(b.__t); b.__t = setTimeout(function () { b.style.display = 'none'; }, bad ? 9000 : 2500);
+    } catch (e) {}
+  }
+  function place(w) {
+    if (!w || w.closed) return;
+    if (!HAS) { say(w, 'Other screen: this browser cannot place windows (needs Chrome).', true); return; }
+    load().then(function (d) {
+      if (w.closed) return;
+      var cur = d.currentScreen;
+      var others = d.screens.filter(function (s) { return s.left !== cur.left || s.top !== cur.top; });
+      if (!others.length) { say(w, 'Other screen: Chrome sees only one screen.', true); return; }
+      var t = others.filter(function (s) { return s.isPrimary; })[0] || others[0];
+      try { w.moveTo(t.availLeft, t.availTop); w.resizeTo(t.availWidth, t.availHeight); } catch (e) {}
+      say(w, 'Speaker view moved to the other screen');
+    }, function (e) {
+      // NotAllowedError means EITHER "denied in site settings" OR "Chrome would have asked,
+      // but not without a fresh click/key" -- v2 called both "blocked", which was wrong.
+      // Ask the permission API which one it is before saying anything.
+      var fresh = 'Other screen: Chrome needs to ask you first. Close this window, then press S in the deck and click Allow when Chrome asks to manage windows.';
+      try {
+        navigator.permissions.query({ name: 'window-management' }).then(function (st) {
+          say(w, st.state === 'denied'
+            ? 'Other screen: turned off for this site. Allow "Window management" (lock icon in the address bar), then press S again.'
+            : fresh, true);
+        }, function () { say(w, fresh, true); });
+      } catch (_) { say(w, fresh, true); }
+    });
+  }
+  // the permission request must ride the keypress, so it goes out here, BEFORE
+  // reveal's own S handler spends the activation on window.open
+  window.addEventListener('keydown', function (e) {
+    if ((e.key !== 's' && e.key !== 'S') || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target, g = t && t.tagName;
+    if (g === 'INPUT' || g === 'TEXTAREA' || g === 'SELECT' || (t && t.isContentEditable)) return;
+    if (HAS && !details) load().then(function () { if (spk) place(spk); }, function () {});
+  }, true);
+  // v3: the double-click on the name opens speaker view too, so it needs the same early ask
+  window.addEventListener('dblclick', function () {
+    if (HAS && !details) load().then(function () { if (spk) place(spk); }, function () {});
+  }, true);
+  var open = window.open;
+  window.open = function (url, name) {
+    var w = open.apply(window, arguments);
+    try { if (w && name === 'reveal.js - Notes') { spk = w; place(w); } } catch (e) {}
+    return w;
+  };
 })();
 </script>
 </body>
