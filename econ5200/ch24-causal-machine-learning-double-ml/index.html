@@ -30,7 +30,7 @@
         <h1 style="font-size:36pt; margin-bottom:0.3em;">Causal ML: Double Machine Learning</h1>
         <p style="font-size:18pt; color:#666;">ECON 5200 &mdash; Chapter 24 of 26</p>
         <p style="font-size: 16pt; color: var(--primary-color); font-weight: 700; font-family: var(--heading-font); margin-bottom: 8px;">Dr. Richeng Piao</p>
-        <p style="font-size:14pt; color:#999;">April 2026 &bull; 65 min &bull; Presentation + Lab</p>
+        <p style="font-size:14pt; color:#999;">Fall 2026 &bull; 95 min &bull; Presentation + Lab</p>
         <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Welcome. Today we bridge prediction and causation &mdash; the culmination of Chapters 9&ndash;23.</p></div></aside>
       </section>
 
@@ -76,9 +76,9 @@
           <p>You have powerful prediction tools: Random Forests, LASSO, cross-validation.</p>
           <p class="fragment">Why not include the treatment \(D_i\) alongside controls \(\mathbf{X}_i\) in a LASSO and read off \(\hat{\theta}\)?</p>
           <p class="fragment" style="color:#e74c3c; font-weight:600;">This is one of the most common mistakes in applied data science.</p>
-          <p class="fragment"><strong>ECB TLTRO III:</strong> Naive ML overestimated credit supply effect by 40% (2.0 pp &rarr; 1.2 pp after DML).</p>
+          <p class="fragment"><strong>Why it matters:</strong> this bias does not shrink with more data, so a big dataset gives a precise wrong answer.</p>
         </div>
-        <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Set up the problem. The ECB case makes it concrete &mdash; billions in policy at stake.</p></div></aside>
+        <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Set up the problem.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>The ECB TLTRO III example that was here (2.0 vs 1.2 pp) is cut: its cited source, ECB Working Paper 3040, uses no machine learning.</div></div></aside>
       </section>
 
       <section id="partial-linear-model">
@@ -113,17 +113,17 @@
         <div class="poll-grid" data-poll-id="ch24-econ5200-poll1" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:80%; margin:20px auto;">
           <div class="poll-option" data-choice="A" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>A.</strong> Unbiased ATE</div>
           <div class="poll-option" data-choice="B" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>B.</strong> Biased upward</div>
-          <div class="poll-option" data-choice="C" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>C.</strong> Biased toward zero</div>
-          <div class="poll-option" data-choice="D" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>D.</strong> Depends on controls</div>
+          <div class="poll-option" data-choice="C" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>C.</strong> Biased &mdash; shrunk controls leak confounding</div>
+          <div class="poll-option" data-choice="D" style="padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-size:14pt;"><strong>D.</strong> Depends only on sample size</div>
         </div>
         <button class="reset-btn" onclick="clearPoll('ch24-econ5200-poll1')" style="margin-top:10px; padding:6px 14px; font-size:12pt; cursor:pointer;">Reset Poll</button>
-        <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Answer: C. The L1 penalty shrinks ALL coefficients toward zero, including the treatment coefficient indirectly.</p></div></aside>
+        <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Answer: C. The penalty shrinks the controls, so the confounding they should absorb leaks into the treatment coefficient.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>The bias takes the confounding's direction, so B is right only when confounding is positive. D is wrong: more data does not remove it.</div></div></aside>
       </section>
 
       <section id="poll-1-results" data-poll-results="ch24-econ5200-poll1">
         <h2>Poll Results</h2>
         <div class="poll-results-chart" data-poll-id="ch24-econ5200-poll1" style="display:flex; align-items:flex-end; justify-content:center; gap:30px; height:250px; margin-top:30px;"></div>
-        <p style="font-size:15pt; margin-top:30px;" class="fragment"><strong>Answer: C.</strong> LASSO shrinks coefficients toward zero &mdash; including the treatment coefficient. Under-controlled confounders leak bias into \(\hat{\theta}\). This is <em>first-order</em> bias: more data doesn't fix it.</p>
+        <p style="font-size:15pt; margin-top:30px;" class="fragment"><strong>Answer: C.</strong> LASSO shrinks the controls, so confounders are under-controlled and leak bias into \(\hat{\theta}\), in the confounding's direction. This is <em>first-order</em> bias: more data doesn't fix it.</p>
         <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Reveal and discuss. Transition: "So how do we use ML for prediction without corrupting the causal estimate?"</p></div></aside>
       </section>
 
@@ -140,7 +140,7 @@
       <section id="dml-intuition">
         <h2>The DML Solution: Partialling Out</h2>
         <div style="font-size:15pt; text-align:left; max-width:85%; margin:auto;">
-          <p><strong>Recall FWL (Ch 13):</strong> Residualize both \(Y\) and \(D\) against controls, then regress residuals.</p>
+          <p><strong>Recall FWL (Ch 14):</strong> Residualize both \(Y\) and \(D\) against controls, then regress residuals.</p>
           <p class="fragment"><strong>DML extends FWL to high dimensions:</strong> Replace OLS with any ML model in the "cleaning" step.</p>
           <ol class="fragment" style="line-height:1.8;">
             <li><strong>Predict \(Y\) from \(\mathbf{X}\)</strong> using ML &rarr; \(\tilde{Y}_i = Y_i - \hat{g}(\mathbf{X}_i)\)</li>

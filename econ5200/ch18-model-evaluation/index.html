@@ -953,11 +953,11 @@ asset manager (4:1)    optimal t = 0.425   theory 0.800   caught  0/36   false a
             <p style="font-size: 14.5pt;"><strong>Micro</strong> &mdash; pool the counts, then take the ratio. Large classes dominate, and for single-label problems micro-averaged precision, recall and \( F_1 \) <strong>all collapse to overall accuracy</strong>, inheriting every objection above.</p>
           </div>
           <div style="background: #f8e5e5; border-radius: 10px; padding: 15px 18px; border-left: 4px solid var(--danger-color);">
-            <p style="font-size: 14.5pt;"><strong>Weighted</strong> &mdash; mean weighted by class frequency. Micro's problem in gentler form. <strong>And it is the library default.</strong></p>
+            <p style="font-size: 14.5pt;"><strong>Weighted</strong> &mdash; mean weighted by class frequency. Micro's problem in gentler form. <strong>And it is the last row classification_report prints.</strong></p>
           </div>
         </div>
         <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 15px 22px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
-          <p style="font-size: 15pt; margin: 0;"><strong>The default reproduces the accuracy trap on multi-class problems, with no warning.</strong> If your rare classes are the ones you care about, write <code>average='macro'</code> deliberately. AUC extends too &mdash; one-versus-rest or one-versus-one &mdash; but its interpretation degrades: "the probability a random positive outranks a random negative" has no clean multi-class analogue.</p>
+          <p style="font-size: 15pt; margin: 0;"><strong>That row reproduces the accuracy trap on multi-class problems, with no warning.</strong> If your rare classes are the ones you care about, write <code>average='macro'</code> deliberately. AUC extends too &mdash; one-versus-rest or one-versus-one &mdash; but its interpretation degrades: "the probability a random positive outranks a random negative" has no clean multi-class analogue.</p>
         </div>
       </div>
       <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">2 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>For ordered outcomes, where the categories have a natural sequence, metrics that respect the ordering and penalise being wrong BY MORE are preferable to any of these three.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Then run the poll immediately &mdash; it tests exactly this slide under time pressure.</li></ul></div></aside>
@@ -968,7 +968,7 @@ asset manager (4:1)    optimal t = 0.425   theory 0.800   caught  0/36   false a
       <section id="poll-4" style="padding: 36px 50px;">
         <h2><i class="fa-solid fa-chart-bar" style="color: var(--accent-color);"></i> Poll: What Did You Just Report?</h2>
         <div style="background: #f8f6f3; border-radius: 10px; padding: 18px 24px; margin-top: 14px;">
-          <p style="font-size: 15pt; line-height: 1.65;">You ship a multi-class classifier and report <code>f1_score(y, yhat)</code> with scikit-learn's defaults, on a problem whose <strong>rarest class is the one you built the model for</strong>.</p>
+          <p style="font-size: 15pt; line-height: 1.65;">You ship a multi-class classifier and quote the bottom F1 row of <code>classification_report(y, yhat)</code>, on a problem whose <strong>rarest class is the one you built the model for</strong>.</p>
           <p style="font-size: 15pt; font-weight: 600; margin-top: 10px;">What have you actually reported?</p>
         </div>
         <div class="poll-grid" data-poll-id="ch18-econ5200-poll-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 16px; font-size: 14.5pt;">
@@ -980,15 +980,15 @@ asset manager (4:1)    optimal t = 0.425   theory 0.800   caught  0/36   false a
         <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">1 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Click to vote. Fast poll &mdash; this one is about whether they were listening ninety seconds ago, and about a habit that will cost them in a co-op.</p></div></aside>
       </section>
       <section id="poll-4-reveal" data-poll-results="ch18-econ5200-poll-4" style="padding: 30px 50px;">
-        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Weighted, by Default</h2>
+        <h2><i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i> Answer: B &mdash; Weighted, the Bottom Row</h2>
         <div class="poll-results-chart" data-poll-id="ch18-econ5200-poll-4" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:150px; margin:10px 60px 18px;"></div>
         <div style="padding: 0 40px;">
-          <p style="font-size: 15pt; line-height: 1.65;">The default is <code>average='weighted'</code>: micro's pathology in gentler form. The score is dominated by the classes you were <em>not</em> worried about, and the rare class you built the model for is nearly invisible in it.</p>
+          <p style="font-size: 15pt; line-height: 1.65;">That row is <code>weighted avg</code>: micro's pathology in gentler form. The score is dominated by the classes you were <em>not</em> worried about, and the rare class you built the model for is nearly invisible in it.</p>
           <div style="background: #e8f5e9; border-left: 4px solid var(--success-color); padding: 13px 19px; border-radius: 8px; margin-top: 14px;">
             <p style="font-size: 14pt; margin: 0;"><strong>C is close, and is the bigger risk elsewhere.</strong> On single-label problems micro-\( F_1 \) equals accuracy <em>exactly</em> &mdash; the metric this lecture spent seventy minutes dismantling, reappearing under a new name because nobody typed an argument.</p>
           </div>
         </div>
-        <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">1 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>The one-line takeaway: a default is a cost assumption someone else made for you.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">That sentence is the whole lecture, compressed, and it is worth being the last thing you say before the takeaways slide.</li></ul></div></aside>
+        <aside class="notes" data-sv="1"><p style="margin:0 0 .3em;font-size:.82em;color:#777">1 min.</p><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>The one-line takeaway: a default is a cost assumption someone else made for you.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">That sentence is the whole lecture, compressed, and it is worth being the last thing you say before the takeaways slide. If asked: <code>f1_score(y, yhat)</code> with no average argument stops with an error on multi-class labels.</li></ul></div></aside>
       </section>
     </section>
     <!-- SLIDE 53: workflow checklist -->
@@ -1061,7 +1061,7 @@ asset manager (4:1)    optimal t = 0.425   theory 0.800   caught  0/36   false a
     <section id="exit-ticket">
       <h2><i class="fa-solid fa-ticket" style="color:#6B8BA4;"></i> End-of-Class Check</h2>
       <div class="content" style="justify-content:center;">
-        <p class="text-muted" style="font-size:14pt;">One question, in Canvas, before you leave.</p>
+        <p class="text-muted" style="font-size:14pt;">One question before you leave.</p>
         <div class="discussion-prompt" style="margin-top:16px;">
           <p style="font-size:16pt;">Fraud is 0.2% of transactions. Your model reports 99.8% accuracy.</p>
           <p style="font-size:17pt;margin-top:10px;"><strong>What should you check first?</strong></p>
@@ -1072,7 +1072,7 @@ asset manager (4:1)    optimal t = 0.425   theory 0.800   caught  0/36   false a
         </div>
         <p style="text-align:center;margin-top:18px;"><span class="timer-badge"><i class="fa-solid fa-clock"></i> 5 min</span></p>
       </div>
-      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>5 min &mdash; the graded attendance check, run in the room.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em">Read the access code aloud; it is deliberately not in this deck, because Pages serves it publicly.</li><li style="margin:0 0 0.35em">Pull it from the Canvas quiz settings before class.</li><li style="margin:0 0 0.35em">Highlight tested: On imbalanced data, accuracy is satisfied by predicting the majority class.</li></ul></div></aside>
+      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>5 min &mdash; the graded attendance check, run in the room.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><ul style="margin:0 0 0.8em 1.1em;padding:0"><li style="margin:0 0 0.35em"><b>No code to read.</b> Attendance is the check-in on their phone: they enter their NUID once, then any vote in today&rsquo;s polls counts them present. Say it in one sentence and move.</li><li style="margin:0 0 0.35em"><b>Nothing to open in Canvas.</b> 5200 has no attendance quiz. A student who skips the NUID prompt still votes; the vote just is not credited.</li><li style="margin:0 0 0.35em">Highlight tested: On imbalanced data, accuracy is satisfied by predicting the majority class.</li></ul></div></aside>
     </section>
 
     <!-- SLIDE 56: looking ahead + lab -->
@@ -1083,7 +1083,7 @@ asset manager (4:1)    optimal t = 0.425   theory 0.800   caught  0/36   false a
           <p style="font-size: 14.5pt; margin: 0;"><strong>Lab 18 &mdash; diagnostic, 45 min core + 20 min extension.</strong> Diagnose the three models that produced three different winners. Bootstrap every metric <em>and the paired difference between the top two</em> &mdash; the interval that decides whether a ranking is supported, and the number almost no evaluation reports. Apply decision curve analysis. Ship <code>src/evaluation.py</code>, which returns an interval with every metric by default.</p>
         </div>
         <div style="background: #fdf0ea; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid var(--accent-color);">
-          <p style="font-size: 14.5pt; margin: 0;"><strong>Chapter 19 &mdash; Trees and Forests.</strong> A Random Forest is benchmarked against <em>this exact classifier</em>, and the comparison must use today's metrics rather than accuracy. The numbers to beat are <strong>AUC 0.811, PR-AUC 0.188, Brier 0.0615</strong> &mdash; and check the forest for calibration too, since tree ensembles are characteristically overconfident near 0 and 1.</p>
+          <p style="font-size: 14.5pt; margin: 0;"><strong>Chapter 19 &mdash; Trees and Forests.</strong> A Random Forest is benchmarked against <em>this exact classifier</em>, and the comparison must use today's metrics rather than accuracy. The numbers to beat are <strong>AUC 0.811, PR-AUC 0.188, Brier 0.0615</strong> &mdash; and check the forest for calibration too, since tree ensembles characteristically pull their probabilities in from 0 and 1.</p>
         </div>
         <div class="fragment fade-up" style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 14px; border-left: 4px solid #7C3A5F;">
           <p style="font-size: 14.5pt; margin: 0;">Expect it closer than the machinery suggests. 523 monthly observations, one strong feature and a high noise floor is not the regime where added flexibility pays. <strong>A forest that wins on AUC while losing on Brier would be the most instructive outcome</strong> &mdash; better ranking, worse probabilities &mdash; and you now have the vocabulary to say exactly that instead of declaring a winner on one number.</p>
