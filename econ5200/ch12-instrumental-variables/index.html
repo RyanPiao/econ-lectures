@@ -351,9 +351,9 @@
       <h2><i class="fa-solid fa-bug" style="color: var(--danger-color);"></i> Never Hand-Roll the Second Stage</h2>
       <div class="content">
         <p style="font-size: 15pt;">Running those two regressions yourself gives the right coefficient and the <strong>wrong standard error</strong>. Worth doing once, deliberately &mdash; it is a bug that survives code review.</p>
-        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 12px;"><code>manual 2SLS   coef=0.2587  SE=0.0284  t=9.11
-linearmodels  coef=0.2587  SE=0.0340  t=7.61</code></pre>
-        <p style="font-size: 16pt; margin-top: 12px;">Identical coefficients. Standard errors understated by <strong>20%</strong>, and $t$ inflated from 7.61 to 9.11.</p>
+        <pre style="font-size: 14pt; background: #f8f6f3; border-radius: 8px; padding: 14px 20px; margin-top: 12px;"><code>manual 2SLS   coef=0.2587  SE=0.0284  t=9.11   (classical)
+linearmodels  coef=0.2587  SE=0.0340  t=7.61   (classical)</code></pre>
+        <p style="font-size: 16pt; margin-top: 12px;">Identical coefficients. The manual standard error is <strong>16% too small</strong> (the right one is 20% larger), and $t$ inflated from 7.61 to 9.11.</p>
         <div class="fragment fade-up" style="background: #fdf0ea; border-left: 4px solid var(--danger-color); border-radius: 8px; padding: 14px 22px; margin-top: 14px;">
           <p style="font-size: 14.5pt;"><strong>Mechanism.</strong> The hand-rolled stage computes residuals as $Y_i - \hat D_i\hat\beta$, using the <em>fitted</em> treatment. The correct structural residual uses the <em>actual</em> one, $Y_i - D_i\hat\beta$. A projection has strictly less variance than what it projects &mdash; so the residuals are too small, the error variance is too small, and every standard error inherits it. <strong>The bias is always toward overconfidence.</strong></p>
         </div>
@@ -404,7 +404,7 @@ linearmodels  coef=0.2587  SE=0.0340  t=7.61</code></pre>
           <img src="figures/figure_002_card_precision.png" alt="OLS and 2SLS return-to-schooling estimates with 95% confidence intervals, showing the 2SLS estimate nearly three times larger with an interval roughly nine times wider" style="width: 100%; border-radius: 6px;">
           <div>
             <div style="background: #f0f5f8; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--secondary-color);">
-              <p style="font-size: 14.5pt;"><strong>1. The precision cost.</strong> SE 0.0037 &rarr; 0.0337. <strong>Nine times wider.</strong> That is the price of discarding all schooling variation except the sliver proximity explains.</p>
+              <p style="font-size: 14.5pt;"><strong>1. The precision cost.</strong> Robust SE 0.0037 &rarr; 0.0337. <strong>Nine times wider.</strong> That is the price of discarding all schooling variation except the sliver proximity explains.</p>
             </div>
             <div style="background: #fdf0ea; border-radius: 8px; padding: 13px 18px; border-left: 4px solid var(--danger-color); margin-top: 12px;">
               <p style="font-size: 14.5pt;"><strong>2. The direction.</strong> OLS says 9.3% per year. 2SLS says 25.9%. If ability biases OLS <em>upward</em>, the correction should push it <strong>down</strong>. It nearly tripled.</p>
