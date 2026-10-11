@@ -1356,12 +1356,12 @@
     if (ref !== null && isFinite(ref)) { lo = Math.min(lo, ref); hi = Math.max(hi, ref); }
     var span = hi - lo; if (!(span > 0)) span = Math.max(1, Math.abs(hi) || 1);
     var ints = vals.every(function (v) { return v === Math.round(v); });
-    var step = niceStep(span, 7), start = 0, k = 1;
+    var step = niceStep(span, 12), start = 0, k = 1;   // room data piles up near one end: fine bins
     if (ints && step < 1) step = 1;
-    for (var g = 0; g < 30; g++) {                   // 12 bars at most
+    for (var g = 0; g < 30; g++) {                   // 15 bars at most
       start = Math.floor(lo / step) * step;
       k = Math.floor((hi - start) / step + 1e-9) + 1;
-      if (k <= 12) break;
+      if (k <= 15) break;
       step *= 2;
     }
     return { start: start, step: step, k: k };
