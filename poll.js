@@ -28,6 +28,8 @@
                    [data-label-odd="Odd NUID" data-label-even="Even NUID"]></div>
               histogram on shared bins; median and MAD first, mean and SD second, n; with
               data-arm two panels on one scale and odd minus even for medians and means.
+     tally:   <div class="poll-choice-tally" data-poll-id="<an A-D poll>" data-choices="A=Higher|B=Lower">
+              one bar per option, e.g. the room's guess drawn beside the test that answers it.
      numbers: <span data-poll-fill="<poll id>" data-key="welch.t"></span> anywhere in the deck.
               keys: n, n.odd, n.even, {mean,sd,median,mad}.{odd,even,all}, diff.mean,
               diff.median, welch.se, welch.t, welch.df, welch.p, welch.decision, cohen.sp,
@@ -1492,17 +1494,60 @@
     return out;
   }
 
+  /* ----- choice tally: one bar per option of an A-D poll, drawn anywhere (e.g. a
+     guess beside the test that answers it). data-choices="A=Higher|B=Lower|C=About the same" */
+  function tallyIdsWanted(all) {
+    var out = [], scope = all ? document : currentSlide();
+    if (!scope) return out;
+    [].forEach.call(scope.querySelectorAll(".poll-choice-tally[data-poll-id]"), function (e) {
+      var id = e.getAttribute("data-poll-id");
+      if (id && out.indexOf(id) < 0) out.push(id);
+    });
+    return out;
+  }
+  function refreshTally(pid) {
+    var els = document.querySelectorAll('.poll-choice-tally[data-poll-id="' + pid + '"]');
+    if (!els.length) return Promise.resolve();
+    var get = IS_FILE ? Promise.resolve([]) : (probeP || Promise.resolve()).then(function () {
+      return sf("GET", "poll_votes?poll_id=eq." + encodeURIComponent(pid) + "&select=choice,voter_id" + q())
+        .then(function (r) { return r.ok ? r.json() : []; });
+    });
+    return get.then(function (rows) {
+      var seen = {}, ct = {}, n = 0;
+      (rows || []).forEach(function (r) {
+        if (seen[r.voter_id]) return; seen[r.voter_id] = 1; ct[r.choice] = (ct[r.choice] || 0) + 1; n++;
+      });
+      [].forEach.call(els, function (el) {
+        var opts = attr(el, "data-choices", "A=A|B=B|C=C|D=D").split("|").map(function (x) {
+          var i = x.indexOf("="); return [x.slice(0, i), x.slice(i + 1)];
+        });
+        var mx = Math.max.apply(null, [1].concat(opts.map(function (o) { return ct[o[0]] || 0; })));
+        el.innerHTML = opts.map(function (o) {
+          var c = ct[o[0]] || 0;
+          return '<div class="ec-tally-row"><span class="ec-tally-lab">' + esc(o[1]) + '</span>' +
+                 '<span class="ec-tally-track"><span class="ec-tally-bar" style="width:' + (c / mx * 100).toFixed(0) + '%"></span></span>' +
+                 '<b class="ec-tally-c">' + c + "</b></div>";
+        }).join("") + '<div class="ec-tally-n">' + n + (n === 1 ? " answer" : " answers") + "</div>";
+      });
+    }).catch(function () {});
+  }
+
+  function refreshWanted(all) {
+    numberIdsWanted(all).forEach(refreshNumbers);
+    tallyIdsWanted(all).forEach(refreshTally);
+  }
+
   function bootNumbers() {
     [].forEach.call(document.querySelectorAll(".poll-number[data-poll-id]"), mountNumber);
-    numberIdsWanted(true).forEach(refreshNumbers);       // every results slide drawn once at load
+    refreshWanted(true);                                  // every results slide drawn once at load
     setInterval(function () {
       if (document.hidden) return;
       // Only what is on screen. Students reuse a result for 20 s (the throttle
       // above); the projector and speaker view refresh every 5 s.
-      numberIdsWanted(!window.Reveal).forEach(refreshNumbers);
+      refreshWanted(!window.Reveal);
     }, 5000);
     if (window.Reveal && Reveal.addEventListener) {
-      Reveal.addEventListener("slidechanged", function () { numberIdsWanted(false).forEach(refreshNumbers); });
+      Reveal.addEventListener("slidechanged", function () { refreshWanted(false); });
     }
   }
 
@@ -1581,6 +1626,12 @@
     ".ec-num-note{font-size:12.5px;color:#8C8580;margin-top:6px;text-align:center}" +
     ".ec-num-key{font-size:11.5px;color:#9ca3af;margin-top:2px;text-align:center}" +
     ".ec-num-wait{font-size:17px;color:#888;text-align:center;padding:40px 0}" +
+    ".poll-choice-tally{font-family:system-ui,-apple-system,sans-serif}" +
+    ".ec-tally-row{display:grid;grid-template-columns:auto 1fr 2em;align-items:center;gap:8px;margin:5px 0;font-size:15px;color:#1f2937}" +
+    ".ec-tally-track{height:16px;background:#eef2f6;border-radius:4px;overflow:hidden}" +
+    ".ec-tally-bar{display:block;height:100%;background:#5E8C61;border-radius:4px}" +
+    ".ec-tally-c{text-align:right}" +
+    ".ec-tally-n{font-size:12px;color:#8C8580;margin-top:2px}" +
     "[data-arm-view=both]>[data-arm-version]{outline:2px dashed #cbd5e1;outline-offset:4px;margin-bottom:10px}" +
     "[data-arm-view=both]>[data-arm-version=odd]::before{content:'ODD NUIDs see';display:block;font:700 11px system-ui,sans-serif;color:#b4463c;letter-spacing:.06em}" +
     "[data-arm-view=both]>[data-arm-version=even]::before{content:'EVEN NUIDs see';display:block;font:700 11px system-ui,sans-serif;color:#2F6F8F;letter-spacing:.06em}";
@@ -1607,6 +1658,7 @@
     armSource:  armSource,
     numberData: function (pid) { return numCache[pid] || null; },
     refreshNumbers: refreshNumbers,
+    refreshTally: refreshTally,
     stats:      { describe: describe, welch: welch, parse: parseNumberRows, bins: binsFor, tTwoSided: tTwoSided }
   };
 
