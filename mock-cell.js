@@ -15,7 +15,11 @@
               data-max="6" (longest typing time, seconds), data-size="14pt", data-parts="stream"
               (show only these output parts; the others are counted, not hidden in silence),
               data-img-height="220" (px), data-live="off", data-step-notes="line 1 | line 2"
-              (one speaker-view line per click; reveal reads data-notes on the shown fragment).
+              (one plain-text speaker-view line per click; reveal reads data-notes on the shown fragment).
+   per-click notes  <aside class="notes" data-sv="1" data-click="1">...</aside> (and data-click="2", "3")
+              inside the .mock div: a full speaker-view note for that click, in the house format. The
+              slide's own aside is click 0. Each one is moved into its click's fragment, where reveal's
+              notes plugin reads an aside before data-notes, and stops counting it as a slide note.
 
    Clicks. colab and sql: (1) type the code, (2) run it: the output from the JSON. excel: (1) type
    the formula in the formula bar, (2) Enter fills the active cell, (3) fill-down fills the range
@@ -107,7 +111,11 @@
 
   // ------------------------------------------------------------ build one mock
   function setup(m) {
-    if (m.__mk) return; m.__mk = { k: 0, steps: [] };
+    if (m.__mk) return; m.__mk = { k: 0, steps: [], notes: {} };
+    // taken out before the build empties the mock; addSteps puts each inside its click's fragment
+    [].slice.call(m.querySelectorAll('aside.notes[data-click]')).forEach(function (a) {
+      m.__mk.notes[a.getAttribute('data-click')] = a; a.parentNode.removeChild(a);
+    });
     var src = m.getAttribute('data-src'), name = m.getAttribute('data-cell');
     load(src, function (data) {
       if (!data) { m.innerHTML = '<div style="color:#b00020;font:13pt sans-serif">mock-cell: could not load ' + esc(src) + '.js</div>'; return; }
@@ -135,7 +143,8 @@
     var notes = (m.getAttribute('data-step-notes') || '').split('|').map(function (s) { return s.trim(); });
     st.steps.forEach(function (s, i) {
       var f = el('span', 'fragment mk-step'); f.setAttribute('data-mk', s);
-      if (notes[i]) f.setAttribute('data-notes', notes[i]);
+      if (st.notes[i + 1]) f.appendChild(st.notes[i + 1]);
+      else if (notes[i]) f.setAttribute('data-notes', notes[i]);
       m.appendChild(f);
     });
   }
