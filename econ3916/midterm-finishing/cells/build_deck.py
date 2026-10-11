@@ -194,7 +194,7 @@ S.append(f'''
       <p style="font-size: 18pt; line-height: 1.5;"><b>4</b>&ensp;The one join or reshape</p>
     </div>
   </div>
-  {notes("65 minutes.", "Today we finish the midterm: the four lines about your data, then what each rubric row is looking for, then ten minutes on your own file.", ["This session is recorded and becomes the guidance video for later terms, so everything except the next slide is written to hold for any term."])}
+  {notes("65 minutes.", "Today we finish the midterm: the four lines about your data, then what each rubric row is looking for, then eight minutes on your own file.", ["This session is recorded and becomes the guidance video for later terms, so everything except the next slide is written to hold for any term."])}
 </section>''')
 
 # ---------------------------------------------------------------- 2 logistics (the one dated slide)
@@ -225,7 +225,7 @@ S.append(f'''
       <div class="line-card"><p class="n">3</p><p><strong>What is missing</strong><br>which columns, how many, and whether it looks random</p></div>
       <div class="line-card"><p class="n">4</p><p><strong>The one join or reshape</strong><br>merging two files, wide to long, aggregating &mdash; or none</p></div>
     </div>
-    <p style="font-size: 14.5pt; color: var(--muted-color); margin-top: 16px;">Each line gets one worked example on the same small file. Then the six rubric rows, then ten minutes on your own data.</p>
+    <p style="font-size: 14.5pt; color: var(--muted-color); margin-top: 16px;">Each line gets one worked example on the same small file. Then the six rubric rows, then eight minutes on your own data.</p>
   </div>
   {notes("2 min.", "Each of the four lines gets one worked example, in order, on the same small country-year file, so by the end you have seen a whole cleaning run from download to merged panel.", ["The four lines are the data checkpoint students post in the discussion before committing to a dataset; say that those who posted will recognise them.", "Do not promise to answer every dataset question in the room; the working time at the end is for that."])}
 </section>''')
@@ -247,7 +247,7 @@ S.append(f'''
       <p style="font-size: 14pt; color: var(--muted-color); margin-top: 6px;">Pick the furthest line you could write now, without opening anything.</p>
     </div>
     <div class="poll-grid" data-poll-id="{POLL}" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">{opts}</div>
-    {notes("3 min.", "Vote for your own data, not for what you think the right answer is: there is no right answer, and the bars decide where the next forty minutes go.", ["Students click on their phones; the vote is also today's check-in, so anyone who has not entered an NUID gets the prompt now.", "Leave it up while the room settles; late arrivals vote here or not at all, because this is the only poll in the deck.", "With about thirty in the room one vote is about three percent of the chart; read counts, not percentages."])}
+    {notes("3 min.", "Vote for your own data, not for what you think the right answer is: there is no right answer, and the bars decide where the next forty minutes go.", ["Students click on their phones; the vote is also today's check-in, so anyone who has not entered an NUID gets the prompt now.", "Leave it up while the room settles; anyone who arrives after it closes is counted by the second poll, just before the working time.", "With about thirty in the room one vote is about three percent of the chart; read counts, not percentages."])}
   </section>
   <section id="poll-1-reveal" data-poll-results="{POLL}" style="padding: 34px 50px;">
     {h2("chart-column", "Where the Bars Are Is Where the Time Goes", "var(--success-color)")}
@@ -569,18 +569,54 @@ S.append(f'''
   {notes("3 min.", "Section 4 ends with what your estimate is if it is not causal, and a conditional association, labelled as one, is a finding the rubric rewards.", ["The README is five points and takes twenty minutes; students lose them by leaving the template text in or by pointing at a file that is only on their laptop.", "The conclusion adds no new results; anything new belongs in an earlier section."])}
 </section>''')
 
+# ---------------------------------------------------------------- poll 2 (second check-in, before the working time)
+POLL2 = "midterm-econ3916-poll-2"
+POLL2_OPTS = [
+    ("A", "<strong>Section 1</strong> &middot; question and data provenance (20)"),
+    ("B", "<strong>Section 2</strong> &middot; descriptive evidence (20)"),
+    ("C", "<strong>Section 3</strong> &middot; model and interpretation (25)"),
+    ("D", "<strong>Sections 4&ndash;5</strong> &middot; diagnostics, threats and conclusion (20 + 10)"),
+]
+assert sum(p for _, p, _ in RUB[:5]) == 95   # A-D cover the five report rows; the repository is on the results slide
+opts2 = "".join(f'<div class="poll-option" data-choice="{k}" style="background: #f0f5f8; padding: 14px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">{k}) {t}</div>' for k, t in POLL2_OPTS)
+S.append(f'''
+<section>
+  <section id="poll-2" style="padding: 40px 50px;">
+    {h2("chart-bar", "Poll: Which Row Is Furthest From Done?", "var(--accent-color)")}
+    <div style="background: #f8f6f3; border-radius: 10px; padding: 16px 22px; margin-top: 12px;">
+      <p style="font-size: 16.5pt; font-weight: 600;">In your own draft right now, which rubric row is furthest from done?</p>
+      <p style="font-size: 14pt; color: var(--muted-color); margin-top: 6px;">Pick the one you would work on first if you had an hour tonight.</p>
+    </div>
+    <div class="poll-grid" data-poll-id="{POLL2}" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; font-size: 14.5pt;">{opts2}</div>
+    {notes("1 min.", "One more vote about your own draft: which row would you work on first if you had an hour tonight?", ["This vote is also the check-in for anyone who arrived after the first poll closed; a student who skips the NUID prompt still votes, but is not credited.", "The repository row is not an option; it is on the results slide for everyone."])}
+  </section>
+  <section id="poll-2-reveal" data-poll-results="{POLL2}" style="padding: 30px 50px;">
+    {h2("chart-column", "What to Do in the Next Eight Minutes", "var(--success-color)")}
+    <div class="poll-results-chart" data-poll-id="{POLL2}" style="display:flex; gap:20px; align-items:flex-end; justify-content:center; height:130px; margin:6px 60px;"></div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 28px;">
+      <div class="steer"><p><strong>A &middot; Section 1</strong></p><p>Write the four lines, then the summary table with a unit in every row name.</p></div>
+      <div class="steer"><p><strong>B &middot; Section 2</strong></p><p>One figure, and a caption that states its finding with a number in it.</p></div>
+      <div class="steer"><p><strong>C &middot; Section 3</strong></p><p>Two coefficient sentences in full, and one line per control saying its role.</p></div>
+      <div class="steer"><p><strong>D &middot; Sections 4&ndash;5</strong></p><p>Lab 14&rsquo;s four tests on your model, one sentence each, then the estimand label.</p></div>
+    </div>
+    <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 14px;">Everyone: the README (question, source and URL, how to run, headline finding) takes twenty minutes. Do not leave it for the last night.</p>
+    {notes("1 min.", "Find your bar, and that card is your first job for the next eight minutes.", ["Read the tallest bar out loud in one sentence and move; the working slide comes straight after.", "If most of the room is on D, remind them Section 4 is the same code as Lab 14 pointed at their own model."])}
+  </section>
+</section>''')
+
 # ---------------------------------------------------------------- working time
 S.append(f'''
 <section id="working-time" style="padding: 34px 50px;">
-  {h2("laptop-code", "Ten Minutes on Your Own File", "var(--success-color)")}
+  {h2("laptop-code", "Eight Minutes on Your Own File", "var(--success-color)")}
   <div class="content">
+    <p style="font-size: 14.5pt; color: var(--muted-color); margin-bottom: 4px;">Start with the row you picked in the last poll. If your four lines are not written yet, these three steps come first:</p>
     <div class="step-row"><p class="n">1</p><p>In a <strong>text cell at the top</strong> of your notebook, write the four lines for your data.</p></div>
     <div class="step-row"><p class="n">2</p><p>Run the checks on your own data: <code>df.shape</code> and <code>df.duplicated([your key]).sum()</code>; <code>df.isna().sum()</code> and one groupby of the gaps by unit or year.</p></div>
     <div class="step-row"><p class="n">3</p><p>If you merged: rerun it with <code>how="outer", indicator=True</code> and write down <strong>rows before, rows after, rows unmatched</strong>.</p></div>
     <div class="key-result" style="margin-top: 16px;"><p>Leave with the four lines written and three numbers you trust. Any number that surprises you: hand up now, or bring it to office hours.</p></div>
     <p style="font-size: 13.5pt; color: var(--muted-color); margin-top: 10px;">Watching the recording? Pause here and do the same three steps before the deadline week.</p>
   </div>
-  {notes("10 min.", "Ten minutes, your own data: the four lines in a text cell at the top, the shape and duplicate check, the missing count, and if you merged, the three numbers.", ["Press 9 for the countdown and keep the last minute to close.", "Walk to anyone who voted A in the poll first.", "Close by saying where help is: office hours and the discussion thread."])}
+  {notes("8 min.", "Eight minutes, your own file: start with the row you picked in the last poll, and if your four lines are not written, write them first.", ["Press 8 for the countdown and use the last few seconds to close.", "Walk first to anyone who voted A in the first poll, then to the tallest bar of the second.", "Close by saying where help is: office hours and the discussion thread."])}
 </section>''')
 
 TERM["logistics"] = ("dated slide: midterm Mon 9 Nov 23:59, Quiz 1 closes Sun 8 Nov, PS4 Fri 13 Nov, Lab 14 due tonight.")
