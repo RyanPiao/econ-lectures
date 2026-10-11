@@ -1,0 +1,149 @@
+{
+ "l1_read_fails": {
+  "code": "import pandas as pd\nraw = pd.read_csv(\"data/wdi_extract.csv\")",
+  "stdout": "",
+  "error": "ParserError: Error tokenizing data. C error: Expected 3 fields in line 5, saw 15\n",
+  "traceback": "---------------------------------------------------------------------------\nParserError                               Traceback (most recent call last)\nCell In[1], line 2\n      1 import pandas as pd\n----> 2 raw = pd.read_csv(\"data/wdi_extract.csv\")\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/io/parsers/readers.py:1026, in read_csv(filepath_or_buffer, sep, delimiter, header, names, index_col, usecols, dtype, engine, converters, true_values, false_values, skipinitialspace, skiprows, skipfooter, nrows, na_values, keep_default_na, na_filter, verbose, skip_blank_lines, parse_dates, infer_datetime_format, keep_date_col, date_parser, date_format, dayfirst, cache_dates, iterator, chunksize, compression, thousands, decimal, lineterminator, quotechar, quoting, doublequote, escapechar, comment, encoding, encoding_errors, dialect, on_bad_lines, delim_whitespace, low_memory, memory_map, float_precision, storage_options, dtype_backend)\n   1013 kwds_defaults = _refine_defaults_read(\n   1014     dialect,\n   1015     delimiter,\n   (...)   1022     dtype_backend=dtype_backend,\n   1023 )\n   1024 kwds.update(kwds_defaults)\n-> 1026 return _read(filepath_or_buffer, kwds)\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/io/parsers/readers.py:626, in _read(filepath_or_buffer, kwds)\n    623     return parser\n    625 with parser:\n--> 626     return parser.read(nrows)\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/io/parsers/readers.py:1923, in TextFileReader.read(self, nrows)\n   1916 nrows = validate_integer(\"nrows\", nrows)\n   1917 try:\n   1918     # error: \"ParserBase\" has no attribute \"read\"\n   1919     (\n   1920         index,\n   1921         columns,\n   1922         col_dict,\n-> 1923     ) = self._engine.read(  # type: ignore[attr-defined]\n   1924         nrows\n   1925     )\n   1926 except Exception:\n   1927     self.close()\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/io/parsers/c_parser_wrapper.py:234, in CParserWrapper.read(self, nrows)\n    232 try:\n    233     if self.low_memory:\n--> 234         chunks = self._reader.read_low_memory(nrows)\n    235         # destructive to chunks\n    236         data = _concatenate_chunks(chunks)\n\nFile parsers.pyx:838, in pandas._libs.parsers.TextReader.read_low_memory()\n--> 838 'Could not get source, probably due dynamically evaluated source code.'\nFile parsers.pyx:905, in pandas._libs.parsers.TextReader._read_rows()\n--> 905 'Could not get source, probably due dynamically evaluated source code.'\nFile parsers.pyx:874, in pandas._libs.parsers.TextReader._tokenize_rows()\n--> 874 'Could not get source, probably due dynamically evaluated source code.'\nFile parsers.pyx:891, in pandas._libs.parsers.TextReader._check_tokenize_status()\n--> 891 'Could not get source, probably due dynamically evaluated source code.'\nFile parsers.pyx:2061, in pandas._libs.parsers.raise_parser_error()\n-> 2061 'Could not get source, probably due dynamically evaluated source code.'\nParserError: Error tokenizing data. C error: Expected 3 fields in line 5, saw 15\n\n",
+  "warnings": []
+ },
+ "l1_peek": {
+  "code": "with open(\"data/wdi_extract.csv\") as f:\n    for _ in range(5):\n        print(f.readline().rstrip()[:60])",
+  "stdout": "\"Data Source\",\"World Development Indicators\",\n\n\"Last Updated Date\",\"2025-07-01\",\n\n\"Country Name\",\"Country Code\",\"Indicator Name\",\"Indicator Co\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l1_read": {
+  "code": "raw = pd.read_csv(\"data/wdi_extract.csv\", skiprows=4)\nprint(raw.shape)",
+  "stdout": "(36, 15)\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l1_record": {
+  "code": "SOURCE = \"https://databank.worldbank.org/source/world-development-indicators\"\nDOWNLOADED = \"2025-08-15\"          # the day you clicked Download\nwith open(\"data/wdi_extract.csv\") as f:\n    LAST_UPDATED = [next(f) for _ in range(3)][2].split(\",\")[1].strip('\"')\nprint(\"source:\", SOURCE)\nprint(\"last updated:\", LAST_UPDATED, \"| downloaded:\", DOWNLOADED)",
+  "stdout": "source: https://databank.worldbank.org/source/world-development-indicators\nlast updated: 2025-07-01 | downloaded: 2025-08-15\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l2_shape": {
+  "code": "print(raw.shape)\nprint(raw.columns[[0, 1, 2, 3, 4, -2, -1]].tolist())\nprint(raw[[\"Country Code\", \"Indicator Code\", \"2010\"]].head(4))",
+  "stdout": "(36, 15)\n['Country Name', 'Country Code', 'Indicator Name', 'Indicator Code', '2010', '2019', 'Unnamed: 14']\n  Country Code        Indicator Code      2010\n0          BRA  SL.TLF.CACT.FE.NE.ZS    60.564\n1          BRA        NY.GDP.PCAP.KD  8733.700\n2          BRA        SP.DYN.TFRT.IN     1.851\n3          CHL  SL.TLF.CACT.FE.NE.ZS    59.289\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l2_unit": {
+  "code": "print(raw[\"Country Code\"].nunique(), \"countries x\",\n      raw[\"Indicator Code\"].nunique(), \"indicators =\", len(raw), \"rows\")",
+  "stdout": "12 countries x 3 indicators = 36 rows\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l2_melt": {
+  "code": "raw = raw.dropna(axis=1, how=\"all\")      # the empty \"Unnamed: 14\"\nids = [\"Country Name\", \"Country Code\",\n       \"Indicator Name\", \"Indicator Code\"]\nlong = raw.melt(id_vars=ids, var_name=\"year\", value_name=\"value\")\nprint(long.shape)\nprint(long[\"year\"].dtype)",
+  "stdout": "(360, 6)\nobject\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l2_pivot": {
+  "code": "short = {\"SL.TLF.CACT.FE.NE.ZS\": \"flfp\",\n         \"NY.GDP.PCAP.KD\": \"gdp_pc\",\n         \"SP.DYN.TFRT.IN\": \"fertility\"}\nlong[\"var\"] = long[\"Indicator Code\"].map(short)\nlong = long.rename(columns={\"Country Name\": \"country\",\n                            \"Country Code\": \"code\"})\npanel = (long.pivot(index=[\"country\", \"code\", \"year\"],\n                    columns=\"var\", values=\"value\")\n             .reset_index().rename_axis(columns=None))\npanel[\"year\"] = panel[\"year\"].astype(int)\nprint(panel.shape)\nprint(panel.head(3).round(1).to_string(index=False))",
+  "stdout": "(120, 6)\ncountry code  year  fertility  flfp  gdp_pc\n Brazil  BRA  2010        1.9  60.6  8733.7\n Brazil  BRA  2011        1.7  60.6  8894.7\n Brazil  BRA  2012        1.7  60.9  9010.1\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l2_why_int": {
+  "code": "leave = pd.read_csv(\"data/leave_weeks.csv\")\npanel.astype({\"year\": str}).merge(leave, on=[\"country\", \"year\"])",
+  "stdout": "",
+  "error": "ValueError: You are trying to merge on object and int64 columns for key 'year'. If you wish to proceed you should use pd.concat",
+  "traceback": "---------------------------------------------------------------------------\nValueError                                Traceback (most recent call last)\nCell In[9], line 2\n      1 leave = pd.read_csv(\"data/leave_weeks.csv\")\n----> 2 panel.astype({\"year\": str}).merge(leave, on=[\"country\", \"year\"])\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/core/frame.py:10832, in DataFrame.merge(self, right, how, on, left_on, right_on, left_index, right_index, sort, suffixes, copy, indicator, validate)\n  10828         validate: MergeValidate | None = None,\n  10829     ) -> DataFrame:\n  10830         from pandas.core.reshape.merge import merge\n  10831 \n> 10832         return merge(\n  10833             self,\n  10834             right,\n  10835             how=how,\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/core/reshape/merge.py:170, in merge(left, right, how, on, left_on, right_on, left_index, right_index, sort, suffixes, copy, indicator, validate)\n    155     return _cross_merge(\n    156         left_df,\n    157         right_df,\n   (...)    167         copy=copy,\n    168     )\n    169 else:\n--> 170     op = _MergeOperation(\n    171         left_df,\n    172         right_df,\n    173         how=how,\n    174         on=on,\n    175         left_on=left_on,\n    176         right_on=right_on,\n    177         left_index=left_index,\n    178         right_index=right_index,\n    179         sort=sort,\n    180         suffixes=suffixes,\n    181         indicator=indicator,\n    182         validate=validate,\n    183     )\n    184     return op.get_result(copy=copy)\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/core/reshape/merge.py:807, in _MergeOperation.__init__(self, left, right, how, on, left_on, right_on, left_index, right_index, sort, suffixes, indicator, validate)\n    803 self._validate_tolerance(self.left_join_keys)\n    805 # validate the merge keys dtypes. We may need to coerce\n    806 # to avoid incompatible dtypes\n--> 807 self._maybe_coerce_merge_keys()\n    809 # If argument passed to validate,\n    810 # check if columns specified as unique\n    811 # are in fact unique.\n    812 if validate is not None:\n\nFile ~/econ-recording/colabenv/lib/python3.12/site-packages/pandas/core/reshape/merge.py:1508, in _MergeOperation._maybe_coerce_merge_keys(self)\n   1502     # unless we are merging non-string-like with string-like\n   1503     elif (\n   1504         inferred_left in string_types and inferred_right not in string_types\n   1505     ) or (\n   1506         inferred_right in string_types and inferred_left not in string_types\n   1507     ):\n-> 1508         raise ValueError(msg)\n   1510 # datetimelikes must match exactly\n   1511 elif needs_i8_conversion(lk.dtype) and not needs_i8_conversion(rk.dtype):\n\nValueError: You are trying to merge on object and int64 columns for key 'year'. If you wish to proceed you should use pd.concat\n",
+  "warnings": []
+ },
+ "l2_check_unit": {
+  "code": "print(panel.duplicated([\"code\", \"year\"]).sum())\nprint(long.duplicated([\"code\", \"year\"]).sum())",
+  "stdout": "0\n240\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l3_count": {
+  "code": "print(panel.isna().sum())",
+  "stdout": "country      0\ncode         0\nyear         0\nfertility    3\nflfp         7\ngdp_pc       3\ndtype: int64\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l3_where": {
+  "code": "vars3 = [\"flfp\", \"gdp_pc\", \"fertility\"]\ngaps = panel.set_index([\"code\", \"year\"])[vars3].isna()\nby_country = gaps.groupby(\"code\").sum()\nprint(by_country[by_country.sum(axis=1) > 0])\ng = gaps.reset_index()\nfor v in vars3:\n    rows = g[g[v]]\n    print(v, sorted(set(rows[\"code\"])), rows[\"year\"].tolist())",
+  "stdout": "      flfp  gdp_pc  fertility\ncode                         \nBRA      0       0          1\nIND      4       0          0\nNGA      3       3          0\nPOL      0       0          1\nVNM      0       0          1\nflfp ['IND', 'NGA'] [2010, 2011, 2012, 2013, 2010, 2011, 2012]\ngdp_pc ['NGA'] [2017, 2018, 2019]\nfertility ['BRA', 'POL', 'VNM'] [2014, 2011, 2018]\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l3_random": {
+  "code": "flfp_gap = panel.groupby(\"code\")[\"flfp\"].apply(lambda s: s.isna().any())\nhas_gap = panel[\"code\"].map(flfp_gap).rename(\"has a flfp gap\")\nprint(panel.groupby(has_gap)[\"gdp_pc\"].median().round(0))",
+  "stdout": "has a flfp gap\nFalse    9323.0\nTrue     1663.0\nName: gdp_pc, dtype: float64\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l3_dropna": {
+  "code": "kept = panel.dropna()\nprint(len(panel), \"->\", len(kept))\nprint((panel.groupby(\"code\").size() - kept.groupby(\"code\").size())\n      .loc[lambda s: s > 0])",
+  "stdout": "120 -> 107\ncode\nBRA    1\nIND    4\nNGA    6\nPOL    1\nVNM    1\ndtype: int64\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l4_naive": {
+  "code": "leave = pd.read_csv(\"data/leave_weeks.csv\")\nm = panel.merge(leave, on=[\"country\", \"year\"])\nprint(len(panel), len(leave), len(m))",
+  "stdout": "120 120 80\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l4_indicator": {
+  "code": "m = panel.merge(leave, on=[\"country\", \"year\"], how=\"outer\", indicator=True)\nprint(m[\"_merge\"].value_counts())\nprint(sorted(m.loc[m[\"_merge\"] == \"left_only\", \"country\"].unique()))\nprint(sorted(m.loc[m[\"_merge\"] == \"right_only\", \"country\"].unique()))",
+  "stdout": "_merge\nboth          80\nleft_only     40\nright_only    40\nName: count, dtype: int64\n['Egypt, Arab Rep.', 'Korea, Rep.', 'Turkiye', 'Viet Nam']\n['Egypt', 'South Korea', 'Turkey', 'Vietnam']\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "l4_fix": {
+  "code": "fix = {\"Egypt\": \"Egypt, Arab Rep.\", \"South Korea\": \"Korea, Rep.\",\n       \"Turkey\": \"Turkiye\", \"Vietnam\": \"Viet Nam\"}\nleave[\"country\"] = leave[\"country\"].replace(fix)\nmerged = panel.merge(leave, on=[\"country\", \"year\"], how=\"outer\",\n                     indicator=True, validate=\"one_to_one\")\nprint(merged[\"_merge\"].value_counts())\nmerged = merged.drop(columns=\"_merge\")\nprint(merged.shape)",
+  "stdout": "_merge\nboth          120\nleft_only       0\nright_only      0\nName: count, dtype: int64\n(120, 7)\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "r_summary": {
+  "code": "df = merged.dropna().copy()\ncols = {\"flfp\": \"Female LFP (% of women 15+)\", \"gdp_pc\": \"GDP per capita (2015 US$)\",\n        \"fertility\": \"Fertility (births per woman)\", \"leave_weeks\": \"Paid leave (weeks)\"}\ntab = df[list(cols)].describe().T[[\"count\", \"mean\", \"std\", \"min\", \"max\"]]\ntab.index = list(cols.values())\nprint(tab.round(1).to_string())\nprint(df[\"code\"].nunique(), \"countries,\", df[\"year\"].min(), \"to\", df[\"year\"].max())",
+  "stdout": "                              count    mean     std     min      max\nFemale LFP (% of women 15+)   107.0    52.3    14.3    20.6     75.2\nGDP per capita (2015 US$)     107.0  9639.2  7648.7  1474.8  33302.6\nFertility (births per woman)  107.0     2.1     0.9     1.0      5.6\nPaid leave (weeks)            107.0    18.3     4.5    12.0     30.0\n12 countries, 2010 to 2019\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "r_figure": {
+  "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(6.4, 4.0), dpi=150)\nax.scatter(df[\"gdp_pc\"], df[\"flfp\"], s=14, color=\"#2a5a8a\", alpha=0.7)\nax.set_xscale(\"log\")\nax.xaxis.set_major_locator(plt.FixedLocator([2000, 5000, 10000, 20000]))\nax.xaxis.set_minor_locator(plt.NullLocator())\nax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f\"{x:,.0f}\"))\nax.set_xlabel(\"GDP per capita, constant 2015 US$ (log scale)\")\nax.set_ylabel(\"Female labour force participation (%)\")\nax.set_ylim(0, 100)\nfor s in (\"top\", \"right\"):\n    ax.spines[s].set_visible(False)\nfig.tight_layout()\nfig.savefig(\"../figures/flfp_gdp.png\")\ncm = df.groupby(\"code\")[[\"gdp_pc\", \"flfp\"]].mean()\ncm[\"third\"] = pd.qcut(cm[\"gdp_pc\"], 3, labels=[\"poorest\", \"middle\", \"richest\"])\nprint(cm.groupby(\"third\", observed=True)[\"flfp\"].mean().round(1))\nprint(round(df[[\"flfp\", \"gdp_pc\"]].corr().iloc[0, 1], 2),\n      round(np.corrcoef(df[\"flfp\"], np.log(df[\"gdp_pc\"]))[0, 1], 2))",
+  "stdout": "third\npoorest    40.1\nmiddle     54.3\nrichest    59.0\nName: flfp, dtype: float64\n0.42 0.45\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "r_model": {
+  "code": "import statsmodels.formula.api as smf\nres = smf.ols(\"flfp ~ np.log(gdp_pc) + fertility + leave_weeks\", data=df).fit(cov_type=\"HC1\")\nprint(pd.DataFrame({\"coef\": res.params, \"se\": res.bse}).round(3))\nprint(int(res.nobs), round(res.rsquared, 3))\nprint(res.conf_int().round(2))\nci = res.conf_int().loc[\"np.log(gdp_pc)\"] * np.log(1.10)\nprint(round(res.params[\"np.log(gdp_pc)\"] * np.log(1.10), 2), ci.round(2).tolist())",
+  "stdout": "                  coef      se\nIntercept      -46.817  24.865\nnp.log(gdp_pc)   9.055   2.064\nfertility       -3.959   2.598\nleave_weeks      1.486   0.242\n107 0.487\n                    0      1\nIntercept      -95.55   1.92\nnp.log(gdp_pc)   5.01  13.10\nfertility       -9.05   1.13\nleave_weeks      1.01   1.96\n0.86 [0.48, 1.25]\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ },
+ "r_diag": {
+  "code": "from statsmodels.stats.diagnostic import het_breuschpagan\nfrom statsmodels.stats.outliers_influence import variance_inflation_factor\nplain = smf.ols(\"flfp ~ np.log(gdp_pc) + fertility + leave_weeks\", data=df).fit()\nprint(f\"{het_breuschpagan(plain.resid, plain.model.exog)[1]:.1e}\")\nX = plain.model.exog\nprint({n: round(float(variance_inflation_factor(X, i)), 2)\n       for i, n in enumerate(plain.model.exog_names) if i > 0})\ncook = plain.get_influence().cooks_distance[0]\nprint(round(float(cook.max()), 3), int((cook > 4 / len(df)).sum()), len(df))\nbig = cook > 4 / len(df)\nprint(df.loc[big, [\"code\", \"year\"]].to_string(index=False))\nprint(round(float(np.sqrt(variance_inflation_factor(X, 1))), 2))\nrefit = smf.ols(\"flfp ~ np.log(gdp_pc) + fertility + leave_weeks\",\n                data=df.loc[~big]).fit(cov_type=\"HC1\")\nprint(round(res.params[\"np.log(gdp_pc)\"], 3), \"->\", round(refit.params[\"np.log(gdp_pc)\"], 3))",
+  "stdout": "7.6e-13\n{'np.log(gdp_pc)': 2.64, 'fertility': 2.1, 'leave_weeks': 1.66}\n0.293 5 107\ncode  year\n IND  2017\n NGA  2013\n NGA  2014\n NGA  2015\n NGA  2016\n1.62\n9.055 -> 3.059\n",
+  "error": "",
+  "traceback": "",
+  "warnings": []
+ }
+}
