@@ -1114,8 +1114,11 @@
       var kids = box.querySelectorAll("[data-arm-version]");
       if (!kids.length) return;
       var show;
-      if (PROJECTOR)                 { show = { room: 1 };          box.setAttribute("data-arm-view", "room"); }
-      else if (INSTRUCTOR)           { show = { odd: 1, even: 1 };  box.setAttribute("data-arm-view", "both"); }
+      // Receiver first: reveal's speaker-view frames (current AND upcoming) keep the
+      // projector's ?presenter in their URL, so PROJECTOR alone would show them [room].
+      if (SPEAKER || /[?&]receiver(&|$)/.test(Q) || qs.has("instructor"))
+                                     { show = { odd: 1, even: 1 };  box.setAttribute("data-arm-view", "both"); }
+      else if (PROJECTOR)            { show = { room: 1 };          box.setAttribute("data-arm-view", "room"); }
       else {
         var a = arm();
         show = {}; show[a || "pending"] = 1;
