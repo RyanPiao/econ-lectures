@@ -53,7 +53,7 @@
       </div>
      </div>
     
-     <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Open on the number, not the definition.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Do not start with what a decision tree is. Start with the Airbnb result two slides on: same data, same features, error down a third. Trees are the answer to a question they have not asked yet.</div></div></aside>
+     <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Open on the number, not the definition.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Do not start with what a decision tree is. Start with the Airbnb result (Same Data, Different Engine): same data, same features, error down a third. Trees are the answer to a question they have not asked yet.</div></div></aside>
     </section>
     <!-- LEARNING OBJECTIVES -->
     <section id="learning-objectives" style="padding: 40px 50px;">
@@ -556,7 +556,7 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
     <section id="memorising-noise">
       <h2>Memorising the Noise</h2>
       <div class="content">
-        <p style="font-size: 16pt; margin: 0 0 10px;">Let a tree grow until every leaf holds one house and training error goes to zero. It has not learned the housing market &mdash; it has memorised <em>this</em> sample, down to one 42-year-old block at one latitude.</p>
+        <p style="font-size: 16pt; margin: 0 0 10px;">Let a tree grow until every leaf is pure (15,870 leaves for 16,512 rows in Lab 19, almost one house per leaf) and training error goes to zero. It has not learned the housing market &mdash; it has memorised <em>this</em> sample, down to one 42-year-old block at one latitude.</p>
         <div class="mathjax_ignore tex2jax_ignore">
         <svg viewBox="0 0 1160 310" style="width: 100%; height: auto;" role="img" aria-label="A fully grown tree scores R-squared 1.00 on the data it was trained on and 0.62 on data it has never seen.">
           <line x1="40" y1="272" x2="1120" y2="272" stroke="#2C3E50" stroke-width="2.5"/>
@@ -646,14 +646,14 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
       </h2>
       <div class="content">
        <p style="font-size: 15pt; line-height: 1.7;">
-        An unrestricted tree splits until every leaf contains one observation, perfectly memorizing the training data. Perfect memorization &ne; learning &mdash; the tree memorizes noise.
+        An unrestricted tree splits until every leaf is pure &mdash; 15,870 leaves for 16,512 rows in Lab 19, almost one house per leaf. Perfect memorization &ne; learning &mdash; the tree memorizes noise.
        </p>
        <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); padding: 16px 20px; border-radius: 0 8px 8px 0; margin-top: 20px;">
         <p style="font-size: 13pt; color: #555;">
          <strong>
-          Key Insight:
+          In Lab 19:
          </strong>
-         An unrestricted tree splits until every leaf contains one observation, perfectly memorizing the training data.
+         the unrestricted tree scores R&sup2; 1.00 on the rows it was trained on and 0.62 on held-out rows.
         </p>
        </div>
       </div>
@@ -875,7 +875,7 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
        </div>
       </div>
      </div>
-     <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Bootstrap samples share about 63% of observations.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>The trees are not independent &mdash; they are correlated.</div></div></aside>
+     <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Each bootstrap sample holds about 63% of the rows.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>So the samples overlap heavily (two share about 40% of the rows), and with one feature as dominant as MedInc (MDI 0.525) the trees tend to ask the same first questions. They are correlated, not independent.</div></div></aside>
     </section>
     <!-- INTERACTIVE DEMO: Forest Averaging -->
     <section id="bootstrap-63-37">
@@ -1363,6 +1363,17 @@ print(f"Test R&sup2;:  {r2_score(y_test, tree.predict(X_test)):.4f}")    # &asym
     
      <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Two numbers are nearly equal, and that is the interesting part.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>The tree and ridge land within 0.04 of each other for opposite reasons &mdash; one too flexible, one too rigid. Ask which they would rather ship before revealing the forest.</div></div></aside>
     </section>
+    <section id="simpler-model">
+      <h2>When the Simpler Model Is the Right Call</h2>
+      <div class="content">
+        <div style="display: flex; flex-direction: column; gap: 18px; margin-top: 12px;">
+          <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); padding: 16px 22px; border-radius: 0 8px 8px 0;"><p style="font-size: 17pt; margin: 0; line-height: 1.5;"><strong>Accuracy.</strong> Lab 19, same held-out rows: ridge R&sup2; 0.58, random forest 0.80. The forest predicts better.</p></div>
+          <div style="background: #f0f5f8; border-left: 4px solid var(--secondary-color); padding: 16px 22px; border-radius: 0 8px 8px 0;"><p style="font-size: 17pt; margin: 0; line-height: 1.5;"><strong>Reading the model.</strong> Ridge gives you 8 coefficients you can read out to a regulator. The forest averages 100 unrestricted trees, and one unrestricted tree on these rows already has 15,870 leaves.</p></div>
+          <div style="background: #f0f5f8; border-left: 4px solid var(--danger-color); padding: 16px 22px; border-radius: 0 8px 8px 0;"><p style="font-size: 17pt; margin: 0; line-height: 1.5;"><strong>The call.</strong> Where each decision must be explained (credit, lending), the readable model can be worth the lost accuracy.</p></div>
+        </div>
+      </div>
+     <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>1 min. LO 19.4.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Permutation importance and SHAP describe the forest; they do not turn it into a rule you can write down. Ask the room which model they would defend to a loan applicant who was turned down.</div></div></aside>
+    </section>
     <section id="rf-code-results">
      <h2>
       <i class="fa-solid fa-code">
@@ -1429,7 +1440,7 @@ rf.fit(X_train, y_train)
       </div>
      </div>
     
-     <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Read the reality line aloud, then the two real routes to overfitting.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Adding trees is safe. max_depth and max_features are not. n_estimators is the one hyperparameter they can raise without thinking, and it is worth saying that plainly.</div></div></aside>
+     <aside class="notes" data-sv="1"><div class="sv-lead" style="margin:0 0 .5em;padding:.06em 0 .10em .55em;border-left:5px solid #1565C0;font-size:1.28em;line-height:1.34;font-weight:600;color:#111"><p>Read the reality line aloud, then the two real routes to overfitting.</p></div><div class="sv-rest" style="margin:0;font-size:.9em;line-height:1.45;color:#5d5d5d"><div>Adding trees is safe. max_depth and max_features are not. n_estimators is the one hyperparameter they can raise without thinking, and it is worth saying that plainly. True in general, but not in Lab 19: unlimited depth won the grid (CV RMSE 0.5048 vs 0.5382 at depth 10), and the gain over the plain forest came from max_features (1.0 to 0.5).</div></div></aside>
     </section>
     <!-- DECISION SCENARIO -->
     <!-- CUT (nlm-revision, Ch19): NLM divider -->
@@ -1488,7 +1499,7 @@ rf.fit(X_train, y_train)
         is #1.
        </p>
        <p style="font-size: 18pt; margin-top: 15px; font-weight: bold;">
-        The CRO says: "Reject anyone with &gt; 3 inquiries."
+        The CRO says: "Inquiries drive defaults. Block credit checks after 3 and defaults will fall."
        </p>
       </div>
       <p style="font-size: 20pt; margin-top: 20px; text-align: center; font-weight: bold; color: var(--danger-color);">
