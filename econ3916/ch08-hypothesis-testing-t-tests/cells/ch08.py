@@ -3,7 +3,8 @@
 # published: RyanPiao/econ3916-student-notebooks main @ cb83a4e (file last changed in 84f4107, 9 Oct; blob 1f5794c, 47 cells),
 #   the copy the room opens. The book copy (49 cells) is HELD until 21 Oct, so cells come from this file.
 # source: /Users/openclaw/econ-lectures/econ3916/ch08-hypothesis-testing-t-tests/cells/lab-ch08-guided.published-cb83a4e.ipynb
-# shown: 16 21   (the others run first, as the student's do)
+# shown: 8 16 21 25 40   (the others run first, as the student's do; 30-38 are skipped: 32 has blanks,
+#   37 is the Write-it-yourself stub, 38 its CHECK; 40 sets its own seed, so skipping them changes nothing)
 
 # %% 3 nb=3
 # GUIDED — run as-is
@@ -148,3 +149,121 @@ print("\nBenchmarks: small d = 0.2, medium d = 0.5, large d = 0.8")
 # abs() drops the sign; the chained if/else from the note above picks the band
 print(f"Our d = {d_manual:.2f} -> {'Small' if abs(d_manual) < 0.5 else 'Medium' if abs(d_manual) < 0.8 else 'Large'} effect")
 print(f"The ${mean_diff:,.0f} earnings difference represents {abs(d_manual):.2f} standard deviations.")
+
+# %% 23 nb=23
+# GUIDED — run as-is
+# Step 8: power analysis, for our study and for a planned one
+
+power_analysis = TTestIndPower()
+
+# Power: the chance the test detects an effect of size d, with our two group sizes.
+# ratio is the second group's size divided by the first's
+achieved_power = power_analysis.solve_power(
+    effect_size=abs(d_manual),
+    nobs1=n1,
+    alpha=0.05,
+    ratio=n2 / n1,
+    alternative="two-sided"
+)
+print("Power of our study")
+print(f"Effect size (d):     {abs(d_manual):.3f}")
+print(f"Treatment n:         {n1}")
+print(f"Control n:           {n2}")
+print(f"Achieved power:      {achieved_power:.3f} ({achieved_power*100:.1f}%)")
+print(f"Target:              0.800 (80%)")
+
+# solve_power solves for the one argument you leave out: here nobs1, the n per group
+n_required_03 = power_analysis.solve_power(
+    effect_size=0.3,
+    alpha=0.05,
+    power=0.80,
+    ratio=1.0,
+    alternative="two-sided"
+)
+print("\nRequired sample size")
+print(f"To detect d=0.3 (small-medium) with 80% power:")
+print(f"  n per group = {n_required_03:.0f}")
+print(f"  Total participants = {2 * n_required_03:.0f}")
+
+# %% 25 nb=25
+# GUIDED — run as-is
+# Step 9: power curves, the power for each n per group, at five effect sizes
+
+fig, ax = plt.subplots(figsize=(10, 6))
+sample_sizes = np.arange(10, 500)      # 10, 11, ..., 499 per group
+
+# Each tuple is one curve: its effect size, its legend label, and its colour
+for d, label, color in [
+    (0.2, "Small (d=0.2)", "peru"),
+    (abs(d_manual), f"Our effect (d={abs(d_manual):.2f})", "navy"),
+    (0.3, "d=0.3", "lightsteelblue"),
+    (0.5, "Medium (d=0.5)", "steelblue"),
+    (0.8, "Large (d=0.8)", "seagreen"),
+]:
+    # The list comprehension from the note above: one power for every n in sample_sizes
+    powers = [power_analysis.solve_power(
+        effect_size=d, nobs1=n, alpha=0.05,
+        ratio=1.0, alternative="two-sided"
+    ) for n in sample_sizes]
+    ax.plot(sample_sizes, powers, label=label, linewidth=2, color=color)
+
+ax.axhline(y=0.80, color="gray", linestyle="--", label="80% power target")
+ax.axvline(x=n1, color="red", linestyle=":", label=f"Our n={n1}")
+ax.set_xlabel("Sample Size per Group")
+ax.set_ylabel("Statistical Power")
+ax.set_title("Power Curves — How Sample Size Determines Detectable Effects")
+ax.legend(loc="lower right")
+ax.set_ylim(0, 1.05)
+plt.tight_layout()
+plt.savefig("figures/ch08_power_curves.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# %% 40 nb=40
+# EXTENSION — run as-is
+# Simulate p-values when the null is true, and when it is false
+
+np.random.seed(42)          # the same random draws on every run
+n_simulations = 2000
+n_per_group = 50
+
+# Simulation 1: both groups come from the SAME distribution, so the null is true.
+# _ stands for a value we never use: the loop counter, and the t-statistic
+p_values_null = []
+for _ in range(n_simulations):
+    group_a = np.random.normal(loc=100, scale=15, size=n_per_group)
+    group_b = np.random.normal(loc=100, scale=15, size=n_per_group)
+    _, p = stats.ttest_ind(group_a, group_b, equal_var=False)
+    p_values_null.append(p)
+
+# Simulation 2: group B's mean is 7.5 higher, half of the SD of 15, so d = 0.5 and the null is false
+p_values_alt = []
+for _ in range(n_simulations):
+    group_a = np.random.normal(loc=100, scale=15, size=n_per_group)
+    group_b = np.random.normal(loc=107.5, scale=15, size=n_per_group)
+    _, p = stats.ttest_ind(group_a, group_b, equal_var=False)
+    p_values_alt.append(p)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+axes[0].hist(p_values_null, bins=20, color="steelblue", edgecolor="white")
+# 20 bars share 2,000 p-values, so a flat histogram has 100 in each
+axes[0].axhline(y=n_simulations / 20, color="red", linestyle="--", label="Expected if uniform")
+axes[0].set_xlabel("P-value")
+axes[0].set_ylabel("Frequency")
+axes[0].set_title("P-values When Null Is TRUE")
+axes[0].legend()
+
+axes[1].hist(p_values_alt, bins=20, color="peru", edgecolor="white")
+axes[1].set_xlabel("P-value")
+axes[1].set_ylabel("Frequency")
+axes[1].set_title("P-values When Null Is FALSE (d=0.5)")
+
+plt.tight_layout()
+plt.savefig("figures/ch08_pvalue_distributions.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# p < 0.05 is True or False for each run, so the mean is the share of runs below 0.05
+false_positive_rate = np.mean(np.array(p_values_null) < 0.05)
+true_positive_rate = np.mean(np.array(p_values_alt) < 0.05)
+print(f"False positive rate (null true):   {false_positive_rate:.3f}")
+print(f"True positive rate (null false):   {true_positive_rate:.3f}")

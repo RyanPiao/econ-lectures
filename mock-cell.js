@@ -14,7 +14,9 @@
    options    data-instant (no typing animation), data-rate="40" (characters a second),
               data-max="6" (longest typing time, seconds), data-size="14pt", data-parts="stream"
               (show only these output parts; the others are counted, not hidden in silence),
-              data-img-height="220" (px), data-live="off", data-step-notes="line 1 | line 2"
+              data-img-height="220" (px), data-lines="1-3,9-14" (colab: type only these lines of the
+              cell, 1-based; each run left out shows as one grey "... N lines not shown" line, so a long
+              cell's figure fits; Live still runs the whole cell), data-live="off", data-step-notes="line 1 | line 2"
               (one plain-text speaker-view line per click; reveal reads data-notes on the shown fragment).
    per-click notes  <aside class="notes" data-sv="1" data-click="1">...</aside> (and data-click="2", "3")
               inside the .mock div: a full speaker-view note for that click, in the house format. The
@@ -153,6 +155,7 @@
   function buildColab(m, st) {
     var c = st.cell;
     st.tokens = c.tokens || [['', c.code]];
+    if (m.getAttribute('data-lines')) st.tokens = someLines(st.tokens, m.getAttribute('data-lines'));
     st.steps = ['type', 'run'];
     var cell = el('div', 'mk-cell');
     var gut = el('div', 'mk-gut', '<div class="mk-run"></div><div class="mk-count mk-mono">[' + (c.count != null ? c.count : ' ') + ']</div>');
@@ -173,6 +176,31 @@
       b.addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); live(m); });
       m.appendChild(b); st.liveBtn = b;
     }
+  }
+
+  // data-lines="1-3,9-14": the cell's tokens cut to those lines, with one marker line per gap
+  function someLines(tokens, spec) {
+    var lines = [[]], keep = {}, out = [], gap = 0;
+    tokens.forEach(function (t) {
+      t[1].split('\n').forEach(function (s, i) { if (i) lines.push([]); if (s) lines[lines.length - 1].push([t[0], s]); });
+    });
+    spec.split(',').forEach(function (r) {
+      var ab = r.trim().split('-'), a = +ab[0], b = +(ab[1] || ab[0]);
+      for (var i = a; i <= b; i++) keep[i] = 1;
+    });
+    function mark() {
+      if (!gap) return;
+      if (out.length) out.push(['', '\n']);
+      out.push(['omit', '\u22ef ' + gap + ' line' + (gap > 1 ? 's' : '') + ' not shown']); gap = 0;
+    }
+    lines.forEach(function (ln, i) {
+      if (!keep[i + 1]) { gap++; return; }
+      mark();
+      if (out.length) out.push(['', '\n']);
+      out.push.apply(out, ln);
+    });
+    mark();
+    return out;
   }
 
   function colabOutput(m, st) {
