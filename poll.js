@@ -216,10 +216,11 @@
   /* ---------- session key: 2026-09-23-am ---------- */
 
   // The course this deck belongs to: econ2316, econ5200, ... Taken from the
-  // URL path first, since every deck lives under /<course>/, and from the poll
+  // URL path first, since every deck lives under /<course>/ (or, for a course in
+  // its own repository since Oct 2026, /<course>-slides/), and from the poll
   // id only as a fallback (they are namespaced chNN-econXXXX-poll-N).
   function courseToken() {
-    var m = location.pathname.match(/\/(econ\d{3,4})\//i);
+    var m = location.pathname.match(/\/(econ\d{3,4})(?:-slides)?\//i);
     if (m) return m[1].toLowerCase();
     var g = document.querySelector("[data-poll-id]");
     var id = g && g.getAttribute("data-poll-id");
