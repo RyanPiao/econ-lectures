@@ -71,11 +71,14 @@ td.key{background:var(--amber-soft)}
 
 <section id="t">
 <h2>The t curve: what changes when &sigma; is estimated</h2>
-<p class="lede">With s in place of &sigma; the curve has fatter tails, so the multiplier is bigger than z. It shrinks toward z as the degrees of freedom grow.</p>
+<p class="lede">With s in place of &sigma; the curve has fatter tails, so the multiplier is bigger than z. It shrinks toward z as the degrees of freedom grow. Pick a confidence level for t*, or type your own t statistic for its p-value.</p>
 <div class="row"><label for="dfr">degrees of freedom (n &minus; 1)</label><input id="dfr" type="range" min="1" max="120" step="1" value="29">
- <input id="dfn" type="number" min="1" max="1000" step="1" value="29">
+ <input id="dfn" type="number" min="1" max="1000" step="any" value="29">
  <span style="width:12px"></span>
  <button class="btn q" data-tconf="90">90%</button><button class="btn q on" data-tconf="95">95%</button><button class="btn q" data-tconf="99">99%</button></div>
+<div class="row"><label for="tst">or type a t statistic</label><input id="tst" type="number" step="0.01" min="-50" max="50" placeholder="e.g. 2.67">
+ <span style="width:12px"></span>
+ <button class="btn" data-ttail="two">two-sided p</button><button class="btn" data-ttail="right">one-sided, right tail</button><button class="btn" data-ttail="left">one-sided, left tail</button></div>
 <div class="readout"><div class="big a"><div class="k" id="tk">t*</div><div class="v" id="tv">2.045</div></div>
  <div class="big"><div class="k" id="zk2">z* (same confidence)</div><div class="v" id="zv2">1.960</div></div></div>
 <p class="say" id="tsay"></p>
@@ -188,8 +191,8 @@ var TABLES = {"z":{"-3.4":[0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.00
       '<text x="' + sx(k) + '" y="' + (YB + 28) + '" text-anchor="middle" font-size="18" fill="' + MUTED + '">' + k + '</text>';
     return o;
   }
-  function shade(pdf, peak, a, b) {
-    var p = curve(pdf, peak, a, b); return '<polygon points="' + sx(a).toFixed(1) + ',' + YB + ' ' + p.join(" ") + ' ' + sx(b).toFixed(1) + ',' + YB + '" fill="' + BLUE + '" opacity="0.28"/>';
+  function shade(pdf, peak, a, b, col, op) {
+    var p = curve(pdf, peak, a, b); return '<polygon points="' + sx(a).toFixed(1) + ',' + YB + ' ' + p.join(" ") + ' ' + sx(b).toFixed(1) + ',' + YB + '" fill="' + (col || BLUE) + '" opacity="' + (op || 0.28) + '"/>';
   }
   function mark(z, lab) {
     return '<line x1="' + sx(z) + '" y1="' + (YT - 6) + '" x2="' + sx(z) + '" y2="' + YB + '" stroke="' + INK + '" stroke-width="2" stroke-dasharray="6 5"/>' +
@@ -229,26 +232,57 @@ var TABLES = {"z":{"-3.4":[0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.00
     setZ(zs.mode === "middle" ? Stat.phiInv(0.5 + A / 2) : zs.mode === "left" ? Stat.phiInv(A) : Stat.phiInv(1 - A)); };
 
   /* ---------------- t ---------------- */
-  var ts = { df: 29, conf: 95 };
+  var ts = { df: 29, conf: 95, mode: "conf", t: null, tail: "two" };
+  function fmtP(p) { return p < 0.0001 ? "< 0.0001" : p.toFixed(4); }
+  function tP() { var t = ts.t, df = ts.df;   /* through the lower tail, so a large |t| keeps its digits */
+    return ts.tail === "two" ? 2 * Stat.tcdf(-Math.abs(t), df) : ts.tail === "right" ? Stat.tcdf(-t, df) : Stat.tcdf(t, df); }
+  function dfText(df) { return df >= 1000 ? "1000 (about z)" : (Math.round(df) === df ? String(df) : df.toFixed(1)); }
+  function drawTp() {
+    var df = ts.df, t = ts.t, a = Math.abs(t), P = tP(), pk = Stat.npdf(0), o = axis(), tp = function (x) { return Stat.tpdf(x, df); };
+    var c = function (x) { return Math.max(LO, Math.min(HI, x)); };
+    var AM = "#b45309";
+    if (ts.tail === "two") o += shade(tp, pk, LO, c(-a), AM, 0.7) + shade(tp, pk, c(a), HI, AM, 0.7);
+    else if (ts.tail === "right") o += shade(tp, pk, c(t), HI, AM, 0.7);
+    else o += shade(tp, pk, LO, c(t), AM, 0.7);
+    o += '<polyline points="' + curve(tp, pk, LO, HI).join(" ") + '" fill="none" stroke="' + INK + '" stroke-width="2.5"/>';
+    if (ts.tail === "two") o += mark(c(-a), "&minus;" + a.toFixed(3)) + mark(c(a), a.toFixed(3));
+    else o += mark(c(t), t.toFixed(3));
+    if (a > HI) o += '<text x="' + sx(0) + '" y="' + (YB - 40) + '" text-anchor="middle" font-size="17" fill="' + MUTED + '">|t| is beyond the drawn range; the shaded tail is too thin to see</text>';
+    o += '<text x="' + sx(0) + '" y="326" text-anchor="middle" font-size="16" fill="' + MUTED + '">t curve with df = ' + dfText(df) + ' &middot; shaded: a t at least as extreme as yours</text>';
+    $("tsvg").innerHTML = o;
+    $("tv").textContent = t.toFixed(3); $("tk").textContent = "your t, df = " + dfText(df);
+    $("zv2").textContent = fmtP(P); $("zk2").textContent = ts.tail === "two" ? "p-value, two-sided" : "p-value, one-sided (" + ts.tail + " tail)";
+    var where = ts.tail === "two" ? "at least " + a.toFixed(3) + " away from 0, in either direction," : (ts.tail === "right" ? "of " : "of at most ") + (ts.tail === "right" ? t.toFixed(3) + " or more" : t.toFixed(3)).replace("-", "&minus;");
+    $("tsay").innerHTML = "If the null is true, the chance of a t " + where + " is <b>" + fmtP(P) + "</b>. " +
+      (P < 0.05 ? "That is under 0.05: reject H&#8320; at &alpha; = 0.05." : "That is not under 0.05: fail to reject H&#8320; at &alpha; = 0.05.");
+    $("dfr").value = Math.min(Math.round(df), 120); $("dfn").value = Math.round(df) === df ? df : df.toFixed(1);
+    [].forEach.call(document.querySelectorAll("[data-tconf]"), function (b) { b.classList.remove("on"); });
+    [].forEach.call(document.querySelectorAll("[data-ttail]"), function (b) { b.classList.toggle("on", b.dataset.ttail === ts.tail); });
+  }
   function drawT() {
+    if (ts.mode === "p" && ts.t !== null && isFinite(ts.t)) return drawTp();
+    [].forEach.call(document.querySelectorAll("[data-ttail]"), function (b) { b.classList.remove("on"); });
     var df = ts.df, p = 0.5 + ts.conf / 200, t = Stat.tInv(p, df), z = Stat.phiInv(p);
     var pk = Stat.npdf(0), o = axis(), tp = function (x) { return Stat.tpdf(x, df); };
     o += shade(tp, pk, -t, t);
     o += '<polyline points="' + curve(Stat.npdf, pk, LO, HI).join(" ") + '" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="7 6"/>';
     o += '<polyline points="' + curve(tp, pk, LO, HI).join(" ") + '" fill="none" stroke="' + INK + '" stroke-width="2.5"/>';
     o += mark(-t, "&minus;" + t.toFixed(3)) + mark(t, t.toFixed(3));
-    o += '<text x="' + (X1 - 6) + '" y="' + (YT + 24) + '" text-anchor="end" font-size="17" fill="' + MUTED + '">dashed: normal &nbsp; solid: t with df = ' + df + '</text>';
+    o += '<text x="' + sx(0) + '" y="326" text-anchor="middle" font-size="16" fill="' + MUTED + '">dashed: normal &nbsp; solid: t with df = ' + dfText(df) + '</text>';
     $("tsvg").innerHTML = o;
-    $("tv").textContent = t.toFixed(3); $("tk").textContent = "t* for " + ts.conf + "%, df = " + df;
+    $("tv").textContent = t.toFixed(3); $("tk").textContent = "t* for " + ts.conf + "%, df = " + dfText(df);
     $("zv2").textContent = z.toFixed(3); $("zk2").textContent = "z* for " + ts.conf + "%";
-    $("tsay").innerHTML = "With df = <b>" + df + "</b>, a " + ts.conf + "% interval walks out <b>" + t.toFixed(3) + "</b> standard errors instead of " + z.toFixed(3) +
+    $("tsay").innerHTML = "With df = <b>" + dfText(df) + "</b>, a " + ts.conf + "% interval walks out <b>" + t.toFixed(3) + "</b> standard errors instead of " + z.toFixed(3) +
       " &mdash; <b>" + ((t / z - 1) * 100).toFixed(1) + "% wider</b>.";
-    $("dfr").value = Math.min(df, 120); $("dfn").value = df;
+    $("dfr").value = Math.min(Math.round(df), 120); $("dfn").value = Math.round(df) === df ? df : df.toFixed(1);
     [].forEach.call(document.querySelectorAll("[data-tconf]"), function (b) { b.classList.toggle("on", +b.dataset.tconf === ts.conf); });
   }
   $("dfr").oninput = function () { ts.df = +this.value; drawT(); };
-  $("dfn").onchange = function () { ts.df = Math.max(1, Math.min(1000, Math.round(+this.value) || 1)); drawT(); };
-  [].forEach.call(document.querySelectorAll("[data-tconf]"), function (b) { b.onclick = function () { ts.conf = +b.dataset.tconf; drawT(); }; });
+  $("dfn").onchange = function () { var v = +this.value; ts.df = Math.max(1, Math.min(1000, isFinite(v) && v > 0 ? Math.round(v * 10) / 10 : 1)); drawT(); };
+  [].forEach.call(document.querySelectorAll("[data-tconf]"), function (b) { b.onclick = function () { ts.conf = +b.dataset.tconf; ts.mode = "conf"; drawT(); }; });
+  $("tst").onchange = function () { var v = +this.value; if (this.value === "" || !isFinite(v)) { ts.mode = "conf"; } else { ts.t = Math.max(-50, Math.min(50, v)); ts.mode = "p"; } drawT(); };
+  [].forEach.call(document.querySelectorAll("[data-ttail]"), function (b) { b.onclick = function () {
+    ts.tail = b.dataset.ttail; if (ts.t === null) { ts.t = 2; $("tst").value = "2"; } ts.mode = "p"; drawT(); }; });
 
   /* ---------------- classic tables, values computed with scipy ---------------- */
   var KEY = { "1.6": [4, 5], "-1.6": [4, 5], "1.9": [6], "-1.9": [6], "2.5": [7, 8], "-2.5": [7, 8] };
@@ -289,12 +323,13 @@ var TABLES = {"z":{"-3.4":[0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.00
     }; });
   })();
 
-  /* ---------------- links in: #z?mode=middle&conf=95  #t?df=29&conf=95 ---------------- */
+  /* ---------------- links in: #z?mode=middle&conf=95  #t?df=29&conf=95  #t?df=307.1&t=2.67&tail=two ---------------- */
   function route() {
     var h = location.hash.replace(/^#/, ""), name = h.split("?")[0] || "z", q = {};
     (h.split("?")[1] || "").split("&").forEach(function (kv) { var p = kv.split("="); if (p[0]) q[p[0]] = decodeURIComponent(p[1] || ""); });
     if (name === "z") { if (q.mode) zs.mode = q.mode; if (q.conf) zs.z = Stat.phiInv(0.5 + q.conf / 200); else if (q.z) zs.z = +q.z; drawZ(); }
-    if (name === "t") { if (q.df) ts.df = q.df === "inf" ? 1000 : +q.df; if (q.conf) ts.conf = +q.conf; drawT(); }
+    if (name === "t") { if (q.df) ts.df = q.df === "inf" ? 1000 : +q.df; if (q.conf) { ts.conf = +q.conf; ts.mode = "conf"; }
+      if (q.t) { ts.t = +q.t; ts.mode = "p"; $("tst").value = q.t; } if (q.tail) ts.tail = q.tail; drawT(); }
     [].forEach.call(document.querySelectorAll("nav a"), function (a) { a.classList.toggle("on", a.dataset.s === name); });
     var el = document.getElementById(name); if (el && h) el.scrollIntoView();
   }
