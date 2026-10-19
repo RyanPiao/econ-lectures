@@ -147,7 +147,7 @@ function score(v, ws) {
 function card(v) {
   const has = !!v.yt;
   const img = has ? `<img src="https://i.ytimg.com/vi/${esc(v.yt)}/mqdefault.jpg" alt="" loading="lazy">` : "";
-  const thumb = `<button class="thumb${has ? " has" : ""}" ${has ? `data-yt="${esc(v.yt)}" data-title="${esc(v.n + ". " + v.title)}" aria-label="Play video ${v.n}: ${esc(v.title)}"` : "disabled aria-label=\"Coming soon\""}>
+  const thumb = `<button class="thumb${has ? " has" : ""}" ${has ? `data-yt="${esc(v.yt)}" data-studio="${esc(v.studio || "")}" data-title="${esc(v.n + ". " + v.title)}" aria-label="Play video ${v.n}: ${esc(v.title)}"` : "disabled aria-label=\"Coming soon\""}>
       ${img}<span class="num">${v.n}</span>${has ? '<span class="play"></span>' : '<span class="soon">Coming soon</span>'}</button>`;
   const errs = (v.errors || []).map(e => `<code class="err">${esc(e)}</code>`).join("");
   const links = [has ? `<a href="https://www.youtube.com/watch?v=${esc(v.yt)}" target="_blank" rel="noopener">YouTube</a>` : "",
@@ -189,7 +189,7 @@ function render() {
   if (state.lab) bits.push(`for ${LEVEL()} Lab ${state.lab}`);
   if (ws.length) bits.push("best match first");
   $("#status").textContent = bits.join(" ") + `. ${ready} of ${mine.length} recorded so far.`;
-  document.querySelectorAll(".thumb.has").forEach(b => b.onclick = () => play(b.dataset.yt, b.dataset.title));
+  document.querySelectorAll(".thumb.has").forEach(b => b.onclick = () => play(b.dataset.yt, b.dataset.title, b.dataset.studio));
 }
 
 function chips() {
@@ -201,9 +201,12 @@ function chips() {
   document.querySelectorAll(".chip").forEach(b => b.onclick = () => { state.cat = b.dataset.cat; chips(); render(); });
 }
 
-function play(id, title) {
+// the Canvas Studio link plays first: Studio shows the video in YouTube's education player (youtubeeducation.com),
+// which has no ads and no "More videos" (Ryan set the Studio links to "anyone with the link", 18 Oct 2026).
+// A video with no Studio link falls back to YouTube's privacy-enhanced embed.
+function play(id, title, studio) {
   $("#ptitle").textContent = title;
-  $("#pframe").src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0`;
+  $("#pframe").src = studio || `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0`;
   $("#player").showModal();
 }
 $("#pclose").onclick = () => $("#player").close();
