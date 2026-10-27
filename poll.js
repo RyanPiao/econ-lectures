@@ -1738,7 +1738,9 @@
   // and the speaker view never show it. Every slide change goes back to the corner.
   var QR_LIB = "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js";
   var qrMode = 1, qrBox = null, qrMaps = {}, qrLibP = null, qrSeq = 0;   // 1 corner, 2 full height, 0 hidden
-  function qrCourse(pid) { var m = String(pid).match(/econ\d{4}/i); return m ? m[0].toLowerCase() : null; }
+  // only the courses whose repository has the generated v/ page (1116 shares this file and has none)
+  var QR_COURSES = { econ2316: 1, econ3916: 1, econ5200: 1 };
+  function qrCourse(pid) { var m = String(pid).match(/econ\d{4}/i), c = m && m[0].toLowerCase(); return c && QR_COURSES[c] ? c : null; }
   function qrMap(course) {
     if (!qrMaps[course]) qrMaps[course] = fetch("https://ryanpiao.github.io/" + course + "-slides/v/polls.json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
